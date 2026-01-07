@@ -23,7 +23,7 @@ type DiscordClient struct {
 
 	Logger *zerolog.Logger
 
-	Intents *int
+	Intents *types.DiscordIntent
 
 	Websocket *websocket.Conn
 
@@ -32,7 +32,7 @@ type DiscordClient struct {
 	mu sync.RWMutex
 }
 
-func NewDiscordClient(token string, intents int) *DiscordClient {
+func NewDiscordClient(token string, intents types.DiscordIntent) *DiscordClient {
 	return &DiscordClient{
 		Token:      &token,
 		APIVersion: functions.PointerTo(types.DiscordAPIVersion10),

@@ -15,7 +15,7 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	bot := connection.NewDiscordClient(os.Getenv("TOKEN"), 33281)
+	bot := connection.NewDiscordClient(os.Getenv("TOKEN"), types.AllIntentsExceptDirectMessage)
 	if err := bot.Login(); err != nil {
 		panic(err)
 	}

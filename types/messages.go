@@ -120,24 +120,24 @@ type DiscordMessageResolved struct {
 	//TODO
 	Channels map[DiscordSnowflake]*any `json:"channels,omitempty"`
 	//TODO
-	Roles      map[DiscordSnowflake]*any               `json:"roles,omitempty"`
-	Attachents map[DiscordSnowflake]*DiscordAttachment `json:"attachments,omitempty"`
+	Roles       map[DiscordSnowflake]*any               `json:"roles,omitempty"`
+	Attachments map[DiscordSnowflake]*DiscordAttachment `json:"attachments,omitempty"`
 }
 
 type DiscordMessage struct {
-	Activity      *DiscordActivity      `json:"activity,omitempty"`
-	Application   *DiscordApplication   `json:"application,omitempty"`
-	ApplicationID *string               `json:"application_id,omitempty"`
-	Attachments   *[]*DiscordAttachment `json:"attachments,omitempty"`
-	Author        *DiscordUser          `json:"author"`
-	Call          *DiscordCall          `json:"call,omitempty"`
-	ChannelID     string                `json:"channel_id"`
-	ChannelType   int                   `json:"channel_type"`
+	Activity      *DiscordActivity     `json:"activity,omitempty"`
+	Application   *DiscordApplication  `json:"application,omitempty"`
+	ApplicationID *string              `json:"application_id,omitempty"`
+	Attachments   []*DiscordAttachment `json:"attachments,omitempty"`
+	Author        *DiscordUser         `json:"author"`
+	Call          *DiscordCall         `json:"call,omitempty"`
+	ChannelID     string               `json:"channel_id"`
+	ChannelType   int                  `json:"channel_type"`
 	//TODO
-	Components      *[]*any         `json:"components"`
-	Content         *string         `json:"content"`
+	Components      []*any          `json:"components"`
+	Content         string          `json:"content"`
 	EditedTimestamp *int64          `json:"edited_timestamp,omitempty"`
-	Embeds          *[]DiscordEmbed `json:"embeds,omitempty"`
+	Embeds          []*DiscordEmbed `json:"embeds,omitempty"`
 	Flags           int64           `json:"flags"`
 	ID              string          `json:"id"`
 	//TODO
