@@ -21,7 +21,7 @@ func main() {
 	}
 
 	bot.On("MESSAGE_CREATE", func(event types.Payload) {
-		msg, err := connection.UnwrapEvent[types.DiscordEventMessageCreate](event)
+		msg, err := connection.UnwrapEvent[types.DiscordMessageCreateEvent](event)
 		if err != nil {
 			bot.Logger.Err(err).Msg("Failed to unwrap MESSAGE_CREATE event")
 		}

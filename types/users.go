@@ -8,14 +8,14 @@ type AvatarDecorationData struct {
 	SkuID     string `json:"sku_id"`
 }
 
-type Clan struct {
+type DiscordClan struct {
 	Badge           string `json:"badge"`
 	IdentityEnabled bool   `json:"identity_enabled"`
 	IdentityGuildID string `json:"identity_guild_id"`
 	Tag             string `json:"tag"`
 }
 
-type User struct {
+type DiscordUser struct {
 	AccentColor          *int                  `json:"accent_color,omitempty"`
 	AvatarHash           string                `json:"avatar"`
 	AvatarDecorationData *AvatarDecorationData `json:"avatar_decoration,omitempty"`
@@ -26,13 +26,13 @@ type User struct {
 	ID                   string                `json:"id"`
 	Locale               *string               `json:"locale,omitempty"`
 	MFAEnabled           bool                  `json:"mfa_enabled"`
-	PrimaryGuild         *Clan                 `json:"primary_guild,omitempty"`
+	PrimaryGuild         *DiscordClan          `json:"primary_guild,omitempty"`
 	PublicFlags          int                   `json:"public_flags"`
 	System               bool                  `json:"system,omitempty"`
 	Username             string                `json:"username"`
 }
 
-func (u *User) DisplayName() string {
+func (u *DiscordUser) DisplayName() string {
 	if u.GlobalName != nil && *u.GlobalName != "" {
 		return *u.GlobalName
 	}
