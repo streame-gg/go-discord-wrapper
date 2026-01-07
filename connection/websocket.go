@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// NewWebsocket TODO: websocket: close 1001 (going away): Discord WebSocket requesting client reconnect; Heartbeat no response handling
 func NewWebsocket(bot *DiscordClient, host string) (*websocket.Conn, error) {
 	c, _, err := websocket.DefaultDialer.Dial(host+"?v=10&encoding=json", nil)
 	if err != nil {
