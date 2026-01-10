@@ -75,6 +75,25 @@ func (d *DiscordClient) connectWebsocket(url string) error {
 	return nil
 }
 
+func (d *DiscordClient) reconnectWebsocket() error {
+	d.Logger.Info().Msg("Reconnecting to Discord WebSocket")
+
+	oldWs := d.Websocket
+
+	if err := d.connectWebsocket(*d.ReconnectURL); err != nil {
+		return err
+	}
+
+	go func() {
+		if err := d.listenWebsocket(); err != nil {
+			d.Logger.Err(err).Msg("Error listening to websocket")
+		}
+	}()
+
+	_ = oldWs.Close()
+	return nil
+}
+
 func (d *DiscordClient) listenWebsocket() error {
 	for {
 		_, message, err := d.Websocket.ReadMessage()
@@ -88,20 +107,10 @@ func (d *DiscordClient) listenWebsocket() error {
 		}
 
 		if payload.Op == 7 {
-			d.Logger.Info().Msg("Reconnecting as per Discord instruction (OP 7)")
-			oldWs := d.Websocket
-
-			if err := d.connectWebsocket(*d.ReconnectURL); err != nil {
+			if err := d.reconnectWebsocket(); err != nil {
 				return err
 			}
-
-			go func() {
-				if err := d.listenWebsocket(); err != nil {
-					d.Logger.Err(err).Msg("Error listening to websocket")
-				}
-			}()
-
-			_ = oldWs.Close()
+			continue
 		}
 
 		if payload.S != nil {
@@ -109,16 +118,6 @@ func (d *DiscordClient) listenWebsocket() error {
 		}
 
 		d.Logger.Info().Msgf("Received payload: %s %d", payload.T, payload.Op)
-
-		if payload.T == "READY" {
-			var readyEvent types.DiscordReadyPayload
-			if err := json.Unmarshal(payload.D, &readyEvent); err != nil {
-				return err
-			}
-
-			d.SessionID = &readyEvent.SessionID
-			d.ReconnectURL = &readyEvent.ResumeGatewayURL
-		}
 
 		if payload.T != "" {
 			d.dispatch(types.DiscordEventType(payload.T), payload)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"go-discord-wrapper/connection"
 	"go-discord-wrapper/types"
 	"os"
@@ -15,6 +16,10 @@ func main() {
 	_ = godotenv.Load()
 
 	bot := connection.NewDiscordClient(os.Getenv("TOKEN"), types.AllIntentsExceptDirectMessage)
+
+	connection.OnEvent(bot, types.DiscordEventGuildCreate, func(session *connection.DiscordClient, event *types.DiscordGuildCreateEvent) {
+		fmt.Println("New guild")
+	})
 
 	connection.OnEvent(bot, types.DiscordEventReady, func(session *connection.DiscordClient, event *types.DiscordReadyEvent) {
 		session.Logger.Info().Msgf("Logged in as %s#%s", event.User.Username, event.User.Discriminator)

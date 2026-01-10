@@ -1,6 +1,8 @@
 package types
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type DiscordMessageCreateEvent struct {
 	DiscordMessage
@@ -16,11 +18,19 @@ func (e DiscordMessageCreateEvent) Unmarshal(data []byte) (DiscordEvent, error) 
 }
 
 type DiscordReadyEvent struct {
-	User DiscordUser `json:"user"`
+	User   DiscordUser       `json:"user"`
+	Guilds []AnyGuildWrapper `json:"guilds"`
 }
 
 func (e DiscordReadyEvent) Unmarshal(data []byte) (DiscordEvent, error) {
 	var event DiscordReadyEvent
 	err := json.Unmarshal(data, &event)
 	return event, err
+}
+
+type DiscordGuildCreateEvent struct {
+	AnyGuildWrapper
+	Large       bool  `json:"large"`
+	Unavailable *bool `json:"unavailable"`
+	MemberCount int   `json:"member_count"`
 }

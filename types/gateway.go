@@ -47,10 +47,11 @@ const (
 )
 
 type DiscordReadyPayload struct {
-	User             DiscordUser `json:"user"`
-	SessionID        string      `json:"session_id"`
-	ResumeGatewayURL string      `json:"resume_gateway_url"`
-	Shard            []int       `json:"shard,omitempty"`
+	User             DiscordUser       `json:"user"`
+	SessionID        string            `json:"session_id"`
+	ResumeGatewayURL string            `json:"resume_gateway_url"`
+	Shard            []int             `json:"shard,omitempty"`
+	Guilds           []AnyGuildWrapper `json:"guilds"`
 }
 
 type DiscordIntent uint64
