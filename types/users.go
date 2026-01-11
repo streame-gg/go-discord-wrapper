@@ -53,3 +53,11 @@ type GuildMember struct {
 	PremiumSince               *time.Time `json:"premium_since,omitempty"`
 	Roles                      []string   `json:"roles"`
 }
+
+type ThreadMember struct {
+	ID            *DiscordSnowflake `json:"id,omitempty"`
+	UserID        *DiscordSnowflake `json:"user_id,omitempty"`
+	JoinTimestamp time.Time         `json:"join_timestamp,omitempty"`
+	Flags         int               `json:"flags,omitempty"`
+	Member        *GuildMember      `json:"member,omitempty"`
+}

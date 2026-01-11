@@ -1,6 +1,11 @@
 package types
 
-import "time"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"time"
+)
 
 type DiscordSnowflake string
 
@@ -117,8 +122,7 @@ type DiscordMessageResolved struct {
 	Users    map[DiscordSnowflake]*DiscordUser    `json:"users"`
 	Members  map[DiscordSnowflake]*GuildMember    `json:"members,omitempty"`
 	Messages map[DiscordSnowflake]*DiscordMessage `json:"messages,omitempty"`
-	//TODO
-	Channels map[DiscordSnowflake]*any `json:"channels,omitempty"`
+	Channels map[DiscordSnowflake]*DiscordChannel `json:"channels,omitempty"`
 	//TODO
 	Roles       map[DiscordSnowflake]*any               `json:"roles,omitempty"`
 	Attachments map[DiscordSnowflake]*DiscordAttachment `json:"attachments,omitempty"`
@@ -177,26 +181,75 @@ type DiscordMessageInteractionMetadataMessageComponent struct {
 	InteractedMessageID          *DiscordSnowflake                                            `json:"interacted_message_id,omitempty"`
 }
 
-type DiscordMessageInteractionMetadataModalSubmitTriggering struct {
-	*DiscordMessageInteractionMetadataApplicationCommand
-	*DiscordMessageInteractionMetadataMessageComponent
+type AnyDiscordMessageInteractionMetadata interface{}
+
+type DiscordMessageInteractionMetadata struct {
+	Value AnyDiscordMessageInteractionMetadata
 }
 
-type AnyDiscordMessageInteractionMetadata struct {
-	*DiscordMessageInteractionMetadataApplicationCommand
-	*DiscordMessageInteractionMetadataMessageComponent
-	*DiscordMessageInteractionMetadataModalSubmit
+type AnyDiscordMessageInteractionMetadataModalSubmitTriggeringInteractionMetadata interface{}
+
+type DiscordMessageInteractionMetadataModalSubmitTriggering struct {
+	AnyDiscordMessageInteractionMetadataModalSubmitTriggeringInteractionMetadata
+}
+
+func (d *DiscordMessageInteractionMetadataModalSubmitTriggering) UnmarshalJSON(data []byte) error {
+	var a DiscordMessageInteractionMetadataApplicationCommand
+	if err := json.Unmarshal(data, &a); err == nil && a.ID != "" {
+		d.AnyDiscordMessageInteractionMetadataModalSubmitTriggeringInteractionMetadata = &a
+		return nil
+	}
+
+	var b DiscordMessageInteractionMetadataMessageComponent
+	if err := json.Unmarshal(data, &b); err == nil && b.ID != "" {
+		d.AnyDiscordMessageInteractionMetadataModalSubmitTriggeringInteractionMetadata = &b
+		return nil
+	}
+
+	return nil
+}
+
+func (d *DiscordMessageInteractionMetadata) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(data, []byte("null")) {
+		d.Value = nil
+		return nil
+	}
+
+	var a DiscordMessageInteractionMetadataApplicationCommand
+	if err := json.Unmarshal(data, &a); err == nil && a.ID != "" {
+		d.Value = &a
+		return nil
+	}
+
+	var b DiscordMessageInteractionMetadataMessageComponent
+	if err := json.Unmarshal(data, &b); err == nil && b.ID != "" {
+		d.Value = &b
+		return nil
+	}
+
+	var c DiscordMessageInteractionMetadataModalSubmit
+	if err := json.Unmarshal(data, &c); err == nil && c.ID != "" {
+		d.Value = &c
+		return nil
+	}
+
+	return fmt.Errorf("unknown DiscordMessageInteractionMetadata: %s", string(data))
 }
 
 type DiscordMessageInteractionMetadataModalSubmit struct {
-	ID                           DiscordSnowflake                                             `json:"id"`
-	Type                         DiscordInteractionType                                       `json:"type"`
-	User                         DiscordUser                                                  `json:"user,omitempty"`
-	AuthorizingIntegrationOwners map[DiscordInteractionApplicationIntegrationType]interface{} `json:"authorizing_integration_owners,omitempty"`
-	OriginalResponseMessageID    *DiscordSnowflake                                            `json:"original_response_message_id,omitempty"`
-	//TriggeringInteractionMetadata TODO this wont work as the compiler does not know which one to use, therefore fields like ID will conflict in json parsing
-	TriggeringInteractionMetadata *DiscordMessageInteractionMetadataModalSubmitTriggering `json:"triggering_interaction_metadata,omitempty"`
+	ID                            DiscordSnowflake                                             `json:"id"`
+	Type                          DiscordInteractionType                                       `json:"type"`
+	User                          DiscordUser                                                  `json:"user,omitempty"`
+	AuthorizingIntegrationOwners  map[DiscordInteractionApplicationIntegrationType]interface{} `json:"authorizing_integration_owners,omitempty"`
+	OriginalResponseMessageID     *DiscordSnowflake                                            `json:"original_response_message_id,omitempty"`
+	TriggeringInteractionMetadata *DiscordMessageInteractionMetadataModalSubmitTriggering      `json:"triggering_interaction_metadata,omitempty"`
 }
+
+func (*DiscordMessageInteractionMetadataApplicationCommand) isDiscordMessageInteractionMetadata() {}
+
+func (*DiscordMessageInteractionMetadataMessageComponent) isDiscordMessageInteractionMetadata() {}
+
+func (*DiscordMessageInteractionMetadataModalSubmit) isDiscordMessageInteractionMetadata() {}
 
 type DiscordMessage struct {
 	Activity      *DiscordActivity     `json:"activity,omitempty"`
@@ -206,37 +259,34 @@ type DiscordMessage struct {
 	Author        *DiscordUser         `json:"author"`
 	Call          *DiscordCall         `json:"call,omitempty"`
 	ChannelID     DiscordSnowflake     `json:"channel_id"`
+	ChannelType   DiscordChannelType   `json:"channel_type"`
 	//TODO
-	ChannelType any `json:"channel_type"`
-	//TODO
-	Components      []*any             `json:"components"`
-	Content         string             `json:"content"`
-	EditedTimestamp *time.Time         `json:"edited_timestamp,omitempty"`
-	Embeds          []*DiscordEmbed    `json:"embeds,omitempty"`
-	Flags           DiscordMessageFlag `json:"flags"`
-	ID              DiscordSnowflake   `json:"id"`
-	//TODO fix issue
-	InteractionMetadata  *AnyDiscordMessageInteractionMetadata `json:"interaction_metadata,omitempty"`
-	MentionEveryone      bool                                  `json:"mention_everyone"`
-	MentionChannels      *[]DiscordMessageChannelMention       `json:"mention_channels,omitempty"`
-	MentionRoles         []string                              `json:"mention_roles"`
-	MessageReference     *DiscordMessageMessageReference       `json:"message_reference,omitempty"`
-	MessageSnapshots     []*DiscordMessageMessageSnapshot      `json:"message_snapshots,omitempty"`
-	Nonce                interface{}                           `json:"nonce,omitempty"`
-	Pinned               bool                                  `json:"pinned"`
-	Poll                 *DiscordPoll                          `json:"poll,omitempty"`
-	Position             *int                                  `json:"position,omitempty"`
-	Reactions            *[]*DiscordReaction                   `json:"reactions,omitempty"`
-	Resolved             *DiscordMessageResolved               `json:"resolved,omitempty"`
-	ReferencedMessage    *DiscordMessage                       `json:"referenced_message,omitempty"`
-	RoleSubscriptionData *DiscordRoleSubscriptionData          `json:"role_subscription_data,omitempty"`
-	StickerItems         []*DiscordMessageStickerItem          `json:"sticker_items,omitempty"`
-	//TODO
-	Thread    *any               `json:"thread,omitempty"`
-	Timestamp *time.Time         `json:"timestamp,omitempty"`
-	TTS       bool               `json:"tts"`
-	Type      DiscordMessageType `json:"type"`
-	WebhookID *string            `json:"webhook_id,omitempty"`
+	Components           []*any                             `json:"components"`
+	Content              string                             `json:"content"`
+	EditedTimestamp      *time.Time                         `json:"edited_timestamp,omitempty"`
+	Embeds               []*DiscordEmbed                    `json:"embeds,omitempty"`
+	Flags                DiscordMessageFlag                 `json:"flags"`
+	ID                   DiscordSnowflake                   `json:"id"`
+	InteractionMetadata  *DiscordMessageInteractionMetadata `json:"interaction_metadata,omitempty"`
+	MentionEveryone      bool                               `json:"mention_everyone"`
+	MentionChannels      *[]DiscordMessageChannelMention    `json:"mention_channels,omitempty"`
+	MentionRoles         []string                           `json:"mention_roles"`
+	MessageReference     *DiscordMessageMessageReference    `json:"message_reference,omitempty"`
+	MessageSnapshots     []*DiscordMessageMessageSnapshot   `json:"message_snapshots,omitempty"`
+	Nonce                interface{}                        `json:"nonce,omitempty"`
+	Pinned               bool                               `json:"pinned"`
+	Poll                 *DiscordPoll                       `json:"poll,omitempty"`
+	Position             *int                               `json:"position,omitempty"`
+	Reactions            *[]*DiscordReaction                `json:"reactions,omitempty"`
+	Resolved             *DiscordMessageResolved            `json:"resolved,omitempty"`
+	ReferencedMessage    *DiscordMessage                    `json:"referenced_message,omitempty"`
+	RoleSubscriptionData *DiscordRoleSubscriptionData       `json:"role_subscription_data,omitempty"`
+	StickerItems         []*DiscordMessageStickerItem       `json:"sticker_items,omitempty"`
+	Thread               *DiscordChannel                    `json:"thread,omitempty"`
+	Timestamp            *time.Time                         `json:"timestamp,omitempty"`
+	TTS                  bool                               `json:"tts"`
+	Type                 DiscordMessageType                 `json:"type"`
+	WebhookID            *string                            `json:"webhook_id,omitempty"`
 }
 
 type DiscordMessageFlag uint64
@@ -244,7 +294,7 @@ type DiscordMessageFlag uint64
 const (
 	DiscordMessageFlagCrossposted                      DiscordMessageFlag = 1 << 0
 	DiscordMessageFlagIsCrosspost                      DiscordMessageFlag = 1 << 1
-	DiscordMessageFlagSupressEmbeds                    DiscordMessageFlag = 1 << 2
+	DiscordMessageFlagSuppressEmbeds                   DiscordMessageFlag = 1 << 2
 	DiscordMessageFlagSourceMessageDeleted             DiscordMessageFlag = 1 << 3
 	DiscordMessageFlagUrgent                           DiscordMessageFlag = 1 << 4
 	DiscordMessageFlagHasThread                        DiscordMessageFlag = 1 << 5

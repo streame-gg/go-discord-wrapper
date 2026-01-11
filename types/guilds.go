@@ -38,8 +38,22 @@ type AnyGuild interface {
 }
 
 type Guild struct {
-	ID   DiscordSnowflake `json:"id"`
-	Name string           `json:"name"`
+	ID                          DiscordSnowflake                       `json:"id"`
+	Name                        string                                 `json:"name"`
+	IconHash                    *string                                `json:"icon,omitempty"`
+	Splash                      *string                                `json:"splash,omitempty"`
+	DiscoverySplash             *string                                `json:"discovery_splash,omitempty"`
+	Owner                       bool                                   `json:"owner,omitempty"`
+	OwnerID                     DiscordSnowflake                       `json:"owner_id,omitempty"`
+	Permissions                 *string                                `json:"permissions,omitempty"`
+	Region                      *string                                `json:"region,omitempty"`
+	AfkChannelID                *DiscordSnowflake                      `json:"afk_channel_id,omitempty"`
+	AfkTimeout                  *int                                   `json:"afk_timeout,omitempty"`
+	WidgetEnabled               *bool                                  `json:"widget_enabled,omitempty"`
+	WidgetChannelID             *DiscordSnowflake                      `json:"widget_channel_id,omitempty"`
+	VerificationChannel         *DiscordSnowflake                      `json:"verification_channel_id,omitempty"`
+	VerificationLevel           DiscordGuildVerificationLevel          `json:"verification_level,omitempty"`
+	DefaultMessageNotifications DiscordDefaultMessageNotificationLevel `json:"default_message_notifications,omitempty"`
 }
 
 func (g Guild) IsAvailable() bool {
@@ -63,3 +77,20 @@ func (ug UnavailableGuild) IsAvailable() bool {
 func (ug UnavailableGuild) GetID() DiscordSnowflake {
 	return ug.ID
 }
+
+type DiscordGuildVerificationLevel int
+
+const (
+	DiscordGuildVerificationLevelNone                                  DiscordGuildVerificationLevel = 0
+	DiscordGuildVerificationLevelLow                                   DiscordGuildVerificationLevel = 1
+	DiscordGuildVerificationLevelMedium                                DiscordGuildVerificationLevel = 2
+	DiscordGuildVerificationLevelHigh                                  DiscordGuildVerificationLevel = 3
+	DiscordGuildVerificationLevelVeryHighDiscordGuildVerificationLevel                               = 4
+)
+
+type DiscordDefaultMessageNotificationLevel int
+
+const (
+	DiscordDefaultMessageNotificationLevelAllMessages  DiscordDefaultMessageNotificationLevel = 0
+	DiscordDefaultMessageNotificationLevelOnlyMentions DiscordDefaultMessageNotificationLevel = 1
+)
