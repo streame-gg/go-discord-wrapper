@@ -170,6 +170,41 @@ const (
 // DiscordGuildFeatures TODO: Define all features
 type DiscordGuildFeatures string
 
+const (
+	DiscordGuildFeatureAnimatedBanner                        DiscordGuildFeatures = "ANIMATED_BANNER"
+	DiscordGuildFeatureAnimatedIcon                          DiscordGuildFeatures = "ANIMATED_ICON"
+	DiscordGuildFeatureApplicationCommandPermissionsV2       DiscordGuildFeatures = "APPLICATION_COMMAND_PERMISSIONS_V2"
+	DiscordGuildFeatureAutoModeration                        DiscordGuildFeatures = "AUTO_MODERATION"
+	DiscordGuildFeatureBanner                                DiscordGuildFeatures = "BANNER"
+	DiscordGuildFeatureCommunity                             DiscordGuildFeatures = "COMMUNITY"
+	DiscordGuildFeatureCreatorMonetizableProvisional         DiscordGuildFeatures = "CREATOR_MONETIZABLE_PROVISIONAL"
+	DiscordGuildFeatureCreatorStorePage                      DiscordGuildFeatures = "CREATOR_STORE_PAGE"
+	DiscordGuildFeatureDeveloperSupportServer                DiscordGuildFeatures = "DEVELOPER_SUPPORT_SERVER"
+	DiscordGuildFeatureDiscoverable                          DiscordGuildFeatures = "DISCOVERABLE"
+	DiscordGuildFeatureFeaturable                            DiscordGuildFeatures = "FEATURABLE"
+	DiscordGuildFeatureInvitesDisabled                       DiscordGuildFeatures = "INVITES_DISABLED"
+	DiscordGuildFeatureInviteSplash                          DiscordGuildFeatures = "INVITE_SPLASH"
+	DiscordGuildFeatureMemberVerificationGateEnabled         DiscordGuildFeatures = "MEMBER_VERIFICATION_GATE_ENABLED"
+	DiscordGuildFeatureMoreSoundboard                        DiscordGuildFeatures = "MORE_SOUNDBOARD"
+	DiscordGuildFeatureMoreStickers                          DiscordGuildFeatures = "MORE_STICKERS"
+	DiscordGuildFeatureNews                                  DiscordGuildFeatures = "NEWS"
+	DiscordGuildFeaturePartnered                             DiscordGuildFeatures = "PARTNERED"
+	DiscordGuildFeaturePreviewEnabled                        DiscordGuildFeatures = "PREVIEW_ENABLED"
+	DiscordGuildFeatureRaidAlertsDisabled                    DiscordGuildFeatures = "RAID_ALERTS_DISABLED"
+	DiscordGuildFeatureRoleIcons                             DiscordGuildFeatures = "ROLE_ICONS"
+	DiscordGuildFeatureRoleSubscriptionsAvailableForPurchase DiscordGuildFeatures = "ROLE_SUBSCRIPTIONS_AVAILABLE_FOR_PURCHASE"
+	DiscordGuildFeatureRoleSubscriptionsEnabled              DiscordGuildFeatures = "ROLE_SUBSCRIPTIONS_ENABLED"
+	DiscordGuildFeatureSoundboard                            DiscordGuildFeatures = "SOUNDBOARD"
+	DiscordGuildFeatureTicketedEventsEnabled                 DiscordGuildFeatures = "TICKETED_EVENTS_ENABLED"
+	DiscordGuildFeatureVanityURL                             DiscordGuildFeatures = "VANITY_URL"
+	DiscordGuildFeatureVerified                              DiscordGuildFeatures = "VERIFIED"
+	DiscordGuildFeatureVipRegions                            DiscordGuildFeatures = "VIP_REGIONS"
+	DiscordGuildFeatureWelcomeScreenEnabled                  DiscordGuildFeatures = "WELCOME_SCREEN_ENABLED"
+	DiscordGuildFeatureGuestsEnabled                         DiscordGuildFeatures = "GUESTS_ENABLED"
+	DiscordGuildFeatureGuildTags                             DiscordGuildFeatures = "GUILD_TAGS"
+	DiscordGuildFeatureEnhancedRoleColors                    DiscordGuildFeatures = "ENHANCED_ROLE_COLORS"
+)
+
 type DiscordGuildIncidentsData struct {
 	InvitesDisabledUntil *time.Time `json:"invites_disabled_until,omitempty"`
 	DmsDisabledUntil     *time.Time `json:"dms_disabled_until,omitempty"`
