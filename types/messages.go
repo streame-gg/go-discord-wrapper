@@ -1,9 +1,6 @@
 package types
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"time"
 )
 
@@ -50,21 +47,20 @@ type DiscordApplicationInstallParams struct {
 }
 
 type DiscordApplication struct {
-	ID                  DiscordSnowflake        `json:"id"`
-	Name                string                  `json:"name"`
-	IconHash            *string                 `json:"icon,omitempty"`
-	Description         string                  `json:"description,omitempty"`
-	RpcOrigins          []string                `json:"rpc_origins,omitempty"`
-	BotPublic           bool                    `json:"bot_public,omitempty"`
-	BotRequireCodeGrant bool                    `json:"bot_require_code_grant,omitempty"`
-	TermsOfServiceURL   *string                 `json:"terms_of_service_url,omitempty"`
-	PrivacyPolicyURL    *string                 `json:"privacy_policy_url,omitempty"`
-	Owner               *DiscordUser            `json:"owner,omitempty"`
-	VerifyKey           *string                 `json:"verify_key,omitempty"`
-	Team                *DiscordApplicationTeam `json:"team,omitempty"`
-	GuildID             *DiscordSnowflake       `json:"guild_id,omitempty"`
-	//TODO
-	Guild                             any                                  `json:"guild,omitempty"`
+	ID                                DiscordSnowflake                     `json:"id"`
+	Name                              string                               `json:"name"`
+	IconHash                          *string                              `json:"icon,omitempty"`
+	Description                       string                               `json:"description,omitempty"`
+	RpcOrigins                        []string                             `json:"rpc_origins,omitempty"`
+	BotPublic                         bool                                 `json:"bot_public,omitempty"`
+	BotRequireCodeGrant               bool                                 `json:"bot_require_code_grant,omitempty"`
+	TermsOfServiceURL                 *string                              `json:"terms_of_service_url,omitempty"`
+	PrivacyPolicyURL                  *string                              `json:"privacy_policy_url,omitempty"`
+	Owner                             *DiscordUser                         `json:"owner,omitempty"`
+	VerifyKey                         *string                              `json:"verify_key,omitempty"`
+	Team                              *DiscordApplicationTeam              `json:"team,omitempty"`
+	GuildID                           *DiscordSnowflake                    `json:"guild_id,omitempty"`
+	Guild                             Guild                                `json:"guild,omitempty"`
 	PrimarySKUID                      *string                              `json:"primary_sku_id,omitempty"`
 	Slug                              *string                              `json:"slug,omitempty"`
 	CoverImage                        *string                              `json:"cover_image,omitempty"`
@@ -119,12 +115,11 @@ type DiscordRoleSubscriptionData struct {
 }
 
 type DiscordMessageResolved struct {
-	Users    map[DiscordSnowflake]*DiscordUser    `json:"users"`
-	Members  map[DiscordSnowflake]*GuildMember    `json:"members,omitempty"`
-	Messages map[DiscordSnowflake]*DiscordMessage `json:"messages,omitempty"`
-	Channels map[DiscordSnowflake]*DiscordChannel `json:"channels,omitempty"`
-	//TODO
-	Roles       map[DiscordSnowflake]*any               `json:"roles,omitempty"`
+	Users       map[DiscordSnowflake]*DiscordUser       `json:"users"`
+	Members     map[DiscordSnowflake]*GuildMember       `json:"members,omitempty"`
+	Messages    map[DiscordSnowflake]*DiscordMessage    `json:"messages,omitempty"`
+	Channels    map[DiscordSnowflake]*DiscordChannel    `json:"channels,omitempty"`
+	Roles       map[DiscordSnowflake]*DiscordRole       `json:"roles,omitempty"`
 	Attachments map[DiscordSnowflake]*DiscordAttachment `json:"attachments,omitempty"`
 }
 
@@ -153,103 +148,6 @@ const (
 	DiscordMessageMessageReferenceTypeDefault DiscordMessageMessageReferenceType = 0
 	DiscordMessageMessageReferenceTypeForward DiscordMessageMessageReferenceType = 1
 )
-
-type DiscordMessageMessageReference struct {
-	Type            *DiscordMessageMessageReferenceType `json:"type,omitempty"`
-	MessageID       *DiscordSnowflake                   `json:"message_id,omitempty"`
-	ChannelID       *DiscordSnowflake                   `json:"channel_id,omitempty"`
-	GuildID         *DiscordSnowflake                   `json:"guild_id,omitempty"`
-	FailIfNotExists *bool                               `json:"fail_if_not_exists,omitempty"`
-}
-
-type DiscordMessageInteractionMetadataApplicationCommand struct {
-	ID                           DiscordSnowflake                                             `json:"id"`
-	Type                         DiscordInteractionType                                       `json:"type"`
-	User                         DiscordUser                                                  `json:"user,omitempty"`
-	AuthorizingIntegrationOwners map[DiscordInteractionApplicationIntegrationType]interface{} `json:"authorizing_integration_owners,omitempty"`
-	OriginalResponseMessageID    *DiscordSnowflake                                            `json:"original_response_message_id,omitempty"`
-	TargetUser                   *DiscordUser                                                 `json:"target_user,omitempty"`
-	TargetMessageID              *DiscordSnowflake                                            `json:"target_message_id,omitempty"`
-}
-
-type DiscordMessageInteractionMetadataMessageComponent struct {
-	ID                           DiscordSnowflake                                             `json:"id"`
-	Type                         DiscordInteractionType                                       `json:"type"`
-	User                         DiscordUser                                                  `json:"user,omitempty"`
-	AuthorizingIntegrationOwners map[DiscordInteractionApplicationIntegrationType]interface{} `json:"authorizing_integration_owners,omitempty"`
-	OriginalResponseMessageID    *DiscordSnowflake                                            `json:"original_response_message_id,omitempty"`
-	InteractedMessageID          *DiscordSnowflake                                            `json:"interacted_message_id,omitempty"`
-}
-
-type AnyDiscordMessageInteractionMetadata interface{}
-
-type DiscordMessageInteractionMetadata struct {
-	Value AnyDiscordMessageInteractionMetadata
-}
-
-type AnyDiscordMessageInteractionMetadataModalSubmitTriggeringInteractionMetadata interface{}
-
-type DiscordMessageInteractionMetadataModalSubmitTriggering struct {
-	AnyDiscordMessageInteractionMetadataModalSubmitTriggeringInteractionMetadata
-}
-
-func (d *DiscordMessageInteractionMetadataModalSubmitTriggering) UnmarshalJSON(data []byte) error {
-	var a DiscordMessageInteractionMetadataApplicationCommand
-	if err := json.Unmarshal(data, &a); err == nil && a.ID != "" {
-		d.AnyDiscordMessageInteractionMetadataModalSubmitTriggeringInteractionMetadata = &a
-		return nil
-	}
-
-	var b DiscordMessageInteractionMetadataMessageComponent
-	if err := json.Unmarshal(data, &b); err == nil && b.ID != "" {
-		d.AnyDiscordMessageInteractionMetadataModalSubmitTriggeringInteractionMetadata = &b
-		return nil
-	}
-
-	return nil
-}
-
-func (d *DiscordMessageInteractionMetadata) UnmarshalJSON(data []byte) error {
-	if bytes.Equal(data, []byte("null")) {
-		d.Value = nil
-		return nil
-	}
-
-	var a DiscordMessageInteractionMetadataApplicationCommand
-	if err := json.Unmarshal(data, &a); err == nil && a.ID != "" {
-		d.Value = &a
-		return nil
-	}
-
-	var b DiscordMessageInteractionMetadataMessageComponent
-	if err := json.Unmarshal(data, &b); err == nil && b.ID != "" {
-		d.Value = &b
-		return nil
-	}
-
-	var c DiscordMessageInteractionMetadataModalSubmit
-	if err := json.Unmarshal(data, &c); err == nil && c.ID != "" {
-		d.Value = &c
-		return nil
-	}
-
-	return fmt.Errorf("unknown DiscordMessageInteractionMetadata: %s", string(data))
-}
-
-type DiscordMessageInteractionMetadataModalSubmit struct {
-	ID                            DiscordSnowflake                                             `json:"id"`
-	Type                          DiscordInteractionType                                       `json:"type"`
-	User                          DiscordUser                                                  `json:"user,omitempty"`
-	AuthorizingIntegrationOwners  map[DiscordInteractionApplicationIntegrationType]interface{} `json:"authorizing_integration_owners,omitempty"`
-	OriginalResponseMessageID     *DiscordSnowflake                                            `json:"original_response_message_id,omitempty"`
-	TriggeringInteractionMetadata *DiscordMessageInteractionMetadataModalSubmitTriggering      `json:"triggering_interaction_metadata,omitempty"`
-}
-
-func (*DiscordMessageInteractionMetadataApplicationCommand) isDiscordMessageInteractionMetadata() {}
-
-func (*DiscordMessageInteractionMetadataMessageComponent) isDiscordMessageInteractionMetadata() {}
-
-func (*DiscordMessageInteractionMetadataModalSubmit) isDiscordMessageInteractionMetadata() {}
 
 type DiscordMessage struct {
 	Activity      *DiscordActivity     `json:"activity,omitempty"`

@@ -167,7 +167,6 @@ const (
 	DiscordGuildSystemChannelFlagsPurchaseNotificationReplies     DiscordGuildSystemChannelFlags = 1 << 5
 )
 
-// DiscordGuildFeatures TODO: Define all features
 type DiscordGuildFeatures string
 
 const (
