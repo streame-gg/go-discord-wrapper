@@ -1,0 +1,38 @@
+package types
+
+type DiscordLocale string
+
+const (
+	DiscordLocaleIndonesian   DiscordLocale = "id"
+	DiscordLocaleDanish       DiscordLocale = "da"
+	DiscordLocaleGerman       DiscordLocale = "de"
+	DiscordLocaleEnglishUS    DiscordLocale = "en-US"
+	DiscordLocaleEnglishUK    DiscordLocale = "en-GB"
+	DiscordLocaleSpanish      DiscordLocale = "es-ES"
+	DiscordLocaleSpanishLATAM DiscordLocale = "es-419"
+	DiscordLocaleFrench       DiscordLocale = "fr"
+	DiscordLocaleCroatian     DiscordLocale = "hr"
+	DiscordLocaleItalian      DiscordLocale = "it"
+	DiscordLocaleLithuanian   DiscordLocale = "lt"
+	DiscordLocaleHungarian    DiscordLocale = "hu"
+	DiscordLocaleDutch        DiscordLocale = "nl"
+	DiscordLocaleNorwegian    DiscordLocale = "no"
+	DiscordLocalePolish       DiscordLocale = "pl"
+	DiscordLocalePortuguese   DiscordLocale = "pt-BR"
+	DiscordLocaleRomanian     DiscordLocale = "ro"
+	DiscordLocaleFinnish      DiscordLocale = "fi"
+	DiscordLocaleSwedish      DiscordLocale = "sv-SE"
+	DiscordLocaleVietnamese   DiscordLocale = "vi"
+	DiscordLocaleTurkish      DiscordLocale = "tr"
+	DiscordLocaleCzech        DiscordLocale = "cs"
+	DiscordLocaleGreek        DiscordLocale = "el"
+	DiscordLocaleBulgarian    DiscordLocale = "bg"
+	DiscordLocaleRussian      DiscordLocale = "ru"
+	DiscordLocaleUkrainian    DiscordLocale = "uk"
+	DiscordLocaleHindi        DiscordLocale = "hi"
+	DiscordLocaleThai         DiscordLocale = "th"
+	DiscordLocaleChineseCN    DiscordLocale = "zh-CN"
+	DiscordLocaleJapanese     DiscordLocale = "ja"
+	DiscordLocaleChineseTW    DiscordLocale = "zh-TW"
+	DiscordLocaleKorean       DiscordLocale = "ko"
+)
