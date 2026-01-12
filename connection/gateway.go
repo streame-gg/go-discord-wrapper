@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog"
@@ -37,6 +38,8 @@ type DiscordClient struct {
 	SessionID *string
 
 	UnavailableGuilds map[types.DiscordSnowflake]struct{}
+
+	LastHeartbeat *time.Time
 }
 
 func NewDiscordClient(token string, intents types.DiscordIntent) *DiscordClient {
@@ -65,13 +68,13 @@ func (d *DiscordClient) initializeGatewayConnection() (*types.DiscordBotRegister
 		return nil, err
 	}
 
-	if do.StatusCode != http.StatusOK {
-		return nil, errors.New("failed to register bot gateway connection, status code: " + do.Status)
-	}
-
 	defer func() {
 		_ = do.Body.Close()
 	}()
+
+	if do.StatusCode != http.StatusOK {
+		return nil, errors.New("failed to register bot gateway connection, status code: " + do.Status)
+	}
 
 	var resp types.DiscordBotRegisterResponse
 	if err := json.NewDecoder(do.Body).Decode(&resp); err != nil {
@@ -89,13 +92,23 @@ func (d *DiscordClient) Login() error {
 
 	d.Logger.Info().Msgf("Connecting to gateway websocket at %s with %d shards", gatewayResp.Url, gatewayResp.Shards)
 
-	if err := d.connectWebsocket(gatewayResp.Url); err != nil {
+	if err := d.connectWebsocket(gatewayResp.Url, false); err != nil {
 		return err
 	}
 
 	go func() {
 		if err := d.listenWebsocket(); err != nil {
 			d.Logger.Err(err).Msg("Error listening to websocket")
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, 4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009) {
+				d.Logger.Info().Msg("Discord gateway connection closed by Discord, trying to reconnect")
+				if err := d.reconnect(true); err != nil {
+					d.Logger.Err(err).Msg("Failed to reconnect")
+				}
+			}
+
+			d.Logger.Info().Msg("Discord gateway connection closed by Discord, no reconnecting attempt will be made")
+
+			return
 		}
 	}()
 
