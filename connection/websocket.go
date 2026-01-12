@@ -9,8 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// NewWebsocket TODO: websocket: close 1001 (going away): Discord WebSocket requesting client reconnect; Heartbeat no response handling
-func NewWebsocket(bot *DiscordClient, host string) (*websocket.Conn, error) {
+func NewWebsocket(bot *DiscordClient, host string, isReconnect bool) (*websocket.Conn, error) {
 	c, _, err := websocket.DefaultDialer.Dial(host+"?v=10&encoding=json", nil)
 	if err != nil {
 		log.Fatal("dial:", err)
@@ -35,38 +34,60 @@ func NewWebsocket(bot *DiscordClient, host string) (*websocket.Conn, error) {
 		ticker := time.NewTicker(time.Millisecond * time.Duration(hello.HeartbeatInterval))
 		defer ticker.Stop()
 		for range ticker.C {
-			hb := types.Payload{
+			if bot.LastHeartbeat != nil && !bot.LastHeartbeat.IsZero() &&
+				time.Since(*bot.LastHeartbeat) > time.Duration(hello.HeartbeatInterval)*time.Millisecond*2 {
+
+				bot.Logger.Warn().Msg("Heartbeat ACK timeout, reconnecting")
+				_ = c.Close()
+				_ = bot.reconnect(true)
+				return
+			}
+
+			if err := c.WriteJSON(types.Payload{
 				Op: 1,
 				D:  nil,
-			}
-			if err := c.WriteJSON(hb); err != nil {
+			}); err != nil {
 				bot.Logger.Err(err).Msg("Failed to send heartbeat")
 				return
 			}
-			bot.Logger.Err(err).Msg("Sent heartbeat")
+
+			bot.Logger.Debug().Msg("Heartbeat sent")
 		}
 	}()
 
-	if err := c.WriteJSON(map[string]interface{}{
-		"op": 2,
-		"d": map[string]interface{}{
-			"token":   *bot.Token,
-			"intents": *bot.Intents,
-			"properties": map[string]string{
-				"$os":      "windows",
-				"$browser": "dat_bot_go",
-				"$device":  "dat_bot_go",
+	if isReconnect {
+		if err := c.WriteJSON(map[string]interface{}{
+			"op": 6,
+			"d": map[string]interface{}{
+				"token":      *bot.Token,
+				"session_id": bot.SessionID,
+				"seq":        *bot.LastEventNum,
 			},
-		},
-	}); err != nil {
-		return nil, err
+		}); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := c.WriteJSON(map[string]interface{}{
+			"op": 2,
+			"d": map[string]interface{}{
+				"token":   *bot.Token,
+				"intents": *bot.Intents,
+				"properties": map[string]string{
+					"$os":      "windows",
+					"$browser": "dat_bot_go",
+					"$device":  "dat_bot_go",
+				},
+			},
+		}); err != nil {
+			return nil, err
+		}
 	}
 
 	return c, nil
 }
 
-func (d *DiscordClient) connectWebsocket(url string) error {
-	ws, err := NewWebsocket(d, url)
+func (d *DiscordClient) connectWebsocket(url string, isReconnect bool) error {
+	ws, err := NewWebsocket(d, url, isReconnect)
 	if err != nil {
 		return err
 	}
@@ -75,22 +96,19 @@ func (d *DiscordClient) connectWebsocket(url string) error {
 	return nil
 }
 
-func (d *DiscordClient) reconnectWebsocket() error {
-	d.Logger.Info().Msg("Reconnecting to Discord WebSocket")
+func (d *DiscordClient) reconnect(freshConnect bool) error {
+	d.Logger.Warn().Msg("Reconnecting to Discord gateway")
 
-	oldWs := d.Websocket
+	if d.Websocket != nil {
+		_ = d.Websocket.Close()
+		d.Websocket = nil
+	}
 
-	if err := d.connectWebsocket(*d.ReconnectURL); err != nil {
+	if err := d.connectWebsocket("wss://gateway.discord.gg", !freshConnect); err != nil {
 		return err
 	}
 
-	go func() {
-		if err := d.listenWebsocket(); err != nil {
-			d.Logger.Err(err).Msg("Error listening to websocket")
-		}
-	}()
-
-	_ = oldWs.Close()
+	d.Logger.Info().Msg("Reconnected to Discord gateway")
 	return nil
 }
 
@@ -106,18 +124,45 @@ func (d *DiscordClient) listenWebsocket() error {
 			return err
 		}
 
+		d.Logger.Debug().Msgf("Received payload: %s %d", payload.T, payload.Op)
+
+		if payload.Op == 6 {
+			d.Logger.Debug().Msg("Resuming session")
+		}
+
 		if payload.Op == 7 {
-			if err := d.reconnectWebsocket(); err != nil {
+			d.Logger.Debug().Msg("Reconnecting to gateway; requested by Discord")
+			return d.reconnect(false)
+		}
+
+		if payload.Op == 9 {
+			var invalidSession types.DiscordInvalidSessionPayload
+			if err := json.Unmarshal(payload.D, &invalidSession); err != nil {
 				return err
 			}
-			continue
+
+			if invalidSession.D {
+				d.Logger.Debug().Msg("Invalid session, re-identifying")
+				if err := d.reconnect(true); err != nil {
+					return err
+				}
+			} else {
+				d.Logger.Debug().Msg("Invalid session, attempting to resume")
+				if err := d.reconnect(false); err != nil {
+					return err
+				}
+			}
+		}
+
+		if payload.Op == 11 {
+			now := time.Now()
+			d.LastHeartbeat = &now
+			d.Logger.Debug().Msg("Heartbeat Ack Received")
 		}
 
 		if payload.S != nil {
 			d.LastEventNum = payload.S
 		}
-
-		d.Logger.Info().Msgf("Received payload: %s %d", payload.T, payload.Op)
 
 		if payload.T != "" {
 			d.dispatch(types.DiscordEventType(payload.T), payload)

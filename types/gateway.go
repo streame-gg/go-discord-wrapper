@@ -54,6 +54,10 @@ type DiscordReadyPayload struct {
 	Guilds           []AnyGuildWrapper `json:"guilds"`
 }
 
+type DiscordInvalidSessionPayload struct {
+	D bool `json:"d"`
+}
+
 type DiscordIntent uint64
 
 const (

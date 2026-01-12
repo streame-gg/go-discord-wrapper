@@ -34,11 +34,11 @@ type DiscordApplicationTeamMember struct {
 }
 
 type DiscordApplicationTeam struct {
-	IconHash    *string                         `json:"icon,omitempty"`
-	ID          DiscordSnowflake                `json:"id"`
-	Members     []*DiscordApplicationTeamMember `json:"members"`
-	Name        string                          `json:"name"`
-	OwnerUserID DiscordSnowflake                `json:"owner_user_id"`
+	IconHash    *string                        `json:"icon,omitempty"`
+	ID          DiscordSnowflake               `json:"id"`
+	Members     []DiscordApplicationTeamMember `json:"members"`
+	Name        string                         `json:"name"`
+	OwnerUserID DiscordSnowflake               `json:"owner_user_id"`
 }
 
 type DiscordApplicationInstallParams struct {
@@ -124,18 +124,17 @@ type DiscordMessageResolved struct {
 }
 
 type PartialDiscordMessage struct {
-	Type            DiscordMessageType           `json:"type"`
-	Content         string                       `json:"content"`
-	Embeds          []*DiscordEmbed              `json:"embeds,omitempty"`
-	Attachments     []*DiscordAttachment         `json:"attachments,omitempty"`
-	Timestamp       *time.Time                   `json:"timestamp,omitempty"`
-	EditedTimestamp *time.Time                   `json:"edited_timestamp,omitempty"`
-	Flags           DiscordMessageFlag           `json:"flags,omitempty"`
-	Mentions        *[]any                       `json:"mentions"`
-	MentionRoles    []string                     `json:"mention_roles"`
-	StickerItems    []*DiscordMessageStickerItem `json:"sticker_items,omitempty"`
-	//TODO
-	Components []*any `json:"components,omitempty"`
+	Type            DiscordMessageType          `json:"type"`
+	Content         string                      `json:"content"`
+	Embeds          []DiscordEmbed              `json:"embeds,omitempty"`
+	Attachments     []DiscordAttachment         `json:"attachments,omitempty"`
+	Timestamp       *time.Time                  `json:"timestamp,omitempty"`
+	EditedTimestamp *time.Time                  `json:"edited_timestamp,omitempty"`
+	Flags           DiscordMessageFlag          `json:"flags,omitempty"`
+	Mentions        *[]any                      `json:"mentions"`
+	MentionRoles    []string                    `json:"mention_roles"`
+	StickerItems    []DiscordMessageStickerItem `json:"sticker_items,omitempty"`
+	Components      []AnyComponent              `json:"components,omitempty"`
 }
 
 type DiscordMessageMessageSnapshot struct {
@@ -150,19 +149,18 @@ const (
 )
 
 type DiscordMessage struct {
-	Activity      *DiscordActivity     `json:"activity,omitempty"`
-	Application   *DiscordApplication  `json:"application,omitempty"`
-	ApplicationID *string              `json:"application_id,omitempty"`
-	Attachments   []*DiscordAttachment `json:"attachments,omitempty"`
-	Author        *DiscordUser         `json:"author"`
-	Call          *DiscordCall         `json:"call,omitempty"`
-	ChannelID     DiscordSnowflake     `json:"channel_id"`
-	ChannelType   DiscordChannelType   `json:"channel_type"`
-	//TODO
-	Components           []*any                             `json:"components"`
+	Activity             *DiscordActivity                   `json:"activity,omitempty"`
+	Application          *DiscordApplication                `json:"application,omitempty"`
+	ApplicationID        *string                            `json:"application_id,omitempty"`
+	Attachments          []DiscordAttachment                `json:"attachments,omitempty"`
+	Author               *DiscordUser                       `json:"author"`
+	Call                 *DiscordCall                       `json:"call,omitempty"`
+	ChannelID            DiscordSnowflake                   `json:"channel_id"`
+	ChannelType          DiscordChannelType                 `json:"channel_type"`
+	Components           []AnyComponent                     `json:"components"`
 	Content              string                             `json:"content"`
 	EditedTimestamp      *time.Time                         `json:"edited_timestamp,omitempty"`
-	Embeds               []*DiscordEmbed                    `json:"embeds,omitempty"`
+	Embeds               []DiscordEmbed                     `json:"embeds,omitempty"`
 	Flags                DiscordMessageFlag                 `json:"flags"`
 	ID                   DiscordSnowflake                   `json:"id"`
 	InteractionMetadata  *DiscordMessageInteractionMetadata `json:"interaction_metadata,omitempty"`
@@ -170,16 +168,16 @@ type DiscordMessage struct {
 	MentionChannels      *[]DiscordMessageChannelMention    `json:"mention_channels,omitempty"`
 	MentionRoles         []string                           `json:"mention_roles"`
 	MessageReference     *DiscordMessageMessageReference    `json:"message_reference,omitempty"`
-	MessageSnapshots     []*DiscordMessageMessageSnapshot   `json:"message_snapshots,omitempty"`
+	MessageSnapshots     []DiscordMessageMessageSnapshot    `json:"message_snapshots,omitempty"`
 	Nonce                interface{}                        `json:"nonce,omitempty"`
 	Pinned               bool                               `json:"pinned"`
 	Poll                 *DiscordPoll                       `json:"poll,omitempty"`
 	Position             *int                               `json:"position,omitempty"`
-	Reactions            *[]*DiscordReaction                `json:"reactions,omitempty"`
+	Reactions            *[]DiscordReaction                 `json:"reactions,omitempty"`
 	Resolved             *DiscordMessageResolved            `json:"resolved,omitempty"`
 	ReferencedMessage    *DiscordMessage                    `json:"referenced_message,omitempty"`
 	RoleSubscriptionData *DiscordRoleSubscriptionData       `json:"role_subscription_data,omitempty"`
-	StickerItems         []*DiscordMessageStickerItem       `json:"sticker_items,omitempty"`
+	StickerItems         []DiscordMessageStickerItem        `json:"sticker_items,omitempty"`
 	Thread               *DiscordChannel                    `json:"thread,omitempty"`
 	Timestamp            *time.Time                         `json:"timestamp,omitempty"`
 	TTS                  bool                               `json:"tts"`
@@ -334,7 +332,7 @@ type DiscordEmbed struct {
 	Video       *DiscordEmbedVideo     `json:"video,omitempty"`
 	Provider    *DiscordEmbedProvider  `json:"provider,omitempty"`
 	Author      *DiscordEmbedAuthor    `json:"author,omitempty"`
-	Fields      []*DiscordEmbedFields  `json:"fields,omitempty"`
+	Fields      []DiscordEmbedFields   `json:"fields,omitempty"`
 }
 
 type DiscordReactionCountDetails struct {
@@ -385,13 +383,13 @@ type DiscordPollResultsAnswerCounts struct {
 }
 
 type DiscordPollResults struct {
-	IsFinalized  bool                              `json:"is_finalized"`
-	AnswerCounts []*DiscordPollResultsAnswerCounts `json:"answer_counts"`
+	IsFinalized  bool                             `json:"is_finalized"`
+	AnswerCounts []DiscordPollResultsAnswerCounts `json:"answer_counts"`
 }
 
 type DiscordPoll struct {
 	Question         *DiscordPollQuestion  `json:"question"`
-	Answers          []*DiscordPollAnswer  `json:"answers"`
+	Answers          []DiscordPollAnswer   `json:"answers"`
 	Expiry           *time.Time            `json:"expiry,omitempty"`
 	AllowMultiselect bool                  `json:"allow_multiselect,omitempty"`
 	LayoutType       DiscordPollLayoutType `json:"layout_type,omitempty"`
