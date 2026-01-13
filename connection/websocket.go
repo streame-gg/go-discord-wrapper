@@ -165,7 +165,24 @@ func (d *DiscordClient) listenWebsocket() error {
 		}
 
 		if payload.T != "" {
-			d.dispatch(types.DiscordEventType(payload.T), payload)
+			factory, ok := types.EventFactories[payload.T]
+			if !ok {
+				d.Logger.Warn().Msgf("No factory found for event type %s", payload.T)
+				continue
+			}
+
+			event := factory()
+
+			if err := json.Unmarshal(payload.D, event); err != nil {
+				d.Logger.Err(err).Msgf("Failed to unmarshal event %s", payload.T)
+				continue
+			}
+
+			go func() {
+				if canContinue := d.internalEventHandler(payload.D, event.Event()); canContinue {
+					d.dispatch(event)
+				}
+			}()
 		}
 	}
 }

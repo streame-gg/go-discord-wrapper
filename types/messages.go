@@ -149,15 +149,16 @@ const (
 )
 
 type DiscordMessage struct {
-	Activity             *DiscordActivity                   `json:"activity,omitempty"`
-	Application          *DiscordApplication                `json:"application,omitempty"`
-	ApplicationID        *string                            `json:"application_id,omitempty"`
-	Attachments          []DiscordAttachment                `json:"attachments,omitempty"`
-	Author               *DiscordUser                       `json:"author"`
-	Call                 *DiscordCall                       `json:"call,omitempty"`
-	ChannelID            DiscordSnowflake                   `json:"channel_id"`
-	ChannelType          DiscordChannelType                 `json:"channel_type"`
-	Components           []AnyComponent                     `json:"components"`
+	Activity      *DiscordActivity    `json:"activity,omitempty"`
+	Application   *DiscordApplication `json:"application,omitempty"`
+	ApplicationID *string             `json:"application_id,omitempty"`
+	Attachments   []DiscordAttachment `json:"attachments,omitempty"`
+	Author        *DiscordUser        `json:"author"`
+	Call          *DiscordCall        `json:"call,omitempty"`
+	ChannelID     DiscordSnowflake    `json:"channel_id"`
+	ChannelType   DiscordChannelType  `json:"channel_type"`
+	//TODO FIXME this does not wort with AnyComponent currently
+	Components           interface{}                        `json:"components"`
 	Content              string                             `json:"content"`
 	EditedTimestamp      *time.Time                         `json:"edited_timestamp,omitempty"`
 	Embeds               []DiscordEmbed                     `json:"embeds,omitempty"`

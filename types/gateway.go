@@ -54,6 +54,10 @@ type DiscordReadyPayload struct {
 	Guilds           []AnyGuildWrapper `json:"guilds"`
 }
 
+func (e DiscordReadyPayload) Event() DiscordEventType {
+	return DiscordEventReady
+}
+
 type DiscordInvalidSessionPayload struct {
 	D bool `json:"d"`
 }

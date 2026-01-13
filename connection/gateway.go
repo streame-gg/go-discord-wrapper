@@ -3,7 +3,6 @@ package connection
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"go-discord-wrapper/functions"
 	"go-discord-wrapper/types"
 	"go-discord-wrapper/util"
@@ -16,6 +15,8 @@ import (
 	"github.com/rs/zerolog"
 )
 
+type EventHandler func(*DiscordClient, types.DiscordEvent)
+
 type DiscordClient struct {
 	Token *string
 
@@ -27,7 +28,7 @@ type DiscordClient struct {
 
 	Websocket *websocket.Conn
 
-	Events map[types.DiscordEventType]func(session *DiscordClient, event types.DiscordEvent)
+	Events map[types.DiscordEventType][]EventHandler
 
 	mu sync.RWMutex
 
@@ -115,50 +116,52 @@ func (d *DiscordClient) Login() error {
 	return nil
 }
 
-func OnEvent[T types.DiscordEvent](d *DiscordClient, event types.DiscordEventType, handler func(*DiscordClient, T)) {
+func (d *DiscordClient) onEvent(
+	eventName types.DiscordEventType,
+	handler EventHandler,
+) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	if d.Events == nil {
-		d.Events = make(map[types.DiscordEventType]func(session *DiscordClient, event types.DiscordEvent))
+		d.Events = make(map[types.DiscordEventType][]EventHandler)
 	}
 
-	d.Events[event] = func(
-		session *DiscordClient,
-		ev types.DiscordEvent,
-	) {
-		typed, ok := ev.(T)
-		if !ok {
-			session.Logger.Warn().
-				Str("expected", fmt.Sprintf("%T", *new(T))).
-				Str("got", fmt.Sprintf("%T", ev)).
-				Msg("event type mismatch")
-			return
-		}
-		handler(session, typed)
-	}
+	d.Events[eventName] = append(d.Events[eventName], handler)
 }
 
-func (d *DiscordClient) dispatch(event types.DiscordEventType, payload types.Payload) {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	if d.Events == nil {
-		return
-	}
-
-	rawEvent := d.Events[event]
-	if rawEvent != nil {
-		discordEvent, err := d.convertToEvent(event, payload.D)
-		if err != nil {
-			d.Logger.Err(err).Msgf("Failed to convert event %s", event)
-			return
+func (d *DiscordClient) OnGuildCreate(
+	handler func(*DiscordClient, *types.DiscordGuildCreateEvent),
+) {
+	d.onEvent(types.DiscordEventReady, func(
+		session *DiscordClient,
+		event types.DiscordEvent,
+	) {
+		if e, ok := event.(*types.DiscordGuildCreateEvent); ok {
+			handler(session, e)
 		}
+	})
+}
 
-		go func() {
-			if con := d.internalEventHandler(payload.D, event); con {
-				rawEvent(d, discordEvent)
-			}
-		}()
+func (d *DiscordClient) OnMessageCreate(
+	handler func(*DiscordClient, *types.DiscordMessageCreateEvent),
+) {
+	d.onEvent(types.DiscordEventMessageCreate, func(
+		session *DiscordClient,
+		event types.DiscordEvent,
+	) {
+		if e, ok := event.(*types.DiscordMessageCreateEvent); ok {
+			handler(session, e)
+		} else {
+			d.Logger.Warn().Msgf("Failed to cast event to MessageCreateEvent: %T", event)
+		}
+	})
+}
+
+func (d *DiscordClient) dispatch(event types.DiscordEvent) {
+	handlers := d.Events[event.Event()]
+	for _, h := range handlers {
+		h(d, event)
 	}
 }
 
@@ -193,7 +196,7 @@ func (d *DiscordClient) internalEventHandler(msg json.RawMessage, event types.Di
 			if guildCreateEvent.Guild.IsAvailable() && d.IsGuildUnavailable(guildCreateEvent.Guild.GetID()) {
 				//Discord is telling us that a guild is available again by firing a GUILD_CREATE event with available = true
 
-				d.Logger.Info().Msgf("Guild %s is available again", guildCreateEvent.Guild.GetID())
+				d.Logger.Debug().Msgf("Guild %s is available again", guildCreateEvent.Guild.GetID())
 				d.deleteUnavailableGuild(guildCreateEvent.Guild.GetID())
 
 				return false
@@ -204,31 +207,6 @@ func (d *DiscordClient) internalEventHandler(msg json.RawMessage, event types.Di
 	}
 
 	return true
-}
-
-func (d *DiscordClient) convertToEvent(event types.DiscordEventType, data json.RawMessage) (types.DiscordEvent, error) {
-	switch event {
-	case "MESSAGE_CREATE":
-		var msgCreateEvent types.DiscordMessageCreateEvent
-		if err := json.Unmarshal(data, &msgCreateEvent); err != nil {
-			return nil, err
-		}
-		return &msgCreateEvent, nil
-	case "READY":
-		var readyEvent types.DiscordReadyEvent
-		if err := json.Unmarshal(data, &readyEvent); err != nil {
-			return nil, err
-		}
-		return &readyEvent, nil
-	case "GUILD_CREATE":
-		var guildCreateEvent types.DiscordGuildCreateEvent
-		if err := json.Unmarshal(data, &guildCreateEvent); err != nil {
-			return nil, err
-		}
-		return &guildCreateEvent, nil
-	default:
-		return nil, errors.New("unsupported event type: " + string(event))
-	}
 }
 
 func (d *DiscordClient) addUnavailableGuild(id types.DiscordSnowflake) {
