@@ -1,0 +1,5 @@
+## TODOs
+
+- Interaction Typings
+- Add Event Support (https://discord.com/developers/docs/events/gateway-events#receive-events)
+- Add missing typings such as Presence etc

@@ -75,8 +75,20 @@ func (e DiscordInteractionCreateEvent) IsCommand() bool {
 	return e.Type == DiscordInteractionTypeApplicationCommand
 }
 
-func (e DiscordInteractionCreateEvent) IsComponent() bool {
-	return e.Type == DiscordInteractionTypeMessageComponent
+func (e DiscordInteractionCreateEvent) IsButton() bool {
+	if e.Type != DiscordInteractionTypeMessageComponent {
+		return false
+	}
+
+	return e.Data.(*DiscordInteractionDataMessageComponent).ComponentType == DiscordComponentTypeButton
+}
+
+func (e DiscordInteractionCreateEvent) IsAnySelectMenu() bool {
+	if e.Type != DiscordInteractionTypeMessageComponent {
+		return false
+	}
+
+	return e.Data.(*DiscordInteractionDataMessageComponent).ComponentType.IsAnySelectMenu()
 }
 
 func (e DiscordInteractionCreateEvent) IsAutocomplete() bool {

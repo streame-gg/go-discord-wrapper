@@ -27,8 +27,35 @@ func main() {
 
 	bot.OnInteractionCreate(func(session *connection.DiscordClient, event *types.DiscordInteractionCreateEvent) {
 		if event.IsCommand() {
-			data := event.Data.(*types.DiscordInteractionDataApplicationCommand)
-			bot.Logger.Debug().Msgf("Received interaction command %s from %s", data.CommandName, event.Member.User.DisplayName())
+			bot.Logger.Debug().Msgf("Received interaction command %s from %s", event.GetFullCommand(), event.Member.User.DisplayName())
+
+			_, err := event.CreateInteractionResponse(&types.DiscordInteractionResponse{
+				Data: &types.DiscordInteractionResponseData{
+					Content: fmt.Sprintf("You invoked the command: %s", event.GetFullCommand()),
+					Flags:   types.DiscordMessageFlagSuppressEmbeds,
+				},
+				Type: types.DiscordInteractionCallbackTypeChannelMessageWithSource,
+			})
+
+			if err != nil {
+				bot.Logger.Error().Msgf("Failed to create interaction response: %v", err)
+			}
+		}
+
+		if event.IsButton() {
+			bot.Logger.Debug().Msgf("Received button interaction with custom ID %s from %s", event.GetCustomID(), event.Member.User.DisplayName())
+		}
+
+		if event.IsAnySelectMenu() {
+			bot.Logger.Debug().Msgf("Received select menu interaction with custom ID %s from %s", event.GetCustomID(), event.Member.User.DisplayName())
+		}
+
+		if event.IsAutocomplete() {
+			bot.Logger.Debug().Msgf("Received autocomplete interaction for command %s from %s", event.GetFullCommand(), event.Member.User.DisplayName())
+		}
+
+		if event.IsModalSubmit() {
+			bot.Logger.Debug().Msgf("Received modal submit interaction with custom ID %s from %s", event.GetCustomID(), event.Member.User.DisplayName())
 		}
 	})
 

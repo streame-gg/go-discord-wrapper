@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -172,6 +175,106 @@ type DiscordInteraction struct {
 	AttachmentSizeLimit          int                                                          `json:"attachment_size_limit,omitempty"`
 }
 
+func (i *DiscordInteraction) GetSubCommand() string {
+	if i.Data == nil {
+		return ""
+	}
+
+	cmdData, ok := i.Data.(*DiscordInteractionDataApplicationCommand)
+	if !ok {
+		return ""
+	}
+
+	if cmdData.Options == nil || len(*cmdData.Options) == 0 {
+		return ""
+	}
+
+	for _, option := range *cmdData.Options {
+		if option.Type == ApplicationCommandOptionTypeSubCommand {
+			return option.Name
+		}
+
+		if option.Type == ApplicationCommandOptionTypeSubCommandGroup {
+			if option.Options != nil {
+				for _, subOption := range option.Options {
+					if subOption.Type == ApplicationCommandOptionTypeSubCommand {
+						return subOption.Name
+					}
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+func (i *DiscordInteraction) GetSubCommandGroup() string {
+	if i.Data == nil {
+		return ""
+	}
+
+	cmdData, ok := i.Data.(*DiscordInteractionDataApplicationCommand)
+	if !ok {
+		return ""
+	}
+
+	if cmdData.Options == nil || len(*cmdData.Options) == 0 {
+		return ""
+	}
+
+	for _, option := range *cmdData.Options {
+		if option.Type == ApplicationCommandOptionTypeSubCommandGroup {
+			return option.Name
+		}
+	}
+
+	return ""
+}
+
+func (i *DiscordInteraction) GetFullCommand() (fullCommand string) {
+	if i.Data == nil {
+		return ""
+	}
+
+	cmdData, ok := i.Data.(*DiscordInteractionDataApplicationCommand)
+	if !ok {
+		return ""
+	}
+
+	fullCommand += cmdData.CommandName
+
+	subCommandGroup := i.GetSubCommandGroup()
+	if subCommandGroup != "" {
+		fullCommand += " " + subCommandGroup
+	}
+
+	subCommand := i.GetSubCommand()
+	if subCommand != "" {
+		fullCommand += " " + subCommand
+	}
+
+	return fullCommand
+}
+
+func (i *DiscordInteraction) GetCustomID() string {
+	if i.Data == nil {
+		return ""
+	}
+
+	componentData, ok := i.Data.(*DiscordInteractionDataMessageComponent)
+	componentData2, ok2 := i.Data.(*DiscordInteractionDataModalSubmit)
+
+	if !ok && !ok2 {
+		return ""
+	}
+
+	if ok2 {
+		return componentData2.CustomID
+	}
+
+	return componentData.CustomID
+}
+
 func (i *DiscordInteraction) UnmarshalJSON(data []byte) error {
 	type Alias DiscordInteraction
 	aux := &struct {
@@ -189,9 +292,9 @@ func (i *DiscordInteraction) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	// Peek into data.type
 	var typeProbe struct {
-		Type DiscordInteractionDataApplicationCommandType `json:"type"`
+		Type          DiscordInteractionDataApplicationCommandType `json:"type"`
+		ComponentType DiscordComponentType                         `json:"component_type"`
 	}
 
 	if err := json.Unmarshal(aux.Data, &typeProbe); err != nil {
@@ -199,18 +302,149 @@ func (i *DiscordInteraction) UnmarshalJSON(data []byte) error {
 	}
 
 	switch typeProbe.Type {
-	case DiscordInteractionDataApplicationCommandTypeChatInput:
+	case DiscordInteractionDataApplicationCommandTypeChatInput, DiscordInteractionDataApplicationCommandTypeUser, DiscordInteractionDataApplicationCommandTypeMessage:
 		var cmd DiscordInteractionDataApplicationCommand
 		if err := json.Unmarshal(aux.Data, &cmd); err != nil {
 			return err
 		}
 		i.Data = &cmd
-
-	default:
-		return fmt.Errorf("unknown interaction data type %d", typeProbe.Type)
+		return nil
 	}
 
-	return nil
+	switch typeProbe.ComponentType {
+	case DiscordComponentTypeButton, DiscordComponentTypeStringSelectMenu, DiscordComponentTypeUserSelectMenu, DiscordComponentTypeRoleSelectMenu,
+		DiscordComponentTypeMentionableMenu, DiscordComponentTypeChannelSelect:
+		var comp DiscordInteractionDataMessageComponent
+		if err := json.Unmarshal(aux.Data, &comp); err != nil {
+			return err
+		}
+		i.Data = &comp
+		return nil
+	}
+
+	switch aux.Type {
+	case DiscordInteractionTypeModalSubmit:
+		var modal DiscordInteractionDataModalSubmit
+		if err := json.Unmarshal(aux.Data, &modal); err != nil {
+			return err
+		}
+		i.Data = &modal
+		return nil
+	case DiscordInteractionTypeApplicationCommandAutocomplete:
+		var auto DiscordInteractionDataAutocomplete
+		if err := json.Unmarshal(aux.Data, &auto); err != nil {
+			return err
+		}
+		i.Data = &auto
+		return nil
+	}
+
+	return fmt.Errorf("unknown interaction data type %d", typeProbe.Type)
+}
+
+type DiscordInteractionCallbackType int
+
+const (
+	DiscordInteractionCallbackTypePong                                 DiscordInteractionCallbackType = 1
+	DiscordInteractionCallbackTypeChannelMessageWithSource             DiscordInteractionCallbackType = 4
+	DiscordInteractionCallbackTypeDeferredChannelMessageWithSource     DiscordInteractionCallbackType = 5
+	DiscordInteractionCallbackTypeDeferredUpdateMessage                DiscordInteractionCallbackType = 6
+	DiscordInteractionCallbackTypeUpdateMessage                        DiscordInteractionCallbackType = 7
+	DiscordInteractionCallbackTypeApplicationCommandAutocompleteResult DiscordInteractionCallbackType = 8
+	DiscordInteractionCallbackTypeModal                                DiscordInteractionCallbackType = 9
+	DiscordInteractionCallbackTypePremiumRequired                      DiscordInteractionCallbackType = 10
+	DiscordInteractionCallbackTypeLaunchActivity                       DiscordInteractionCallbackType = 12
+)
+
+type DiscordAllowedMentionsType string
+
+const (
+	DiscordAllowedMentionsTypeRoles    DiscordAllowedMentionsType = "roles"
+	DiscordAllowedMentionsTypeUsers    DiscordAllowedMentionsType = "users"
+	DiscordAllowedMentionsTypeEveryone DiscordAllowedMentionsType = "everyone"
+)
+
+type DiscordAllowedMentions struct {
+	Parse       *[]DiscordAllowedMentionsType `json:"parse,omitempty"`
+	Roles       *[]DiscordSnowflake           `json:"roles,omitempty"`
+	Users       *[]DiscordSnowflake           `json:"users,omitempty"`
+	RepliedUser *bool                         `json:"replied_user,omitempty"`
+}
+
+type DiscordInteractionResponseData struct {
+	TTS             bool                    `json:"tts,omitempty"`
+	Content         string                  `json:"content,omitempty"`
+	Embeds          *[]DiscordEmbed         `json:"embeds,omitempty"`
+	AllowedMentions *DiscordAllowedMentions `json:"allowed_mentions,omitempty"`
+	Flags           DiscordMessageFlag      `json:"flags,omitempty"`
+	Components      *Components             `json:"components,omitempty"`
+	//TODO partial
+	Attachment   *[]DiscordAttachment `json:"attachment,omitempty"`
+	Poll         *DiscordPollRequest  `json:"poll,omitempty"`
+	WithResponse bool                 `json:"with_response,omitempty"`
+}
+
+type DiscordInteractionResponse struct {
+	Type DiscordInteractionCallbackType  `json:"type"`
+	Data *DiscordInteractionResponseData `json:"data,omitempty"`
+}
+
+func (i *DiscordInteraction) CreateInteractionResponse(responseData *DiscordInteractionResponse) (*any, error) {
+	bodyBytes, err := json.Marshal(*responseData)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.DefaultClient.Do(&http.Request{
+		Method: "POST",
+		URL: &url.URL{
+			Scheme: "https",
+			Host:   "discord.com",
+			Path:   "/api/v10/interactions/" + string(i.ID) + "/" + i.Token + "/callback",
+		},
+		Header: http.Header{
+			"Authorization": []string{"Bot " + ""},
+			"Content-Type":  []string{"application/json"},
+		},
+		Body: io.NopCloser(bytes.NewReader(bodyBytes)),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(req.Body)
+
+	if !responseData.Data.WithResponse {
+		if req.StatusCode != 204 {
+			var respErr map[string]interface{}
+			if err := json.NewDecoder(req.Body).Decode(&respErr); err != nil {
+				return nil, err
+			}
+
+			return nil, fmt.Errorf("expected 204 No Content, got %d: %v", req.StatusCode, respErr)
+		}
+
+		return nil, nil
+	}
+
+	if responseData.Data.WithResponse && req.StatusCode != 200 {
+		var respErr map[string]interface{}
+		if err := json.NewDecoder(req.Body).Decode(&respErr); err != nil {
+			return nil, err
+		}
+
+		return nil, fmt.Errorf("expected 204 No Content, got %d: %v", req.StatusCode, respErr)
+	}
+
+	var resp any
+	if err := json.NewDecoder(req.Body).Decode(&resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }
 
 type DiscordInteractionDataType int
@@ -236,6 +470,41 @@ const (
 	DiscordInteractionDataApplicationCommandTypePrimaryEndpoint DiscordInteractionDataApplicationCommandType = 4
 )
 
+type ApplicationCommandOptionType int
+
+const (
+	ApplicationCommandOptionTypeSubCommand      ApplicationCommandOptionType = 1
+	ApplicationCommandOptionTypeSubCommandGroup ApplicationCommandOptionType = 2
+	ApplicationCommandOptionTypeString          ApplicationCommandOptionType = 3
+	ApplicationCommandOptionTypeInteger         ApplicationCommandOptionType = 4
+	ApplicationCommandOptionTypeBoolean         ApplicationCommandOptionType = 5
+	ApplicationCommandOptionTypeUser            ApplicationCommandOptionType = 6
+	ApplicationCommandOptionTypeChannel         ApplicationCommandOptionType = 7
+	ApplicationCommandOptionTypeRole            ApplicationCommandOptionType = 8
+	ApplicationCommandOptionTypeMentionable     ApplicationCommandOptionType = 9
+	ApplicationCommandOptionTypeNumber          ApplicationCommandOptionType = 10
+	ApplicationCommandOptionTypeAttachment      ApplicationCommandOptionType = 11
+)
+
+type ApplicationCommandInteractionDataOption struct {
+	Name    string                                    `json:"name"`
+	Type    ApplicationCommandOptionType              `json:"type"`
+	Value   *interface{}                              `json:"value,omitempty"`
+	Options []ApplicationCommandInteractionDataOption `json:"options,omitempty"`
+	Focused *bool                                     `json:"focused,omitempty"`
+}
+
+type DiscordInteractionDataMessageComponent struct {
+	CustomID      string               `json:"custom_id"`
+	ComponentType DiscordComponentType `json:"component_type"`
+	Values        *[]interface{}       `json:"values,omitempty"`
+	Resolved      *DiscordResolvedData `json:"resolved,omitempty"`
+}
+
+func (d *DiscordInteractionDataMessageComponent) GetType() DiscordInteractionDataType {
+	return DiscordInteractionDataTypeMessageComponent
+}
+
 type DiscordInteractionDataApplicationCommand struct {
 	ID          DiscordSnowflake                             `json:"id"`
 	CommandName string                                       `json:"name"`
@@ -243,43 +512,32 @@ type DiscordInteractionDataApplicationCommand struct {
 	GuildID     *DiscordSnowflake                            `json:"guild_id,omitempty"`
 	TargetID    *DiscordSnowflake                            `json:"target_id,omitempty"`
 	Resolved    *DiscordResolvedData                         `json:"resolved,omitempty"`
-	Options     []AnyDiscordMessageInteractionMetadata       `json:"options,omitempty"`
+	Options     *[]ApplicationCommandInteractionDataOption   `json:"options,omitempty"`
 }
 
 func (d *DiscordInteractionDataApplicationCommand) GetType() DiscordInteractionDataType {
 	return DiscordInteractionDataTypeApplicationCommand
 }
 
-func (d *DiscordInteractionDataApplicationCommand) UnmarshalJSON(data []byte) error {
-	type Alias DiscordInteractionDataApplicationCommand
-	aux := &struct {
-		*Alias
-	}{
-		Alias: (*Alias)(d),
-	}
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
+type DiscordInteractionDataAutocomplete struct {
+	ID          DiscordSnowflake                             `json:"id"`
+	CommandName string                                       `json:"name"`
+	Type        DiscordInteractionDataApplicationCommandType `json:"type"`
+	GuildID     *DiscordSnowflake                            `json:"guild_id,omitempty"`
+	TargetID    *DiscordSnowflake                            `json:"target_id,omitempty"`
+	Resolved    *DiscordResolvedData                         `json:"resolved,omitempty"`
+	Options     *[]ApplicationCommandInteractionDataOption   `json:"options,omitempty"`
+}
 
-	var rawMap map[string]json.RawMessage
-	if err := json.Unmarshal(data, &rawMap); err != nil {
-		return err
-	}
+func (d *DiscordInteractionDataAutocomplete) GetType() DiscordInteractionDataType {
+	return DiscordInteractionDataTypeApplicationCommand
+}
 
-	if optionsData, ok := rawMap["options"]; ok {
-		var rawOptions []json.RawMessage
-		if err := json.Unmarshal(optionsData, &rawOptions); err != nil {
-			return err
-		}
+type DiscordInteractionDataModalSubmit struct {
+	CustomID string               `json:"custom_id"`
+	Resolved *DiscordResolvedData `json:"resolved,omitempty"`
+}
 
-		for _, rawOption := range rawOptions {
-			var option AnyDiscordMessageInteractionMetadata
-			if err := json.Unmarshal(rawOption, &option); err != nil {
-				return err
-			}
-			d.Options = append(d.Options, option)
-		}
-	}
-
-	return nil
+func (d *DiscordInteractionDataModalSubmit) GetType() DiscordInteractionDataType {
+	return DiscordInteractionDataTypeModalSubmit
 }

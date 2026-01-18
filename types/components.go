@@ -7,9 +7,25 @@ type DiscordComponentType int
 type Components []AnyComponent
 
 const (
-	DiscordComponentTypeActionRow DiscordComponentType = 1
-	DiscordComponentTypeButton    DiscordComponentType = 2
+	DiscordComponentTypeActionRow        DiscordComponentType = 1
+	DiscordComponentTypeButton           DiscordComponentType = 2
+	DiscordComponentTypeStringSelectMenu DiscordComponentType = 3
+	DiscordComponentTypeTextInput        DiscordComponentType = 4
+	DiscordComponentTypeUserSelectMenu   DiscordComponentType = 5
+	DiscordComponentTypeRoleSelectMenu   DiscordComponentType = 6
+	DiscordComponentTypeMentionableMenu  DiscordComponentType = 7
+	DiscordComponentTypeChannelSelect    DiscordComponentType = 8
+	DiscordComponentTypeSection          DiscordComponentType = 9
+	//TODO
 )
+
+func (c DiscordComponentType) IsAnySelectMenu() bool {
+	return c == DiscordComponentTypeStringSelectMenu ||
+		c == DiscordComponentTypeUserSelectMenu ||
+		c == DiscordComponentTypeRoleSelectMenu ||
+		c == DiscordComponentTypeMentionableMenu ||
+		c == DiscordComponentTypeChannelSelect
+}
 
 type AnyComponent interface {
 	GetType() DiscordComponentType
@@ -102,3 +118,11 @@ const (
 	DiscordApplicationCommandInteractionOptionTypeNumber          DiscordApplicationCommandInteractionOptionType = 10
 	DiscordApplicationCommandInteractionOptionTypeAttachment      DiscordApplicationCommandInteractionOptionType = 11
 )
+
+type DiscordSelectOptionValue struct {
+	Label       string        `json:"label"`
+	Value       string        `json:"value"`
+	Description *string       `json:"description,omitempty"`
+	Emoji       *DiscordEmoji `json:"emoji,omitempty"`
+	Default     *bool         `json:"default,omitempty"`
+}

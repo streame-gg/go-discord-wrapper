@@ -395,3 +395,11 @@ type DiscordPoll struct {
 	LayoutType       DiscordPollLayoutType `json:"layout_type,omitempty"`
 	Results          *DiscordPollResults   `json:"results,omitempty"`
 }
+
+type DiscordPollRequest struct {
+	Question         *DiscordPollQuestion  `json:"question"`
+	Answers          []DiscordPollAnswer   `json:"answers"`
+	Duration         *time.Time            `json:"duration,omitempty"`
+	AllowMultiselect bool                  `json:"allow_multiselect,omitempty"`
+	LayoutType       DiscordPollLayoutType `json:"layout_type,omitempty"`
+}
