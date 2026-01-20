@@ -1,4 +1,4 @@
-# go-discord-wrapper by D_Gamet
+# go-discord-wrapper
 
 WARNING: The Wrapper is WIP and does not have a stable release. You might encounter unexpected bugs while using it. If so, open an issue.
 
