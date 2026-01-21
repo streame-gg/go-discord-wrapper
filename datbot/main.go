@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"go-discord-wrapper/connection"
-	"go-discord-wrapper/functions"
 	"go-discord-wrapper/types"
 	"os"
 	"os/signal"
@@ -39,63 +38,24 @@ func main() {
 
 			_, err := event.Reply(&types.DiscordInteractionResponse{
 				Data: &types.DiscordInteractionResponseData{
-					Content: fmt.Sprintf("You invoked the command: %s", event.GetFullCommand()),
-					Flags:   types.DiscordMessageFlagEphemeral,
+					Flags: types.DiscordMessageFlagEphemeral | types.DiscordMessageFlagIsComponentsV2,
 					Components: &[]types.AnyComponent{
-						&types.ActionRow{
-							Components: []types.AnyComponent{
-								types.ButtonComponent{
-									Style:    types.ButtonStyleSecondary,
-									Label:    "Click Me!",
-									CustomID: "button_click_me",
+						types.Container{
+							Components: &[]types.AnyContainerComponent{
+								types.TextDisplayComponent{
+									Content: "## Hey!",
 								},
-							},
-						},
 
-						&types.ActionRow{
-							Components: []types.AnyComponent{
-								types.StringSelectMenuComponent{
-									CustomID: "select_menu_1",
-									Options: &[]types.StringSelectMenuComponentOption{
-										{
-											Label:       "Option 1",
-											Value:       "option_1",
-											Description: "This is the first option",
-											Default:     true,
-											Emoji: &types.DiscordEmoji{
-												Name: "🔥",
-											},
-										},
-										{
-											Label:       "Option 2",
-											Value:       "option_2",
-											Description: "This is the second option",
-										},
-										{
-											Label:       "Option 3",
-											Value:       "option_3",
-											Description: "This is the third option",
+								types.Section{
+									Components: &[]types.AnySectionComponent{
+										types.TextDisplayComponent{
+											Content: "You used the command **" + event.GetFullCommand() + "**",
 										},
 									},
-									Placeholder: "Choose an option",
-									MinValues:   functions.PointerTo(1),
-									MaxValues:   functions.PointerTo(1),
-								},
-							},
-						},
-
-						&types.ActionRow{
-							Components: []types.AnyComponent{
-								types.UserSelectMenuComponent{
-									CustomID:    "select_menu_2",
-									Placeholder: "Choose an option",
-									MinValues:   functions.PointerTo(1),
-									MaxValues:   functions.PointerTo(1),
-									DefaultValues: &[]types.SelectDefaultValue{
-										{
-											Type: types.SelectDefaultValueTypeUser,
-											ID:   event.Member.User.ID,
-										},
+									Accessory: &types.ButtonComponent{
+										Style:    types.ButtonStylePrimary,
+										Label:    "Click Me!",
+										CustomID: "button_click_me",
 									},
 								},
 							},
