@@ -5,17 +5,17 @@ import (
 	"fmt"
 )
 
-type DiscordAPIVersion uint8
+type APIVersion uint8
 
 var (
-	DiscordAPIBaseString = func(v DiscordAPIVersion) string {
+	APIBaseString = func(v APIVersion) string {
 		return fmt.Sprintf("/api/v%d/", v)
 	}
 
-	DiscordAPIVersion10 DiscordAPIVersion = 10
-	DiscordAPIVersion9  DiscordAPIVersion = 9
+	APIVersion10 APIVersion = 10
+	APIVersion9  APIVersion = 9
 
-	DiscordAPIGatewayRequest = "gateway/bot"
+	APIGatewayRequest = "gateway/bot"
 )
 
 type Payload struct {
@@ -46,54 +46,54 @@ const (
 	PayloadRequestSoundboardSounds   PayloadOpCode = 31
 )
 
-type DiscordInvalidSessionPayload struct {
+type InvalidSessionPayload struct {
 	D bool `json:"d"`
 }
 
-type DiscordIntent uint64
+type Intent uint64
 
 const (
-	DiscordIntentGuilds                       DiscordIntent = 1 << 0
-	DiscordIntentGuildMembers                 DiscordIntent = 1 << 1
-	DiscordIntentGuildModeration              DiscordIntent = 1 << 2
-	DiscordIntentGuildExpressions             DiscordIntent = 1 << 3
-	DiscordIntentGuildIntegrations            DiscordIntent = 1 << 4
-	DiscordIntentGuildWebhooks                DiscordIntent = 1 << 5
-	DiscordIntentGuildInvites                 DiscordIntent = 1 << 6
-	DiscordIntentGuildVoiceStates             DiscordIntent = 1 << 7
-	DiscordIntentGuildPresences               DiscordIntent = 1 << 8
-	DiscordIntentGuildMessages                DiscordIntent = 1 << 9
-	DiscordIntentGuildMessageReactions        DiscordIntent = 1 << 10
-	DiscordIntentGuildMessageTyping           DiscordIntent = 1 << 11
-	DiscordIntentDirectMessages               DiscordIntent = 1 << 12
-	DiscordIntentDirectMessageReactions       DiscordIntent = 1 << 13
-	DiscordIntentDirectMessageTyping          DiscordIntent = 1 << 14
-	DiscordIntentMessageContent               DiscordIntent = 1 << 15
-	DiscordIntentGuildScheduledEvents         DiscordIntent = 1 << 16
-	DiscordIntentGuildModerationConfiguration DiscordIntent = 1 << 20
-	DiscordIntentGuildModerationExecution     DiscordIntent = 1 << 21
-	DiscordIntentMessagePolls                 DiscordIntent = 1 << 24
-	DiscordIntentDirectMessagePolls           DiscordIntent = 1 << 25
+	IntentGuilds                       Intent = 1 << 0
+	IntentGuildMembers                 Intent = 1 << 1
+	IntentGuildModeration              Intent = 1 << 2
+	IntentGuildExpressions             Intent = 1 << 3
+	IntentGuildIntegrations            Intent = 1 << 4
+	IntentGuildWebhooks                Intent = 1 << 5
+	IntentGuildInvites                 Intent = 1 << 6
+	IntentGuildVoiceStates             Intent = 1 << 7
+	IntentGuildPresences               Intent = 1 << 8
+	IntentGuildMessages                Intent = 1 << 9
+	IntentGuildMessageReactions        Intent = 1 << 10
+	IntentGuildMessageTyping           Intent = 1 << 11
+	IntentDirectMessages               Intent = 1 << 12
+	IntentDirectMessageReactions       Intent = 1 << 13
+	IntentDirectMessageTyping          Intent = 1 << 14
+	IntentMessageContent               Intent = 1 << 15
+	IntentGuildScheduledEvents         Intent = 1 << 16
+	IntentGuildModerationConfiguration Intent = 1 << 20
+	IntentGuildModerationExecution     Intent = 1 << 21
+	IntentMessagePolls                 Intent = 1 << 24
+	IntentDirectMessagePolls           Intent = 1 << 25
 
-	AllIntents = DiscordIntentGuilds | DiscordIntentGuildMembers |
-		DiscordIntentGuildModeration | DiscordIntentGuildExpressions |
-		DiscordIntentGuildIntegrations | DiscordIntentGuildWebhooks |
-		DiscordIntentGuildInvites | DiscordIntentGuildVoiceStates |
-		DiscordIntentGuildPresences | DiscordIntentGuildMessages |
-		DiscordIntentGuildMessageReactions | DiscordIntentGuildMessageTyping |
-		DiscordIntentDirectMessages | DiscordIntentDirectMessageReactions |
-		DiscordIntentDirectMessageTyping | DiscordIntentMessageContent |
-		DiscordIntentGuildScheduledEvents | DiscordIntentGuildModerationConfiguration |
-		DiscordIntentGuildModerationExecution | DiscordIntentMessagePolls |
-		DiscordIntentDirectMessagePolls
+	AllIntents = IntentGuilds | IntentGuildMembers |
+		IntentGuildModeration | IntentGuildExpressions |
+		IntentGuildIntegrations | IntentGuildWebhooks |
+		IntentGuildInvites | IntentGuildVoiceStates |
+		IntentGuildPresences | IntentGuildMessages |
+		IntentGuildMessageReactions | IntentGuildMessageTyping |
+		IntentDirectMessages | IntentDirectMessageReactions |
+		IntentDirectMessageTyping | IntentMessageContent |
+		IntentGuildScheduledEvents | IntentGuildModerationConfiguration |
+		IntentGuildModerationExecution | IntentMessagePolls |
+		IntentDirectMessagePolls
 
-	AllIntentsExceptDirectMessage = DiscordIntentGuilds | DiscordIntentGuildMembers |
-		DiscordIntentGuildModeration | DiscordIntentGuildExpressions |
-		DiscordIntentGuildIntegrations | DiscordIntentGuildWebhooks |
-		DiscordIntentGuildInvites | DiscordIntentGuildVoiceStates |
-		DiscordIntentGuildPresences | DiscordIntentGuildMessages |
-		DiscordIntentGuildMessageReactions | DiscordIntentGuildMessageTyping |
-		DiscordIntentMessageContent | DiscordIntentGuildScheduledEvents |
-		DiscordIntentGuildModerationConfiguration |
-		DiscordIntentGuildModerationExecution | DiscordIntentMessagePolls
+	AllIntentsExceptDirectMessage = IntentGuilds | IntentGuildMembers |
+		IntentGuildModeration | IntentGuildExpressions |
+		IntentGuildIntegrations | IntentGuildWebhooks |
+		IntentGuildInvites | IntentGuildVoiceStates |
+		IntentGuildPresences | IntentGuildMessages |
+		IntentGuildMessageReactions | IntentGuildMessageTyping |
+		IntentMessageContent | IntentGuildScheduledEvents |
+		IntentGuildModerationConfiguration |
+		IntentGuildModerationExecution | IntentMessagePolls
 )

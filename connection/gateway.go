@@ -14,53 +14,53 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type EventHandler func(*DiscordClient, types.DiscordEvent)
+type EventHandler func(*Client, types.Event)
 
-type DiscordClientSharding struct {
+type ClientSharding struct {
 	TotalShards int
 	ShardID     int
 }
 
-type DiscordClient struct {
+type Client struct {
 	Token *string
 
-	APIVersion *types.DiscordAPIVersion
+	APIVersion *types.APIVersion
 
 	Logger *zerolog.Logger
 
-	Intents *types.DiscordIntent
+	Intents *types.Intent
 
 	Websocket *Websocket
 
-	Events map[types.DiscordEventType][]EventHandler
+	Events map[types.EventType][]EventHandler
 
 	mu sync.RWMutex
 
-	UnavailableGuilds map[types.DiscordSnowflake]struct{}
+	UnavailableGuilds map[types.Snowflake]struct{}
 
-	User *types.DiscordUser
+	User *types.User
 
-	Sharding *DiscordClientSharding
+	Sharding *ClientSharding
 }
 
-func NewDiscordClient(token string, intents types.DiscordIntent, sharding *DiscordClientSharding) *DiscordClient {
-	return &DiscordClient{
+func NewClient(token string, intents types.Intent, sharding *ClientSharding) *Client {
+	return &Client{
 		Token:             &token,
-		APIVersion:        functions.PointerTo(types.DiscordAPIVersion10),
+		APIVersion:        functions.PointerTo(types.APIVersion10),
 		Logger:            util.NewLogger(),
 		Intents:           &intents,
-		UnavailableGuilds: make(map[types.DiscordSnowflake]struct{}),
+		UnavailableGuilds: make(map[types.Snowflake]struct{}),
 		Sharding:          sharding,
 	}
 }
 
-func (d *DiscordClient) initializeGatewayConnection() (*types.DiscordBotRegisterResponse, error) {
+func (d *Client) initializeGatewayConnection() (*types.BotRegisterResponse, error) {
 	do, err := http.DefaultClient.Do(&http.Request{
 		Method: "GET",
 		URL: &url.URL{
 			Scheme: "https",
-			Host:   "discord.com",
-			Path:   types.DiscordAPIBaseString(*d.APIVersion) + types.DiscordAPIGatewayRequest,
+			Host:   ".com",
+			Path:   types.APIBaseString(*d.APIVersion) + types.APIGatewayRequest,
 		},
 		Header: http.Header{
 			"Authorization": []string{"Bot " + *d.Token},
@@ -78,7 +78,7 @@ func (d *DiscordClient) initializeGatewayConnection() (*types.DiscordBotRegister
 		return nil, errors.New("failed to register bot gateway connection, status code: " + do.Status)
 	}
 
-	var resp types.DiscordBotRegisterResponse
+	var resp types.BotRegisterResponse
 	if err := json.NewDecoder(do.Body).Decode(&resp); err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (d *DiscordClient) initializeGatewayConnection() (*types.DiscordBotRegister
 	return &resp, nil
 }
 
-func (d *DiscordClient) Login() error {
+func (d *Client) Login() error {
 	gatewayResp, err := d.initializeGatewayConnection()
 	if err != nil {
 		return err
@@ -102,13 +102,13 @@ func (d *DiscordClient) Login() error {
 		if err := d.listenWebsocket(); err != nil {
 			d.Logger.Err(err).Msg("Error listening to websocket")
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, 4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009) {
-				d.Logger.Debug().Msg("Discord gateway connection closed by Discord, trying to reconnect")
+				d.Logger.Debug().Msg(" gateway connection closed by , trying to reconnect")
 				if err := d.reconnect(true); err != nil {
 					d.Logger.Err(err).Msg("Failed to reconnect")
 				}
 			}
 
-			d.Logger.Debug().Msg("Discord gateway connection closed by Discord, no reconnecting attempt will be made")
+			d.Logger.Debug().Msg(" gateway connection closed by , no reconnecting attempt will be made")
 
 			return
 		}
@@ -116,33 +116,33 @@ func (d *DiscordClient) Login() error {
 
 	<-d.Websocket.Ready
 
-	d.Logger.Info().Msg("Successfully connected to Discord gateway")
+	d.Logger.Info().Msg("Successfully connected to  gateway")
 
 	return nil
 }
 
-func (d *DiscordClient) OnEvent(
-	eventName types.DiscordEventType,
+func (d *Client) OnEvent(
+	eventName types.EventType,
 	handler EventHandler,
 ) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	if d.Events == nil {
-		d.Events = make(map[types.DiscordEventType][]EventHandler)
+		d.Events = make(map[types.EventType][]EventHandler)
 	}
 
 	d.Events[eventName] = append(d.Events[eventName], handler)
 }
 
-func (d *DiscordClient) OnGuildCreate(
-	handler func(*DiscordClient, *types.DiscordGuildCreateEvent),
+func (d *Client) OnGuildCreate(
+	handler func(*Client, *types.GuildCreateEvent),
 ) {
-	d.OnEvent(types.DiscordEventGuildCreate, func(
-		session *DiscordClient,
-		event types.DiscordEvent,
+	d.OnEvent(types.EventGuildCreate, func(
+		session *Client,
+		event types.Event,
 	) {
-		if e, ok := event.(*types.DiscordGuildCreateEvent); ok {
+		if e, ok := event.(*types.GuildCreateEvent); ok {
 			handler(session, e)
 		} else {
 			d.Logger.Warn().Msgf("Failed to cast event to GuildCreateEvent: %T", event)
@@ -150,14 +150,14 @@ func (d *DiscordClient) OnGuildCreate(
 	})
 }
 
-func (d *DiscordClient) OnMessageCreate(
-	handler func(*DiscordClient, *types.DiscordMessageCreateEvent),
+func (d *Client) OnMessageCreate(
+	handler func(*Client, *types.MessageCreateEvent),
 ) {
-	d.OnEvent(types.DiscordEventMessageCreate, func(
-		session *DiscordClient,
-		event types.DiscordEvent,
+	d.OnEvent(types.EventMessageCreate, func(
+		session *Client,
+		event types.Event,
 	) {
-		if e, ok := event.(*types.DiscordMessageCreateEvent); ok {
+		if e, ok := event.(*types.MessageCreateEvent); ok {
 			handler(session, e)
 		} else {
 			d.Logger.Warn().Msgf("Failed to cast event to MessageCreateEvent: %T", event)
@@ -165,14 +165,14 @@ func (d *DiscordClient) OnMessageCreate(
 	})
 }
 
-func (d *DiscordClient) OnInteractionCreate(
-	handler func(*DiscordClient, *types.DiscordInteractionCreateEvent),
+func (d *Client) OnInteractionCreate(
+	handler func(*Client, *types.InteractionCreateEvent),
 ) {
-	d.OnEvent(types.DiscordEventInteractionCreate, func(
-		session *DiscordClient,
-		event types.DiscordEvent,
+	d.OnEvent(types.EventInteractionCreate, func(
+		session *Client,
+		event types.Event,
 	) {
-		if e, ok := event.(*types.DiscordInteractionCreateEvent); ok {
+		if e, ok := event.(*types.InteractionCreateEvent); ok {
 			handler(session, e)
 		} else {
 			d.Logger.Warn().Msgf("Failed to cast event to InteractionCreateEvent: %T", event)
@@ -180,18 +180,18 @@ func (d *DiscordClient) OnInteractionCreate(
 	})
 }
 
-func (d *DiscordClient) dispatch(event types.DiscordEvent) {
+func (d *Client) dispatch(event types.Event) {
 	handlers := d.Events[event.Event()]
 	for _, h := range handlers {
 		h(d, event)
 	}
 }
 
-func (d *DiscordClient) internalEventHandler(msg json.RawMessage, event types.DiscordEventType) bool {
+func (d *Client) internalEventHandler(msg json.RawMessage, event types.EventType) bool {
 	switch event {
-	case types.DiscordEventReady:
+	case types.EventReady:
 		{
-			var readyEvent types.DiscordReadyEvent
+			var readyEvent types.ReadyEvent
 			if err := json.Unmarshal(msg, &readyEvent); err != nil {
 				d.Logger.Err(err).Msg("Failed to unmarshal READY event")
 			}
@@ -214,16 +214,16 @@ func (d *DiscordClient) internalEventHandler(msg json.RawMessage, event types.Di
 
 			return true
 		}
-	case types.DiscordEventGuildCreate:
+	case types.EventGuildCreate:
 		{
-			var guildCreateEvent types.DiscordGuildCreateEvent
+			var guildCreateEvent types.GuildCreateEvent
 			if err := json.Unmarshal(msg, &guildCreateEvent); err != nil {
 				d.Logger.Err(err).Msg("Failed to unmarshal GUILD_CREATE event")
 				return false
 			}
 
 			if guildCreateEvent.Guild.IsAvailable() && d.IsGuildUnavailable(guildCreateEvent.Guild.GetID()) {
-				//Discord is telling us that a guild is available again by firing a GUILD_CREATE event with available = true
+				// is telling us that a guild is available again by firing a GUILD_CREATE event with available = true
 
 				d.Logger.Debug().Msgf("Guild %s is available again", guildCreateEvent.Guild.GetID())
 				d.deleteUnavailableGuild(guildCreateEvent.Guild.GetID())
@@ -238,25 +238,25 @@ func (d *DiscordClient) internalEventHandler(msg json.RawMessage, event types.Di
 	return true
 }
 
-func (d *DiscordClient) addUnavailableGuild(id types.DiscordSnowflake) {
+func (d *Client) addUnavailableGuild(id types.Snowflake) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.UnavailableGuilds[id] = struct{}{}
 }
 
-func (d *DiscordClient) deleteUnavailableGuild(id types.DiscordSnowflake) {
+func (d *Client) deleteUnavailableGuild(id types.Snowflake) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	delete(d.UnavailableGuilds, id)
 }
 
-func (d *DiscordClient) IsGuildUnavailable(id types.DiscordSnowflake) bool {
+func (d *Client) IsGuildUnavailable(id types.Snowflake) bool {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	_, exists := d.UnavailableGuilds[id]
 	return exists
 }
 
-func (d *DiscordClient) Shutdown() {
+func (d *Client) Shutdown() {
 	_ = d.Websocket.Connection.Close()
 }

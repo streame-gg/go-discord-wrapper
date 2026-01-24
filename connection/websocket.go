@@ -26,7 +26,7 @@ type Websocket struct {
 	Ready chan struct{}
 }
 
-func NewWebsocket(bot *DiscordClient, host string, isReconnect bool, lastEventNum *int) (*Websocket, error) {
+func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int) (*Websocket, error) {
 	c, _, err := websocket.DefaultDialer.Dial(host+"?v=10&encoding=json", nil)
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func NewWebsocket(bot *DiscordClient, host string, isReconnect bool, lastEventNu
 		Ready:             make(chan struct{}),
 	}
 
-	bot.Logger.Info().Msgf("Connected to Discord gateway, heartbeat interval: %f ms", hello.HeartbeatInterval)
+	bot.Logger.Info().Msgf("Connected to  gateway, heartbeat interval: %f ms", hello.HeartbeatInterval)
 
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * time.Duration(hello.HeartbeatInterval))
@@ -105,8 +105,8 @@ func NewWebsocket(bot *DiscordClient, host string, isReconnect bool, lastEventNu
 				"intents": *bot.Intents,
 				"properties": map[string]string{
 					"$os":      "windows",
-					"$browser": "https://github.com/DatGamet/go-discord-wrapper@alpha",
-					"$device":  "https://github.com/DatGamet/go-discord-wrapper@alpha",
+					"$browser": "https://github.com/DatGamet/go--wrapper@alpha",
+					"$device":  "https://github.com/DatGamet/go--wrapper@alpha",
 				},
 			},
 		}
@@ -123,7 +123,7 @@ func NewWebsocket(bot *DiscordClient, host string, isReconnect bool, lastEventNu
 	return ws, nil
 }
 
-func (d *DiscordClient) connectWebsocket(url string, isReconnect bool, lastEventNum *int) error {
+func (d *Client) connectWebsocket(url string, isReconnect bool, lastEventNum *int) error {
 	ws, err := NewWebsocket(d, url, isReconnect, lastEventNum)
 	if err != nil {
 		return err
@@ -133,8 +133,8 @@ func (d *DiscordClient) connectWebsocket(url string, isReconnect bool, lastEvent
 	return nil
 }
 
-func (d *DiscordClient) reconnect(freshConnect bool) error {
-	d.Logger.Warn().Msg("Reconnecting to Discord gateway")
+func (d *Client) reconnect(freshConnect bool) error {
+	d.Logger.Warn().Msg("Reconnecting to  gateway")
 
 	lastEventNum := d.Websocket.LastEventNum
 
@@ -143,15 +143,15 @@ func (d *DiscordClient) reconnect(freshConnect bool) error {
 		d.Websocket = nil
 	}
 
-	if err := d.connectWebsocket("wss://gateway.discord.gg", !freshConnect, lastEventNum); err != nil {
+	if err := d.connectWebsocket("wss://gateway..gg", !freshConnect, lastEventNum); err != nil {
 		return err
 	}
 
-	d.Logger.Debug().Msg("Reconnected to Discord gateway")
+	d.Logger.Debug().Msg("Reconnected to  gateway")
 	return nil
 }
 
-func (d *DiscordClient) listenWebsocket() error {
+func (d *Client) listenWebsocket() error {
 	for {
 		_, message, err := d.Websocket.Connection.ReadMessage()
 		if err != nil {
@@ -170,12 +170,12 @@ func (d *DiscordClient) listenWebsocket() error {
 		}
 
 		if payload.Op == 7 {
-			d.Logger.Debug().Msg("Reconnecting to gateway; requested by Discord")
+			d.Logger.Debug().Msg("Reconnecting to gateway; requested by ")
 			return d.reconnect(false)
 		}
 
 		if payload.Op == 9 {
-			var invalidSession types.DiscordInvalidSessionPayload
+			var invalidSession types.InvalidSessionPayload
 			if err := json.Unmarshal(payload.D, &invalidSession); err != nil {
 				return err
 			}

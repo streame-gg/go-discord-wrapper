@@ -1,6 +1,6 @@
 package types
 
-type DiscordBotRegisterResponse struct {
+type BotRegisterResponse struct {
 	Url               string `json:"url"`
 	Shards            int    `json:"shards"`
 	SessionStartLimit struct {

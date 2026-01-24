@@ -1,100 +1,99 @@
 package types
 
-var EventFactories = map[string]func() DiscordEvent{
-	"MESSAGE_CREATE": func() DiscordEvent {
-		return &DiscordMessageCreateEvent{}
+var EventFactories = map[string]func() Event{
+	"MESSAGE_CREATE": func() Event {
+		return &MessageCreateEvent{}
 	},
-	"READY": func() DiscordEvent {
-		return &DiscordReadyEvent{}
+	"READY": func() Event {
+		return &ReadyEvent{}
 	},
-	"GUILD_CREATE": func() DiscordEvent {
-		return &DiscordGuildCreateEvent{}
+	"GUILD_CREATE": func() Event {
+		return &GuildCreateEvent{}
 	},
-	"INTERACTION_CREATE": func() DiscordEvent {
-		return &DiscordInteractionCreateEvent{}
+	"INTERACTION_CREATE": func() Event {
+		return &InteractionCreateEvent{}
 	},
-	// add more here
 }
 
-type DiscordEvent interface {
-	Event() DiscordEventType
+type Event interface {
+	Event() EventType
 }
 
-type DiscordEventType string
+type EventType string
 
 const (
-	DiscordEventMessageCreate     DiscordEventType = "MESSAGE_CREATE"
-	DiscordEventReady             DiscordEventType = "READY"
-	DiscordEventGuildCreate       DiscordEventType = "GUILD_CREATE"
-	DiscordEventInteractionCreate DiscordEventType = "INTERACTION_CREATE"
+	EventMessageCreate     EventType = "MESSAGE_CREATE"
+	EventReady             EventType = "READY"
+	EventGuildCreate       EventType = "GUILD_CREATE"
+	EventInteractionCreate EventType = "INTERACTION_CREATE"
 )
 
-type DiscordMessageCreateEvent struct {
-	DiscordMessage
-	GuildID  *string        `json:"guild_id"`
-	Member   *GuildMember   `json:"member,omitempty"`
-	Mentions *[]DiscordUser `json:"mentions"`
+type MessageCreateEvent struct {
+	Message
+	GuildID  *string      `json:"guild_id"`
+	Member   *GuildMember `json:"member,omitempty"`
+	Mentions *[]User      `json:"mentions"`
 }
 
-func (e DiscordMessageCreateEvent) Event() DiscordEventType {
-	return DiscordEventMessageCreate
+func (e MessageCreateEvent) Event() EventType {
+	return EventMessageCreate
 }
 
-type DiscordGuildCreateEvent struct {
+type GuildCreateEvent struct {
 	AnyGuildWrapper
 	Large       bool  `json:"large"`
 	Unavailable *bool `json:"unavailable"`
 	MemberCount int   `json:"member_count"`
 }
 
-func (e DiscordGuildCreateEvent) Event() DiscordEventType {
-	return DiscordEventGuildCreate
+func (e GuildCreateEvent) Event() EventType {
+	return EventGuildCreate
 }
 
-type DiscordReadyEvent struct {
-	User             DiscordUser       `json:"user"`
+type ReadyEvent struct {
+	User             User              `json:"user"`
 	SessionID        string            `json:"session_id"`
 	ResumeGatewayURL string            `json:"resume_gateway_url"`
 	Shard            []int             `json:"shard,omitempty"`
 	Guilds           []AnyGuildWrapper `json:"guilds"`
 }
 
-func (e DiscordReadyEvent) Event() DiscordEventType {
-	return DiscordEventReady
+func (e ReadyEvent) Event() EventType {
+	return EventReady
 }
 
-type DiscordInteractionCreateEvent struct {
-	DiscordInteraction
+type InteractionCreateEvent struct {
+	Interaction
 }
 
-func (e DiscordInteractionCreateEvent) Event() DiscordEventType {
-	return DiscordEventInteractionCreate
+func (e InteractionCreateEvent) Event() EventType {
+	return EventInteractionCreate
 }
 
-func (e DiscordInteractionCreateEvent) IsCommand() bool {
-	return e.Type == DiscordInteractionTypeApplicationCommand
+func (e InteractionCreateEvent) IsCommand() bool {
+	return e.Type == InteractionTypeApplicationCommand
 }
 
-func (e DiscordInteractionCreateEvent) IsButton() bool {
-	if e.Type != DiscordInteractionTypeMessageComponent {
+func (e InteractionCreateEvent) IsButton() bool {
+	if e.Type != InteractionTypeMessageComponent {
 		return false
 	}
 
-	return e.Data.(*DiscordInteractionDataMessageComponent).ComponentType == DiscordComponentTypeButton
+	return e.Data.(*InteractionDataMessageComponent).ComponentType == ComponentTypeButton
 }
 
-func (e DiscordInteractionCreateEvent) IsAnySelectMenu() bool {
-	if e.Type != DiscordInteractionTypeMessageComponent {
+func (e InteractionCreateEvent) IsAnySelectMenu() bool {
+	if e.Type != InteractionTypeMessageComponent {
 		return false
 	}
 
-	return e.Data.(*DiscordInteractionDataMessageComponent).ComponentType.IsAnySelectMenu()
+	return e.Data.(*InteractionDataMessageComponent).ComponentType.IsAnySelectMenu()
 }
 
-func (e DiscordInteractionCreateEvent) IsAutocomplete() bool {
-	return e.Type == DiscordInteractionTypeApplicationCommandAutocomplete
+func (e InteractionCreateEvent) IsAutocomplete() bool {
+	return e.Type == InteractionTypeApplicationCommandAutocomplete
 }
 
-func (e DiscordInteractionCreateEvent) IsModalSubmit() bool {
-	return e.Type == DiscordInteractionTypeModalSubmit
+func (e InteractionCreateEvent) IsModalSubmit() bool {
+	return e.Type == InteractionTypeModalSubmit
 }

@@ -2,114 +2,114 @@ package types
 
 import "time"
 
-type DiscordChannelType int
+type ChannelType int
 
 const (
-	DiscordChannelTypeGuildText          DiscordChannelType = 0
-	DiscordChannelTypeDM                 DiscordChannelType = 1
-	DiscordChannelTypeGuildVoice         DiscordChannelType = 2
-	DiscordChannelTypeGroupDM            DiscordChannelType = 3
-	DiscordChannelTypeGuildCategory      DiscordChannelType = 4
-	DiscordChannelTypeGuildAnnouncement  DiscordChannelType = 5
-	DiscordChannelTypeAnnouncementThread DiscordChannelType = 10
-	DiscordChannelTypePublicThread       DiscordChannelType = 11
-	DiscordChannelTypePrivateThread      DiscordChannelType = 12
-	DiscordChannelTypeGuildStageVoice    DiscordChannelType = 13
-	DiscordChannelTypeGuildDirectory     DiscordChannelType = 14
-	DiscordChannelTypeGuildForum         DiscordChannelType = 15
-	DiscordChannelTypeGuildMedia         DiscordChannelType = 16
+	ChannelTypeGuildText          ChannelType = 0
+	ChannelTypeDM                 ChannelType = 1
+	ChannelTypeGuildVoice         ChannelType = 2
+	ChannelTypeGroupDM            ChannelType = 3
+	ChannelTypeGuildCategory      ChannelType = 4
+	ChannelTypeGuildAnnouncement  ChannelType = 5
+	ChannelTypeAnnouncementThread ChannelType = 10
+	ChannelTypePublicThread       ChannelType = 11
+	ChannelTypePrivateThread      ChannelType = 12
+	ChannelTypeGuildStageVoice    ChannelType = 13
+	ChannelTypeGuildDirectory     ChannelType = 14
+	ChannelTypeGuildForum         ChannelType = 15
+	ChannelTypeGuildMedia         ChannelType = 16
 )
 
-type DiscordVideoQualityMode int
+type VideoQualityMode int
 
 const (
-	DiscordVideoQualityModeAuto DiscordVideoQualityMode = 1
-	DiscordVideoQualityModeFull DiscordVideoQualityMode = 2
+	VideoQualityModeAuto VideoQualityMode = 1
+	VideoQualityModeFull VideoQualityMode = 2
 )
 
-type DiscordChannelTag struct {
-	ID        DiscordSnowflake  `json:"id"`
-	Name      string            `json:"name"`
-	Moderated bool              `json:"moderated"`
-	EmojiID   *DiscordSnowflake `json:"emoji_id,omitempty"`
-	EmojiName *string           `json:"emoji_name,omitempty"`
+type ChannelTag struct {
+	ID        Snowflake  `json:"id"`
+	Name      string     `json:"name"`
+	Moderated bool       `json:"moderated"`
+	EmojiID   *Snowflake `json:"emoji_id,omitempty"`
+	EmojiName *string    `json:"emoji_name,omitempty"`
 }
 
-type DiscordChannel struct {
-	ID                            DiscordSnowflake                     `json:"id"`
-	Type                          DiscordChannelType                   `json:"type"`
-	GuildID                       *DiscordSnowflake                    `json:"guild_id,omitempty"`
-	Position                      *int                                 `json:"position,omitempty"`
-	PermissionOverwrites          []DiscordChannelPermissionOverwrites `json:"permission_overwrites,omitempty"`
-	Name                          *string                              `json:"name,omitempty"`
-	Topic                         *string                              `json:"topic,omitempty"`
-	NSFW                          *bool                                `json:"nsfw,omitempty"`
-	LastMessageID                 *DiscordSnowflake                    `json:"last_message_id,omitempty"`
-	Bitrate                       *int                                 `json:"bitrate,omitempty"`
-	UserLimit                     *int                                 `json:"user_limit,omitempty"`
-	RateLimitPerUser              *int                                 `json:"rate_limit_per_user,omitempty"`
-	Recipients                    *[]DiscordUser                       `json:"recipients,omitempty"`
-	IconHash                      *string                              `json:"icon,omitempty"`
-	OwnerID                       *DiscordSnowflake                    `json:"owner_id,omitempty"`
-	ApplicationID                 *DiscordSnowflake                    `json:"application_id,omitempty"`
-	ParentID                      *DiscordSnowflake                    `json:"parent_id,omitempty"`
-	LastPinTimestamp              *time.Time                           `json:"last_pin_timestamp,omitempty"`
-	RtcRegion                     *string                              `json:"rtc_region,omitempty"`
-	VideoQualityMode              *DiscordVideoQualityMode             `json:"video_quality_mode,omitempty"`
-	MessageCount                  *int                                 `json:"message_count,omitempty"`
-	MemberCount                   *int                                 `json:"member_count,omitempty"`
-	ThreadMetadata                *DiscordThreadMetadata               `json:"thread_metadata,omitempty"`
-	Member                        *ThreadMember                        `json:"member,omitempty"`
-	DefaultAutoArchiveDuration    *int                                 `json:"default_auto_archive_duration,omitempty"`
-	Permissions                   *string                              `json:"permissions,omitempty"`
-	Flags                         *DiscordChannelFlags                 `json:"flags,omitempty"`
-	TotalMessageSent              *int                                 `json:"total_message_sent,omitempty"`
-	AvailableTags                 *[]DiscordChannelTag                 `json:"available_tags,omitempty"`
-	AppliedTags                   *[]DiscordSnowflake                  `json:"applied_tags,omitempty"`
-	DefaultReactionEmoji          *DiscordDefaultReactionEmoji         `json:"default_reaction_emoji,omitempty"`
-	DefaultThreadRateLimitPerUser *int                                 `json:"default_thread_rate_limit_per_user,omitempty"`
-	DefaultSortOrder              *DiscordDefaultSortOrder             `json:"default_sort_order,omitempty"`
-	DefaultForumLayout            *DiscordChannelForumLayoutType       `json:"default_forum_layout,omitempty"`
+type Channel struct {
+	ID                            Snowflake                     `json:"id"`
+	Type                          ChannelType                   `json:"type"`
+	GuildID                       *Snowflake                    `json:"guild_id,omitempty"`
+	Position                      *int                          `json:"position,omitempty"`
+	PermissionOverwrites          []ChannelPermissionOverwrites `json:"permission_overwrites,omitempty"`
+	Name                          *string                       `json:"name,omitempty"`
+	Topic                         *string                       `json:"topic,omitempty"`
+	NSFW                          *bool                         `json:"nsfw,omitempty"`
+	LastMessageID                 *Snowflake                    `json:"last_message_id,omitempty"`
+	Bitrate                       *int                          `json:"bitrate,omitempty"`
+	UserLimit                     *int                          `json:"user_limit,omitempty"`
+	RateLimitPerUser              *int                          `json:"rate_limit_per_user,omitempty"`
+	Recipients                    *[]User                       `json:"recipients,omitempty"`
+	IconHash                      *string                       `json:"icon,omitempty"`
+	OwnerID                       *Snowflake                    `json:"owner_id,omitempty"`
+	ApplicationID                 *Snowflake                    `json:"application_id,omitempty"`
+	ParentID                      *Snowflake                    `json:"parent_id,omitempty"`
+	LastPinTimestamp              *time.Time                    `json:"last_pin_timestamp,omitempty"`
+	RtcRegion                     *string                       `json:"rtc_region,omitempty"`
+	VideoQualityMode              *VideoQualityMode             `json:"video_quality_mode,omitempty"`
+	MessageCount                  *int                          `json:"message_count,omitempty"`
+	MemberCount                   *int                          `json:"member_count,omitempty"`
+	ThreadMetadata                *ThreadMetadata               `json:"thread_metadata,omitempty"`
+	Member                        *ThreadMember                 `json:"member,omitempty"`
+	DefaultAutoArchiveDuration    *int                          `json:"default_auto_archive_duration,omitempty"`
+	Permissions                   *string                       `json:"permissions,omitempty"`
+	Flags                         *ChannelFlags                 `json:"flags,omitempty"`
+	TotalMessageSent              *int                          `json:"total_message_sent,omitempty"`
+	AvailableTags                 *[]ChannelTag                 `json:"available_tags,omitempty"`
+	AppliedTags                   *[]Snowflake                  `json:"applied_tags,omitempty"`
+	DefaultReactionEmoji          *DefaultReactionEmoji         `json:"default_reaction_emoji,omitempty"`
+	DefaultThreadRateLimitPerUser *int                          `json:"default_thread_rate_limit_per_user,omitempty"`
+	DefaultSortOrder              *DefaultSortOrder             `json:"default_sort_order,omitempty"`
+	DefaultForumLayout            *ChannelForumLayoutType       `json:"default_forum_layout,omitempty"`
 }
 
-type DiscordChannelPermissionOverwritesType int
+type ChannelPermissionOverwritesType int
 
 const (
-	DiscordChannelPermissionOverwritesTypeRole DiscordChannelPermissionOverwritesType = 0
-	DiscordChannelPermissionOverwritesTypeUser DiscordChannelPermissionOverwritesType = 1
+	ChannelPermissionOverwritesTypeRole ChannelPermissionOverwritesType = 0
+	ChannelPermissionOverwritesTypeUser ChannelPermissionOverwritesType = 1
 )
 
-type DiscordChannelPermissionOverwrites struct {
-	ID    DiscordSnowflake                       `json:"id"`
-	Type  DiscordChannelPermissionOverwritesType `json:"type"`
-	Allow string                                 `json:"allow"`
-	Deny  string                                 `json:"deny"`
+type ChannelPermissionOverwrites struct {
+	ID    Snowflake                       `json:"id"`
+	Type  ChannelPermissionOverwritesType `json:"type"`
+	Allow string                          `json:"allow"`
+	Deny  string                          `json:"deny"`
 }
 
-type DiscordChannelFlags int
+type ChannelFlags int
 
 const (
-	DiscordChannelFlagPinned                   DiscordChannelFlags = 1 << 1
-	DiscordChannelFlagRequireTag               DiscordChannelFlags = 1 << 4
-	DiscordChannelFlagHideMediaDownloadOptions DiscordChannelFlags = 1 << 15
+	ChannelFlagPinned                   ChannelFlags = 1 << 1
+	ChannelFlagRequireTag               ChannelFlags = 1 << 4
+	ChannelFlagHideMediaDownloadOptions ChannelFlags = 1 << 15
 )
 
-type DiscordDefaultSortOrder int
+type DefaultSortOrder int
 
 const (
-	DiscordDefaultSortOrderLatestActivity DiscordDefaultSortOrder = 0
-	DiscordDefaultSortOrderCreationDate   DiscordDefaultSortOrder = 1
+	DefaultSortOrderLatestActivity DefaultSortOrder = 0
+	DefaultSortOrderCreationDate   DefaultSortOrder = 1
 )
 
-type DiscordChannelForumLayoutType int
+type ChannelForumLayoutType int
 
 const (
-	DiscordChannelForumLayoutTypeNotSet      DiscordChannelForumLayoutType = 0
-	DiscordChannelForumLayoutTypeListView    DiscordChannelForumLayoutType = 1
-	DiscordChannelForumLayoutTypeGalleryView DiscordChannelForumLayoutType = 2
+	ChannelForumLayoutTypeNotSet      ChannelForumLayoutType = 0
+	ChannelForumLayoutTypeListView    ChannelForumLayoutType = 1
+	ChannelForumLayoutTypeGalleryView ChannelForumLayoutType = 2
 )
 
-type DiscordThreadMetadata struct {
+type ThreadMetadata struct {
 	Archived            bool       `json:"archived"`
 	AutoArchiveDuration *int       `json:"auto_archive_duration,omitempty"`
 	ArchiveTimestamp    time.Time  `json:"archive_timestamp"`
@@ -118,7 +118,7 @@ type DiscordThreadMetadata struct {
 	Invitable           *bool      `json:"invitable,omitempty"`
 }
 
-type DiscordDefaultReactionEmoji struct {
-	EmojiID   *DiscordSnowflake `json:"emoji_id,omitempty"`
-	EmojiName *string           `json:"emoji_name,omitempty"`
+type DefaultReactionEmoji struct {
+	EmojiID   *Snowflake `json:"emoji_id,omitempty"`
+	EmojiName *string    `json:"emoji_name,omitempty"`
 }

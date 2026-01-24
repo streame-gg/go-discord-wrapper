@@ -16,24 +16,24 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	bot := connection.NewDiscordClient(
+	bot := connection.NewClient(
 		os.Getenv("TOKEN"),
 		types.AllIntentsExceptDirectMessage,
-		&connection.DiscordClientSharding{
+		&connection.ClientSharding{
 			TotalShards: 1,
 			ShardID:     0,
 		},
 	)
 
-	bot.OnGuildCreate(func(session *connection.DiscordClient, event *types.DiscordGuildCreateEvent) {
+	bot.OnGuildCreate(func(session *connection.Client, event *types.GuildCreateEvent) {
 		fmt.Println("New guild")
 	})
 
-	bot.OnMessageCreate(func(session *connection.DiscordClient, event *types.DiscordMessageCreateEvent) {
+	bot.OnMessageCreate(func(session *connection.Client, event *types.MessageCreateEvent) {
 		session.Logger.Info().Msgf("Received message: %s", event.Content)
 	})
 
-	bot.OnInteractionCreate(func(session *connection.DiscordClient, event *types.DiscordInteractionCreateEvent) {
+	bot.OnInteractionCreate(func(session *connection.Client, event *types.InteractionCreateEvent) {
 		if event.GetFullCommand() == "info channel" {
 			bot.Logger.Debug().Msgf("Received info channel command from %s", event.Member.User.DisplayName())
 
@@ -68,8 +68,8 @@ func main() {
 		if event.IsCommand() {
 			bot.Logger.Debug().Msgf("Received interaction command %s from %s", event.GetFullCommand(), event.Member.User.DisplayName())
 
-			_, err := event.Reply(&types.DiscordInteractionResponseDataDefault{
-				Flags: types.DiscordMessageFlagEphemeral | types.DiscordMessageFlagIsComponentsV2,
+			_, err := event.Reply(&types.InteractionResponseDataDefault{
+				Flags: types.MessageFlagEphemeral | types.MessageFlagIsComponentsV2,
 				Components: &[]types.AnyComponent{
 					&types.TextDisplayComponent{
 						Content: "Hello, " + event.Member.User.DisplayName() + "!",
@@ -126,9 +126,9 @@ func main() {
 			bot.Logger.Debug().Msgf("Received button interaction with custom ID %s from %s", event.GetCustomID(), event.Member.User.DisplayName())
 
 			if event.GetCustomID() == "button_click_me" {
-				_, err := event.Reply(&types.DiscordInteractionResponseDataDefault{
+				_, err := event.Reply(&types.InteractionResponseDataDefault{
 					Content: "You clicked the button!",
-					Flags:   types.DiscordMessageFlagEphemeral,
+					Flags:   types.MessageFlagEphemeral,
 				})
 
 				if err != nil {
