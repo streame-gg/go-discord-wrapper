@@ -625,12 +625,58 @@ const (
 	ApplicationCommandOptionTypeAttachment      ApplicationCommandOptionType = 11
 )
 
-type ApplicationCommandInteractionDataOption struct {
-	Name    string                                    `json:"name"`
-	Type    ApplicationCommandOptionType              `json:"type"`
-	Value   *interface{}                              `json:"value,omitempty"`
-	Options []ApplicationCommandInteractionDataOption `json:"options,omitempty"`
-	Focused *bool                                     `json:"focused,omitempty"`
+type ApplicationCommandInteractionDataOption[T string | int | bool | interface{}] struct {
+	Name    string                                                 `json:"name"`
+	Type    ApplicationCommandOptionType                           `json:"type"`
+	Value   *T                                                     `json:"value,omitempty"`
+	Options []ApplicationCommandInteractionDataOption[interface{}] `json:"options,omitempty"`
+	Focused *bool                                                  `json:"focused,omitempty"`
+}
+
+func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) error {
+	type Alias ApplicationCommandInteractionDataOption[T]
+	raw := &struct {
+		*Alias
+		Value interface{} `json:"value,omitempty"`
+	}{
+		Alias: (*Alias)(t),
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	t.Name = raw.Name
+	t.Type = raw.Type
+	t.Options = raw.Options
+	t.Focused = raw.Focused
+
+	switch t.Type {
+	case ApplicationCommandOptionTypeString:
+		if strVal, ok := raw.Value.(string); ok {
+			var v T
+			v = any(strVal).(T)
+			t.Value = &v
+		}
+	case ApplicationCommandOptionTypeInteger:
+		if intVal, ok := raw.Value.(int); ok {
+			var v T
+			v = any(intVal).(T)
+			t.Value = &v
+		}
+	case ApplicationCommandOptionTypeBoolean:
+		if boolVal, ok := raw.Value.(bool); ok {
+			var v T
+			v = any(boolVal).(T)
+			t.Value = &v
+		}
+	default:
+		var v T
+		v = raw.Value.(T)
+		t.Value = &v
+	}
+
+	return nil
 }
 
 type DiscordInteractionDataMessageComponent struct {
@@ -645,13 +691,13 @@ func (d *DiscordInteractionDataMessageComponent) GetType() DiscordInteractionDat
 }
 
 type DiscordInteractionDataApplicationCommand struct {
-	ID          DiscordSnowflake                             `json:"id"`
-	CommandName string                                       `json:"name"`
-	Type        DiscordInteractionDataApplicationCommandType `json:"type"`
-	GuildID     *DiscordSnowflake                            `json:"guild_id,omitempty"`
-	TargetID    *DiscordSnowflake                            `json:"target_id,omitempty"`
-	Resolved    *DiscordResolvedData                         `json:"resolved,omitempty"`
-	Options     *[]ApplicationCommandInteractionDataOption   `json:"options,omitempty"`
+	ID          DiscordSnowflake                                        `json:"id"`
+	CommandName string                                                  `json:"name"`
+	Type        DiscordInteractionDataApplicationCommandType            `json:"type"`
+	GuildID     *DiscordSnowflake                                       `json:"guild_id,omitempty"`
+	TargetID    *DiscordSnowflake                                       `json:"target_id,omitempty"`
+	Resolved    *DiscordResolvedData                                    `json:"resolved,omitempty"`
+	Options     *[]ApplicationCommandInteractionDataOption[interface{}] `json:"options,omitempty"`
 }
 
 func (d *DiscordInteractionDataApplicationCommand) GetType() DiscordInteractionDataType {
@@ -659,13 +705,13 @@ func (d *DiscordInteractionDataApplicationCommand) GetType() DiscordInteractionD
 }
 
 type DiscordInteractionDataAutocomplete struct {
-	ID          DiscordSnowflake                             `json:"id"`
-	CommandName string                                       `json:"name"`
-	Type        DiscordInteractionDataApplicationCommandType `json:"type"`
-	GuildID     *DiscordSnowflake                            `json:"guild_id,omitempty"`
-	TargetID    *DiscordSnowflake                            `json:"target_id,omitempty"`
-	Resolved    *DiscordResolvedData                         `json:"resolved,omitempty"`
-	Options     *[]ApplicationCommandInteractionDataOption   `json:"options,omitempty"`
+	ID          DiscordSnowflake                                        `json:"id"`
+	CommandName string                                                  `json:"name"`
+	Type        DiscordInteractionDataApplicationCommandType            `json:"type"`
+	GuildID     *DiscordSnowflake                                       `json:"guild_id,omitempty"`
+	TargetID    *DiscordSnowflake                                       `json:"target_id,omitempty"`
+	Resolved    *DiscordResolvedData                                    `json:"resolved,omitempty"`
+	Options     *[]ApplicationCommandInteractionDataOption[interface{}] `json:"options,omitempty"`
 }
 
 func (d *DiscordInteractionDataAutocomplete) GetType() DiscordInteractionDataType {
