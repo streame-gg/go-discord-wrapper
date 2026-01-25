@@ -31,7 +31,7 @@ type MessageCreateEvent struct {
 }
 
 func (e MessageCreateEvent) DesiredEventType() Event {
-	return MessageCreateEvent{}
+	return &MessageCreateEvent{}
 }
 
 func (e MessageCreateEvent) Event() EventType {
@@ -46,7 +46,7 @@ type GuildCreateEvent struct {
 }
 
 func (e GuildCreateEvent) DesiredEventType() Event {
-	return GuildCreateEvent{}
+	return &GuildCreateEvent{}
 }
 
 func (e GuildCreateEvent) Event() EventType {
@@ -62,7 +62,7 @@ type ReadyEvent struct {
 }
 
 func (e ReadyEvent) DesiredEventType() Event {
-	return ReadyEvent{}
+	return &ReadyEvent{}
 }
 
 func (e ReadyEvent) Event() EventType {
@@ -74,7 +74,7 @@ type InteractionCreateEvent struct {
 }
 
 func (e InteractionCreateEvent) DesiredEventType() Event {
-	return InteractionCreateEvent{}
+	return &InteractionCreateEvent{}
 }
 
 func (e InteractionCreateEvent) Event() EventType {
@@ -114,7 +114,7 @@ type GuildDeleteEvent struct {
 }
 
 func (g GuildDeleteEvent) DesiredEventType() Event {
-	return GuildDeleteEvent{}
+	return &GuildDeleteEvent{}
 }
 
 func (g GuildDeleteEvent) Event() EventType {

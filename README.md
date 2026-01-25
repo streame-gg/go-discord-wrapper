@@ -13,6 +13,9 @@ WARNING: The Wrapper is WIP and does not have a stable release. You might encoun
 - Fix some parts of the session handling
 - Command registration
 - API requests
+- Better documentation
+- Examples
+- ShardingManager that supports multiple instances on multipe servers
 
 ## Probably won't come:
 - Voice Support (connecting and keepalive)

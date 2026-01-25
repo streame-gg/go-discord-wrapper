@@ -54,7 +54,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int)
 		Ready:             make(chan struct{}),
 	}
 
-	bot.Logger.Info().Msgf("Connected to  gateway, heartbeat interval: %f ms", hello.HeartbeatInterval)
+	bot.Logger.Info().Msgf("Connected to Discord gateway, heartbeat interval: %f ms", hello.HeartbeatInterval)
 
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * time.Duration(hello.HeartbeatInterval))
@@ -66,6 +66,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int)
 					time.Since(*ws.LastHeartBeat) > time.Duration(hello.HeartbeatInterval)*time.Millisecond*2 {
 
 					bot.Logger.Warn().Msg("Heartbeat ACK timeout, reconnecting")
+					ws.close()
 					_ = bot.reconnect(true)
 					return
 				}
@@ -75,6 +76,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int)
 					D:  nil,
 				}); err != nil {
 					bot.Logger.Err(err).Msg("Failed to send heartbeat")
+					ws.close()
 					return
 				}
 
@@ -105,8 +107,8 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int)
 				"intents": *bot.Intents,
 				"properties": map[string]string{
 					"$os":      "windows",
-					"$browser": "https://github.com/DatGamet/go--wrapper@alpha",
-					"$device":  "https://github.com/DatGamet/go--wrapper@alpha",
+					"$browser": "https://github.com/DatGamet/go-discord-wrapper@alpha",
+					"$device":  "https://github.com/DatGamet/go-discord-wrapper@alpha",
 				},
 			},
 		}
@@ -148,6 +150,23 @@ func (d *Client) reconnect(freshConnect bool) error {
 	}
 
 	d.Logger.Debug().Msg("Reconnected to  gateway")
+
+	go func() {
+		if err := d.listenWebsocket(); err != nil {
+			d.Logger.Err(err).Msg("Error listening to websocket")
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, 4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009) {
+				d.Logger.Debug().Msg("gateway connection closed by , trying to reconnect")
+				if err := d.reconnect(true); err != nil {
+					d.Logger.Err(err).Msg("Failed to reconnect")
+				}
+			}
+
+			d.Logger.Debug().Msg("gateway connection closed by , no reconnecting attempt will be made")
+
+			return
+		}
+	}()
+
 	return nil
 }
 
