@@ -4,14 +4,15 @@ WARNING: The Wrapper is WIP and does not have a stable release. You might encoun
 
 ## Currently supporting:
 - Connecting to the gateway and keeping a connecting alive (needs some refactoring)
-- INTERACTION_CREATE, GUILD_CREATE, READY and MESSAGE_CREATE events
-- Action Rows, Buttons, String Select Menus, User Select Menus, Mentionable Select Menus, Role Select Menus
+- INTERACTION_CREATE, GUILD_CREATE, GUILD_DELETE, READY and MESSAGE_CREATE events
 - Modals
-- Components V2
+- All Components (V1 and V2)
 
 ## TODO:
 - All events
 - Fix some parts of the session handling
+- Command registration
+- API requests
 
 ## Probably won't come:
 - Voice Support (connecting and keepalive)
