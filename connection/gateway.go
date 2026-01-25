@@ -59,13 +59,14 @@ func (d *Client) initializeGatewayConnection() (*types.BotRegisterResponse, erro
 		Method: "GET",
 		URL: &url.URL{
 			Scheme: "https",
-			Host:   ".com",
-			Path:   types.APIBaseString(*d.APIVersion) + types.APIGatewayRequest,
+			Host:   "discord.com",
+			Path:   types.APIBaseString(*d.APIVersion) + "gateway/bot",
 		},
 		Header: http.Header{
 			"Authorization": []string{"Bot " + *d.Token},
 		},
 	})
+
 	if err != nil {
 		return nil, err
 	}

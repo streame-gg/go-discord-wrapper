@@ -2,20 +2,28 @@ package types
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 type APIVersion uint8
 
+func (a APIVersion) ToString() string {
+	switch a {
+	case APIVersion10:
+		return "10"
+	case APIVersion9:
+		return "9"
+	default:
+		return "unknown"
+	}
+}
+
 var (
 	APIBaseString = func(v APIVersion) string {
-		return fmt.Sprintf("/api/v%d/", v)
+		return "/api/v" + v.ToString() + "/"
 	}
 
 	APIVersion10 APIVersion = 10
 	APIVersion9  APIVersion = 9
-
-	APIGatewayRequest = "gateway/bot"
 )
 
 type Payload struct {

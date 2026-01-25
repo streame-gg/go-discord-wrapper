@@ -143,7 +143,7 @@ func (d *Client) reconnect(freshConnect bool) error {
 		d.Websocket = nil
 	}
 
-	if err := d.connectWebsocket("wss://gateway..gg", !freshConnect, lastEventNum); err != nil {
+	if err := d.connectWebsocket("wss://gateway.discord.gg", !freshConnect, lastEventNum); err != nil {
 		return err
 	}
 

@@ -6,6 +6,10 @@ import (
 
 type Snowflake string
 
+func (s Snowflake) ToString() string {
+	return string(s)
+}
+
 type Activity struct {
 	Type    int     `json:"type"`
 	PartyID *string `json:"party_id,omitempty"`

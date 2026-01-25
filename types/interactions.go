@@ -293,8 +293,8 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 	}
 
 	var typeProbe struct {
-		Type          InteractionDataApplicationCommandType `json:"type"`
-		ComponentType ComponentType                         `json:"component_type"`
+		Type          ApplicationCommandType `json:"type"`
+		ComponentType ComponentType          `json:"component_type"`
 	}
 
 	if err := json.Unmarshal(aux.Data, &typeProbe); err != nil {
@@ -302,7 +302,7 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 	}
 
 	switch typeProbe.Type {
-	case InteractionDataApplicationCommandTypeChatInput, InteractionDataApplicationCommandTypeUser, InteractionDataApplicationCommandTypeMessage:
+	case ApplicationCommandTypeChatInput, ApplicationCommandTypeUser, ApplicationCommandTypeMessage:
 		var cmd InteractionDataApplicationCommand
 		if err := json.Unmarshal(aux.Data, &cmd); err != nil {
 			return err
@@ -417,7 +417,7 @@ func (i *Interaction) EditReply(responseData *AnyInteractionResponseData, client
 		Method: "PATCH",
 		URL: &url.URL{
 			Scheme: "https",
-			Host:   ".com",
+			Host:   "discord.com",
 			Path:   "/api/v10/webhooks/" + clientID + "/" + i.Token + "/messages/@original",
 		},
 		Header: http.Header{
@@ -452,7 +452,7 @@ func (i *Interaction) DeleteReply(clientID string) error {
 		Method: "DELETE",
 		URL: &url.URL{
 			Scheme: "https",
-			Host:   ".com",
+			Host:   "discord.com",
 			Path:   "/api/v10/webhooks/" + clientID + "/" + i.Token + "/messages/@original",
 		},
 		Header: http.Header{
@@ -494,7 +494,7 @@ func (i *Interaction) ReplyWithModal(modal *Modal) error {
 		Method: "POST",
 		URL: &url.URL{
 			Scheme: "https",
-			Host:   ".com",
+			Host:   "discord.com",
 			Path:   "/api/v10/interactions/" + string(i.ID) + "/" + i.Token + "/callback",
 		},
 		Header: http.Header{
@@ -537,7 +537,7 @@ func (i *Interaction) Reply(data *InteractionResponseDataDefault) (*any, error) 
 		Method: "POST",
 		URL: &url.URL{
 			Scheme:   "https",
-			Host:     ".com",
+			Host:     "discord.com",
 			Path:     "/api/v10/interactions/" + string(i.ID) + "/" + i.Token + "/callback",
 			RawQuery: "with_response=" + fmt.Sprintf("%t", data.WithResponse),
 		},
@@ -600,13 +600,13 @@ type InteractionData interface {
 	GetType() InteractionDataType
 }
 
-type InteractionDataApplicationCommandType int
+type ApplicationCommandType int
 
 const (
-	InteractionDataApplicationCommandTypeChatInput       InteractionDataApplicationCommandType = 1
-	InteractionDataApplicationCommandTypeUser            InteractionDataApplicationCommandType = 2
-	InteractionDataApplicationCommandTypeMessage         InteractionDataApplicationCommandType = 3
-	InteractionDataApplicationCommandTypePrimaryEndpoint InteractionDataApplicationCommandType = 4
+	ApplicationCommandTypeChatInput       ApplicationCommandType = 1
+	ApplicationCommandTypeUser            ApplicationCommandType = 2
+	ApplicationCommandTypeMessage         ApplicationCommandType = 3
+	ApplicationCommandTypePrimaryEndpoint ApplicationCommandType = 4
 )
 
 type ApplicationCommandOptionType int
@@ -628,7 +628,7 @@ const (
 type ApplicationCommandInteractionDataOption[T string | int | bool | interface{}] struct {
 	Name    string                                                 `json:"name"`
 	Type    ApplicationCommandOptionType                           `json:"type"`
-	Value   *T                                                     `json:"value,omitempty"`
+	Value   *T                                                     `json:"value"`
 	Options []ApplicationCommandInteractionDataOption[interface{}] `json:"options,omitempty"`
 	Focused *bool                                                  `json:"focused,omitempty"`
 }
@@ -651,29 +651,31 @@ func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) 
 	t.Options = raw.Options
 	t.Focused = raw.Focused
 
-	switch t.Type {
-	case ApplicationCommandOptionTypeString:
-		if strVal, ok := raw.Value.(string); ok {
+	if raw.Value != nil {
+		switch t.Type {
+		case ApplicationCommandOptionTypeString:
+			if strVal, ok := raw.Value.(string); ok {
+				var v T
+				v = any(strVal).(T)
+				t.Value = &v
+			}
+		case ApplicationCommandOptionTypeInteger:
+			if intVal, ok := raw.Value.(int); ok {
+				var v T
+				v = any(intVal).(T)
+				t.Value = &v
+			}
+		case ApplicationCommandOptionTypeBoolean:
+			if boolVal, ok := raw.Value.(bool); ok {
+				var v T
+				v = any(boolVal).(T)
+				t.Value = &v
+			}
+		default:
 			var v T
-			v = any(strVal).(T)
+			v = raw.Value.(T)
 			t.Value = &v
 		}
-	case ApplicationCommandOptionTypeInteger:
-		if intVal, ok := raw.Value.(int); ok {
-			var v T
-			v = any(intVal).(T)
-			t.Value = &v
-		}
-	case ApplicationCommandOptionTypeBoolean:
-		if boolVal, ok := raw.Value.(bool); ok {
-			var v T
-			v = any(boolVal).(T)
-			t.Value = &v
-		}
-	default:
-		var v T
-		v = raw.Value.(T)
-		t.Value = &v
 	}
 
 	return nil
@@ -693,7 +695,7 @@ func (d *InteractionDataMessageComponent) GetType() InteractionDataType {
 type InteractionDataApplicationCommand struct {
 	ID          Snowflake                                               `json:"id"`
 	CommandName string                                                  `json:"name"`
-	Type        InteractionDataApplicationCommandType                   `json:"type"`
+	Type        ApplicationCommandType                                  `json:"type"`
 	GuildID     *Snowflake                                              `json:"guild_id,omitempty"`
 	TargetID    *Snowflake                                              `json:"target_id,omitempty"`
 	Resolved    *ResolvedData                                           `json:"resolved,omitempty"`
@@ -704,10 +706,53 @@ func (d *InteractionDataApplicationCommand) GetType() InteractionDataType {
 	return InteractionDataTypeApplicationCommand
 }
 
+func (d *InteractionDataApplicationCommand) UnmarshalJSON(data []byte) error {
+	type Alias InteractionDataApplicationCommand
+	raw := &struct {
+		*Alias
+		Options []json.RawMessage `json:"options,omitempty"`
+	}{
+		Alias: (*Alias)(d),
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	d.ID = raw.ID
+	d.CommandName = raw.CommandName
+	d.Type = raw.Type
+	d.GuildID = raw.GuildID
+	d.TargetID = raw.TargetID
+	d.Resolved = raw.Resolved
+
+	if raw.Options != nil {
+		var options []ApplicationCommandInteractionDataOption[interface{}]
+		for _, optionData := range raw.Options {
+			var option ApplicationCommandInteractionDataOption[interface{}]
+			if err := json.Unmarshal(optionData, &option); err != nil {
+				return err
+			}
+			options = append(options, option)
+
+			if option.Options != nil {
+				var option ApplicationCommandInteractionDataOption[interface{}]
+				if err := json.Unmarshal(optionData, &option); err != nil {
+					return err
+				}
+
+			}
+		}
+		d.Options = &options
+	}
+
+	return nil
+}
+
 type InteractionDataAutocomplete struct {
 	ID          Snowflake                                               `json:"id"`
 	CommandName string                                                  `json:"name"`
-	Type        InteractionDataApplicationCommandType                   `json:"type"`
+	Type        ApplicationCommandType                                  `json:"type"`
 	GuildID     *Snowflake                                              `json:"guild_id,omitempty"`
 	TargetID    *Snowflake                                              `json:"target_id,omitempty"`
 	Resolved    *ResolvedData                                           `json:"resolved,omitempty"`

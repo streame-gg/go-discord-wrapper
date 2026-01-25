@@ -154,6 +154,29 @@ func main() {
 		panic(err)
 	}
 
+	res, err := bot.RegisterSingleCommand(&types.ApplicationCommand{
+		Name:        "info",
+		Description: "Get information",
+		Type:        types.ApplicationCommandTypeChatInput,
+		Options: &[]types.AnyApplicationCommandOption{
+			&types.ApplicationCommandOptionSubCommand{
+				Name:        "channel",
+				Description: "Get information about the channel",
+				Options: &[]types.AnyApplicationCommandOption{
+					&types.ApplicationCommandOptionChannel{
+						Name:        "channel",
+						Description: "The channel to get information about",
+						Required:    functions.PointerTo(true),
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		fmt.Println(res)
+		panic(err)
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
