@@ -524,7 +524,31 @@ func (i *Interaction) ReplyWithModal(modal *Modal) error {
 	return nil
 }
 
-func (i *Interaction) Reply(data *InteractionResponseDataDefault) (*any, error) {
+type InteractionCallback struct {
+	ID                       Snowflake       `json:"id"`
+	Type                     InteractionType `json:"type"`
+	ActivityInstanceID       *Snowflake      `json:"activity_instance_id,omitempty"`
+	ResponseMessageID        *Snowflake      `json:"response_message_id,omitempty"`
+	ResponseMessageLoading   *bool           `json:"response_message_loading,omitempty"`
+	ResponseMessageEphemeral *bool           `json:"response_message_ephemeral,omitempty"`
+}
+
+type InteractionCallbackActivityInstance struct {
+	ID string `json:"id"`
+}
+
+type InteractionCallbackResource struct {
+	Type             InteractionCallbackType              `json:"type"`
+	ActivityInstance *InteractionCallbackActivityInstance `json:"activity_instance,omitempty"`
+	Message          *Message                             `json:"message,omitempty"`
+}
+
+type InteractionCallbackResponse struct {
+	Interaction InteractionCallback          `json:"interaction"`
+	Resource    *InteractionCallbackResource `json:"resource"`
+}
+
+func (i *Interaction) Reply(data *InteractionResponseDataDefault) (*InteractionCallbackResponse, error) {
 	bodyBytes, err := json.Marshal(InteractionResponse{
 		Type: InteractionCallbackTypeChannelMessageWithSource,
 		Data: data,
@@ -578,7 +602,7 @@ func (i *Interaction) Reply(data *InteractionResponseDataDefault) (*any, error) 
 		return nil, fmt.Errorf("expected 204 No Content, got %d: %v", req.StatusCode, respErr)
 	}
 
-	var resp any
+	var resp InteractionCallbackResponse
 	if err := json.NewDecoder(req.Body).Decode(&resp); err != nil {
 		return nil, err
 	}
@@ -788,6 +812,10 @@ func (l *ComponentLabelComponent) UnmarshalJSON(data []byte) error {
 
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
+	}
+
+	if raw.Component == nil {
+		return nil
 	}
 
 	var probe struct {

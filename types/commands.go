@@ -1,6 +1,9 @@
 package types
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 const (
 	ApplicationCommandNameRegex = "^[-_'\\p{L}\\p{N}\\p{sc=Deva}\\p{sc=Thai}]{1,32}$"
@@ -31,108 +34,88 @@ type ApplicationCommand struct {
 	Options                  *[]AnyApplicationCommandOption          `json:"options,omitempty"`
 }
 
+func unmarshalApplicationCommandOption(data []byte) (AnyApplicationCommandOption, error) {
+	var meta struct {
+		Type ApplicationCommandOptionType `json:"type"`
+	}
+
+	if err := json.Unmarshal(data, &meta); err != nil {
+		return nil, err
+	}
+
+	var opt AnyApplicationCommandOption
+
+	switch meta.Type {
+	case ApplicationCommandOptionTypeString:
+		opt = &ApplicationCommandOptionString{}
+	case ApplicationCommandOptionTypeInteger:
+		opt = &ApplicationCommandOptionInteger{}
+	case ApplicationCommandOptionTypeNumber:
+		opt = &ApplicationCommandOptionNumber{}
+	case ApplicationCommandOptionTypeBoolean:
+		opt = &ApplicationCommandOptionBoolean{}
+	case ApplicationCommandOptionTypeUser:
+		opt = &ApplicationCommandOptionUser{}
+	case ApplicationCommandOptionTypeChannel:
+		opt = &ApplicationCommandOptionChannel{}
+	case ApplicationCommandOptionTypeRole:
+		opt = &ApplicationCommandOptionRole{}
+	case ApplicationCommandOptionTypeMentionable:
+		opt = &ApplicationCommandOptionMentionable{}
+	case ApplicationCommandOptionTypeAttachment:
+		opt = &ApplicationCommandOptionAttachment{}
+	case ApplicationCommandOptionTypeSubCommand:
+		opt = &ApplicationCommandOptionSubCommand{}
+	case ApplicationCommandOptionTypeSubCommandGroup:
+		opt = &ApplicationCommandOptionSubCommandGroup{}
+	default:
+		return nil, fmt.Errorf("unknown ApplicationCommandOptionType: %d", meta.Type)
+	}
+
+	if err := json.Unmarshal(data, opt); err != nil {
+		return nil, err
+	}
+
+	return opt, nil
+}
+
+func unmarshalOptionSlice(raw []json.RawMessage) ([]AnyApplicationCommandOption, error) {
+	opts := make([]AnyApplicationCommandOption, 0)
+
+	for _, r := range raw {
+		opt, err := unmarshalApplicationCommandOption(r)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, opt)
+	}
+
+	return opts, nil
+}
+
 func (a *ApplicationCommand) UnmarshalJSON(data []byte) error {
 	type Alias ApplicationCommand
-	aux := &struct {
+
+	var raw struct {
 		*Alias
-		Options *[]json.RawMessage `json:"options,omitempty"`
-	}{
-		Alias: (*Alias)(a),
+		Options []json.RawMessage `json:"options,omitempty"`
 	}
-	if err := json.Unmarshal(data, &aux); err != nil {
+
+	raw.Alias = (*Alias)(a)
+
+	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
 
-	if aux.Options != nil {
-		var options []AnyApplicationCommandOption
-
-		for _, option := range *aux.Options {
-			parsedOption, err := UnmarshalApplicationCommandOption(option)
-			if err != nil {
-				return err
-			}
-
-			if parsedOption != nil {
-				if optionType := parsedOption.ApplicationCommandOptionType(); optionType == ApplicationCommandOptionTypeSubCommand || optionType == ApplicationCommandOptionTypeSubCommandGroup {
-					nestedData, err := json.Marshal(parsedOption)
-					if err != nil {
-						return err
-					}
-
-					nestedOption, err := UnmarshalApplicationCommandOption(nestedData)
-					if err != nil {
-						return err
-					}
-
-					if nestedOption != nil {
-						if optionType := nestedOption.ApplicationCommandOptionType(); optionType == ApplicationCommandOptionTypeSubCommand || optionType == ApplicationCommandOptionTypeSubCommandGroup {
-							nestedNestedData, err := json.Marshal(nestedOption)
-							if err != nil {
-								return err
-							}
-
-							nestedNestedOption, err := UnmarshalApplicationCommandOption(nestedNestedData)
-							if err != nil {
-								return err
-							}
-
-							options = append(options, nestedNestedOption)
-						}
-					}
-
-					options = append(options, nestedOption)
-				}
-			}
-
-			options = append(options, parsedOption)
+	if raw.Options != nil {
+		opts, err := unmarshalOptionSlice(raw.Options)
+		if err != nil {
+			return err
 		}
-		a.Options = &options
+		a.Options = &opts
 	}
 
 	return nil
-}
-
-func UnmarshalApplicationCommandOption(data []byte) (AnyApplicationCommandOption, error) {
-	var typeHolder struct {
-		Type ApplicationCommandOptionType `json:"type"`
-	}
-	if err := json.Unmarshal(data, &typeHolder); err != nil {
-		return nil, err
-	}
-
-	var option AnyApplicationCommandOption
-	switch typeHolder.Type {
-	case ApplicationCommandOptionTypeString:
-		option = &ApplicationCommandOptionString{}
-	case ApplicationCommandOptionTypeInteger:
-		option = &ApplicationCommandOptionInteger{}
-	case ApplicationCommandOptionTypeNumber:
-		option = &ApplicationCommandOptionNumber{}
-	case ApplicationCommandOptionTypeBoolean:
-		option = &ApplicationCommandOptionBoolean{}
-	case ApplicationCommandOptionTypeUser:
-		option = &ApplicationCommandOptionUser{}
-	case ApplicationCommandOptionTypeChannel:
-		option = &ApplicationCommandOptionChannel{}
-	case ApplicationCommandOptionTypeRole:
-		option = &ApplicationCommandOptionRole{}
-	case ApplicationCommandOptionTypeMentionable:
-		option = &ApplicationCommandOptionMentionable{}
-	case ApplicationCommandOptionTypeAttachment:
-		option = &ApplicationCommandOptionAttachment{}
-	case ApplicationCommandOptionTypeSubCommandGroup:
-		option = &ApplicationCommandOptionSubCommandGroup{}
-	case ApplicationCommandOptionTypeSubCommand:
-		option = &ApplicationCommandOptionSubCommand{}
-	default:
-		return nil, nil
-	}
-
-	if err := option.UnmarshalJSON(data); err != nil {
-		return nil, err
-	}
-
-	return option, nil
 }
 
 func (a *ApplicationCommand) MarshalJSON() ([]byte, error) {
@@ -516,14 +499,25 @@ func (o *ApplicationCommandOptionSubCommandGroup) MarshalJSON() ([]byte, error) 
 
 func (o *ApplicationCommandOptionSubCommandGroup) UnmarshalJSON(data []byte) error {
 	type Alias ApplicationCommandOptionSubCommandGroup
-	aux := &struct {
+	raw := &struct {
 		*Alias
+		Options []json.RawMessage `json:"options,omitempty"`
 	}{
 		Alias: (*Alias)(o),
 	}
-	if err := json.Unmarshal(data, &aux); err != nil {
+
+	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
+
+	if raw.Options != nil {
+		opts, err := unmarshalOptionSlice(raw.Options)
+		if err != nil {
+			return err
+		}
+		o.Options = opts
+	}
+
 	return nil
 }
 
@@ -552,13 +546,24 @@ func (o *ApplicationCommandOptionSubCommand) MarshalJSON() ([]byte, error) {
 
 func (o *ApplicationCommandOptionSubCommand) UnmarshalJSON(data []byte) error {
 	type Alias ApplicationCommandOptionSubCommand
-	aux := &struct {
+	raw := &struct {
 		*Alias
+		Options []json.RawMessage `json:"options,omitempty"`
 	}{
 		Alias: (*Alias)(o),
 	}
-	if err := json.Unmarshal(data, &aux); err != nil {
+
+	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
+
+	if raw.Options != nil {
+		opts, err := unmarshalOptionSlice(raw.Options)
+		if err != nil {
+			return err
+		}
+		o.Options = &opts
+	}
+
 	return nil
 }
