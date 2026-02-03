@@ -154,22 +154,28 @@ func main() {
 		panic(err)
 	}
 
-	res, err := bot.RegisterSingleCommand(&types.ApplicationCommand{
-		Name:        "info",
-		Description: "Get information",
-		Type:        types.ApplicationCommandTypeChatInput,
-		Options: &[]types.AnyApplicationCommandOption{
-			&types.ApplicationCommandOptionSubCommand{
-				Name:        "channel",
-				Description: "Get information about the channel",
-				Options: &[]types.AnyApplicationCommandOption{
-					&types.ApplicationCommandOptionChannel{
-						Name:        "channel",
-						Description: "The channel to get information about",
-						Required:    functions.PointerTo(true),
+	res, err := bot.BulkRegisterCommands([]*types.ApplicationCommand{
+		{
+			Name:        "info",
+			Description: "Get information",
+			Type:        types.ApplicationCommandTypeChatInput,
+			Options: &[]types.AnyApplicationCommandOption{
+				&types.ApplicationCommandOptionSubCommand{
+					Name:        "channel",
+					Description: "Get information about the channel",
+					Options: &[]types.AnyApplicationCommandOption{
+						&types.ApplicationCommandOptionChannel{
+							Name:        "channel",
+							Description: "The channel to get information about",
+							Required:    functions.PointerTo(true),
+						},
 					},
 				},
 			},
+		}, {
+			Name:        "welcome",
+			Description: "Do more stuff!!!!",
+			Type:        types.ApplicationCommandTypeChatInput,
 		},
 	})
 	if err != nil {

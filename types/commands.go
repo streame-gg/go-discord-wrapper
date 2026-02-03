@@ -17,7 +17,7 @@ const (
 )
 
 type ApplicationCommand struct {
-	ID                       Snowflake                               `json:"id"`
+	ID                       *Snowflake                              `json:"id,omitempty"`
 	Type                     ApplicationCommandType                  `json:"type"`
 	ApplicationID            Snowflake                               `json:"application_id"`
 	GuildID                  *Snowflake                              `json:"guild_id,omitempty"`
