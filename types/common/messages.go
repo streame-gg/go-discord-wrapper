@@ -25,7 +25,7 @@ type Message struct {
 	Call                 *Call                       `json:"call,omitempty"`
 	ChannelID            Snowflake                   `json:"channel_id"`
 	ChannelType          ChannelType                 `json:"channel_type"`
-	Components           []AnyComponent              `json:"components"`
+	Components           []AnyComponent              `json:"-"`
 	Content              string                      `json:"content"`
 	EditedTimestamp      *time.Time                  `json:"edited_timestamp,omitempty"`
 	Embeds               []Embed                     `json:"embeds,omitempty"`
@@ -51,6 +51,42 @@ type Message struct {
 	TTS                  bool                        `json:"tts"`
 	Type                 MessageType                 `json:"type"`
 	WebhookID            *string                     `json:"webhook_id,omitempty"`
+}
+
+func (m *Message) UnmarshalJSON(data []byte) error {
+	type Alias Message
+	aux := &struct {
+		Components []json.RawMessage `json:"components"`
+		*Alias
+	}{
+		Alias: (*Alias)(m),
+	}
+
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	// Unmarshal components as RawComponent
+	for _, comp := range aux.Components {
+		var raw RawComponent
+		if err := json.Unmarshal(comp, &raw); err != nil {
+			return fmt.Errorf("failed to unmarshal component: %w", err)
+		}
+		m.Components = append(m.Components, &raw)
+	}
+
+	return nil
+}
+
+func (m *Message) MarshalJSON() ([]byte, error) {
+	type Alias Message
+	return json.Marshal(&struct {
+		Components []AnyComponent `json:"components,omitempty"`
+		*Alias
+	}{
+		Components: m.Components,
+		Alias:      (*Alias)(m),
+	})
 }
 
 type MessageFlag uint64
@@ -162,7 +198,42 @@ type PartialMessage struct {
 	Mentions        *[]any               `json:"mentions"`
 	MentionRoles    []string             `json:"mention_roles"`
 	StickerItems    []MessageStickerItem `json:"sticker_items,omitempty"`
-	Components      []AnyComponent       `json:"components,omitempty"`
+	Components      []AnyComponent       `json:"-"`
+}
+
+func (p *PartialMessage) UnmarshalJSON(data []byte) error {
+	type Alias PartialMessage
+	aux := &struct {
+		Components []json.RawMessage `json:"components"`
+		*Alias
+	}{
+		Alias: (*Alias)(p),
+	}
+
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	for _, comp := range aux.Components {
+		var raw RawComponent
+		if err := json.Unmarshal(comp, &raw); err != nil {
+			return fmt.Errorf("failed to unmarshal component: %w", err)
+		}
+		p.Components = append(p.Components, &raw)
+	}
+
+	return nil
+}
+
+func (p *PartialMessage) MarshalJSON() ([]byte, error) {
+	type Alias PartialMessage
+	return json.Marshal(&struct {
+		Components []AnyComponent `json:"components,omitempty"`
+		*Alias
+	}{
+		Components: p.Components,
+		Alias:      (*Alias)(p),
+	})
 }
 
 type MessageMessageReference struct {
