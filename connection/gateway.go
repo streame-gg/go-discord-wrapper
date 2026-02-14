@@ -100,16 +100,58 @@ func (d *Client) Login() error {
 	}
 
 	go func() {
-		if err := d.listenWebsocket(); err != nil {
-			d.Logger.Err(err).Msg("Error listening to websocket")
-			if websocket.IsCloseError(err, websocket.CloseNormalClosure, 4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009) {
-				d.Logger.Debug().Msg(" gateway connection closed by , trying to reconnect")
-				if err := d.reconnect(true); err != nil {
-					d.Logger.Err(err).Msg("Failed to reconnect")
+		for {
+			if err := d.listenWebsocket(); err != nil {
+				d.Logger.Err(err).Msg("Error listening to websocket")
+
+				if d.Websocket == nil {
+					d.Logger.Debug().Msg("Websocket is nil, stopping listener")
+					return
 				}
+
+				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+					d.Logger.Debug().Msg("Gateway connection closed normally")
+					return
+				}
+
+				if websocket.IsCloseError(err, 4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009) {
+					d.Logger.Debug().Msg("Gateway connection closed by Discord, trying to reconnect")
+					if err := d.reconnect(true); err != nil {
+						d.Logger.Err(err).Msg("Failed to reconnect")
+						return
+					}
+
+					continue
+				}
+
+				if websocket.IsCloseError(err, websocket.CloseAbnormalClosure) ||
+					websocket.IsUnexpectedCloseError(err) {
+					d.Logger.Warn().Msg("Abnormal websocket closure, attempting to reconnect")
+					if err := d.reconnect(false); err != nil {
+						d.Logger.Err(err).Msg("Failed to reconnect after abnormal closure")
+						if err := d.reconnect(true); err != nil {
+							d.Logger.Err(err).Msg("Failed to reconnect with fresh connection")
+							return
+						}
+					}
+					continue
+				}
+
+				d.Logger.Warn().Msg("Unexpected error, attempting to reconnect")
+				if err := d.reconnect(false); err != nil {
+					d.Logger.Warn().Msg("Resume failed, attempting fresh reconnect")
+					if err := d.reconnect(true); err != nil {
+						d.Logger.Err(err).Msg("Fresh reconnect failed, stopping listener")
+						return
+					}
+				}
+				continue
 			}
 
-			d.Logger.Debug().Msg("gateway connection closed by , no reconnecting attempt will be made")
+			if d.Websocket != nil {
+				d.Logger.Debug().Msg("Restarting websocket listener")
+				continue
+			}
 
 			return
 		}
