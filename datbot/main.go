@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"go-discord-wrapper/connection"
 	"go-discord-wrapper/functions"
-	"go-discord-wrapper/types"
+	"go-discord-wrapper/types/applicationCommands"
+	"go-discord-wrapper/types/common"
+	"go-discord-wrapper/types/components"
+	"go-discord-wrapper/types/events"
+	"go-discord-wrapper/types/interactions/responses"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,50 +22,50 @@ func main() {
 
 	bot := connection.NewClient(
 		os.Getenv("TOKEN"),
-		types.AllIntentsExceptDirectMessage,
+		common.AllIntentsExceptDirectMessage,
 		&connection.ClientSharding{
 			TotalShards: 1,
 			ShardID:     0,
 		},
 	)
 
-	bot.OnMessageCreate(func(session *connection.Client, event *types.MessageCreateEvent) {
+	bot.OnMessageCreate(func(session *connection.Client, event *events.MessageCreateEvent) {
 		session.Logger.Info().Msgf("Received message: %s", event.Content)
 	})
 
-	bot.OnReady(func(session *connection.Client, event *types.ReadyEvent) {
+	bot.OnReady(func(session *connection.Client, event *events.ReadyEvent) {
 		bot.Logger.Info().Msgf("Logged in as %s#%s", event.User.Username, event.User.Discriminator)
 	})
 
-	bot.OnInteractionCreate(func(session *connection.Client, event *types.InteractionCreateEvent) {
+	bot.OnInteractionCreate(func(session *connection.Client, event *events.InteractionCreateEvent) {
 		if event.GetFullCommand() == "info channel" {
 			bot.Logger.Debug().Msgf("Received info channel command from %s", event.Member.User.DisplayName())
 
-			if err := event.ReplyWithModal(&types.Modal{
+			if err := event.ReplyWithModal(&components.Modal{
 				Title:    "Modal",
 				CustomID: "modal",
-				Components: &[]types.LabelComponent{
+				Components: &[]components.LabelComponent{
 					{
 						Label:       "Input 1",
 						Description: "lololol",
-						Component: &types.FileUploadComponent{
+						Component: &components.FileUploadComponent{
 							CustomID: "input_1",
 							Required: functions.PointerTo(false),
 						},
 					}, {
 						Label:       "Input 2",
 						Description: "adadadadadad",
-						Component: &types.TextInputComponent{
+						Component: &components.TextInputComponent{
 							CustomID: "input_2",
-							Style:    types.TextInputStyleParagraph,
+							Style:    components.TextInputStyleParagraph,
 							Required: functions.PointerTo(false),
 						},
 					}, {
 						Label:       "Input 3",
 						Description: "qdwdwqwqddqwdqw",
-						Component: &types.CheckboxGroupComponent{
+						Component: &components.CheckboxGroupComponent{
 							CustomID: "checkbox",
-							Options: &[]types.CheckboxGroupComponentOption{
+							Options: &[]components.CheckboxGroupComponentOption{
 								{
 									Value: "One",
 									Label: "one",
@@ -81,16 +85,16 @@ func main() {
 					{
 						Label:       "Input 4",
 						Description: "dwqdqwwdqdwqdwqdqwqdw",
-						Component: &types.CheckboxComponent{
+						Component: &components.CheckboxComponent{
 							CustomID: "lololololol",
 						},
 					},
 					{
 						Label:       "Input 5",
 						Description: "12973123",
-						Component: &types.RadioGroupComponent{
+						Component: &components.RadioGroupComponent{
 							CustomID: "radiogroup",
-							Options: &[]types.RadioGroupComponentOption{
+							Options: &[]components.RadioGroupComponentOption{
 								{
 									Value: "one",
 									Label: "Eins",
@@ -115,46 +119,46 @@ func main() {
 		if event.IsCommand() {
 			bot.Logger.Debug().Msgf("Received interaction command %s from %s", event.GetFullCommand(), event.Member.User.DisplayName())
 
-			_, err := event.Reply(&types.InteractionResponseDataDefault{
-				Flags: types.MessageFlagEphemeral | types.MessageFlagIsComponentsV2,
-				Components: &[]types.AnyComponent{
-					&types.TextDisplayComponent{
+			_, err := event.Reply(&responses.InteractionResponseDataDefault{
+				Flags: common.MessageFlagEphemeral | common.MessageFlagIsComponentsV2,
+				Components: &[]common.AnyComponent{
+					&components.TextDisplayComponent{
 						Content: "Hello, " + event.Member.User.DisplayName() + "!",
 					},
 
-					&types.SeparatorComponent{
-						SeparatorComponentSpacing: types.SeparatorComponentSpacingSmall,
+					&components.SeparatorComponent{
+						SeparatorComponentSpacing: components.SeparatorComponentSpacingSmall,
 					},
 
-					&types.MediaGalleryComponent{
-						Items: &[]types.MediaGalleryItem{
+					&components.MediaGalleryComponent{
+						Items: &[]components.MediaGalleryItem{
 							{
-								Media: &types.UnfurledMediaItem{
+								Media: &components.UnfurledMediaItem{
 									URL: "https://i.imgur.com/AfFp7pu.png",
 								},
 							},
 							{
-								Media: &types.UnfurledMediaItem{
+								Media: &components.UnfurledMediaItem{
 									URL: "https://i.imgur.com/AfFp7pu.png",
 								},
 							},
 						},
 					},
 
-					&types.Container{
-						Components: &[]types.AnyContainerComponent{
-							&types.TextDisplayComponent{
+					&components.Container{
+						Components: &[]components.AnyContainerComponent{
+							&components.TextDisplayComponent{
 								Content: "## Hey!",
 							},
 
-							&types.Section{
-								Components: &[]types.AnySectionComponent{
-									&types.TextDisplayComponent{
+							&components.Section{
+								Components: &[]components.AnySectionComponent{
+									&components.TextDisplayComponent{
 										Content: "You used the command **" + event.GetFullCommand() + "**",
 									},
 								},
-								Accessory: &types.ButtonComponent{
-									Style:    types.ButtonStylePrimary,
+								Accessory: &components.ButtonComponent{
+									Style:    components.ButtonStylePrimary,
 									Label:    "Click Me!",
 									CustomID: "button_click_me",
 								},
@@ -173,9 +177,9 @@ func main() {
 			bot.Logger.Debug().Msgf("Received button interaction with custom ID %s from %s", event.GetCustomID(), event.Member.User.DisplayName())
 
 			if event.GetCustomID() == "button_click_me" {
-				_, err := event.Reply(&types.InteractionResponseDataDefault{
+				_, err := event.Reply(&responses.InteractionResponseDataDefault{
 					Content: "You clicked the button!",
-					Flags:   types.MessageFlagEphemeral,
+					Flags:   common.MessageFlagEphemeral,
 				})
 
 				if err != nil {
@@ -201,17 +205,17 @@ func main() {
 		panic(err)
 	}
 
-	res, err := bot.BulkRegisterCommands([]*types.ApplicationCommand{
+	res, err := bot.BulkRegisterCommands([]*applicationCommands.ApplicationCommand{
 		{
 			Name:        "info",
 			Description: "Get information",
-			Type:        types.ApplicationCommandTypeChatInput,
-			Options: &[]types.AnyApplicationCommandOption{
-				&types.ApplicationCommandOptionSubCommand{
+			Type:        common.ApplicationCommandTypeChatInput,
+			Options: &[]applicationCommands.AnyApplicationCommandOption{
+				&applicationCommands.ApplicationCommandOptionSubCommand{
 					Name:        "channel",
 					Description: "Get information about the channel",
-					Options: &[]types.AnyApplicationCommandOption{
-						&types.ApplicationCommandOptionChannel{
+					Options: &[]applicationCommands.AnyApplicationCommandOption{
+						&applicationCommands.ApplicationCommandOptionChannel{
 							Name:        "channel",
 							Description: "The channel to get information about",
 							Required:    functions.PointerTo(true),
@@ -222,7 +226,7 @@ func main() {
 		}, {
 			Name:        "welcome",
 			Description: "Do more stuff!!!!",
-			Type:        types.ApplicationCommandTypeChatInput,
+			Type:        common.ApplicationCommandTypeChatInput,
 		},
 	})
 	if err != nil {

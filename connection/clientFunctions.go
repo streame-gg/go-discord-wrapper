@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"go-discord-wrapper/types"
+	"go-discord-wrapper/types/applicationCommands"
+	"go-discord-wrapper/types/common"
 	"net/http"
 )
 
-func (d *Client) RegisterSingleCommand(command *types.ApplicationCommand) (*types.ApplicationCommand, error) {
+func (d *Client) RegisterSingleCommand(command *applicationCommands.ApplicationCommand) (*applicationCommands.ApplicationCommand, error) {
 	body, marshalErr := json.Marshal(command)
 	if marshalErr != nil {
 		return nil, marshalErr
@@ -16,7 +17,7 @@ func (d *Client) RegisterSingleCommand(command *types.ApplicationCommand) (*type
 
 	req, errCreatingRequest := http.NewRequest(
 		"POST",
-		"https://discord.com"+types.APIBaseString(*d.APIVersion)+"applications/"+d.User.ID.ToString()+"/commands",
+		"https://discord.com"+common.APIBaseString(*d.APIVersion)+"applications/"+d.User.ID.ToString()+"/commands",
 		bytes.NewBuffer(body),
 	)
 	if errCreatingRequest != nil {
@@ -44,7 +45,7 @@ func (d *Client) RegisterSingleCommand(command *types.ApplicationCommand) (*type
 		return nil, fmt.Errorf("failed to register command, status code: %s, body: %v", do.Status, body)
 	}
 
-	var registeredCommand types.ApplicationCommand
+	var registeredCommand applicationCommands.ApplicationCommand
 	if err := json.NewDecoder(do.Body).Decode(&registeredCommand); err != nil {
 		return nil, err
 	}
@@ -52,7 +53,7 @@ func (d *Client) RegisterSingleCommand(command *types.ApplicationCommand) (*type
 	return &registeredCommand, nil
 }
 
-func (d *Client) BulkRegisterCommands(commands []*types.ApplicationCommand) (*[]*types.ApplicationCommand, error) {
+func (d *Client) BulkRegisterCommands(commands []*applicationCommands.ApplicationCommand) (*[]*applicationCommands.ApplicationCommand, error) {
 	body, marshalErr := json.Marshal(commands)
 	if marshalErr != nil {
 		return nil, marshalErr
@@ -60,7 +61,7 @@ func (d *Client) BulkRegisterCommands(commands []*types.ApplicationCommand) (*[]
 
 	req, errCreatingRequest := http.NewRequest(
 		"PUT",
-		"https://discord.com"+types.APIBaseString(*d.APIVersion)+"applications/"+d.User.ID.ToString()+"/commands",
+		"https://discord.com"+common.APIBaseString(*d.APIVersion)+"applications/"+d.User.ID.ToString()+"/commands",
 		bytes.NewBuffer(body),
 	)
 	if errCreatingRequest != nil {
@@ -97,7 +98,7 @@ func (d *Client) BulkRegisterCommands(commands []*types.ApplicationCommand) (*[]
 		return nil, fmt.Errorf("failed to register command, status code: %s, body: %v", do.Status, body)
 	}
 
-	var registeredCommand []*types.ApplicationCommand
+	var registeredCommand []*applicationCommands.ApplicationCommand
 	if err := json.NewDecoder(do.Body).Decode(&registeredCommand); err != nil {
 		return nil, err
 	}

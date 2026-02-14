@@ -2,7 +2,8 @@ package connection
 
 import (
 	"encoding/json"
-	"go-discord-wrapper/types"
+	"go-discord-wrapper/types/common"
+	"go-discord-wrapper/types/events"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -48,12 +49,12 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int)
 		return nil, err
 	}
 
-	var payload types.Payload
+	var payload common.Payload
 	if err := json.Unmarshal(message, &payload); err != nil {
 		return nil, err
 	}
 
-	var hello types.HelloPayloadData
+	var hello common.HelloPayloadData
 	if err := json.Unmarshal(payload.D, &hello); err != nil {
 		return nil, err
 	}
@@ -92,7 +93,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int)
 						heartbeatData = json.RawMessage("null")
 					}
 
-					heartbeatPayload := types.Payload{
+					heartbeatPayload := common.Payload{
 						Op: 1,
 						D:  heartbeatData,
 					}
@@ -228,7 +229,7 @@ func (d *Client) listenWebsocket() error {
 			return err
 		}
 
-		var payload types.Payload
+		var payload common.Payload
 		if err := json.Unmarshal(message, &payload); err != nil {
 			return err
 		}
@@ -283,7 +284,7 @@ func (d *Client) listenWebsocket() error {
 		}
 
 		if payload.T != "" {
-			factory, ok := types.EventFactories[types.EventType(payload.T)]
+			factory, ok := events.EventFactories[events.EventType(payload.T)]
 			if !ok {
 				d.Logger.Warn().Msgf("No factory found for event type %s", payload.T)
 				continue

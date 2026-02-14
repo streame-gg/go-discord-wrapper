@@ -1,6 +1,8 @@
-package types
+package common
 
-import "time"
+import (
+	"time"
+)
 
 type ChannelType int
 
@@ -109,16 +111,16 @@ const (
 	ChannelForumLayoutTypeGalleryView ChannelForumLayoutType = 2
 )
 
+type DefaultReactionEmoji struct {
+	EmojiID   *Snowflake `json:"emoji_id,omitempty"`
+	EmojiName *string    `json:"emoji_name,omitempty"`
+}
+
 type ThreadMetadata struct {
 	Archived            bool       `json:"archived"`
 	AutoArchiveDuration *int       `json:"auto_archive_duration,omitempty"`
 	ArchiveTimestamp    time.Time  `json:"archive_timestamp"`
-	CreateTimestanp     *time.Time `json:"create_timestamp,omitempty"`
+	CreatedTimestamp    *time.Time `json:"created_timestamp,omitempty"`
 	Locked              *bool      `json:"locked,omitempty"`
 	Invitable           *bool      `json:"invitable,omitempty"`
-}
-
-type DefaultReactionEmoji struct {
-	EmojiID   *Snowflake `json:"emoji_id,omitempty"`
-	EmojiName *string    `json:"emoji_name,omitempty"`
 }

@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"go-discord-wrapper/functions"
-	"go-discord-wrapper/types"
+	"go-discord-wrapper/types/common"
+	"go-discord-wrapper/types/events"
 	"go-discord-wrapper/util"
 	"net/http"
 	"net/url"
@@ -14,7 +15,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type EventHandler func(*Client, types.Event)
+type EventHandler func(*Client, events.Event)
 
 type ClientSharding struct {
 	TotalShards int
@@ -24,43 +25,43 @@ type ClientSharding struct {
 type Client struct {
 	Token *string
 
-	APIVersion *types.APIVersion
+	APIVersion *common.APIVersion
 
 	Logger *zerolog.Logger
 
-	Intents *types.Intent
+	Intents *common.Intent
 
 	Websocket *Websocket
 
-	Events map[types.EventType][]EventHandler
+	Events map[events.EventType][]EventHandler
 
 	mu sync.RWMutex
 
-	UnavailableGuilds map[types.Snowflake]struct{}
+	UnavailableGuilds map[common.Snowflake]struct{}
 
-	User *types.User
+	User *common.User
 
 	Sharding *ClientSharding
 }
 
-func NewClient(token string, intents types.Intent, sharding *ClientSharding) *Client {
+func NewClient(token string, intents common.Intent, sharding *ClientSharding) *Client {
 	return &Client{
 		Token:             &token,
-		APIVersion:        functions.PointerTo(types.APIVersion10),
+		APIVersion:        functions.PointerTo(common.APIVersion10),
 		Logger:            util.NewLogger(),
 		Intents:           &intents,
-		UnavailableGuilds: make(map[types.Snowflake]struct{}),
+		UnavailableGuilds: make(map[common.Snowflake]struct{}),
 		Sharding:          sharding,
 	}
 }
 
-func (d *Client) initializeGatewayConnection() (*types.BotRegisterResponse, error) {
+func (d *Client) initializeGatewayConnection() (*common.BotRegisterResponse, error) {
 	do, err := http.DefaultClient.Do(&http.Request{
 		Method: "GET",
 		URL: &url.URL{
 			Scheme: "https",
 			Host:   "discord.com",
-			Path:   types.APIBaseString(*d.APIVersion) + "gateway/bot",
+			Path:   common.APIBaseString(*d.APIVersion) + "gateway/bot",
 		},
 		Header: http.Header{
 			"Authorization": []string{"Bot " + *d.Token},
@@ -79,7 +80,7 @@ func (d *Client) initializeGatewayConnection() (*types.BotRegisterResponse, erro
 		return nil, errors.New("failed to register bot gateway connection, status code: " + do.Status)
 	}
 
-	var resp types.BotRegisterResponse
+	var resp common.BotRegisterResponse
 	if err := json.NewDecoder(do.Body).Decode(&resp); err != nil {
 		return nil, err
 	}
@@ -165,27 +166,27 @@ func (d *Client) Login() error {
 }
 
 func (d *Client) OnEvent(
-	eventName types.EventType,
+	eventName events.EventType,
 	handler EventHandler,
 ) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	if d.Events == nil {
-		d.Events = make(map[types.EventType][]EventHandler)
+		d.Events = make(map[events.EventType][]EventHandler)
 	}
 
 	d.Events[eventName] = append(d.Events[eventName], handler)
 }
 
 func (d *Client) OnGuildCreate(
-	handler func(*Client, *types.GuildCreateEvent),
+	handler func(*Client, *events.GuildCreateEvent),
 ) {
-	d.OnEvent(types.EventGuildCreate, func(
+	d.OnEvent(events.EventGuildCreate, func(
 		session *Client,
-		event types.Event,
+		event events.Event,
 	) {
-		if e, ok := event.(*types.GuildCreateEvent); ok {
+		if e, ok := event.(*events.GuildCreateEvent); ok {
 			handler(session, e)
 		} else {
 			d.Logger.Warn().Msgf("Failed to cast event to GuildCreateEvent: %T", event)
@@ -194,13 +195,13 @@ func (d *Client) OnGuildCreate(
 }
 
 func (d *Client) OnMessageCreate(
-	handler func(*Client, *types.MessageCreateEvent),
+	handler func(*Client, *events.MessageCreateEvent),
 ) {
-	d.OnEvent(types.EventMessageCreate, func(
+	d.OnEvent(events.EventMessageCreate, func(
 		session *Client,
-		event types.Event,
+		event events.Event,
 	) {
-		if e, ok := event.(*types.MessageCreateEvent); ok {
+		if e, ok := event.(*events.MessageCreateEvent); ok {
 			handler(session, e)
 		} else {
 			d.Logger.Warn().Msgf("Failed to cast event to MessageCreateEvent: %T", event)
@@ -209,13 +210,13 @@ func (d *Client) OnMessageCreate(
 }
 
 func (d *Client) OnInteractionCreate(
-	handler func(*Client, *types.InteractionCreateEvent),
+	handler func(*Client, *events.InteractionCreateEvent),
 ) {
-	d.OnEvent(types.EventInteractionCreate, func(
+	d.OnEvent(events.EventInteractionCreate, func(
 		session *Client,
-		event types.Event,
+		event events.Event,
 	) {
-		if e, ok := event.(*types.InteractionCreateEvent); ok {
+		if e, ok := event.(*events.InteractionCreateEvent); ok {
 			handler(session, e)
 		} else {
 			d.Logger.Warn().Msgf("Failed to cast event to InteractionCreateEvent: %T", event)
@@ -224,13 +225,13 @@ func (d *Client) OnInteractionCreate(
 }
 
 func (d *Client) OnReady(
-	handler func(*Client, *types.ReadyEvent),
+	handler func(*Client, *events.ReadyEvent),
 ) {
-	d.OnEvent(types.EventReady, func(
+	d.OnEvent(events.EventReady, func(
 		session *Client,
-		event types.Event,
+		event events.Event,
 	) {
-		if e, ok := event.(*types.ReadyEvent); ok {
+		if e, ok := event.(*events.ReadyEvent); ok {
 			handler(session, e)
 		} else {
 			d.Logger.Warn().Msgf("Failed to cast event to ReadyEvent: %T", event)
@@ -239,13 +240,13 @@ func (d *Client) OnReady(
 }
 
 func (d *Client) OnGuildDelete(
-	handler func(*Client, *types.GuildDeleteEvent),
+	handler func(*Client, *events.GuildDeleteEvent),
 ) {
-	d.OnEvent(types.EventGuildDelete, func(
+	d.OnEvent(events.EventGuildDelete, func(
 		session *Client,
-		event types.Event,
+		event events.Event,
 	) {
-		if e, ok := event.(*types.GuildDeleteEvent); ok {
+		if e, ok := event.(*events.GuildDeleteEvent); ok {
 			handler(session, e)
 		} else {
 			d.Logger.Warn().Msgf("Failed to cast event to GuildDeleteEvent: %T", event)
@@ -253,18 +254,18 @@ func (d *Client) OnGuildDelete(
 	})
 }
 
-func (d *Client) dispatch(event types.Event) {
+func (d *Client) dispatch(event events.Event) {
 	handlers := d.Events[event.Event()]
 	for _, h := range handlers {
 		h(d, event)
 	}
 }
 
-func (d *Client) internalEventHandler(msg json.RawMessage, event types.EventType) bool {
+func (d *Client) internalEventHandler(msg json.RawMessage, event events.EventType) bool {
 	switch event {
-	case types.EventReady:
+	case events.EventReady:
 		{
-			var readyEvent types.ReadyEvent
+			var readyEvent events.ReadyEvent
 			if err := json.Unmarshal(msg, &readyEvent); err != nil {
 				d.Logger.Err(err).Msg("Failed to unmarshal READY event")
 			}
@@ -287,9 +288,9 @@ func (d *Client) internalEventHandler(msg json.RawMessage, event types.EventType
 
 			return true
 		}
-	case types.EventGuildCreate:
+	case events.EventGuildCreate:
 		{
-			var guildCreateEvent types.GuildCreateEvent
+			var guildCreateEvent events.GuildCreateEvent
 			if err := json.Unmarshal(msg, &guildCreateEvent); err != nil {
 				d.Logger.Err(err).Msg("Failed to unmarshal GUILD_CREATE event")
 				return false
@@ -304,9 +305,9 @@ func (d *Client) internalEventHandler(msg json.RawMessage, event types.EventType
 				return false
 			}
 		}
-	case types.EventGuildDelete:
+	case events.EventGuildDelete:
 		{
-			var guildDeleteEvent types.GuildDeleteEvent
+			var guildDeleteEvent events.GuildDeleteEvent
 			if err := json.Unmarshal(msg, &guildDeleteEvent); err != nil {
 				d.Logger.Err(err).Msg("Failed to unmarshal GUILD_DELETE event")
 				return false
@@ -331,19 +332,19 @@ func (d *Client) internalEventHandler(msg json.RawMessage, event types.EventType
 	return true
 }
 
-func (d *Client) addUnavailableGuild(id types.Snowflake) {
+func (d *Client) addUnavailableGuild(id common.Snowflake) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.UnavailableGuilds[id] = struct{}{}
 }
 
-func (d *Client) deleteUnavailableGuild(id types.Snowflake) {
+func (d *Client) deleteUnavailableGuild(id common.Snowflake) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	delete(d.UnavailableGuilds, id)
 }
 
-func (d *Client) IsGuildUnavailable(id types.Snowflake) bool {
+func (d *Client) IsGuildUnavailable(id common.Snowflake) bool {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	_, exists := d.UnavailableGuilds[id]
