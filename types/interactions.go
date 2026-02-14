@@ -846,6 +846,7 @@ func (l *ComponentLabelComponent) UnmarshalJSON(data []byte) error {
 		c = &FileUploadComponentInteractionResponse{}
 	case ComponentTypeLabel:
 		c = &LabelComponentInteractionResponse{}
+	//TODO: Checkbox, CheckboxGroup, RadioGroup, FileDisplay
 
 	default:
 		return fmt.Errorf("unknown interaction component type: %d", probe.Type)

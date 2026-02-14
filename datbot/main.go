@@ -56,6 +56,53 @@ func main() {
 							Style:    types.TextInputStyleParagraph,
 							Required: functions.PointerTo(false),
 						},
+					}, {
+						Label:       "Input 3",
+						Description: "qdwdwqwqddqwdqw",
+						Component: &types.CheckboxGroupComponent{
+							CustomID: "checkbox",
+							Options: &[]types.CheckboxGroupComponentOption{
+								{
+									Value: "One",
+									Label: "one",
+								}, {
+									Value: "Two",
+									Label: "two",
+								}, {
+									Value: "Three",
+									Label: "three",
+								},
+							},
+							MinValues: functions.PointerTo(1),
+							MaxValues: functions.PointerTo(3),
+							Required:  functions.PointerTo(true),
+						},
+					},
+					{
+						Label:       "Input 4",
+						Description: "dwqdqwwdqdwqdwqdqwqdw",
+						Component: &types.CheckboxComponent{
+							CustomID: "lololololol",
+						},
+					},
+					{
+						Label:       "Input 5",
+						Description: "12973123",
+						Component: &types.RadioGroupComponent{
+							CustomID: "radiogroup",
+							Options: &[]types.RadioGroupComponentOption{
+								{
+									Value: "one",
+									Label: "Eins",
+								}, {
+									Value: "two",
+									Label: "Zwei",
+								}, {
+									Value: "three",
+									Label: "Drei",
+								},
+							},
+						},
 					},
 				},
 			}); err != nil {

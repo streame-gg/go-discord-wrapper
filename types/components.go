@@ -25,6 +25,9 @@ const (
 	ComponentTypeContainer        ComponentType = 17
 	ComponentTypeLabel            ComponentType = 18
 	ComponentTypeFileUpload       ComponentType = 19
+	ComponentTypeRadioGroup       ComponentType = 21
+	ComponentTypeCheckboxGroup    ComponentType = 22
+	ComponentTypeCheckbox         ComponentType = 23
 )
 
 func (c ComponentType) IsAnySelectMenu() bool {
@@ -1386,6 +1389,141 @@ func (f *FileUploadComponent) GetType() ComponentType {
 }
 
 func (f *FileUploadComponent) IsAnyLabelComponent() bool {
+	return true
+}
+
+type RadioGroupComponent struct {
+	Type     ComponentType                `json:"type"`
+	ID       *int                         `json:"id,omitempty"`
+	CustomID string                       `json:"custom_id"`
+	Options  *[]RadioGroupComponentOption `json:"options"`
+	Required *bool                        `json:"required,omitempty"`
+}
+
+type RadioGroupComponentOption struct {
+	Value       string  `json:"value"`
+	Label       string  `json:"label"`
+	Description *string `json:"description,omitempty"`
+	Default     *bool   `json:"default,omitempty"`
+}
+
+func (r *RadioGroupComponent) MarshalJSON() ([]byte, error) {
+	r.Type = ComponentTypeRadioGroup
+	type Alias RadioGroupComponent
+	return json.Marshal(&struct {
+		*Alias
+	}{
+		Alias: (*Alias)(r),
+	})
+}
+
+func (r *RadioGroupComponent) UnmarshalJSON(data []byte) error {
+	type Alias RadioGroupComponent
+	var raw struct {
+		*Alias
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	*r = RadioGroupComponent(*raw.Alias)
+	return nil
+}
+
+func (r *RadioGroupComponent) GetType() ComponentType {
+	return ComponentTypeRadioGroup
+}
+
+func (r *RadioGroupComponent) IsAnyLabelComponent() bool {
+	return true
+}
+
+type CheckboxGroupComponent struct {
+	Type      ComponentType                   `json:"type"`
+	ID        *int                            `json:"id,omitempty"`
+	CustomID  string                          `json:"custom_id"`
+	Options   *[]CheckboxGroupComponentOption `json:"options"`
+	MinValues *int                            `json:"min_values,omitempty"`
+	MaxValues *int                            `json:"max_values,omitempty"`
+	Required  *bool                           `json:"required,omitempty"`
+}
+
+type CheckboxGroupComponentOption struct {
+	Value       string  `json:"value"`
+	Label       string  `json:"label"`
+	Description *string `json:"description,omitempty"`
+	Default     *bool   `json:"default,omitempty"`
+}
+
+func (c *CheckboxGroupComponent) MarshalJSON() ([]byte, error) {
+	c.Type = ComponentTypeCheckboxGroup
+	type Alias CheckboxGroupComponent
+	return json.Marshal(&struct {
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	})
+}
+
+func (c *CheckboxGroupComponent) UnmarshalJSON(data []byte) error {
+	type Alias CheckboxGroupComponent
+	var raw struct {
+		*Alias
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	*c = CheckboxGroupComponent(*raw.Alias)
+	return nil
+}
+
+func (c *CheckboxGroupComponent) GetType() ComponentType {
+	return ComponentTypeCheckboxGroup
+}
+
+func (c *CheckboxGroupComponent) IsAnyLabelComponent() bool {
+	return true
+}
+
+type CheckboxComponent struct {
+	Type     ComponentType `json:"type"`
+	ID       *int          `json:"id,omitempty"`
+	CustomID string        `json:"custom_id"`
+	Default  *bool         `json:"default,omitempty"`
+}
+
+func (c *CheckboxComponent) MarshalJSON() ([]byte, error) {
+	c.Type = ComponentTypeCheckbox
+	type Alias CheckboxComponent
+	return json.Marshal(&struct {
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	})
+}
+
+func (c *CheckboxComponent) UnmarshalJSON(data []byte) error {
+	type Alias CheckboxComponent
+	var raw struct {
+		*Alias
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	*c = CheckboxComponent(*raw.Alias)
+	return nil
+}
+
+func (c *CheckboxComponent) GetType() ComponentType {
+	return ComponentTypeCheckbox
+}
+
+func (c *CheckboxComponent) IsAnyLabelComponent() bool {
 	return true
 }
 
