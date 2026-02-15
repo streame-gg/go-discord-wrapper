@@ -3,7 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"go-discord-wrapper/types/common"
+	"github.com/DatGamet/go-discord-wrapper/types/common"
 )
 
 type ApplicationCommand struct {

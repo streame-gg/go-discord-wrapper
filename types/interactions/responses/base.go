@@ -2,7 +2,7 @@ package responses
 
 import (
 	"encoding/json"
-	"go-discord-wrapper/types/common"
+	"github.com/DatGamet/go-discord-wrapper/types/common"
 )
 
 type AnyInteractionResponseData interface {

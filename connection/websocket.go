@@ -2,8 +2,8 @@ package connection
 
 import (
 	"encoding/json"
-	"go-discord-wrapper/types/common"
-	"go-discord-wrapper/types/events"
+	"github.com/DatGamet/go-discord-wrapper/types/common"
+	"github.com/DatGamet/go-discord-wrapper/types/events"
 	"time"
 
 	"github.com/gorilla/websocket"

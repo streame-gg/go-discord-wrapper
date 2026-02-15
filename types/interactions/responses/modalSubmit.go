@@ -1,8 +1,8 @@
 package responses
 
 import (
-	"go-discord-wrapper/types/common"
-	"go-discord-wrapper/types/components"
+	"github.com/DatGamet/go-discord-wrapper/types/common"
+	"github.com/DatGamet/go-discord-wrapper/types/components"
 )
 
 type InteractionDataModalSubmit struct {

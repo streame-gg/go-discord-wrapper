@@ -1,7 +1,7 @@
 package responses
 
 import (
-	"go-discord-wrapper/types/common"
+	"github.com/DatGamet/go-discord-wrapper/types/common"
 )
 
 type InteractionDataMessageComponent struct {

@@ -3,16 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
-	"go-discord-wrapper/connection"
-	"go-discord-wrapper/types/commands"
-	"go-discord-wrapper/types/common"
-	"go-discord-wrapper/types/components"
-	"go-discord-wrapper/types/events"
-	"go-discord-wrapper/types/interactions/responses"
-	"go-discord-wrapper/util"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/DatGamet/go-discord-wrapper/connection"
+	"github.com/DatGamet/go-discord-wrapper/types/commands"
+	"github.com/DatGamet/go-discord-wrapper/types/common"
+	"github.com/DatGamet/go-discord-wrapper/types/components"
+	"github.com/DatGamet/go-discord-wrapper/types/events"
+	"github.com/DatGamet/go-discord-wrapper/types/interactions/responses"
+	"github.com/DatGamet/go-discord-wrapper/util"
 
 	"github.com/joho/godotenv"
 )

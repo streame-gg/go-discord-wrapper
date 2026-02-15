@@ -3,7 +3,7 @@ package components
 import (
 	"encoding/json"
 	"errors"
-	"go-discord-wrapper/types/common"
+	"github.com/DatGamet/go-discord-wrapper/types/common"
 )
 
 type Container struct {

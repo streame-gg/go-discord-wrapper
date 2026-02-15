@@ -1,9 +1,9 @@
 package events
 
 import (
-	"go-discord-wrapper/types/common"
-	"go-discord-wrapper/types/interactions"
-	"go-discord-wrapper/types/interactions/responses"
+	"github.com/DatGamet/go-discord-wrapper/types/common"
+	"github.com/DatGamet/go-discord-wrapper/types/interactions"
+	"github.com/DatGamet/go-discord-wrapper/types/interactions/responses"
 )
 
 type InteractionCreateEvent struct {

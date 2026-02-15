@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go-discord-wrapper/types/common"
+	"github.com/DatGamet/go-discord-wrapper/types/common"
 )
 
 type LabelComponent struct {

@@ -3,9 +3,9 @@ package connection
 import (
 	"encoding/json"
 	"errors"
-	"go-discord-wrapper/types/common"
-	"go-discord-wrapper/types/events"
-	"go-discord-wrapper/util"
+	"github.com/DatGamet/go-discord-wrapper/types/common"
+	"github.com/DatGamet/go-discord-wrapper/types/events"
+	"github.com/DatGamet/go-discord-wrapper/util"
 	"net/http"
 	"net/url"
 	"sync"
