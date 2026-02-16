@@ -18,6 +18,9 @@ import (
 	"github.com/joho/godotenv"
 )
 
+//FIXME: Wenn sich der Prozess aufhängt bzw. man den Prozess am Debugger aufhängt und den warten lässt killt der sich
+// selber, also versucht zu reconnecten macht er auch aber established nicht wirklich eine connection
+
 func main() {
 	_ = godotenv.Load()
 

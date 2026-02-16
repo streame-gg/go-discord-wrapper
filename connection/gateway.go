@@ -3,12 +3,14 @@ package connection
 import (
 	"encoding/json"
 	"errors"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
-	"github.com/streame-gg/go-discord-wrapper/types/events"
-	"github.com/streame-gg/go-discord-wrapper/util"
 	"net/http"
 	"net/url"
 	"sync"
+
+	"github.com/streame-gg/go-discord-wrapper/api"
+	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/events"
+	"github.com/streame-gg/go-discord-wrapper/util"
 
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog"
@@ -41,6 +43,8 @@ type Client struct {
 	User *common.User
 
 	Sharding *ClientSharding
+
+	RestClient *api.RestClient
 }
 
 type ClientOption func(*Client)
@@ -63,6 +67,12 @@ func WithLogger(logger *zerolog.Logger) ClientOption {
 	}
 }
 
+func WithRestClient(restClient *api.RestClient) ClientOption {
+	return func(c *Client) {
+		c.RestClient = restClient
+	}
+}
+
 func NewClient(token string, intents common.Intent, options ...ClientOption) *Client {
 	c := &Client{
 		token:             &token,
@@ -70,6 +80,7 @@ func NewClient(token string, intents common.Intent, options ...ClientOption) *Cl
 		Logger:            util.NewLogger(),
 		Intents:           &intents,
 		UnavailableGuilds: make(map[common.Snowflake]struct{}),
+		RestClient:        api.NewRestClient(token),
 	}
 
 	for _, opt := range options {
