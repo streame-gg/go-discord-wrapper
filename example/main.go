@@ -33,6 +33,14 @@ func main() {
 		}),
 	)
 
+	bot.OnInviteDelete(func(session *connection.Client, event *events.InviteDeleteEvent) {
+		session.Logger.Info().Msgf("Invite deleted: %s", event.Code)
+	})
+
+	bot.OnInviteCreate(func(session *connection.Client, event *events.InviteCreateEvent) {
+		session.Logger.Info().Msgf("Invite created: %s", event.Code)
+	})
+
 	bot.OnMessageCreate(func(session *connection.Client, event *events.MessageCreateEvent) {
 		session.Logger.Info().Msgf("Received message: %s", event.Content)
 	})

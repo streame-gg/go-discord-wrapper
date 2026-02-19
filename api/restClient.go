@@ -70,7 +70,7 @@ func (c *RestClient) generateRequest(method, path string, body io.Reader) (*http
 	return req, nil
 }
 
-func (c *RestClient) do(req *http.Request, v interface{}, successResponseCode int) (*http.Response, error) {
+func (c *RestClient) do(req *http.Request, successResponseCode int, v *interface{}) (*http.Response, error) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -87,7 +87,9 @@ func (c *RestClient) do(req *http.Request, v interface{}, successResponseCode in
 		return nil, respErr
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
+	decodeInto := *v
+
+	if err := json.NewDecoder(resp.Body).Decode(&decodeInto); err != nil {
 		return nil, err
 	}
 

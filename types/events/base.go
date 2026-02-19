@@ -6,6 +6,8 @@ var EventFactories = map[EventType]func() Event{
 	EventGuildCreate:       GuildCreateEvent{}.DesiredEventType,
 	EventInteractionCreate: InteractionCreateEvent{}.DesiredEventType,
 	EventGuildDelete:       GuildDeleteEvent{}.DesiredEventType,
+	EventInviteCreate:      InviteCreateEvent{}.DesiredEventType,
+	EventInviteDelete:      InviteDeleteEvent{}.DesiredEventType,
 }
 
 type Event interface {
@@ -75,31 +77,34 @@ const (
 	SoundboardSoundsUpdate
 	SoundboardSoundsDelete
 
-	InviteCreate
-	InviteDelete
+	*/
+	EventInviteCreate EventType = "INVITE_CREATE"
+	EventInviteDelete EventType = "INVITE_DELETE"
 
-	MessageReactionAdd
-	MessageReactionRemove
-	MessageReactionRemoveAll
-	MessageReactionRemoveEmoji
+	/*
 
-	PresenceUpdate
+		MessageReactionAdd
+		MessageReactionRemove
+		MessageReactionRemoveAll
+		MessageReactionRemoveEmoji
 
-	StageInstanceUpdate
-	StageInstanceCreate
-	StageInstanceDelete
+		PresenceUpdate
 
-	SubscriptionCreate
-	SubscriptionDelete
-	SubscriptionUpdate
+		StageInstanceUpdate
+		StageInstanceCreate
+		StageInstanceDelete
 
-	TypingStart
+		SubscriptionCreate
+		SubscriptionDelete
+		SubscriptionUpdate
 
-	UserUpdate
+		TypingStart
 
-	VoiceStateUpdate
+		UserUpdate
 
-	MessagePollVoteAdd
-	MessagePollVoteRemove
+		VoiceStateUpdate
+
+		MessagePollVoteAdd
+		MessagePollVoteRemove
 	*/
 )
