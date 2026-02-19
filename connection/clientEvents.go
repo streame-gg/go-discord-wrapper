@@ -195,3 +195,18 @@ func (d *Client) OnMessageUpdate(
 		}
 	})
 }
+
+func (d *Client) OnGuildAuditLogEntryCreate(
+	handler func(*Client, *events.GuildAuditLogEntryCreateEvent),
+) {
+	d.OnEvent(events.EventGuildAuditLogEntryCreate, func(
+		session *Client,
+		event events.Event,
+	) {
+		if e, ok := event.(*events.GuildAuditLogEntryCreateEvent); ok {
+			handler(session, e)
+		} else {
+			d.Logger.Warn().Msgf("Failed to cast event to GuildAuditLogEntryCreateEvent: %T", event)
+		}
+	})
+}

@@ -37,6 +37,10 @@ func main() {
 		client.Logger.Info().Msgf("Channel created: %s (ID: %s)", event.Name, event.ID)
 	})
 
+	bot.OnGuildAuditLogEntryCreate(func(client *connection.Client, event *events.GuildAuditLogEntryCreateEvent) {
+		client.Logger.Info().Msgf("Audit log entry created: Action %d", event.ActionType)
+	})
+
 	bot.OnMessageUpdate(func(client *connection.Client, event *events.MessageUpdateEvent) {
 		client.Logger.Info().Msgf("Message updated: ID %s", event.ID)
 	})

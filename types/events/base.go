@@ -1,18 +1,19 @@
 package events
 
 var EventFactories = map[EventType]func() Event{
-	EventMessageCreate:     MessageCreateEvent{}.DesiredEventType,
-	EventReady:             ReadyEvent{}.DesiredEventType,
-	EventGuildCreate:       GuildCreateEvent{}.DesiredEventType,
-	EventInteractionCreate: InteractionCreateEvent{}.DesiredEventType,
-	EventGuildDelete:       GuildDeleteEvent{}.DesiredEventType,
-	EventInviteCreate:      InviteCreateEvent{}.DesiredEventType,
-	EventInviteDelete:      InviteDeleteEvent{}.DesiredEventType,
-	EventChannelCreate:     ChannelCreateEvent{}.DesiredEventType,
-	EventChannelDelete:     ChannelDeleteEvent{}.DesiredEventType,
-	EventMessageDelete:     MessageDeleteEvent{}.DesiredEventType,
-	EventMessageDeleteBulk: MessageDeleteBulkEvent{}.DesiredEventType,
-	EventMessageUpdate:     MessageUpdateEvent{}.DesiredEventType,
+	EventMessageCreate:            MessageCreateEvent{}.DesiredEventType,
+	EventReady:                    ReadyEvent{}.DesiredEventType,
+	EventGuildCreate:              GuildCreateEvent{}.DesiredEventType,
+	EventInteractionCreate:        InteractionCreateEvent{}.DesiredEventType,
+	EventGuildDelete:              GuildDeleteEvent{}.DesiredEventType,
+	EventInviteCreate:             InviteCreateEvent{}.DesiredEventType,
+	EventInviteDelete:             InviteDeleteEvent{}.DesiredEventType,
+	EventChannelCreate:            ChannelCreateEvent{}.DesiredEventType,
+	EventChannelDelete:            ChannelDeleteEvent{}.DesiredEventType,
+	EventMessageDelete:            MessageDeleteEvent{}.DesiredEventType,
+	EventMessageDeleteBulk:        MessageDeleteBulkEvent{}.DesiredEventType,
+	EventMessageUpdate:            MessageUpdateEvent{}.DesiredEventType,
+	EventGuildAuditLogEntryCreate: GuildAuditLogEntryCreateEvent{}.DesiredEventType,
 }
 
 type Event interface {
@@ -21,6 +22,10 @@ type Event interface {
 }
 
 type EventType string
+
+/*
+CHANNEL_UPDATE will not be implemented yet, use EventGuildAuditLogEntryCreate instead
+*/
 
 const (
 	EventMessageCreate            EventType = "MESSAGE_CREATE"
@@ -34,7 +39,6 @@ const (
 	EventGuildAuditLogEntryCreate EventType = "GUILD_AUDIT_LOG_ENTRY_CREATE"
 
 	EventChannelCreate EventType = "CHANNEL_CREATE"
-	// ChannelUpdate     EventType = "CHANNEL_UPDATE"
 	EventChannelDelete EventType = "CHANNEL_DELETE"
 	/*
 		ChannelPinsUpdate EventType = "CHANNEL_PINS_UPDATE"
