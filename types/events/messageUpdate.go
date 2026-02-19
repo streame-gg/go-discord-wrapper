@@ -6,7 +6,7 @@ import (
 
 type MessageUpdateEvent struct {
 	common.Message
-	GuildID  *string             `json:"guild_id"`
+	GuildID  *common.Snowflake   `json:"guild_id"`
 	Member   *common.GuildMember `json:"member,omitempty"`
 	Mentions *[]common.User      `json:"mentions"`
 }
