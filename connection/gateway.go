@@ -36,7 +36,12 @@ type Client struct {
 
 	Events map[events.EventType][]EventHandler
 
+	discordEventEmitter *util.EventEmitter[events.EventType, EventHandler]
+
 	mu sync.RWMutex
+
+	reconnectMu  sync.Mutex
+	reconnecting bool
 
 	UnavailableGuilds map[common.Snowflake]struct{}
 
@@ -75,12 +80,13 @@ func WithRestClient(restClient *api.RestClient) ClientOption {
 
 func NewClient(token string, intents common.Intent, options ...ClientOption) *Client {
 	c := &Client{
-		token:             &token,
-		APIVersion:        util.PointerOf(common.APIVersion10),
-		Logger:            util.NewLogger(),
-		Intents:           &intents,
-		UnavailableGuilds: make(map[common.Snowflake]struct{}),
-		RestClient:        api.NewRestClient(token),
+		token:               &token,
+		APIVersion:          util.PointerOf(common.APIVersion10),
+		Logger:              util.NewLogger(),
+		Intents:             &intents,
+		discordEventEmitter: util.NewEventEmitter[events.EventType, EventHandler](),
+		UnavailableGuilds:   make(map[common.Snowflake]struct{}),
+		RestClient:          api.NewRestClient(token),
 	}
 
 	for _, opt := range options {
@@ -131,7 +137,7 @@ func (d *Client) Login() error {
 
 	d.Logger.Debug().Msgf("Connecting to gateway websocket at %s with %d shards", gatewayResp.Url, gatewayResp.Shards)
 
-	if err := d.connectWebsocket(gatewayResp.Url, false, nil); err != nil {
+	if err := d.connectWebsocket(gatewayResp.Url, false, nil, nil); err != nil {
 		return err
 	}
 
@@ -201,7 +207,11 @@ func (d *Client) Login() error {
 }
 
 func (d *Client) dispatch(event events.Event) {
-	handlers := d.Events[event.Event()]
+	handlers := d.discordEventEmitter.Handlers(event.Event())
+	if len(handlers) == 0 {
+		handlers = d.Events[event.Event()]
+	}
+
 	for _, h := range handlers {
 		h(d, event)
 	}

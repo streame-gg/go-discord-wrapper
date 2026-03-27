@@ -33,47 +33,11 @@ func main() {
 		}),
 	)
 
-	bot.OnChannelCreate(func(client *connection.Client, event *events.ChannelCreateEvent) {
+	bot.OnEvent(events.EventChannelCreate, func(client *connection.Client, event *events.ChannelCreateEvent) {
 		client.Logger.Info().Msgf("Channel created: %s (ID: %s)", event.Name, event.ID)
 	})
 
-	bot.OnGuildAuditLogEntryCreate(func(client *connection.Client, event *events.GuildAuditLogEntryCreateEvent) {
-		client.Logger.Info().Msgf("Audit log entry created: Action %d", event.ActionType)
-	})
-
-	bot.OnMessageUpdate(func(client *connection.Client, event *events.MessageUpdateEvent) {
-		client.Logger.Info().Msgf("Message updated: ID %s", event.ID)
-	})
-
-	bot.OnMessageDelete(func(client *connection.Client, event *events.MessageDeleteEvent) {
-		client.Logger.Info().Msgf("Message deleted: ID %s", event.ID)
-	})
-
-	bot.OnMessageDeleteBulk(func(client *connection.Client, event *events.MessageDeleteBulkEvent) {
-		client.Logger.Info().Msgf("Messages deleted: ID %s", event.IDs)
-	})
-
-	bot.OnChannelDelete(func(client *connection.Client, event *events.ChannelDeleteEvent) {
-		client.Logger.Info().Msgf("Channel deleted: %s (ID: %s)", event.Name, event.ID)
-	})
-
-	bot.OnInviteDelete(func(session *connection.Client, event *events.InviteDeleteEvent) {
-		session.Logger.Info().Msgf("Invite deleted: %s", event.Code)
-	})
-
-	bot.OnInviteCreate(func(session *connection.Client, event *events.InviteCreateEvent) {
-		session.Logger.Info().Msgf("Invite created: %s", event.Code)
-	})
-
-	bot.OnMessageCreate(func(session *connection.Client, event *events.MessageCreateEvent) {
-		session.Logger.Info().Msgf("Received message: %s", event.Content)
-	})
-
-	bot.OnReady(func(session *connection.Client, event *events.ReadyEvent) {
-		bot.Logger.Info().Msgf("Logged in as %s#%s", event.User.Username, event.User.Discriminator)
-	})
-
-	bot.OnInteractionCreate(func(session *connection.Client, event *events.InteractionCreateEvent) {
+	bot.OnEvent(events.EventInteractionCreate, func(session *connection.Client, event *events.InteractionCreateEvent) {
 		if event.GetFullCommand() == "info channel" {
 			bot.Logger.Debug().Msgf("Received info channel command from %s", event.Member.User.DisplayName())
 
