@@ -6,6 +6,8 @@ type ChannelCreateEvent struct {
 	common.Channel
 }
 
+func init() { RegisterEvent(ChannelCreateEvent{}) }
+
 func (e ChannelCreateEvent) DesiredEventType() Event {
 	return &ChannelCreateEvent{}
 }

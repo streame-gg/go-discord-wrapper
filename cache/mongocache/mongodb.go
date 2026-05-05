@@ -1,0 +1,622 @@
+// Package mongocache provides a MongoDB-backed implementation of [cache.Cache].
+//
+// Connect a [*mongo.Client] from go.mongodb.org/mongo-driver/mongo, select a
+// database, then pass it to [NewMongoDBCache]:
+//
+//	client, _ := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+//	db := client.Database("discord_cache")
+//	c := mongocache.NewMongoDBCache(db, cache.Options{TTL: 30 * time.Minute})
+//	connection.NewClient(token, intents, options.WithCache(c))
+//
+// # Collections
+//
+// Each entity type maps to its own collection:
+//
+//	guilds    — Guild documents
+//	channels  — Channel documents
+//	users     — User documents
+//	members   — GuildMember documents keyed by "{guildID}:{userID}"
+//	messages  — Message documents keyed by "{channelID}:{messageID}"
+//
+// # Document schema
+//
+//	_id        — entity key (Snowflake string or composite string)
+//	json       — JSON-encoded entity payload
+//	expires_at — expiry timestamp (omitted when Options.TTL == 0)
+//	guild_id   — guild Snowflake (members collection only)
+//	channel_id — channel Snowflake (messages collection only)
+//	inserted_at — insertion time (messages collection only, used for ordering)
+//
+// # TTL and indexes
+//
+// [NewMongoDBCache] creates the following indexes automatically:
+//   - Sparse TTL index on expires_at (all collections) — MongoDB deletes expired
+//     documents in the background. Documents without expires_at never expire.
+//   - Index on guild_id (members) — used by AllInGuild and DeleteGuild.
+//   - Compound index on (channel_id, inserted_at) (messages) — used by Channel
+//     and per-channel ring enforcement.
+//
+// Overflow and eviction options (Limits, OnOverflow, EvictBehavior) are ignored;
+// use MongoDB's capped collections or TTL for overflow control.
+package mongocache
+
+import (
+	"context"
+	"encoding/json"
+	"sync"
+	"time"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+
+	"github.com/streame-gg/go-discord-wrapper/cache"
+	"github.com/streame-gg/go-discord-wrapper/types/common"
+)
+
+// ── Document types ────────────────────────────────────────────────────────────
+
+// entityDoc is the MongoDB document used for guilds, channels, and users.
+type entityDoc struct {
+	ID        string    `bson:"_id"`
+	JSON      string    `bson:"json"`
+	ExpiresAt time.Time `bson:"expires_at,omitempty"`
+}
+
+// memberDoc is the MongoDB document used for guild members.
+type memberDoc struct {
+	ID        string    `bson:"_id"` // "{guildID}:{userID}"
+	GuildID   string    `bson:"guild_id"`
+	JSON      string    `bson:"json"`
+	ExpiresAt time.Time `bson:"expires_at,omitempty"`
+}
+
+// msgDoc is the MongoDB document used for messages.
+type msgDoc struct {
+	ID         string    `bson:"_id"` // "{channelID}:{messageID}"
+	ChannelID  string    `bson:"channel_id"`
+	JSON       string    `bson:"json"`
+	InsertedAt time.Time `bson:"inserted_at"`
+	ExpiresAt  time.Time `bson:"expires_at,omitempty"`
+}
+
+// ── MongoDBCache ──────────────────────────────────────────────────────────────
+
+// MongoDBCache implements [cache.Cache] using MongoDB.
+// All methods and stores returned by Guilds/Channels/Users/Members/Messages
+// are safe for concurrent use.
+//
+// The underlying [*mongo.Database] is not owned by MongoDBCache; the caller is
+// responsible for connecting and disconnecting the client. Call
+// [MongoDBCache.Close] on shutdown to cancel the internal context.
+type MongoDBCache struct {
+	db       *mongo.Database
+	opts     cache.Options
+	ctx      context.Context
+	cancel   context.CancelFunc
+	stopOnce sync.Once
+}
+
+// NewMongoDBCache creates a MongoDBCache backed by db and creates the required
+// indexes. The context passed to MongoDB operations derives from a background
+// context cancelled by [MongoDBCache.Close].
+//
+// opts.TTL controls the document expiry written to expires_at; zero means
+// documents never expire. opts.Messages.MaxPerChannel caps the per-channel
+// message ring (default 100).
+func NewMongoDBCache(db *mongo.Database, opts cache.Options) *MongoDBCache {
+	if opts.Messages.MaxPerChannel <= 0 {
+		opts.Messages.MaxPerChannel = 100
+	}
+	if opts.Messages.TTL == 0 {
+		opts.Messages.TTL = opts.TTL
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	c := &MongoDBCache{
+		db:     db,
+		opts:   opts,
+		ctx:    ctx,
+		cancel: cancel,
+	}
+	c.ensureIndexes()
+	return c
+}
+
+// ensureIndexes creates all required MongoDB indexes idempotently.
+func (c *MongoDBCache) ensureIndexes() {
+	ttlIndex := mongo.IndexModel{
+		Keys:    bson.D{{Key: "expires_at", Value: 1}},
+		Options: options.Index().SetExpireAfterSeconds(0).SetSparse(true),
+	}
+	for _, name := range []string{"guilds", "channels", "users", "members", "messages"} {
+		col := c.db.Collection(name)
+		_, _ = col.Indexes().CreateOne(c.ctx, ttlIndex)
+	}
+
+	// members: index on guild_id for AllInGuild / DeleteGuild queries.
+	_, _ = c.db.Collection("members").Indexes().CreateOne(c.ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "guild_id", Value: 1}},
+	})
+
+	// messages: compound index for per-channel ordered queries and ring enforcement.
+	_, _ = c.db.Collection("messages").Indexes().CreateOne(c.ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "channel_id", Value: 1}, {Key: "inserted_at", Value: 1}},
+	})
+}
+
+// expiresAt returns the expiry time for a new document given the configured TTL.
+// Returns the zero time when TTL is zero (documents never expire).
+func (c *MongoDBCache) expiresAt(ttl time.Duration) time.Time {
+	if ttl <= 0 {
+		return time.Time{}
+	}
+	return time.Now().Add(ttl)
+}
+
+// liveFilter returns a bson filter that excludes expired documents.
+// When TTL is zero no expiry filter is needed.
+func liveFilter(ttl time.Duration) bson.M {
+	if ttl > 0 {
+		return bson.M{"expires_at": bson.M{"$gt": time.Now()}}
+	}
+	return bson.M{}
+}
+
+func (c *MongoDBCache) Guilds() cache.GuildStore     { return &mongoGuildStore{c} }
+func (c *MongoDBCache) Channels() cache.ChannelStore { return &mongoChannelStore{c} }
+func (c *MongoDBCache) Users() cache.UserStore       { return &mongoUserStore{c} }
+func (c *MongoDBCache) Members() cache.MemberStore   { return &mongoMemberStore{c} }
+func (c *MongoDBCache) Messages() cache.MessageStore { return &mongoMessageStore{c} }
+
+// Close cancels the internal context used for all MongoDB operations.
+// The underlying [*mongo.Database] and its client are not closed.
+// Safe to call multiple times.
+func (c *MongoDBCache) Close() error {
+	c.stopOnce.Do(c.cancel)
+	return nil
+}
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+func upsertByID(ctx context.Context, col *mongo.Collection, doc any) error {
+	id := extractID(doc)
+	_, err := col.ReplaceOne(
+		ctx,
+		bson.M{"_id": id},
+		doc,
+		options.Replace().SetUpsert(true),
+	)
+	return err
+}
+
+// extractID reads the _id field from an entityDoc, memberDoc, or msgDoc.
+func extractID(doc any) string {
+	switch d := doc.(type) {
+	case entityDoc:
+		return d.ID
+	case memberDoc:
+		return d.ID
+	case msgDoc:
+		return d.ID
+	}
+	return ""
+}
+
+// ── Guild store ───────────────────────────────────────────────────────────────
+
+type mongoGuildStore struct{ c *MongoDBCache }
+
+func (s *mongoGuildStore) col() *mongo.Collection { return s.c.db.Collection("guilds") }
+
+func (s *mongoGuildStore) Set(guild *common.Guild) {
+	b, err := json.Marshal(guild)
+	if err != nil {
+		return
+	}
+	doc := entityDoc{
+		ID:        string(guild.ID),
+		JSON:      string(b),
+		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+	}
+	_ = upsertByID(s.c.ctx, s.col(), doc)
+}
+
+func (s *mongoGuildStore) Get(id common.Snowflake) (*common.Guild, bool) {
+	filter := bson.M{"_id": string(id)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	var doc entityDoc
+	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
+		return nil, false
+	}
+	var g common.Guild
+	if err := json.Unmarshal([]byte(doc.JSON), &g); err != nil {
+		return nil, false
+	}
+	return &g, true
+}
+
+func (s *mongoGuildStore) Delete(id common.Snowflake) {
+	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(id)})
+}
+
+func (s *mongoGuildStore) All() []*common.Guild {
+	cursor, err := s.col().Find(s.c.ctx, liveFilter(s.c.opts.TTL))
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []entityDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.Guild, 0, len(docs))
+	for _, d := range docs {
+		var g common.Guild
+		if json.Unmarshal([]byte(d.JSON), &g) == nil {
+			out = append(out, &g)
+		}
+	}
+	return out
+}
+
+func (s *mongoGuildStore) Size() int {
+	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
+	return int(n)
+}
+
+// ── Channel store ─────────────────────────────────────────────────────────────
+
+type mongoChannelStore struct{ c *MongoDBCache }
+
+func (s *mongoChannelStore) col() *mongo.Collection { return s.c.db.Collection("channels") }
+
+func (s *mongoChannelStore) Set(ch *common.Channel) {
+	b, err := json.Marshal(ch)
+	if err != nil {
+		return
+	}
+	doc := entityDoc{
+		ID:        string(ch.ID),
+		JSON:      string(b),
+		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+	}
+	_ = upsertByID(s.c.ctx, s.col(), doc)
+}
+
+func (s *mongoChannelStore) Get(id common.Snowflake) (*common.Channel, bool) {
+	filter := bson.M{"_id": string(id)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	var doc entityDoc
+	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
+		return nil, false
+	}
+	var ch common.Channel
+	if err := json.Unmarshal([]byte(doc.JSON), &ch); err != nil {
+		return nil, false
+	}
+	return &ch, true
+}
+
+func (s *mongoChannelStore) Delete(id common.Snowflake) {
+	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(id)})
+}
+
+func (s *mongoChannelStore) All() []*common.Channel {
+	cursor, err := s.col().Find(s.c.ctx, liveFilter(s.c.opts.TTL))
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []entityDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.Channel, 0, len(docs))
+	for _, d := range docs {
+		var ch common.Channel
+		if json.Unmarshal([]byte(d.JSON), &ch) == nil {
+			out = append(out, &ch)
+		}
+	}
+	return out
+}
+
+func (s *mongoChannelStore) Size() int {
+	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
+	return int(n)
+}
+
+// ── User store ────────────────────────────────────────────────────────────────
+
+type mongoUserStore struct{ c *MongoDBCache }
+
+func (s *mongoUserStore) col() *mongo.Collection { return s.c.db.Collection("users") }
+
+func (s *mongoUserStore) Set(user *common.User) {
+	b, err := json.Marshal(user)
+	if err != nil {
+		return
+	}
+	doc := entityDoc{
+		ID:        string(user.ID),
+		JSON:      string(b),
+		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+	}
+	_ = upsertByID(s.c.ctx, s.col(), doc)
+}
+
+func (s *mongoUserStore) Get(id common.Snowflake) (*common.User, bool) {
+	filter := bson.M{"_id": string(id)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	var doc entityDoc
+	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
+		return nil, false
+	}
+	var u common.User
+	if err := json.Unmarshal([]byte(doc.JSON), &u); err != nil {
+		return nil, false
+	}
+	return &u, true
+}
+
+func (s *mongoUserStore) Delete(id common.Snowflake) {
+	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(id)})
+}
+
+func (s *mongoUserStore) All() []*common.User {
+	cursor, err := s.col().Find(s.c.ctx, liveFilter(s.c.opts.TTL))
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []entityDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.User, 0, len(docs))
+	for _, d := range docs {
+		var u common.User
+		if json.Unmarshal([]byte(d.JSON), &u) == nil {
+			out = append(out, &u)
+		}
+	}
+	return out
+}
+
+func (s *mongoUserStore) Size() int {
+	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
+	return int(n)
+}
+
+// ── Member store ──────────────────────────────────────────────────────────────
+
+type mongoMemberStore struct{ c *MongoDBCache }
+
+func (s *mongoMemberStore) col() *mongo.Collection { return s.c.db.Collection("members") }
+
+func memberID(guildID, userID common.Snowflake) string {
+	return string(guildID) + ":" + string(userID)
+}
+
+func (s *mongoMemberStore) Set(guildID common.Snowflake, member *common.GuildMember) {
+	if member.User == nil {
+		return
+	}
+	b, err := json.Marshal(member)
+	if err != nil {
+		return
+	}
+	doc := memberDoc{
+		ID:        memberID(guildID, member.User.ID),
+		GuildID:   string(guildID),
+		JSON:      string(b),
+		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+	}
+	_ = upsertByID(s.c.ctx, s.col(), doc)
+}
+
+func (s *mongoMemberStore) Get(guildID, userID common.Snowflake) (*common.GuildMember, bool) {
+	filter := bson.M{"_id": memberID(guildID, userID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	var doc memberDoc
+	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
+		return nil, false
+	}
+	var m common.GuildMember
+	if err := json.Unmarshal([]byte(doc.JSON), &m); err != nil {
+		return nil, false
+	}
+	return &m, true
+}
+
+func (s *mongoMemberStore) Delete(guildID, userID common.Snowflake) {
+	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": memberID(guildID, userID)})
+}
+
+func (s *mongoMemberStore) DeleteGuild(guildID common.Snowflake) {
+	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
+}
+
+func (s *mongoMemberStore) AllInGuild(guildID common.Snowflake) []*common.GuildMember {
+	filter := bson.M{"guild_id": string(guildID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	cursor, err := s.col().Find(s.c.ctx, filter)
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []memberDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.GuildMember, 0, len(docs))
+	for _, d := range docs {
+		var m common.GuildMember
+		if json.Unmarshal([]byte(d.JSON), &m) == nil {
+			out = append(out, &m)
+		}
+	}
+	return out
+}
+
+func (s *mongoMemberStore) Size() int {
+	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
+	return int(n)
+}
+
+// ── Message store ─────────────────────────────────────────────────────────────
+
+type mongoMessageStore struct{ c *MongoDBCache }
+
+func (s *mongoMessageStore) col() *mongo.Collection { return s.c.db.Collection("messages") }
+
+func msgID(channelID, messageID common.Snowflake) string {
+	return string(channelID) + ":" + string(messageID)
+}
+
+func (s *mongoMessageStore) Add(msg *common.Message) {
+	if s.c.opts.Messages.MaxPerChannel == 0 {
+		return
+	}
+	b, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
+	now := time.Now()
+	doc := msgDoc{
+		ID:         msgID(msg.ChannelID, msg.ID),
+		ChannelID:  string(msg.ChannelID),
+		JSON:       string(b),
+		InsertedAt: now,
+		ExpiresAt:  s.c.expiresAt(s.c.opts.Messages.TTL),
+	}
+	_ = upsertByID(s.c.ctx, s.col(), doc)
+
+	// Enforce MaxPerChannel: delete the oldest messages for this channel
+	// if the count exceeds the cap.
+	max := int64(s.c.opts.Messages.MaxPerChannel)
+	count, err := s.col().CountDocuments(s.c.ctx, bson.M{"channel_id": string(msg.ChannelID)})
+	if err != nil || count <= max {
+		return
+	}
+	excess := count - max
+	// Find excess oldest messages (ascending by inserted_at) and delete them.
+	cursor, err := s.col().Find(
+		s.c.ctx,
+		bson.M{"channel_id": string(msg.ChannelID)},
+		options.Find().
+			SetSort(bson.D{{Key: "inserted_at", Value: 1}}).
+			SetLimit(excess).
+			SetProjection(bson.D{{Key: "_id", Value: 1}}),
+	)
+	if err != nil {
+		return
+	}
+	var idDocs []struct {
+		ID string `bson:"_id"`
+	}
+	if err := cursor.All(s.c.ctx, &idDocs); err != nil {
+		return
+	}
+	ids := make([]string, len(idDocs))
+	for i, d := range idDocs {
+		ids[i] = d.ID
+	}
+	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"_id": bson.M{"$in": ids}})
+}
+
+func (s *mongoMessageStore) Get(channelID, messageID common.Snowflake) (*common.Message, bool) {
+	filter := bson.M{"_id": msgID(channelID, messageID)}
+	if s.c.opts.Messages.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	var doc msgDoc
+	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
+		return nil, false
+	}
+	var msg common.Message
+	if err := json.Unmarshal([]byte(doc.JSON), &msg); err != nil {
+		return nil, false
+	}
+	return &msg, true
+}
+
+func (s *mongoMessageStore) Update(msg *common.Message) {
+	b, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
+	filter := bson.M{"_id": msgID(msg.ChannelID, msg.ID)}
+	// UpdateOne with $set preserves InsertedAt and only updates the JSON payload.
+	_, _ = s.col().UpdateOne(
+		s.c.ctx,
+		filter,
+		bson.M{"$set": bson.M{
+			"json":       string(b),
+			"expires_at": s.c.expiresAt(s.c.opts.Messages.TTL),
+		}},
+	)
+}
+
+func (s *mongoMessageStore) Delete(channelID, messageID common.Snowflake) {
+	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": msgID(channelID, messageID)})
+}
+
+func (s *mongoMessageStore) DeleteBulk(channelID common.Snowflake, ids []common.Snowflake) {
+	if len(ids) == 0 {
+		return
+	}
+	docIDs := make([]string, len(ids))
+	for i, id := range ids {
+		docIDs[i] = msgID(channelID, id)
+	}
+	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"_id": bson.M{"$in": docIDs}})
+}
+
+// Channel returns messages for channelID newest-first, excluding expired entries.
+func (s *mongoMessageStore) Channel(channelID common.Snowflake) []*common.Message {
+	filter := bson.M{"channel_id": string(channelID)}
+	if s.c.opts.Messages.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	cursor, err := s.col().Find(
+		s.c.ctx,
+		filter,
+		options.Find().SetSort(bson.D{{Key: "inserted_at", Value: -1}}),
+	)
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []msgDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.Message, 0, len(docs))
+	for _, d := range docs {
+		var msg common.Message
+		if json.Unmarshal([]byte(d.JSON), &msg) == nil {
+			out = append(out, &msg)
+		}
+	}
+	return out
+}
+
+func (s *mongoMessageStore) DeleteChannel(channelID common.Snowflake) {
+	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"channel_id": string(channelID)})
+}
+
+func (s *mongoMessageStore) Size() int {
+	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.Messages.TTL))
+	return int(n)
+}

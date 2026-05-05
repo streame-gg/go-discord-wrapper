@@ -1,19 +1,16 @@
 package events
 
-var EventFactories = map[EventType]func() Event{
-	EventMessageCreate:            MessageCreateEvent{}.DesiredEventType,
-	EventReady:                    ReadyEvent{}.DesiredEventType,
-	EventGuildCreate:              GuildCreateEvent{}.DesiredEventType,
-	EventInteractionCreate:        InteractionCreateEvent{}.DesiredEventType,
-	EventGuildDelete:              GuildDeleteEvent{}.DesiredEventType,
-	EventInviteCreate:             InviteCreateEvent{}.DesiredEventType,
-	EventInviteDelete:             InviteDeleteEvent{}.DesiredEventType,
-	EventChannelCreate:            ChannelCreateEvent{}.DesiredEventType,
-	EventChannelDelete:            ChannelDeleteEvent{}.DesiredEventType,
-	EventMessageDelete:            MessageDeleteEvent{}.DesiredEventType,
-	EventMessageDeleteBulk:        MessageDeleteBulkEvent{}.DesiredEventType,
-	EventMessageUpdate:            MessageUpdateEvent{}.DesiredEventType,
-	EventGuildAuditLogEntryCreate: GuildAuditLogEntryCreateEvent{}.DesiredEventType,
+// EventFactories maps each EventType to a factory that returns a new zero-value
+// instance of the corresponding event struct. Populated automatically via
+// RegisterEvent; do not write to it directly.
+var EventFactories = map[EventType]func() Event{}
+
+// RegisterEvent registers an event type so the gateway knows how to unmarshal
+// it. Call this from an init() function in your event file:
+//
+//	func init() { events.RegisterEvent(MyEvent{}) }
+func RegisterEvent(e Event) {
+	EventFactories[e.Event()] = e.DesiredEventType
 }
 
 type Event interface {
@@ -23,101 +20,65 @@ type Event interface {
 
 type EventType string
 
-/*
-CHANNEL_UPDATE will not be implemented yet, use EventGuildAuditLogEntryCreate instead
-*/
-
 const (
-	EventMessageCreate            EventType = "MESSAGE_CREATE"
-	EventReady                    EventType = "READY"
-	EventGuildCreate              EventType = "GUILD_CREATE"
-	EventInteractionCreate        EventType = "INTERACTION_CREATE"
-	EventGuildDelete              EventType = "GUILD_DELETE"
-	EventMessageDelete            EventType = "MESSAGE_DELETE"
-	EventMessageDeleteBulk        EventType = "MESSAGE_DELETE_BULK"
-	EventMessageUpdate            EventType = "MESSAGE_UPDATE"
-	EventGuildAuditLogEntryCreate EventType = "GUILD_AUDIT_LOG_ENTRY_CREATE"
-
-	EventChannelCreate EventType = "CHANNEL_CREATE"
-	EventChannelDelete EventType = "CHANNEL_DELETE"
-	/*
-		ChannelPinsUpdate EventType = "CHANNEL_PINS_UPDATE"
-
-
-			EventChannelDelete
-			ChannelPinsUpdate
-
-			RoleCreate
-			RoleUpdate
-			RoleDelete
-
-			WebhookUpdate
-
-			IntegrationCreate
-			IntegrationUpdate
-			IntegrationDelete
-
-			AutoModerationRuleCreate
-			AutoModerationRuleUpdate
-			AutoModerationRuleDelete
-			AutoModerationActionExecute
-
-			ThreadCreate
-			ThreadUpdate
-			ThreadDelete
-			ThreadMemberUpdate
-			ThreadMembersUpdate
-
-			EntitlementCreate
-			EntitlementUpdate
-			EntitlementDelete
-
-			GuildBanAdd
-			GuildBanRemove
-			GuildEmojisUpdate
-			GuildStickersUpdate
-			GuildIntegrationsUpdate
-			GuildMemberAdd
-			GuildMemberRemove
-
-			ScheduledEventCreate
-			ScheduledEventUpdate
-			ScheduledEventDelete
-			ScheduledEventUserAdd
-			ScheduledEventUserRemove
-
-			SoundboardSoundsCreate
-			SoundboardSoundsUpdate
-			SoundboardSoundsDelete
-
-	*/
-	EventInviteCreate EventType = "INVITE_CREATE"
-	EventInviteDelete EventType = "INVITE_DELETE"
-
-	/*
-
-		MessageReactionAdd
-		MessageReactionRemove
-		MessageReactionRemoveAll
-		MessageReactionRemoveEmoji
-
-		PresenceUpdate
-
-		StageInstanceUpdate
-		StageInstanceCreate
-		StageInstanceDelete
-
-		SubscriptionCreate
-		SubscriptionDelete
-		SubscriptionUpdate
-
-		TypingStart
-
-		UserUpdate
-
-		VoiceStateUpdate
-
-		MessagePollVoteAdd
-		MessagePollVoteRemove
-	*/
+	EventReady                         EventType = "READY"
+	EventGuildCreate                   EventType = "GUILD_CREATE"
+	EventGuildDelete                   EventType = "GUILD_DELETE"
+	EventGuildUpdate                   EventType = "GUILD_UPDATE"
+	EventGuildBanAdd                   EventType = "GUILD_BAN_ADD"
+	EventGuildBanRemove                EventType = "GUILD_BAN_REMOVE"
+	EventGuildEmojisUpdate             EventType = "GUILD_EMOJIS_UPDATE"
+	EventGuildStickersUpdate           EventType = "GUILD_STICKERS_UPDATE"
+	EventGuildIntegrationsUpdate       EventType = "GUILD_INTEGRATIONS_UPDATE"
+	EventGuildMemberAdd                EventType = "GUILD_MEMBER_ADD"
+	EventGuildMemberRemove             EventType = "GUILD_MEMBER_REMOVE"
+	EventGuildMemberUpdate             EventType = "GUILD_MEMBER_UPDATE"
+	EventGuildRoleCreate               EventType = "GUILD_ROLE_CREATE"
+	EventGuildRoleUpdate               EventType = "GUILD_ROLE_UPDATE"
+	EventGuildRoleDelete               EventType = "GUILD_ROLE_DELETE"
+	EventGuildScheduledEventCreate     EventType = "GUILD_SCHEDULED_EVENT_CREATE"
+	EventGuildScheduledEventUpdate     EventType = "GUILD_SCHEDULED_EVENT_UPDATE"
+	EventGuildScheduledEventDelete     EventType = "GUILD_SCHEDULED_EVENT_DELETE"
+	EventGuildScheduledEventUserAdd    EventType = "GUILD_SCHEDULED_EVENT_USER_ADD"
+	EventGuildScheduledEventUserRemove EventType = "GUILD_SCHEDULED_EVENT_USER_REMOVE"
+	EventGuildAuditLogEntryCreate      EventType = "GUILD_AUDIT_LOG_ENTRY_CREATE"
+	EventChannelCreate                 EventType = "CHANNEL_CREATE"
+	EventChannelUpdate                 EventType = "CHANNEL_UPDATE"
+	EventChannelDelete                 EventType = "CHANNEL_DELETE"
+	EventChannelPinsUpdate             EventType = "CHANNEL_PINS_UPDATE"
+	EventThreadCreate                  EventType = "THREAD_CREATE"
+	EventThreadUpdate                  EventType = "THREAD_UPDATE"
+	EventThreadDelete                  EventType = "THREAD_DELETE"
+	EventThreadListSync                EventType = "THREAD_LIST_SYNC"
+	EventMessageCreate                 EventType = "MESSAGE_CREATE"
+	EventMessageUpdate                 EventType = "MESSAGE_UPDATE"
+	EventMessageDelete                 EventType = "MESSAGE_DELETE"
+	EventMessageDeleteBulk             EventType = "MESSAGE_DELETE_BULK"
+	EventMessageReactionAdd            EventType = "MESSAGE_REACTION_ADD"
+	EventMessageReactionRemove         EventType = "MESSAGE_REACTION_REMOVE"
+	EventMessageReactionRemoveAll      EventType = "MESSAGE_REACTION_REMOVE_ALL"
+	EventMessageReactionRemoveEmoji    EventType = "MESSAGE_REACTION_REMOVE_EMOJI"
+	EventMessagePollVoteAdd            EventType = "MESSAGE_POLL_VOTE_ADD"
+	EventMessagePollVoteRemove         EventType = "MESSAGE_POLL_VOTE_REMOVE"
+	EventInteractionCreate             EventType = "INTERACTION_CREATE"
+	EventInviteCreate                  EventType = "INVITE_CREATE"
+	EventInviteDelete                  EventType = "INVITE_DELETE"
+	EventPresenceUpdate                EventType = "PRESENCE_UPDATE"
+	EventTypingStart                   EventType = "TYPING_START"
+	EventUserUpdate                    EventType = "USER_UPDATE"
+	EventVoiceStateUpdate              EventType = "VOICE_STATE_UPDATE"
+	EventStageInstanceCreate           EventType = "STAGE_INSTANCE_CREATE"
+	EventStageInstanceUpdate           EventType = "STAGE_INSTANCE_UPDATE"
+	EventStageInstanceDelete           EventType = "STAGE_INSTANCE_DELETE"
+	EventIntegrationCreate             EventType = "INTEGRATION_CREATE"
+	EventIntegrationUpdate             EventType = "INTEGRATION_UPDATE"
+	EventIntegrationDelete             EventType = "INTEGRATION_DELETE"
+	EventWebhooksUpdate                EventType = "WEBHOOKS_UPDATE"
+	EventAutoModerationRuleCreate      EventType = "AUTO_MODERATION_RULE_CREATE"
+	EventAutoModerationRuleUpdate      EventType = "AUTO_MODERATION_RULE_UPDATE"
+	EventAutoModerationRuleDelete      EventType = "AUTO_MODERATION_RULE_DELETE"
+	EventAutoModerationActionExecution EventType = "AUTO_MODERATION_ACTION_EXECUTION"
+	EventEntitlementCreate             EventType = "ENTITLEMENT_CREATE"
+	EventEntitlementUpdate             EventType = "ENTITLEMENT_UPDATE"
+	EventEntitlementDelete             EventType = "ENTITLEMENT_DELETE"
 )

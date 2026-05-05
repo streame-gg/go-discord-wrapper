@@ -8,6 +8,8 @@ type GuildDeleteEvent struct {
 	common.UnavailableGuild
 }
 
+func init() { RegisterEvent(GuildDeleteEvent{}) }
+
 func (g GuildDeleteEvent) DesiredEventType() Event {
 	return &GuildDeleteEvent{}
 }

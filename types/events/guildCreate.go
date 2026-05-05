@@ -11,6 +11,8 @@ type GuildCreateEvent struct {
 	MemberCount int   `json:"member_count"`
 }
 
+func init() { RegisterEvent(GuildCreateEvent{}) }
+
 func (e GuildCreateEvent) DesiredEventType() Event {
 	return &GuildCreateEvent{}
 }

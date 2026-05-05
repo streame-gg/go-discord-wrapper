@@ -2,19 +2,23 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/common"
 	"github.com/streame-gg/go-discord-wrapper/util"
 )
+
+// routePathKey is the context key used to carry the relative route path through
+// the request lifecycle so the rate limiter can key on it without re-parsing the URL.
+type routePathKey struct{}
 
 type RestEventType string
 
@@ -37,24 +41,6 @@ type RestEvent struct {
 
 type RestEventHandler func(*RestClient, RestEvent)
 
-type RetryOptions struct {
-	MaxRetries          int
-	BaseBackoff         time.Duration
-	MaxBackoff          time.Duration
-	RetryOnRateLimit    bool
-	RetryOnServerErrors bool
-}
-
-func defaultRetryOptions() RetryOptions {
-	return RetryOptions{
-		MaxRetries:          3,
-		BaseBackoff:         500 * time.Millisecond,
-		MaxBackoff:          5 * time.Second,
-		RetryOnRateLimit:    true,
-		RetryOnServerErrors: true,
-	}
-}
-
 type RestClient struct {
 	BaseURL string
 	token   string
@@ -62,68 +48,74 @@ type RestClient struct {
 
 	httpClient *http.Client
 
-	retryOptions RetryOptions
+	retryOptions options.RetryOptions
 
+	// minRequestInterval enforces a crude global delay between all requests.
+	// This is separate from — and complementary to — the proactive rate limiter.
 	minRequestInterval time.Duration
 	rateLimitMu        sync.Mutex
 	nextRequestAt      time.Time
 
+	// rateLimiter implements proactive per-route and global rate limiting.
+	// nil when proactive throttling has been disabled via WithRateLimiting.
+	rateLimiter *rateLimiter
+
 	eventEmitter *util.EventEmitter[RestEventType, RestEventHandler]
 }
 
-type RestClientOption func(*RestClient)
+// NewRestClient creates a REST client for the Discord API.
+// Configure it using options from the options package:
+//
+//	api.NewRestClient(token,
+//	    options.WithRetry(options.RetryOptions{MaxRetries: 5}),
+//	    options.WithRateLimiting(options.RateLimiterOptions{SafetyMargin: 1}),
+//	)
+func NewRestClient(token string, opts ...options.Option) *RestClient {
+	cfg := options.Build(options.Config{
+		BaseURL:    "https://discord.com/api",
+		APIVersion: common.APIVersion10,
+		Retry: options.RetryOptions{
+			MaxRetries:          3,
+			BaseBackoff:         500 * time.Millisecond,
+			MaxBackoff:          5 * time.Second,
+			RetryOnRateLimit:    true,
+			RetryOnServerErrors: true,
+		},
+	}, opts)
 
-func WithBaseURL(baseURL string) RestClientOption {
-	return func(c *RestClient) {
-		c.BaseURL = baseURL
-	}
-}
-
-func WithApiVersion(version common.APIVersion) RestClientOption {
-	return func(c *RestClient) {
-		c.Version = version
-	}
-}
-
-func WithHttpClient(client *http.Client) RestClientOption {
-	return func(c *RestClient) {
-		c.httpClient = client
-	}
-}
-
-func WithRetryOptions(options RetryOptions) RestClientOption {
-	return func(c *RestClient) {
-		c.retryOptions = options
-	}
-}
-
-func WithMinRequestInterval(interval time.Duration) RestClientOption {
-	return func(c *RestClient) {
-		c.minRequestInterval = interval
-	}
-}
-
-func NewRestClient(token string, options ...RestClientOption) *RestClient {
-	c := &RestClient{
-		BaseURL:      "https://discord.com/api",
-		token:        token,
-		Version:      common.APIVersion10,
-		httpClient:   http.DefaultClient,
-		retryOptions: defaultRetryOptions(),
-		eventEmitter: util.NewEventEmitter[RestEventType, RestEventHandler](),
+	httpClient := cfg.HTTPClient
+	if httpClient == nil {
+		httpClient = http.DefaultClient
 	}
 
-	for _, option := range options {
-		option(c)
+	// Build rate limiter. Proactive throttling is on by default unless explicitly
+	// disabled via WithRateLimiting(RateLimiterOptions{Disabled: true}).
+	var rl *rateLimiter
+	if cfg.RateLimiter == nil || !cfg.RateLimiter.Disabled {
+		safetyMargin := 0
+		if cfg.RateLimiter != nil {
+			safetyMargin = cfg.RateLimiter.SafetyMargin
+		}
+		rl = newRateLimiter(safetyMargin)
 	}
 
-	return c
+	return &RestClient{
+		BaseURL:            cfg.BaseURL,
+		token:              token,
+		Version:            cfg.APIVersion,
+		httpClient:         httpClient,
+		retryOptions:       cfg.Retry,
+		minRequestInterval: cfg.MinRequestInterval,
+		rateLimiter:        rl,
+		eventEmitter:       util.NewEventEmitter[RestEventType, RestEventHandler](),
+	}
 }
 
 func (c *RestClient) buildURL() string {
 	return c.BaseURL + "/v" + c.Version.ToString()
 }
 
+// OnEvent registers a handler for REST lifecycle events (request, response, retry, etc.).
 func (c *RestClient) OnEvent(eventType RestEventType, handler RestEventHandler) {
 	if c.eventEmitter == nil {
 		c.eventEmitter = util.NewEventEmitter[RestEventType, RestEventHandler]()
@@ -142,11 +134,17 @@ func (c *RestClient) emitEvent(event RestEvent) {
 	}
 }
 
+// generateRequest builds an authenticated HTTP request and embeds the relative
+// route path into the request context for the rate limiter to consume.
 func (c *RestClient) generateRequest(method, path string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, c.buildURL()+path, body)
 	if err != nil {
 		return nil, err
 	}
+
+	// Store the relative path (e.g. "/channels/111/messages") so that the
+	// rate limiter can normalise it into a bucket key without re-parsing the URL.
+	req = req.WithContext(context.WithValue(req.Context(), routePathKey{}, path))
 
 	req.Header.Set("Authorization", "Bot "+c.token)
 	req.Header.Set("Content-Type", "application/json")
@@ -161,6 +159,9 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 		return nil, errors.New("request must not be nil")
 	}
 
+	// Extract the relative path stored by generateRequest for rate limiting.
+	routePath, _ := req.Context().Value(routePathKey{}).(string)
+
 	bodyBytes, err := captureRequestBody(req)
 	if err != nil {
 		return nil, err
@@ -169,8 +170,15 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 	maxAttempts := c.retryOptions.MaxRetries + 1
 
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		if err := c.waitForClientRateLimit(); err != nil {
+		// Crude global request interval (legacy option, complementary to rate limiter).
+		if err := c.waitForMinInterval(); err != nil {
 			return nil, err
+		}
+
+		// Proactive rate limit check — blocks if the route's bucket is exhausted
+		// or the global rate limit is active.
+		if c.rateLimiter != nil && routePath != "" {
+			c.rateLimiter.wait(req.Method, routePath)
 		}
 
 		attemptReq, err := cloneRequest(req, bodyBytes)
@@ -191,6 +199,12 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 			c.emitEvent(RestEvent{Type: RestEventRetry, Request: attemptReq, Attempt: attempt, RetryAfter: delay, Err: reqErr})
 			time.Sleep(delay)
 			continue
+		}
+
+		// Update rate limit state from response headers on every response,
+		// including 429s, so bucket state stays accurate for future requests.
+		if c.rateLimiter != nil && routePath != "" {
+			c.rateLimiter.update(req.Method, routePath, resp)
 		}
 
 		c.emitEvent(RestEvent{Type: RestEventResponse, Request: attemptReq, Response: resp, Attempt: attempt})
@@ -261,7 +275,8 @@ func (c *RestClient) retryDelay(attempt int, retryAfter time.Duration) time.Dura
 	return delay
 }
 
-func (c *RestClient) waitForClientRateLimit() error {
+// waitForMinInterval enforces the optional MinRequestInterval global delay.
+func (c *RestClient) waitForMinInterval() error {
 	if c.minRequestInterval <= 0 {
 		return nil
 	}
@@ -280,28 +295,6 @@ func (c *RestClient) waitForClientRateLimit() error {
 	}
 
 	return nil
-}
-
-func parseRetryAfter(resp *http.Response) time.Duration {
-	for _, header := range []string{"Retry-After", "X-RateLimit-Reset-After"} {
-		value := strings.TrimSpace(resp.Header.Get(header))
-		if value == "" {
-			continue
-		}
-
-		seconds, err := strconv.ParseFloat(value, 64)
-		if err != nil {
-			continue
-		}
-
-		if seconds <= 0 {
-			continue
-		}
-
-		return time.Duration(seconds * float64(time.Second))
-	}
-
-	return 0
 }
 
 func decodeGatewayError(resp *http.Response) error {

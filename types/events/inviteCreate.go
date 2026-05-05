@@ -23,6 +23,8 @@ type InviteCreateEvent struct {
 	RoleIDs           *[]common.Snowflake          `json:"role_ids,omitempty"`
 }
 
+func init() { RegisterEvent(InviteCreateEvent{}) }
+
 func (i InviteCreateEvent) DesiredEventType() Event {
 	return &InviteCreateEvent{}
 }

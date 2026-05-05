@@ -11,6 +11,8 @@ type MessageCreateEvent struct {
 	Mentions *[]common.User      `json:"mentions"`
 }
 
+func init() { RegisterEvent(MessageCreateEvent{}) }
+
 func (e MessageCreateEvent) DesiredEventType() Event {
 	return &MessageCreateEvent{}
 }

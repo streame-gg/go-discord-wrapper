@@ -7,6 +7,8 @@ type GuildAuditLogEntryCreateEvent struct {
 	GuildID common.Snowflake `json:"guild_id"`
 }
 
+func init() { RegisterEvent(GuildAuditLogEntryCreateEvent{}) }
+
 func (g GuildAuditLogEntryCreateEvent) DesiredEventType() Event {
 	return &GuildAuditLogEntryCreateEvent{}
 }

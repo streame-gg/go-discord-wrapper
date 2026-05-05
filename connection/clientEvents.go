@@ -2,6 +2,7 @@ package connection
 
 import (
 	"fmt"
+	"log/slog"
 	"reflect"
 
 	"github.com/streame-gg/go-discord-wrapper/types/events"
@@ -29,7 +30,7 @@ func (d *Client) onRawEvent(
 func (d *Client) OnEvent(eventName events.EventType, handler interface{}) {
 	wrapped, err := toEventHandler(handler, eventName)
 	if err != nil {
-		d.Logger.Warn().Msg(err.Error())
+		d.Logger.Warn(err.Error())
 		return
 	}
 
@@ -61,9 +62,9 @@ func toEventHandler(handler interface{}, eventName events.EventType) (EventHandl
 	return func(session *Client, event events.Event) {
 		eventValue := reflect.ValueOf(event)
 		if !eventValue.IsValid() || !eventValue.Type().AssignableTo(eventType) {
-			session.Logger.Warn().Msgf(
-				"Failed to cast event of type %T to expected type for event %s",
-				event, eventName,
+			session.Logger.Warn(
+				"Failed to cast event to expected type for event",
+				slog.Any("event", event), slog.Any("eventName", eventName),
 			)
 			return
 		}

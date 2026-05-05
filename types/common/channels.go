@@ -74,18 +74,18 @@ type Channel struct {
 	DefaultForumLayout            *ChannelForumLayoutType       `json:"default_forum_layout,omitempty"`
 }
 
-type ChannelPermissionOverwritesType int
+type ChannelPermissionOverwritesType string
 
 const (
-	ChannelPermissionOverwritesTypeRole ChannelPermissionOverwritesType = 0
-	ChannelPermissionOverwritesTypeUser ChannelPermissionOverwritesType = 1
+	ChannelPermissionOverwritesTypeRole ChannelPermissionOverwritesType = "0"
+	ChannelPermissionOverwritesTypeUser ChannelPermissionOverwritesType = "1"
 )
 
 type ChannelPermissionOverwrites struct {
 	ID    Snowflake                       `json:"id"`
 	Type  ChannelPermissionOverwritesType `json:"type"`
-	Allow string                          `json:"allow"`
-	Deny  string                          `json:"deny"`
+	Allow uint64                          `json:"allow"`
+	Deny  uint64                          `json:"deny"`
 }
 
 type ChannelFlags int

@@ -10,6 +10,8 @@ type InviteDeleteEvent struct {
 	GuildID   *common.Snowflake `json:"guild_id,omitempty"`
 }
 
+func init() { RegisterEvent(InviteDeleteEvent{}) }
+
 func (i InviteDeleteEvent) DesiredEventType() Event {
 	return &InviteDeleteEvent{}
 }

@@ -12,6 +12,8 @@ type ReadyEvent struct {
 	Guilds           []common.AnyGuildWrapper `json:"guilds"`
 }
 
+func init() { RegisterEvent(ReadyEvent{}) }
+
 func (e ReadyEvent) DesiredEventType() Event {
 	return &ReadyEvent{}
 }

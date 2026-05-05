@@ -1,15 +1,11 @@
 package interactions
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
+
 	"github.com/streame-gg/go-discord-wrapper/types/common"
-	"github.com/streame-gg/go-discord-wrapper/types/components"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
-	"io"
-	"net/http"
-	"net/url"
 )
 
 func (i *Interaction) GetSubCommand() string {
@@ -80,14 +76,12 @@ func (i *Interaction) GetFullCommand() (fullCommand string) {
 
 	fullCommand += cmdData.CommandName
 
-	subCommandGroup := i.GetSubCommandGroup()
-	if subCommandGroup != "" {
-		fullCommand += " " + subCommandGroup
+	if sub := i.GetSubCommandGroup(); sub != "" {
+		fullCommand += " " + sub
 	}
 
-	subCommand := i.GetSubCommand()
-	if subCommand != "" {
-		fullCommand += " " + subCommand
+	if sub := i.GetSubCommand(); sub != "" {
+		fullCommand += " " + sub
 	}
 
 	return fullCommand
@@ -98,18 +92,15 @@ func (i *Interaction) GetCustomID() string {
 		return ""
 	}
 
-	componentData, ok := i.Data.(*responses.InteractionDataMessageComponent)
-	componentData2, ok2 := i.Data.(*responses.InteractionDataModalSubmit)
-
-	if !ok && !ok2 {
-		return ""
+	if comp, ok := i.Data.(*responses.InteractionDataMessageComponent); ok {
+		return comp.CustomID
 	}
 
-	if ok2 {
-		return componentData2.CustomID
+	if modal, ok := i.Data.(*responses.InteractionDataModalSubmit); ok {
+		return modal.CustomID
 	}
 
-	return componentData.CustomID
+	return ""
 }
 
 func (i *Interaction) UnmarshalJSON(data []byte) error {
@@ -149,8 +140,12 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 	}
 
 	switch typeProbe.ComponentType {
-	case common.ComponentTypeButton, common.ComponentTypeStringSelectMenu, common.ComponentTypeUserSelectMenu, common.ComponentTypeRoleSelectMenu,
-		common.ComponentTypeMentionableMenu, common.ComponentTypeChannelSelect:
+	case common.ComponentTypeButton,
+		common.ComponentTypeStringSelectMenu,
+		common.ComponentTypeUserSelectMenu,
+		common.ComponentTypeRoleSelectMenu,
+		common.ComponentTypeMentionableMenu,
+		common.ComponentTypeChannelSelect:
 		var comp responses.InteractionDataMessageComponent
 		if err := json.Unmarshal(aux.Data, &comp); err != nil {
 			return err
@@ -159,7 +154,7 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	switch aux.Type {
+	switch i.Type {
 	case common.InteractionTypeModalSubmit:
 		var modal responses.InteractionDataModalSubmit
 		if err := json.Unmarshal(aux.Data, &modal); err != nil {
@@ -177,188 +172,4 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 	}
 
 	return fmt.Errorf("unknown interaction data type %d", typeProbe.Type)
-}
-
-func (i *Interaction) DeferReply() error {
-	//TODO
-	return nil
-}
-
-func (i *Interaction) EditReply(responseData *responses.AnyInteractionResponseData, clientID string) error {
-	bodyBytes, err := json.Marshal(*responseData)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.DefaultClient.Do(&http.Request{
-		Method: "PATCH",
-		URL: &url.URL{
-			Scheme: "https",
-			Host:   "discord.com",
-			Path:   "/api/v10/webhooks/" + clientID + "/" + i.Token + "/messages/@original",
-		},
-		Header: http.Header{
-			"Authorization": []string{"Bot " + ""},
-			"Content-Type":  []string{"application/json"},
-		},
-		Body: io.NopCloser(bytes.NewReader(bodyBytes)),
-	})
-
-	if err != nil {
-		return err
-	}
-
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(req.Body)
-
-	if req.StatusCode != http.StatusOK {
-		var respErr map[string]interface{}
-		if err := json.NewDecoder(req.Body).Decode(&respErr); err != nil {
-			return err
-		}
-
-		return fmt.Errorf("expected 204 No Content, got %d: %v", req.StatusCode, respErr)
-	}
-
-	return nil
-}
-
-func (i *Interaction) DeleteReply(clientID string) error {
-	req, err := http.DefaultClient.Do(&http.Request{
-		Method: "DELETE",
-		URL: &url.URL{
-			Scheme: "https",
-			Host:   "discord.com",
-			Path:   "/api/v10/webhooks/" + clientID + "/" + i.Token + "/messages/@original",
-		},
-		Header: http.Header{
-			"Authorization": []string{"Bot " + ""},
-			"Content-Type":  []string{"application/json"},
-		},
-	})
-
-	if err != nil {
-		return err
-	}
-
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(req.Body)
-
-	if req.StatusCode != http.StatusNoContent {
-		var respErr map[string]interface{}
-		if err := json.NewDecoder(req.Body).Decode(&respErr); err != nil {
-			return err
-		}
-
-		return fmt.Errorf("expected 204 No Content, got %d: %v", req.StatusCode, respErr)
-	}
-
-	return nil
-}
-
-func (i *Interaction) ReplyWithModal(modal *components.Modal) error {
-	bodyBytes, err := json.Marshal(responses.InteractionResponse{
-		Type: common.InteractionCallbackTypeModal,
-		Data: modal,
-	})
-	if err != nil {
-		return err
-	}
-
-	req, err := http.DefaultClient.Do(&http.Request{
-		Method: "POST",
-		URL: &url.URL{
-			Scheme: "https",
-			Host:   "discord.com",
-			Path:   "/api/v10/interactions/" + string(i.ID) + "/" + i.Token + "/callback",
-		},
-		Header: http.Header{
-			"Authorization": []string{"Bot " + ""},
-			"Content-Type":  []string{"application/json"},
-		},
-		Body: io.NopCloser(bytes.NewReader(bodyBytes)),
-	})
-
-	if err != nil {
-		return err
-	}
-
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(req.Body)
-
-	if req.StatusCode != http.StatusNoContent {
-		var respErr map[string]interface{}
-		if err := json.NewDecoder(req.Body).Decode(&respErr); err != nil {
-			return err
-		}
-
-		return fmt.Errorf("expected 204 No Content, got %d: %v", req.StatusCode, respErr)
-	}
-
-	return nil
-}
-
-func (i *Interaction) Reply(data *responses.InteractionResponseDataDefault) (*responses.InteractionCallbackResponse, error) {
-	bodyBytes, err := json.Marshal(responses.InteractionResponse{
-		Type: common.InteractionCallbackTypeChannelMessageWithSource,
-		Data: data,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.DefaultClient.Do(&http.Request{
-		Method: "POST",
-		URL: &url.URL{
-			Scheme:   "https",
-			Host:     "discord.com",
-			Path:     "/api/v10/interactions/" + string(i.ID) + "/" + i.Token + "/callback",
-			RawQuery: "with_response=" + fmt.Sprintf("%t", data.WithResponse),
-		},
-		Header: http.Header{
-			"Authorization": []string{"Bot " + ""},
-			"Content-Type":  []string{"application/json"},
-		},
-		Body: io.NopCloser(bytes.NewReader(bodyBytes)),
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(req.Body)
-
-	if !data.WithResponse {
-		if req.StatusCode != 204 {
-			var respErr map[string]interface{}
-			if err := json.NewDecoder(req.Body).Decode(&respErr); err != nil {
-				return nil, err
-			}
-
-			return nil, fmt.Errorf("expected 204 No Content, got %d: %v", req.StatusCode, respErr)
-		}
-
-		return nil, nil
-	}
-
-	if data.WithResponse && req.StatusCode != 200 {
-		var respErr map[string]interface{}
-		if err := json.NewDecoder(req.Body).Decode(&respErr); err != nil {
-			return nil, err
-		}
-
-		return nil, fmt.Errorf("expected 204 No Content, got %d: %v", req.StatusCode, respErr)
-	}
-
-	var resp responses.InteractionCallbackResponse
-	if err := json.NewDecoder(req.Body).Decode(&resp); err != nil {
-		return nil, err
-	}
-
-	return &resp, nil
 }

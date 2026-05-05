@@ -8,6 +8,8 @@ type MessageDeleteEvent struct {
 	GuildID   *common.Snowflake `json:"guild_id,omitempty"`
 }
 
+func init() { RegisterEvent(MessageDeleteEvent{}) }
+
 func (m MessageDeleteEvent) DesiredEventType() Event {
 	return &MessageDeleteEvent{}
 }

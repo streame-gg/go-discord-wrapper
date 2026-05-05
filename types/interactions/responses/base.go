@@ -17,10 +17,8 @@ type InteractionResponseDataDefault struct {
 	AllowedMentions *common.AllowedMentions `json:"allowed_mentions,omitempty"`
 	Flags           common.MessageFlag      `json:"flags,omitempty"`
 	Components      *[]common.AnyComponent  `json:"components,omitempty"`
-	//TODO partial
-	Attachment   *[]common.Attachment `json:"attachment,omitempty"`
-	Poll         *common.PollRequest  `json:"poll,omitempty"`
-	WithResponse bool                 `json:"with_response,omitempty"`
+	Attachments     *[]common.Attachment    `json:"attachments,omitempty"`
+	Poll            *common.PollRequest     `json:"poll,omitempty"`
 }
 
 func (d *InteractionResponseDataDefault) IsInteractionResponseData() bool {

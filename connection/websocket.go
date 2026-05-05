@@ -2,6 +2,7 @@ package connection
 
 import (
 	"encoding/json"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -47,7 +48,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 	_ = c.SetWriteDeadline(time.Time{})
 
 	c.SetPongHandler(func(string) error {
-		bot.Logger.Debug().Msg("Received pong from Discord")
+		bot.Logger.Debug("Received pong from Discord")
 		return nil
 	})
 
@@ -74,7 +75,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 		SessionID:         sessionID,
 	}
 
-	bot.Logger.Info().Msgf("Connected to Discord gateway, heartbeat interval: %f ms", hello.HeartbeatInterval)
+	bot.Logger.Info("Connected to Discord gateway", slog.Float64("heartbeatIntervalMs", hello.HeartbeatInterval))
 
 	go func() {
 		ticker := time.NewTicker(ws.HeartbeatInterval)
@@ -99,10 +100,10 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 							missedAcks := ws.missedHeartbeatAcks
 							ws.heartbeatMu.Unlock()
 
-							bot.Logger.Warn().Msgf("Heartbeat ACK timeout (%d/%d), waiting before reconnect", missedAcks, maxMissedHeartbeatAcks)
+							bot.Logger.Warn("Heartbeat ACK timeout", slog.Int("missed", missedAcks), slog.Int("max", maxMissedHeartbeatAcks))
 
 							if missedAcks >= maxMissedHeartbeatAcks {
-								bot.Logger.Warn().Msg("Heartbeat ACK timeout threshold reached, reconnecting")
+								bot.Logger.Warn("Heartbeat ACK timeout threshold reached, reconnecting")
 								ws.close()
 								_ = bot.reconnect(false)
 								return
@@ -127,17 +128,16 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 						D:  heartbeatData,
 					}
 
-					// Set write deadline to prevent hanging
 					if err := c.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
-						bot.Logger.Err(err).Msg("Failed to set write deadline")
+						bot.Logger.Error("Failed to set write deadline", slog.Any("err", err))
 						return
 					}
 
 					if err := c.WriteJSON(heartbeatPayload); err != nil {
-						bot.Logger.Err(err).Msg("Failed to send heartbeat")
+						bot.Logger.Error("Failed to send heartbeat", slog.Any("err", err))
 
 						if websocket.IsUnexpectedCloseError(err) {
-							bot.Logger.Warn().Msg("Heartbeat failed due to closed connection, stopping heartbeat loop")
+							bot.Logger.Warn("Heartbeat failed due to closed connection, stopping heartbeat loop")
 							return
 						}
 						continue
@@ -154,10 +154,10 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 
 					_ = c.SetWriteDeadline(time.Time{})
 
-					bot.Logger.Debug().Msg("Heartbeat sent")
+					bot.Logger.Debug("Heartbeat sent")
 				}
 			case <-ws.Closed:
-				bot.Logger.Debug().Msg("Heartbeat stopped: websocket closed")
+				bot.Logger.Debug("Heartbeat stopped: websocket closed")
 				return
 			}
 		}
@@ -214,7 +214,7 @@ func (d *Client) reconnect(freshConnect bool) error {
 	d.reconnectMu.Lock()
 	if d.reconnecting {
 		d.reconnectMu.Unlock()
-		d.Logger.Debug().Msg("Reconnect already running, skipping duplicate attempt")
+		d.Logger.Debug("Reconnect already running, skipping duplicate attempt")
 		return nil
 	}
 	d.reconnecting = true
@@ -226,7 +226,7 @@ func (d *Client) reconnect(freshConnect bool) error {
 		d.reconnectMu.Unlock()
 	}()
 
-	d.Logger.Warn().Msg("Reconnecting to Discord gateway")
+	d.Logger.Warn("Reconnecting to Discord gateway")
 
 	var lastEventNum *int
 	var sessionID *string
@@ -252,12 +252,12 @@ func (d *Client) reconnect(freshConnect bool) error {
 	for i := 0; i < maxRetries; i++ {
 		if i > 0 {
 			backoff := time.Duration(i) * time.Second
-			d.Logger.Debug().Msgf("Waiting %v before retry %d/%d", backoff, i+1, maxRetries)
+			d.Logger.Debug("Waiting before retry", slog.Duration("backoff", backoff), slog.Int("attempt", i+1), slog.Int("max", maxRetries))
 			time.Sleep(backoff)
 		}
 
 		if err := d.connectWebsocket(reconnectURL, !freshConnect, lastEventNum, sessionID); err != nil {
-			d.Logger.Warn().Msgf("Reconnect attempt %d/%d failed: %v", i+1, maxRetries, err)
+			d.Logger.Warn("Reconnect attempt failed", slog.Int("attempt", i+1), slog.Int("max", maxRetries), slog.Any("err", err))
 			if i == maxRetries-1 {
 				return err
 			}
@@ -268,7 +268,7 @@ func (d *Client) reconnect(freshConnect bool) error {
 			d.Websocket.SessionID = sessionID
 		}
 
-		d.Logger.Info().Msg("Successfully reconnected to gateway")
+		d.Logger.Info("Successfully reconnected to gateway")
 		return nil
 	}
 
@@ -287,16 +287,16 @@ func (d *Client) listenWebsocket() error {
 			return err
 		}
 
-		d.Logger.Debug().Msgf("Received payload: %s %d", payload.T, payload.Op)
+		d.Logger.Debug("Received payload", slog.String("type", payload.T), slog.Int("op", int(payload.Op)))
 
 		if payload.Op == 6 {
-			d.Logger.Debug().Msg("Resuming session")
+			d.Logger.Debug("Resuming session")
 		}
 
 		if payload.Op == 7 {
-			d.Logger.Debug().Msg("Reconnecting to gateway; requested by Discord")
+			d.Logger.Debug("Reconnecting to gateway; requested by Discord")
 			if err := d.reconnect(false); err != nil {
-				d.Logger.Err(err).Msg("Failed to reconnect")
+				d.Logger.Error("Failed to reconnect", slog.Any("err", err))
 				return err
 			}
 
@@ -310,15 +310,15 @@ func (d *Client) listenWebsocket() error {
 			}
 
 			if canResume {
-				d.Logger.Debug().Msg("Invalid session, attempting to resume")
+				d.Logger.Debug("Invalid session, attempting to resume")
 				if err := d.reconnect(false); err != nil {
-					d.Logger.Err(err).Msg("Failed to resume session")
+					d.Logger.Error("Failed to resume session", slog.Any("err", err))
 					return err
 				}
 			} else {
-				d.Logger.Debug().Msg("Invalid session, re-identifying")
+				d.Logger.Debug("Invalid session, re-identifying")
 				if err := d.reconnect(true); err != nil {
-					d.Logger.Err(err).Msg("Failed to re-identify")
+					d.Logger.Error("Failed to re-identify", slog.Any("err", err))
 					return err
 				}
 			}
@@ -331,9 +331,9 @@ func (d *Client) listenWebsocket() error {
 			d.Websocket.heartbeatMu.Lock()
 			d.Websocket.awaitingHeartbeatAck = false
 			d.Websocket.missedHeartbeatAcks = 0
-			d.Websocket.heartbeatMu.Unlock()
 			d.Websocket.LastHeartBeat = &now
-			d.Logger.Debug().Msg("Heartbeat Ack Received")
+			d.Websocket.heartbeatMu.Unlock()
+			d.Logger.Debug("Heartbeat ACK received")
 		}
 
 		if payload.S != nil {
@@ -343,7 +343,7 @@ func (d *Client) listenWebsocket() error {
 		if payload.T != "" {
 			factory, ok := events.EventFactories[events.EventType(payload.T)]
 			if !ok {
-				d.Logger.Warn().Msgf("No factory found for event type %s", payload.T)
+				d.Logger.Warn("No factory found for event type", slog.String("type", string(payload.T)))
 				continue
 			}
 
@@ -352,9 +352,8 @@ func (d *Client) listenWebsocket() error {
 			if err := json.Unmarshal(payload.D, event); err != nil {
 				var anyVal any
 				_ = json.Unmarshal(payload.D, &anyVal)
-				d.Logger.Debug().Msgf("Failed Event payload: %+v", anyVal)
-
-				d.Logger.Err(err).Msgf("Failed to unmarshal event %s", payload.T)
+				d.Logger.Debug("Failed event payload", slog.Any("payload", anyVal))
+				d.Logger.Error("Failed to unmarshal event", slog.String("type", string(payload.T)), slog.Any("err", err))
 				continue
 			}
 

@@ -3,45 +3,64 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/connection"
+	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/common"
 	"github.com/streame-gg/go-discord-wrapper/types/components"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
-	"github.com/streame-gg/go-discord-wrapper/util"
 
 	"github.com/joho/godotenv"
 )
 
-//FIXME: Wenn sich der Prozess aufhängt bzw. man den Prozess am Debugger aufhängt und den warten lässt killt der sich
-// selber, also versucht zu reconnecten macht er auch aber established nicht wirklich eine connection
-
 func main() {
+	slog.SetDefault(slog.New(
+		slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		}),
+	))
+
 	_ = godotenv.Load()
+
+	c := cache.NewMemoryCache(cache.Options{
+		TTL:           30 * time.Minute,
+		SweepInterval: 5 * time.Minute,
+		Limits: cache.Limits{
+			MaxMessages: 10_000,
+			MaxUsers:    5_000,
+		},
+		Messages: cache.MessageOptions{
+			MaxPerChannel: 200,
+		},
+	})
+	defer c.Close()
 
 	bot := connection.NewClient(
 		os.Getenv("TOKEN"),
 		common.AllIntentsExceptDirectMessage,
-		connection.WithSharding(&connection.ClientSharding{
-			TotalShards: 1,
-			ShardID:     0,
-		}),
+		options.WithSharding(1, 0),
+		options.WithCache(c),
 	)
 
 	bot.OnEvent(events.EventChannelCreate, func(client *connection.Client, event *events.ChannelCreateEvent) {
-		client.Logger.Info().Msgf("Channel created: %s (ID: %s)", event.Name, event.ID)
+		client.Logger.Info("Channel created", slog.String("name", event.Name), slog.String("id", event.ID.String()))
 	})
 
-	bot.OnEvent(events.EventInteractionCreate, func(session *connection.Client, event *events.InteractionCreateEvent) {
-		if event.GetFullCommand() == "info channel" {
-			bot.Logger.Debug().Msgf("Received info channel command from %s", event.Member.User.DisplayName())
+	bot.OnEvent(events.EventInteractionCreate, func(client *connection.Client, event *events.InteractionCreateEvent) {
+		i := &event.Interaction
 
-			if err := event.ReplyWithModal(&components.Modal{
+		if event.GetFullCommand() == "info channel" {
+			bot.Logger.Debug("Received info channel command", slog.String("executingUser", event.Member.User.DisplayName()))
+
+			if err := client.ReplyWithModal(i, &components.Modal{
 				Title:    "Modal",
 				CustomID: "modal",
 				Components: &[]components.LabelComponent{
@@ -50,7 +69,7 @@ func main() {
 						Description: "lololol",
 						Component: &components.FileUploadComponent{
 							CustomID: "input_1",
-							Required: util.PointerOf(false),
+							Required: options.Ptr(false),
 						},
 					}, {
 						Label:       "Input 2",
@@ -58,7 +77,7 @@ func main() {
 						Component: &components.TextInputComponent{
 							CustomID: "input_2",
 							Style:    components.TextInputStyleParagraph,
-							Required: util.PointerOf(false),
+							Required: options.Ptr(false),
 						},
 					}, {
 						Label:       "Input 3",
@@ -66,20 +85,13 @@ func main() {
 						Component: &components.CheckboxGroupComponent{
 							CustomID: "checkbox",
 							Options: &[]components.CheckboxGroupComponentOption{
-								{
-									Value: "One",
-									Label: "one",
-								}, {
-									Value: "Two",
-									Label: "two",
-								}, {
-									Value: "Three",
-									Label: "three",
-								},
+								{Value: "One", Label: "one"},
+								{Value: "Two", Label: "two"},
+								{Value: "Three", Label: "three"},
 							},
-							MinValues: util.PointerOf(1),
-							MaxValues: util.PointerOf(3),
-							Required:  util.PointerOf(true),
+							MinValues: options.Ptr(1),
+							MaxValues: options.Ptr(3),
+							Required:  options.Ptr(true),
 						},
 					},
 					{
@@ -95,31 +107,24 @@ func main() {
 						Component: &components.RadioGroupComponent{
 							CustomID: "radiogroup",
 							Options: &[]components.RadioGroupComponentOption{
-								{
-									Value: "one",
-									Label: "Eins",
-								}, {
-									Value: "two",
-									Label: "Zwei",
-								}, {
-									Value: "three",
-									Label: "Drei",
-								},
+								{Value: "one", Label: "Eins"},
+								{Value: "two", Label: "Zwei"},
+								{Value: "three", Label: "Drei"},
 							},
 						},
 					},
 				},
 			}); err != nil {
-				bot.Logger.Error().Msgf("Failed to create modal interaction response: %v", err)
+				bot.Logger.Error("Failed to create modal interaction response", slog.Any("err", err))
 				return
 			}
 			return
 		}
 
 		if event.IsCommand() {
-			bot.Logger.Debug().Msgf("Received interaction command %s from %s", event.GetFullCommand(), event.Member.User.DisplayName())
+			bot.Logger.Debug("Received interaction command", slog.String("fullCommand", event.GetFullCommand()), slog.String("user", event.Member.User.DisplayName()))
 
-			_, err := event.Reply(&responses.InteractionResponseDataDefault{
+			_, err := client.Reply(i, &responses.InteractionResponseDataDefault{
 				Flags: common.MessageFlagEphemeral | common.MessageFlagIsComponentsV2,
 				Components: &[]common.AnyComponent{
 					&components.TextDisplayComponent{
@@ -132,16 +137,8 @@ func main() {
 
 					&components.MediaGalleryComponent{
 						Items: &[]components.MediaGalleryItem{
-							{
-								Media: &components.UnfurledMediaItem{
-									URL: "https://i.imgur.com/AfFp7pu.png",
-								},
-							},
-							{
-								Media: &components.UnfurledMediaItem{
-									URL: "https://i.imgur.com/AfFp7pu.png",
-								},
-							},
+							{Media: &components.UnfurledMediaItem{URL: "https://i.imgur.com/AfFp7pu.png"}},
+							{Media: &components.UnfurledMediaItem{URL: "https://i.imgur.com/AfFp7pu.png"}},
 						},
 					},
 
@@ -166,38 +163,52 @@ func main() {
 						},
 					},
 				},
-			})
+			}, false)
 
 			if err != nil {
-				bot.Logger.Error().Msgf("Failed to create interaction response: %v", err)
+				bot.Logger.Error("Failed to create interaction response", slog.Any("err", err))
 			}
 		}
 
 		if event.IsButton() {
-			bot.Logger.Debug().Msgf("Received button interaction with custom ID %s from %s", event.GetCustomID(), event.Member.User.DisplayName())
+			bot.Logger.Info("Received button interaction", slog.String("customID", event.GetCustomID()), slog.String("user", event.Member.User.DisplayName()))
 
 			if event.GetCustomID() == "button_click_me" {
-				_, err := event.Reply(&responses.InteractionResponseDataDefault{
+				_, err := client.Reply(i, &responses.InteractionResponseDataDefault{
 					Content: "You clicked the button!",
 					Flags:   common.MessageFlagEphemeral,
-				})
+				}, false)
 
 				if err != nil {
-					bot.Logger.Error().Msgf("Failed to create button interaction response: %v", err)
+					bot.Logger.Error("Failed to create button interaction response", slog.Any("err", err))
 				}
 			}
 		}
 
 		if event.IsAnySelectMenu() {
-			bot.Logger.Debug().Msgf("Received select menu interaction with custom ID %s from %s", event.GetCustomID(), event.Member.User.DisplayName())
+			bot.Logger.Debug("Received any select menu interaction", slog.String("customId", event.GetCustomID()), slog.String("user", event.Member.User.DisplayName()))
 		}
 
 		if event.IsAutocomplete() {
-			bot.Logger.Debug().Msgf("Received autocomplete interaction for command %s from %s", event.GetFullCommand(), event.Member.User.DisplayName())
+			bot.Logger.Debug("Received autocomplete interaction", slog.String("customId", event.GetCustomID()), slog.String("user", event.Member.User.DisplayName()))
 		}
 
 		if event.IsModalSubmit() {
-			bot.Logger.Debug().Msgf("Received modal submit interaction with custom ID %s from %s", event.GetCustomID(), event.Member.User.DisplayName())
+			bot.Logger.Debug("Received modal submit interaction", slog.String("customId", event.GetCustomID()), slog.String("user", event.Member.User.DisplayName()))
+
+			if event.ChannelID != nil {
+				// Prefer the cache; only hit the REST API on a miss.
+				if ch, ok := bot.Cache.Channels().Get(*event.ChannelID); ok {
+					bot.Logger.Debug("Channel resolved from cache", slog.String("channelId", ch.ID.String()), slog.String("name", ch.Name))
+				} else {
+					ch, err := client.GetChannel(*event.ChannelID)
+					if err != nil {
+						bot.Logger.Error("Failed to get channel", slog.Any("err", err))
+					} else {
+						bot.Logger.Debug("Channel fetched from REST", slog.String("channelId", ch.ID.String()))
+					}
+				}
+			}
 		}
 	})
 
@@ -205,7 +216,7 @@ func main() {
 		panic(err)
 	}
 
-	res, err := bot.BulkRegisterCommands([]*commands.ApplicationCommand{
+	_, err := bot.BulkRegisterCommands([]*commands.ApplicationCommand{
 		{
 			Name:        "info",
 			Description: "Get information",
@@ -218,19 +229,20 @@ func main() {
 						&commands.ApplicationCommandOptionChannel{
 							Name:        "channel",
 							Description: "The channel to get information about",
-							Required:    util.PointerOf(true),
+							Required:    options.Ptr(true),
 						},
 					},
 				},
 			},
-		}, {
+		},
+		{
 			Name:        "welcome",
 			Description: "Do more stuff!!!!",
 			Type:        common.ApplicationCommandTypeChatInput,
 		},
 	})
 	if err != nil {
-		fmt.Println(res)
+		fmt.Println(err)
 		panic(err)
 	}
 
@@ -238,6 +250,6 @@ func main() {
 	defer stop()
 
 	<-ctx.Done()
-	bot.Logger.Info().Msg("Shutting down bot")
+	bot.Logger.Info("Shutting down...")
 	bot.Shutdown()
 }

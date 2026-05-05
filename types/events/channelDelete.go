@@ -6,6 +6,8 @@ type ChannelDeleteEvent struct {
 	common.Channel
 }
 
+func init() { RegisterEvent(ChannelDeleteEvent{}) }
+
 func (e ChannelDeleteEvent) DesiredEventType() Event {
 	return &ChannelDeleteEvent{}
 }

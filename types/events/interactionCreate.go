@@ -10,6 +10,8 @@ type InteractionCreateEvent struct {
 	interactions.Interaction
 }
 
+func init() { RegisterEvent(InteractionCreateEvent{}) }
+
 func (e InteractionCreateEvent) DesiredEventType() Event {
 	return &InteractionCreateEvent{}
 }
