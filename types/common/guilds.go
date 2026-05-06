@@ -288,3 +288,19 @@ const (
 	StickerFormatTypeLottie StickerFormatType = 3
 	StickerFormatTypeGIF    StickerFormatType = 4
 )
+
+// GuildWidgetSettings holds the guild widget configuration.
+type GuildWidgetSettings struct {
+	Enabled   bool       `json:"enabled"`
+	ChannelID *Snowflake `json:"channel_id"`
+}
+
+// GuildWidget is the public JSON widget for a guild.
+type GuildWidget struct {
+	ID            Snowflake `json:"id"`
+	Name          string    `json:"name"`
+	InstantInvite *string   `json:"instant_invite"`
+	Channels      []Channel `json:"channels"`
+	Members       []User    `json:"members"`
+	PresenceCount int       `json:"presence_count"`
+}

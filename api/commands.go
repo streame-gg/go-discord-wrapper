@@ -235,3 +235,59 @@ func (c *RestClient) BulkOverwriteGuildApplicationCommands(appID, guildID common
 
 	return registered, nil
 }
+
+// ── Command permissions ───────────────────────────────────────────────────────
+
+// GetGuildApplicationCommandPermissions returns all permission overrides for every command in a guild.
+func (c *RestClient) GetGuildApplicationCommandPermissions(appID, guildID common.Snowflake) ([]*common.GuildApplicationCommandPermissions, error) {
+	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/permissions"
+	req, err := c.generateRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var perms []*common.GuildApplicationCommandPermissions
+	if _, err := c.do(req, http.StatusOK, &perms); err != nil {
+		return nil, err
+	}
+
+	return perms, nil
+}
+
+// GetApplicationCommandPermissions returns the permission overrides for a specific command in a guild.
+func (c *RestClient) GetApplicationCommandPermissions(appID, guildID, cmdID common.Snowflake) (*common.GuildApplicationCommandPermissions, error) {
+	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/" + cmdID.String() + "/permissions"
+	req, err := c.generateRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var perms common.GuildApplicationCommandPermissions
+	if _, err := c.do(req, http.StatusOK, &perms); err != nil {
+		return nil, err
+	}
+
+	return &perms, nil
+}
+
+// EditApplicationCommandPermissions overwrites the permission overrides for a specific command in a guild.
+// Requires a Bearer token with applications.commands.permissions.update scope; bot tokens cannot use this endpoint.
+func (c *RestClient) EditApplicationCommandPermissions(appID, guildID, cmdID common.Snowflake, permissions []common.ApplicationCommandPermission) (*common.GuildApplicationCommandPermissions, error) {
+	body, err := json.Marshal(map[string]any{"permissions": permissions})
+	if err != nil {
+		return nil, err
+	}
+
+	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/" + cmdID.String() + "/permissions"
+	req, err := c.generateRequest(http.MethodPut, path, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+
+	var perms common.GuildApplicationCommandPermissions
+	if _, err := c.do(req, http.StatusOK, &perms); err != nil {
+		return nil, err
+	}
+
+	return &perms, nil
+}

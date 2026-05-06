@@ -12,12 +12,19 @@ type ReadyEvent struct {
 	Guilds           []common.AnyGuildWrapper `json:"guilds"`
 }
 
-func init() { RegisterEvent(ReadyEvent{}) }
+// ResumedEvent is dispatched when a session is successfully resumed.
+type ResumedEvent struct{}
+
+func init() {
+	RegisterEvent(ReadyEvent{})
+	RegisterEvent(ResumedEvent{})
+}
 
 func (e ReadyEvent) DesiredEventType() Event {
 	return &ReadyEvent{}
 }
 
-func (e ReadyEvent) Event() EventType {
-	return EventReady
-}
+func (e ReadyEvent) Event() EventType { return EventReady }
+
+func (e ResumedEvent) DesiredEventType() Event { return &ResumedEvent{} }
+func (e ResumedEvent) Event() EventType        { return EventResumed }

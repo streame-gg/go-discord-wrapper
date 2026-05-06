@@ -183,6 +183,24 @@ type GuildPruneCountResult struct {
 	Pruned *int `json:"pruned"`
 }
 
+type ModifyGuildWidgetParams struct {
+	Enabled   *bool             `json:"enabled,omitempty"`
+	ChannelID *common.Snowflake `json:"channel_id,omitempty"`
+}
+
+type ModifyGuildWelcomeScreenParams struct {
+	Enabled         *bool                              `json:"enabled,omitempty"`
+	WelcomeChannels []common.GuildWelcomeScreenChannel `json:"welcome_channels,omitempty"`
+	Description     *string                            `json:"description,omitempty"`
+}
+
+type ModifyGuildOnboardingParams struct {
+	Prompts           []common.OnboardingPrompt `json:"prompts"`
+	DefaultChannelIDs []common.Snowflake        `json:"default_channel_ids"`
+	Enabled           bool                      `json:"enabled"`
+	Mode              common.OnboardingMode     `json:"mode"`
+}
+
 type AuditLog struct {
 	ApplicationCommands  []any                  `json:"application_commands"`
 	AuditLogEntries      []common.AuditLogEntry `json:"audit_log_entries"`
@@ -597,4 +615,130 @@ func (c *RestClient) GetGuildAuditLog(guildID common.Snowflake, params GetGuildA
 	}
 
 	return &log, nil
+}
+
+// ── Widget ────────────────────────────────────────────────────────────────────
+
+// GetGuildWidgetSettings returns the widget settings for a guild. Requires MANAGE_GUILD.
+func (c *RestClient) GetGuildWidgetSettings(guildID common.Snowflake) (*common.GuildWidgetSettings, error) {
+	req, err := c.generateRequest(http.MethodGet, "/guilds/"+guildID.String()+"/widget", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var settings common.GuildWidgetSettings
+	if _, err := c.do(req, http.StatusOK, &settings); err != nil {
+		return nil, err
+	}
+
+	return &settings, nil
+}
+
+// ModifyGuildWidgetSettings updates the widget settings for a guild. Requires MANAGE_GUILD.
+func (c *RestClient) ModifyGuildWidgetSettings(guildID common.Snowflake, params ModifyGuildWidgetParams) (*common.GuildWidgetSettings, error) {
+	body, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := c.generateRequest(http.MethodPatch, "/guilds/"+guildID.String()+"/widget", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+
+	var settings common.GuildWidgetSettings
+	if _, err := c.do(req, http.StatusOK, &settings); err != nil {
+		return nil, err
+	}
+
+	return &settings, nil
+}
+
+// GetGuildWidget returns the public JSON widget for a guild (no authentication required).
+func (c *RestClient) GetGuildWidget(guildID common.Snowflake) (*common.GuildWidget, error) {
+	req, err := c.generateRequest(http.MethodGet, "/guilds/"+guildID.String()+"/widget.json", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var widget common.GuildWidget
+	if _, err := c.do(req, http.StatusOK, &widget); err != nil {
+		return nil, err
+	}
+
+	return &widget, nil
+}
+
+// ── Welcome screen ────────────────────────────────────────────────────────────
+
+// GetGuildWelcomeScreen returns the welcome screen for a community guild.
+func (c *RestClient) GetGuildWelcomeScreen(guildID common.Snowflake) (*common.GuildWelcomeScreen, error) {
+	req, err := c.generateRequest(http.MethodGet, "/guilds/"+guildID.String()+"/welcome-screen", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var screen common.GuildWelcomeScreen
+	if _, err := c.do(req, http.StatusOK, &screen); err != nil {
+		return nil, err
+	}
+
+	return &screen, nil
+}
+
+// ModifyGuildWelcomeScreen updates the welcome screen for a community guild. Requires MANAGE_GUILD.
+func (c *RestClient) ModifyGuildWelcomeScreen(guildID common.Snowflake, params ModifyGuildWelcomeScreenParams) (*common.GuildWelcomeScreen, error) {
+	body, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := c.generateRequest(http.MethodPatch, "/guilds/"+guildID.String()+"/welcome-screen", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+
+	var screen common.GuildWelcomeScreen
+	if _, err := c.do(req, http.StatusOK, &screen); err != nil {
+		return nil, err
+	}
+
+	return &screen, nil
+}
+
+// ── Onboarding ────────────────────────────────────────────────────────────────
+
+// GetGuildOnboarding returns the onboarding configuration for a guild.
+func (c *RestClient) GetGuildOnboarding(guildID common.Snowflake) (*common.GuildOnboarding, error) {
+	req, err := c.generateRequest(http.MethodGet, "/guilds/"+guildID.String()+"/onboarding", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var onboarding common.GuildOnboarding
+	if _, err := c.do(req, http.StatusOK, &onboarding); err != nil {
+		return nil, err
+	}
+
+	return &onboarding, nil
+}
+
+// ModifyGuildOnboarding updates the onboarding configuration for a guild. Requires MANAGE_GUILD and MANAGE_ROLES.
+func (c *RestClient) ModifyGuildOnboarding(guildID common.Snowflake, params ModifyGuildOnboardingParams) (*common.GuildOnboarding, error) {
+	body, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := c.generateRequest(http.MethodPut, "/guilds/"+guildID.String()+"/onboarding", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+
+	var onboarding common.GuildOnboarding
+	if _, err := c.do(req, http.StatusOK, &onboarding); err != nil {
+		return nil, err
+	}
+
+	return &onboarding, nil
 }

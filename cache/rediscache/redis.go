@@ -79,13 +79,17 @@ func NewRedisCache(client *redis.Client, opts cache.Options) *RedisCache {
 	}
 }
 
-// WithKeyPrefix returns a shallow copy of c that uses prefix as the key
-// namespace instead of the default "discord". Use this when multiple bots
-// or environments share a single Redis instance.
+// WithKeyPrefix returns a new RedisCache that uses prefix as the key namespace
+// instead of the default "discord". Use this when multiple bots or environments
+// share a single Redis instance.
 func (c *RedisCache) WithKeyPrefix(prefix string) *RedisCache {
-	c2 := *c
-	c2.prefix = prefix
-	return &c2
+	return &RedisCache{
+		client: c.client,
+		opts:   c.opts,
+		ctx:    c.ctx,
+		cancel: c.cancel,
+		prefix: prefix,
+	}
 }
 
 // k builds a Redis key by joining prefix and parts with ":".

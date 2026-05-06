@@ -47,14 +47,6 @@ func (d *InteractionDataApplicationCommand) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			options = append(options, option)
-
-			if option.Options != nil {
-				var option ApplicationCommandInteractionDataOption[interface{}]
-				if err := json.Unmarshal(optionData, &option); err != nil {
-					return err
-				}
-
-			}
 		}
 		d.Options = &options
 	}

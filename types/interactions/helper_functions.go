@@ -30,7 +30,7 @@ func (i *Interaction) GetSubCommand() string {
 		if option.Type == common.ApplicationCommandOptionTypeSubCommandGroup {
 			if option.Options != nil {
 				for _, subOption := range option.Options {
-					if subOption.Type == common.ApplicationCommandOptionTypeSubCommandGroup {
+					if subOption.Type == common.ApplicationCommandOptionTypeSubCommand {
 						return subOption.Name
 					}
 				}
@@ -129,13 +129,22 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	switch typeProbe.Type {
-	case common.ApplicationCommandTypeChatInput, common.ApplicationCommandTypeUser, common.ApplicationCommandTypeMessage:
-		var cmd responses.InteractionDataApplicationCommand
-		if err := json.Unmarshal(aux.Data, &cmd); err != nil {
+	// Autocomplete and regular commands both carry type=ChatInput in the data
+	// payload, so check the interaction type first to distinguish them.
+	switch i.Type {
+	case common.InteractionTypeApplicationCommandAutocomplete:
+		var auto responses.InteractionDataAutocomplete
+		if err := json.Unmarshal(aux.Data, &auto); err != nil {
 			return err
 		}
-		i.Data = &cmd
+		i.Data = &auto
+		return nil
+	case common.InteractionTypeModalSubmit:
+		var modal responses.InteractionDataModalSubmit
+		if err := json.Unmarshal(aux.Data, &modal); err != nil {
+			return err
+		}
+		i.Data = &modal
 		return nil
 	}
 
@@ -154,22 +163,15 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	switch i.Type {
-	case common.InteractionTypeModalSubmit:
-		var modal responses.InteractionDataModalSubmit
-		if err := json.Unmarshal(aux.Data, &modal); err != nil {
+	switch typeProbe.Type {
+	case common.ApplicationCommandTypeChatInput, common.ApplicationCommandTypeUser, common.ApplicationCommandTypeMessage:
+		var cmd responses.InteractionDataApplicationCommand
+		if err := json.Unmarshal(aux.Data, &cmd); err != nil {
 			return err
 		}
-		i.Data = &modal
-		return nil
-	case common.InteractionTypeApplicationCommandAutocomplete:
-		var auto responses.InteractionDataAutocomplete
-		if err := json.Unmarshal(aux.Data, &auto); err != nil {
-			return err
-		}
-		i.Data = &auto
+		i.Data = &cmd
 		return nil
 	}
 
-	return fmt.Errorf("unknown interaction data type %d", typeProbe.Type)
+	return fmt.Errorf("unknown interaction data type: interaction_type=%d data_type=%d", i.Type, typeProbe.Type)
 }

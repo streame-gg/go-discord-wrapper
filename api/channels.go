@@ -85,6 +85,8 @@ func (c *RestClient) ModifyChannel(channelID common.Snowflake, params ModifyChan
 	return &channel, nil
 }
 
+// DeleteChannel deletes a channel by ID. For guild channels requires MANAGE_CHANNELS.
+// Returns the deleted channel object.
 func (c *RestClient) DeleteChannel(channelID common.Snowflake) (*common.Channel, error) {
 	req, err := c.generateRequest(http.MethodDelete, "/channels/"+channelID.String(), nil)
 	if err != nil {
@@ -99,6 +101,7 @@ func (c *RestClient) DeleteChannel(channelID common.Snowflake) (*common.Channel,
 	return &channel, nil
 }
 
+// GetChannelInvites returns all invites for a channel. Requires MANAGE_CHANNELS.
 func (c *RestClient) GetChannelInvites(channelID common.Snowflake) ([]*Invite, error) {
 	req, err := c.generateRequest(http.MethodGet, "/channels/"+channelID.String()+"/invites", nil)
 	if err != nil {
@@ -113,6 +116,7 @@ func (c *RestClient) GetChannelInvites(channelID common.Snowflake) ([]*Invite, e
 	return invites, nil
 }
 
+// CreateChannelInvite creates a new invite for a channel. Requires CREATE_INSTANT_INVITE.
 func (c *RestClient) CreateChannelInvite(channelID common.Snowflake, params CreateChannelInviteParams) (*Invite, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
@@ -132,6 +136,8 @@ func (c *RestClient) CreateChannelInvite(channelID common.Snowflake, params Crea
 	return &invite, nil
 }
 
+// EditChannelPermissions creates or updates a permission overwrite for a user or role in a channel.
+// Requires MANAGE_ROLES. Use params.Type to specify whether overwriteID is a role or member.
 func (c *RestClient) EditChannelPermissions(channelID, overwriteID common.Snowflake, params EditChannelPermissionsParams) error {
 	body, err := json.Marshal(params)
 	if err != nil {
@@ -148,6 +154,8 @@ func (c *RestClient) EditChannelPermissions(channelID, overwriteID common.Snowfl
 	return err
 }
 
+// DeleteChannelPermission removes a permission overwrite for a user or role from a channel.
+// Requires MANAGE_ROLES.
 func (c *RestClient) DeleteChannelPermission(channelID, overwriteID common.Snowflake) error {
 	path := "/channels/" + channelID.String() + "/permissions/" + overwriteID.String()
 	req, err := c.generateRequest(http.MethodDelete, path, nil)
@@ -159,6 +167,7 @@ func (c *RestClient) DeleteChannelPermission(channelID, overwriteID common.Snowf
 	return err
 }
 
+// TriggerTypingIndicator posts a typing indicator to the channel for ~10 seconds.
 func (c *RestClient) TriggerTypingIndicator(channelID common.Snowflake) error {
 	req, err := c.generateRequest(http.MethodPost, "/channels/"+channelID.String()+"/typing", nil)
 	if err != nil {

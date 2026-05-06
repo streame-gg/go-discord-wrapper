@@ -9,6 +9,8 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
 
+// CreateInteractionResponse sends a response to an interaction. Must be called within 3 seconds.
+// Set withResponse=true to receive the created message back; returns nil otherwise.
 func (c *RestClient) CreateInteractionResponse(interactionID common.Snowflake, token string, response responses.InteractionResponse, withResponse bool) (*responses.InteractionCallbackResponse, error) {
 	body, err := json.Marshal(response)
 	if err != nil {
@@ -38,6 +40,7 @@ func (c *RestClient) CreateInteractionResponse(interactionID common.Snowflake, t
 	return &result, nil
 }
 
+// GetOriginalInteractionResponse fetches the initial response message for an interaction.
 func (c *RestClient) GetOriginalInteractionResponse(appID common.Snowflake, token string) (*common.Message, error) {
 	path := "/webhooks/" + appID.String() + "/" + token + "/messages/@original"
 	req, err := c.generateRequest(http.MethodGet, path, nil)
@@ -53,6 +56,7 @@ func (c *RestClient) GetOriginalInteractionResponse(appID common.Snowflake, toke
 	return &msg, nil
 }
 
+// EditOriginalInteractionResponse edits the initial response message for an interaction.
 func (c *RestClient) EditOriginalInteractionResponse(appID common.Snowflake, token string, params EditMessageParams) (*common.Message, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
@@ -73,6 +77,7 @@ func (c *RestClient) EditOriginalInteractionResponse(appID common.Snowflake, tok
 	return &msg, nil
 }
 
+// DeleteOriginalInteractionResponse deletes the initial response message for an interaction.
 func (c *RestClient) DeleteOriginalInteractionResponse(appID common.Snowflake, token string) error {
 	path := "/webhooks/" + appID.String() + "/" + token + "/messages/@original"
 	req, err := c.generateRequest(http.MethodDelete, path, nil)
@@ -84,6 +89,7 @@ func (c *RestClient) DeleteOriginalInteractionResponse(appID common.Snowflake, t
 	return err
 }
 
+// CreateFollowupMessage sends a follow-up message to an interaction (usable up to 15 minutes after the initial response).
 func (c *RestClient) CreateFollowupMessage(appID common.Snowflake, token string, params CreateMessageParams) (*common.Message, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
@@ -104,6 +110,7 @@ func (c *RestClient) CreateFollowupMessage(appID common.Snowflake, token string,
 	return &msg, nil
 }
 
+// GetFollowupMessage fetches a follow-up message sent for an interaction.
 func (c *RestClient) GetFollowupMessage(appID common.Snowflake, token string, messageID common.Snowflake) (*common.Message, error) {
 	path := "/webhooks/" + appID.String() + "/" + token + "/messages/" + messageID.String()
 	req, err := c.generateRequest(http.MethodGet, path, nil)
@@ -119,6 +126,7 @@ func (c *RestClient) GetFollowupMessage(appID common.Snowflake, token string, me
 	return &msg, nil
 }
 
+// EditFollowupMessage edits a follow-up message sent for an interaction.
 func (c *RestClient) EditFollowupMessage(appID common.Snowflake, token string, messageID common.Snowflake, params EditMessageParams) (*common.Message, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
@@ -139,6 +147,7 @@ func (c *RestClient) EditFollowupMessage(appID common.Snowflake, token string, m
 	return &msg, nil
 }
 
+// DeleteFollowupMessage deletes a follow-up message sent for an interaction.
 func (c *RestClient) DeleteFollowupMessage(appID common.Snowflake, token string, messageID common.Snowflake) error {
 	path := "/webhooks/" + appID.String() + "/" + token + "/messages/" + messageID.String()
 	req, err := c.generateRequest(http.MethodDelete, path, nil)

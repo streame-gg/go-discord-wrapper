@@ -2,6 +2,15 @@ package common
 
 import "time"
 
+// VoiceRegion describes a Discord voice server region.
+type VoiceRegion struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Optimal    bool   `json:"optimal"`
+	Deprecated bool   `json:"deprecated"`
+	Custom     bool   `json:"custom"`
+}
+
 type VoiceState struct {
 	GuildID                 *Snowflake   `json:"guild_id,omitempty"`
 	ChannelID               *Snowflake   `json:"channel_id"`

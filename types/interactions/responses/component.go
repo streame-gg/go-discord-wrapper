@@ -7,7 +7,7 @@ import (
 type InteractionDataMessageComponent struct {
 	CustomID      string               `json:"custom_id"`
 	ComponentType common.ComponentType `json:"component_type"`
-	Values        *[]interface{}       `json:"values,omitempty"`
+	Values        []string             `json:"values,omitempty"`
 	Resolved      *common.ResolvedData `json:"resolved,omitempty"`
 }
 

@@ -81,4 +81,21 @@ const (
 	EventEntitlementCreate             EventType = "ENTITLEMENT_CREATE"
 	EventEntitlementUpdate             EventType = "ENTITLEMENT_UPDATE"
 	EventEntitlementDelete             EventType = "ENTITLEMENT_DELETE"
+
+	EventResumed EventType = "RESUMED"
+
+	EventThreadMemberUpdate  EventType = "THREAD_MEMBER_UPDATE"
+	EventThreadMembersUpdate EventType = "THREAD_MEMBERS_UPDATE"
+
+	EventGuildMembersChunk EventType = "GUILD_MEMBERS_CHUNK"
+
+	EventApplicationCommandPermissionsUpdate EventType = "APPLICATION_COMMAND_PERMISSIONS_UPDATE"
+
+	EventGuildSoundboardSoundCreate  EventType = "GUILD_SOUNDBOARD_SOUND_CREATE"
+	EventGuildSoundboardSoundUpdate  EventType = "GUILD_SOUNDBOARD_SOUND_UPDATE"
+	EventGuildSoundboardSoundDelete  EventType = "GUILD_SOUNDBOARD_SOUND_DELETE"
+	EventGuildSoundboardSoundsUpdate EventType = "GUILD_SOUNDBOARD_SOUNDS_UPDATE"
+
+	EventVoiceServerUpdate      EventType = "VOICE_SERVER_UPDATE"
+	EventVoiceChannelEffectSend EventType = "VOICE_CHANNEL_EFFECT_SEND"
 )

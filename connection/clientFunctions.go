@@ -340,7 +340,117 @@ func (d *Client) RemoveGuildMemberRole(guildID, userID, roleID common.Snowflake)
 	return d.RestClient.RemoveGuildMemberRole(guildID, userID, roleID)
 }
 
+// RemoveGuildMember removes a member from a guild. Requires KICK_MEMBERS.
+func (d *Client) RemoveGuildMember(guildID, userID common.Snowflake) error {
+	return d.RestClient.RemoveGuildMember(guildID, userID)
+}
+
 // KickGuildMember removes a member from a guild. Requires KICK_MEMBERS.
 func (d *Client) KickGuildMember(guildID, userID common.Snowflake) error {
 	return d.RestClient.RemoveGuildMember(guildID, userID)
+}
+
+// ── Guild widget ──────────────────────────────────────────────────────────────
+
+func (d *Client) GetGuildWidgetSettings(guildID common.Snowflake) (*common.GuildWidgetSettings, error) {
+	return d.RestClient.GetGuildWidgetSettings(guildID)
+}
+
+func (d *Client) ModifyGuildWidgetSettings(guildID common.Snowflake, params api.ModifyGuildWidgetParams) (*common.GuildWidgetSettings, error) {
+	return d.RestClient.ModifyGuildWidgetSettings(guildID, params)
+}
+
+func (d *Client) GetGuildWidget(guildID common.Snowflake) (*common.GuildWidget, error) {
+	return d.RestClient.GetGuildWidget(guildID)
+}
+
+// ── Welcome screen ────────────────────────────────────────────────────────────
+
+func (d *Client) GetGuildWelcomeScreen(guildID common.Snowflake) (*common.GuildWelcomeScreen, error) {
+	return d.RestClient.GetGuildWelcomeScreen(guildID)
+}
+
+func (d *Client) ModifyGuildWelcomeScreen(guildID common.Snowflake, params api.ModifyGuildWelcomeScreenParams) (*common.GuildWelcomeScreen, error) {
+	return d.RestClient.ModifyGuildWelcomeScreen(guildID, params)
+}
+
+// ── Guild onboarding ──────────────────────────────────────────────────────────
+
+func (d *Client) GetGuildOnboarding(guildID common.Snowflake) (*common.GuildOnboarding, error) {
+	return d.RestClient.GetGuildOnboarding(guildID)
+}
+
+func (d *Client) ModifyGuildOnboarding(guildID common.Snowflake, params api.ModifyGuildOnboardingParams) (*common.GuildOnboarding, error) {
+	return d.RestClient.ModifyGuildOnboarding(guildID, params)
+}
+
+// ── Voice ─────────────────────────────────────────────────────────────────────
+
+func (d *Client) ListVoiceRegions() ([]*common.VoiceRegion, error) {
+	return d.RestClient.ListVoiceRegions()
+}
+
+func (d *Client) ListGuildVoiceRegions(guildID common.Snowflake) ([]*common.VoiceRegion, error) {
+	return d.RestClient.ListGuildVoiceRegions(guildID)
+}
+
+func (d *Client) ModifyCurrentUserVoiceState(guildID common.Snowflake, params api.ModifyCurrentUserVoiceStateParams) error {
+	return d.RestClient.ModifyCurrentUserVoiceState(guildID, params)
+}
+
+func (d *Client) ModifyUserVoiceState(guildID, userID common.Snowflake, params api.ModifyUserVoiceStateParams) error {
+	return d.RestClient.ModifyUserVoiceState(guildID, userID, params)
+}
+
+// ── Soundboard ────────────────────────────────────────────────────────────────
+
+func (d *Client) ListDefaultSoundboardSounds() ([]*common.SoundboardSound, error) {
+	return d.RestClient.ListDefaultSoundboardSounds()
+}
+
+func (d *Client) ListGuildSoundboardSounds(guildID common.Snowflake) ([]*common.SoundboardSound, error) {
+	return d.RestClient.ListGuildSoundboardSounds(guildID)
+}
+
+func (d *Client) GetGuildSoundboardSound(guildID, soundID common.Snowflake) (*common.SoundboardSound, error) {
+	return d.RestClient.GetGuildSoundboardSound(guildID, soundID)
+}
+
+func (d *Client) CreateGuildSoundboardSound(guildID common.Snowflake, params api.CreateGuildSoundboardSoundParams) (*common.SoundboardSound, error) {
+	return d.RestClient.CreateGuildSoundboardSound(guildID, params)
+}
+
+func (d *Client) ModifyGuildSoundboardSound(guildID, soundID common.Snowflake, params api.ModifyGuildSoundboardSoundParams) (*common.SoundboardSound, error) {
+	return d.RestClient.ModifyGuildSoundboardSound(guildID, soundID, params)
+}
+
+func (d *Client) DeleteGuildSoundboardSound(guildID, soundID common.Snowflake) error {
+	return d.RestClient.DeleteGuildSoundboardSound(guildID, soundID)
+}
+
+func (d *Client) SendSoundboardSound(channelID common.Snowflake, params api.SendSoundboardSoundParams) error {
+	return d.RestClient.SendSoundboardSound(channelID, params)
+}
+
+// ── Application ───────────────────────────────────────────────────────────────
+
+func (d *Client) GetCurrentApplication() (*common.Application, error) {
+	return d.RestClient.GetCurrentApplication()
+}
+
+func (d *Client) ModifyCurrentApplication(params api.ModifyCurrentApplicationParams) (*common.Application, error) {
+	return d.RestClient.ModifyCurrentApplication(params)
+}
+
+// ── Command permissions ───────────────────────────────────────────────────────
+
+// GetGuildApplicationCommandPermissions returns all permission overrides for every command in a guild.
+// Uses the bot's own application ID automatically.
+func (d *Client) GetGuildApplicationCommandPermissions(guildID common.Snowflake) ([]*common.GuildApplicationCommandPermissions, error) {
+	return d.RestClient.GetGuildApplicationCommandPermissions(d.User.ID, guildID)
+}
+
+// GetApplicationCommandPermissions returns the permission overrides for a specific command.
+func (d *Client) GetApplicationCommandPermissions(guildID, cmdID common.Snowflake) (*common.GuildApplicationCommandPermissions, error) {
+	return d.RestClient.GetApplicationCommandPermissions(d.User.ID, guildID, cmdID)
 }

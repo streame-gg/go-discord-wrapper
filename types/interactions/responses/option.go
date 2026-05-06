@@ -40,9 +40,17 @@ func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) 
 				t.Value = &v
 			}
 		case common.ApplicationCommandOptionTypeInteger:
-			if intVal, ok := raw.Value.(int); ok {
+			// JSON numbers unmarshal to float64 when the target is interface{}.
+			if floatVal, ok := raw.Value.(float64); ok {
+				intVal := int(floatVal)
 				var v T
 				v = any(intVal).(T)
+				t.Value = &v
+			}
+		case common.ApplicationCommandOptionTypeNumber:
+			if floatVal, ok := raw.Value.(float64); ok {
+				var v T
+				v = any(floatVal).(T)
 				t.Value = &v
 			}
 		case common.ApplicationCommandOptionTypeBoolean:
@@ -53,7 +61,7 @@ func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) 
 			}
 		default:
 			var v T
-			v = raw.Value.(T)
+			v = any(raw.Value).(T)
 			t.Value = &v
 		}
 	}
