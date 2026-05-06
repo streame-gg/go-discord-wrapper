@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"strconv"
 )
 
 type APIVersion uint8
@@ -123,5 +124,5 @@ type GatewayError struct {
 }
 
 func (g GatewayError) Error() string {
-	return string(rune(g.Code)) + " " + g.Message
+	return strconv.Itoa(g.Code) + " " + g.Message
 }

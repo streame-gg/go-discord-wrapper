@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -126,9 +127,9 @@ func encodeEmoji(emoji string) string {
 // ── Message endpoints ─────────────────────────────────────────────────────────
 
 // GetMessages returns up to 100 messages from a channel.
-func (c *RestClient) GetMessages(channelID common.Snowflake, params GetMessagesParams) ([]*common.Message, error) {
+func (c *RestClient) GetMessages(ctx context.Context, channelID common.Snowflake, params GetMessagesParams) ([]*common.Message, error) {
 	path := "/channels/" + channelID.String() + "/messages" + params.toQuery()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -142,9 +143,9 @@ func (c *RestClient) GetMessages(channelID common.Snowflake, params GetMessagesP
 }
 
 // GetMessage returns a single message by ID.
-func (c *RestClient) GetMessage(channelID, messageID common.Snowflake) (*common.Message, error) {
+func (c *RestClient) GetMessage(ctx context.Context, channelID, messageID common.Snowflake) (*common.Message, error) {
 	path := "/channels/" + channelID.String() + "/messages/" + messageID.String()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -158,13 +159,13 @@ func (c *RestClient) GetMessage(channelID, messageID common.Snowflake) (*common.
 }
 
 // CreateMessage sends a new message to a channel.
-func (c *RestClient) CreateMessage(channelID common.Snowflake, params CreateMessageParams) (*common.Message, error) {
+func (c *RestClient) CreateMessage(ctx context.Context, channelID common.Snowflake, params CreateMessageParams) (*common.Message, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest(http.MethodPost, "/channels/"+channelID.String()+"/messages", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/messages", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -178,14 +179,14 @@ func (c *RestClient) CreateMessage(channelID common.Snowflake, params CreateMess
 }
 
 // EditMessage edits a previously sent message. Only fields set in params are changed.
-func (c *RestClient) EditMessage(channelID, messageID common.Snowflake, params EditMessageParams) (*common.Message, error) {
+func (c *RestClient) EditMessage(ctx context.Context, channelID, messageID common.Snowflake, params EditMessageParams) (*common.Message, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
 	path := "/channels/" + channelID.String() + "/messages/" + messageID.String()
-	req, err := c.generateRequest(http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -199,9 +200,9 @@ func (c *RestClient) EditMessage(channelID, messageID common.Snowflake, params E
 }
 
 // DeleteMessage deletes a message.
-func (c *RestClient) DeleteMessage(channelID, messageID common.Snowflake) error {
+func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID common.Snowflake) error {
 	path := "/channels/" + channelID.String() + "/messages/" + messageID.String()
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -212,7 +213,7 @@ func (c *RestClient) DeleteMessage(channelID, messageID common.Snowflake) error 
 
 // BulkDeleteMessages deletes 2–100 messages at once.
 // Messages older than 14 days cannot be bulk-deleted and will cause a Discord API error.
-func (c *RestClient) BulkDeleteMessages(channelID common.Snowflake, messageIDs []common.Snowflake) error {
+func (c *RestClient) BulkDeleteMessages(ctx context.Context, channelID common.Snowflake, messageIDs []common.Snowflake) error {
 	if len(messageIDs) < 2 || len(messageIDs) > 100 {
 		return fmt.Errorf("bulk delete requires 2–100 message IDs, got %d", len(messageIDs))
 	}
@@ -223,7 +224,7 @@ func (c *RestClient) BulkDeleteMessages(channelID common.Snowflake, messageIDs [
 	}
 
 	path := "/channels/" + channelID.String() + "/messages/bulk-delete"
-	req, err := c.generateRequest(http.MethodPost, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -233,9 +234,9 @@ func (c *RestClient) BulkDeleteMessages(channelID common.Snowflake, messageIDs [
 }
 
 // CrosspostMessage publishes a message in an announcement channel to all following channels.
-func (c *RestClient) CrosspostMessage(channelID, messageID common.Snowflake) (*common.Message, error) {
+func (c *RestClient) CrosspostMessage(ctx context.Context, channelID, messageID common.Snowflake) (*common.Message, error) {
 	path := "/channels/" + channelID.String() + "/messages/" + messageID.String() + "/crosspost"
-	req, err := c.generateRequest(http.MethodPost, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPost, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -251,8 +252,8 @@ func (c *RestClient) CrosspostMessage(channelID, messageID common.Snowflake) (*c
 // ── Pin endpoints ─────────────────────────────────────────────────────────────
 
 // GetPinnedMessages returns all pinned messages in a channel (max 50).
-func (c *RestClient) GetPinnedMessages(channelID common.Snowflake) ([]*common.Message, error) {
-	req, err := c.generateRequest(http.MethodGet, "/channels/"+channelID.String()+"/pins", nil)
+func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID common.Snowflake) ([]*common.Message, error) {
+	req, err := c.generateRequest(ctx, http.MethodGet, "/channels/"+channelID.String()+"/pins", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -266,9 +267,9 @@ func (c *RestClient) GetPinnedMessages(channelID common.Snowflake) ([]*common.Me
 }
 
 // PinMessage pins a message in a channel. Requires MANAGE_MESSAGES.
-func (c *RestClient) PinMessage(channelID, messageID common.Snowflake) error {
+func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID common.Snowflake) error {
 	path := "/channels/" + channelID.String() + "/pins/" + messageID.String()
-	req, err := c.generateRequest(http.MethodPut, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPut, path, nil)
 	if err != nil {
 		return err
 	}
@@ -278,9 +279,9 @@ func (c *RestClient) PinMessage(channelID, messageID common.Snowflake) error {
 }
 
 // UnpinMessage unpins a message from a channel. Requires MANAGE_MESSAGES.
-func (c *RestClient) UnpinMessage(channelID, messageID common.Snowflake) error {
+func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID common.Snowflake) error {
 	path := "/channels/" + channelID.String() + "/pins/" + messageID.String()
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -293,9 +294,9 @@ func (c *RestClient) UnpinMessage(channelID, messageID common.Snowflake) error {
 
 // AddReaction adds a reaction to a message.
 // emoji is a raw Unicode character (e.g. "👍") or a custom emoji in "name:id" form.
-func (c *RestClient) AddReaction(channelID, messageID common.Snowflake, emoji string) error {
+func (c *RestClient) AddReaction(ctx context.Context, channelID, messageID common.Snowflake, emoji string) error {
 	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s/@me", channelID, messageID, encodeEmoji(emoji))
-	req, err := c.generateRequest(http.MethodPut, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPut, path, nil)
 	if err != nil {
 		return err
 	}
@@ -305,9 +306,9 @@ func (c *RestClient) AddReaction(channelID, messageID common.Snowflake, emoji st
 }
 
 // DeleteOwnReaction removes the bot's own reaction from a message.
-func (c *RestClient) DeleteOwnReaction(channelID, messageID common.Snowflake, emoji string) error {
+func (c *RestClient) DeleteOwnReaction(ctx context.Context, channelID, messageID common.Snowflake, emoji string) error {
 	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s/@me", channelID, messageID, encodeEmoji(emoji))
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -317,9 +318,9 @@ func (c *RestClient) DeleteOwnReaction(channelID, messageID common.Snowflake, em
 }
 
 // DeleteUserReaction removes another user's reaction from a message. Requires MANAGE_MESSAGES.
-func (c *RestClient) DeleteUserReaction(channelID, messageID common.Snowflake, emoji string, userID common.Snowflake) error {
+func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageID common.Snowflake, emoji string, userID common.Snowflake) error {
 	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s/%s", channelID, messageID, encodeEmoji(emoji), userID)
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -329,9 +330,9 @@ func (c *RestClient) DeleteUserReaction(channelID, messageID common.Snowflake, e
 }
 
 // GetReactions returns the users who reacted to a message with the given emoji.
-func (c *RestClient) GetReactions(channelID, messageID common.Snowflake, emoji string, params GetReactionsParams) ([]*common.User, error) {
+func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID common.Snowflake, emoji string, params GetReactionsParams) ([]*common.User, error) {
 	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s%s", channelID, messageID, encodeEmoji(emoji), params.toQuery())
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -345,9 +346,9 @@ func (c *RestClient) GetReactions(channelID, messageID common.Snowflake, emoji s
 }
 
 // DeleteAllReactions removes every reaction from a message. Requires MANAGE_MESSAGES.
-func (c *RestClient) DeleteAllReactions(channelID, messageID common.Snowflake) error {
+func (c *RestClient) DeleteAllReactions(ctx context.Context, channelID, messageID common.Snowflake) error {
 	path := fmt.Sprintf("/channels/%s/messages/%s/reactions", channelID, messageID)
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -357,9 +358,9 @@ func (c *RestClient) DeleteAllReactions(channelID, messageID common.Snowflake) e
 }
 
 // DeleteAllReactionsForEmoji removes all reactions for a specific emoji. Requires MANAGE_MESSAGES.
-func (c *RestClient) DeleteAllReactionsForEmoji(channelID, messageID common.Snowflake, emoji string) error {
+func (c *RestClient) DeleteAllReactionsForEmoji(ctx context.Context, channelID, messageID common.Snowflake, emoji string) error {
 	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s", channelID, messageID, encodeEmoji(emoji))
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}

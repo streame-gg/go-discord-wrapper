@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -24,8 +25,8 @@ type ModifyCurrentApplicationParams struct {
 }
 
 // GetCurrentApplication returns the application object for the bot's application.
-func (c *RestClient) GetCurrentApplication() (*common.Application, error) {
-	req, err := c.generateRequest(http.MethodGet, "/applications/@me", nil)
+func (c *RestClient) GetCurrentApplication(ctx context.Context) (*common.Application, error) {
+	req, err := c.generateRequest(ctx, http.MethodGet, "/applications/@me", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -39,13 +40,13 @@ func (c *RestClient) GetCurrentApplication() (*common.Application, error) {
 }
 
 // ModifyCurrentApplication updates the current application. Returns the updated application.
-func (c *RestClient) ModifyCurrentApplication(params ModifyCurrentApplicationParams) (*common.Application, error) {
+func (c *RestClient) ModifyCurrentApplication(ctx context.Context, params ModifyCurrentApplicationParams) (*common.Application, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest(http.MethodPatch, "/applications/@me", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/applications/@me", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}

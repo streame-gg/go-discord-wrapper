@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -34,8 +35,8 @@ type ModifyAutoModerationRuleParams struct {
 // ── Auto moderation endpoints ─────────────────────────────────────────────────
 
 // ListAutoModerationRules returns all auto moderation rules for a guild.
-func (c *RestClient) ListAutoModerationRules(guildID common.Snowflake) ([]*common.AutoModerationRule, error) {
-	req, err := c.generateRequest(http.MethodGet, "/guilds/"+guildID.String()+"/auto-moderation/rules", nil)
+func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID common.Snowflake) ([]*common.AutoModerationRule, error) {
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/auto-moderation/rules", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -49,9 +50,9 @@ func (c *RestClient) ListAutoModerationRules(guildID common.Snowflake) ([]*commo
 }
 
 // GetAutoModerationRule returns a single auto moderation rule.
-func (c *RestClient) GetAutoModerationRule(guildID, ruleID common.Snowflake) (*common.AutoModerationRule, error) {
+func (c *RestClient) GetAutoModerationRule(ctx context.Context, guildID, ruleID common.Snowflake) (*common.AutoModerationRule, error) {
 	path := "/guilds/" + guildID.String() + "/auto-moderation/rules/" + ruleID.String()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -65,13 +66,13 @@ func (c *RestClient) GetAutoModerationRule(guildID, ruleID common.Snowflake) (*c
 }
 
 // CreateAutoModerationRule creates a new auto moderation rule in a guild.
-func (c *RestClient) CreateAutoModerationRule(guildID common.Snowflake, params CreateAutoModerationRuleParams) (*common.AutoModerationRule, error) {
+func (c *RestClient) CreateAutoModerationRule(ctx context.Context, guildID common.Snowflake, params CreateAutoModerationRuleParams) (*common.AutoModerationRule, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest(http.MethodPost, "/guilds/"+guildID.String()+"/auto-moderation/rules", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/auto-moderation/rules", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -85,14 +86,14 @@ func (c *RestClient) CreateAutoModerationRule(guildID common.Snowflake, params C
 }
 
 // ModifyAutoModerationRule updates an existing auto moderation rule.
-func (c *RestClient) ModifyAutoModerationRule(guildID, ruleID common.Snowflake, params ModifyAutoModerationRuleParams) (*common.AutoModerationRule, error) {
+func (c *RestClient) ModifyAutoModerationRule(ctx context.Context, guildID, ruleID common.Snowflake, params ModifyAutoModerationRuleParams) (*common.AutoModerationRule, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
 	path := "/guilds/" + guildID.String() + "/auto-moderation/rules/" + ruleID.String()
-	req, err := c.generateRequest(http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -106,9 +107,9 @@ func (c *RestClient) ModifyAutoModerationRule(guildID, ruleID common.Snowflake, 
 }
 
 // DeleteAutoModerationRule deletes an auto moderation rule.
-func (c *RestClient) DeleteAutoModerationRule(guildID, ruleID common.Snowflake) error {
+func (c *RestClient) DeleteAutoModerationRule(ctx context.Context, guildID, ruleID common.Snowflake) error {
 	path := "/guilds/" + guildID.String() + "/auto-moderation/rules/" + ruleID.String()
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}

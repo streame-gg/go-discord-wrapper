@@ -3,6 +3,7 @@
 package options
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -23,6 +24,19 @@ type Config struct {
 	Logger      *slog.Logger
 	Coordinator ShardCoordinator
 	Cache       cache.Cache
+
+	// MaxReconnectRetries controls how many times the client retries a gateway
+	// reconnect before giving up. Use -1 for infinite retries, 0 for the default (3).
+	MaxReconnectRetries int
+
+	// LogLevel sets the minimum log level when no custom Logger is provided.
+	// If Logger is set, LogLevel is ignored.
+	LogLevel *slog.Level
+
+	// DisableCacheAutoPopulation prevents the gateway client from automatically
+	// writing entities into the cache from gateway events. Set this when you want
+	// to manage the cache yourself.
+	DisableCacheAutoPopulation bool
 
 	// Shared between Client and its embedded RestClient
 	APIVersion common.APIVersion
@@ -73,6 +87,32 @@ func Build(defaults Config, opts []Option) Config {
 		o(&defaults)
 	}
 	return defaults
+}
+
+// Validate checks that the Config is self-consistent. It returns a descriptive
+// error for any configuration that would cause undefined or harmful behaviour at
+// runtime: invalid shard range, negative retry counts, negative intervals, etc.
+// NewClient and NewRestClient call this automatically and panic on failure, because
+// bad config is a programming error rather than a runtime condition.
+func (c Config) Validate() error {
+	if c.Sharding != nil {
+		if c.Sharding.TotalShards <= 0 {
+			return fmt.Errorf("options: Sharding.TotalShards must be > 0, got %d", c.Sharding.TotalShards)
+		}
+		if c.Sharding.ShardID < 0 || c.Sharding.ShardID >= c.Sharding.TotalShards {
+			return fmt.Errorf("options: Sharding.ShardID %d out of range [0, %d)", c.Sharding.ShardID, c.Sharding.TotalShards)
+		}
+	}
+	if c.Retry.MaxRetries < 0 {
+		return fmt.Errorf("options: Retry.MaxRetries must be >= 0, got %d", c.Retry.MaxRetries)
+	}
+	if c.MinRequestInterval < 0 {
+		return fmt.Errorf("options: MinRequestInterval must be >= 0, got %v", c.MinRequestInterval)
+	}
+	if c.RateLimiter != nil && c.RateLimiter.SafetyMargin < 0 {
+		return fmt.Errorf("options: RateLimiter.SafetyMargin must be >= 0, got %d", c.RateLimiter.SafetyMargin)
+	}
+	return nil
 }
 
 // Ptr returns a pointer to v. Useful for passing literal values to fields that
@@ -150,6 +190,24 @@ func WithCoordinator(c ShardCoordinator) Option {
 //	options.WithRateLimiting(options.RateLimiterOptions{SafetyMargin: 2})
 func WithRateLimiting(r RateLimiterOptions) Option {
 	return func(c *Config) { c.RateLimiter = &r }
+}
+
+// WithMaxReconnectRetries sets the number of gateway reconnect attempts before the
+// client gives up and stops. Use -1 for infinite retries. Defaults to 3.
+func WithMaxReconnectRetries(n int) Option {
+	return func(c *Config) { c.MaxReconnectRetries = n }
+}
+
+// WithLogLevel sets the minimum slog level when no custom logger is provided via
+// WithLogger. Has no effect if WithLogger is also used.
+func WithLogLevel(level slog.Level) Option {
+	return func(c *Config) { c.LogLevel = &level }
+}
+
+// WithDisableCacheAutoPopulation disables automatic cache population from gateway
+// events. Use this when you want full control over what goes into the cache.
+func WithDisableCacheAutoPopulation() Option {
+	return func(c *Config) { c.DisableCacheAutoPopulation = true }
 }
 
 // WithCache attaches a Cache to the client.

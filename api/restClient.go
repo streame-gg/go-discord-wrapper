@@ -82,6 +82,9 @@ func NewRestClient(token string, opts ...options.Option) *RestClient {
 			RetryOnServerErrors: true,
 		},
 	}, opts)
+	if err := cfg.Validate(); err != nil {
+		panic("go-discord-wrapper: " + err.Error())
+	}
 
 	httpClient := cfg.HTTPClient
 	if httpClient == nil {
@@ -136,15 +139,15 @@ func (c *RestClient) emitEvent(event RestEvent) {
 
 // generateRequest builds an authenticated HTTP request and embeds the relative
 // route path into the request context for the rate limiter to consume.
-func (c *RestClient) generateRequest(method, path string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(method, c.buildURL()+path, body)
+func (c *RestClient) generateRequest(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
+	// Store the relative path (e.g. "/channels/111/messages") so that the
+	// rate limiter can normalise it into a bucket key without re-parsing the URL.
+	ctx = context.WithValue(ctx, routePathKey{}, path)
+
+	req, err := http.NewRequestWithContext(ctx, method, c.buildURL()+path, body)
 	if err != nil {
 		return nil, err
 	}
-
-	// Store the relative path (e.g. "/channels/111/messages") so that the
-	// rate limiter can normalise it into a bucket key without re-parsing the URL.
-	req = req.WithContext(context.WithValue(req.Context(), routePathKey{}, path))
 
 	req.Header.Set("Authorization", "Bot "+c.token)
 	req.Header.Set("Content-Type", "application/json")
@@ -171,7 +174,7 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		// Crude global request interval (legacy option, complementary to rate limiter).
-		if err := c.waitForMinInterval(); err != nil {
+		if err := c.waitForMinInterval(req.Context()); err != nil {
 			return nil, err
 		}
 
@@ -197,7 +200,11 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 
 			delay := c.retryDelay(attempt, 0)
 			c.emitEvent(RestEvent{Type: RestEventRetry, Request: attemptReq, Attempt: attempt, RetryAfter: delay, Err: reqErr})
-			time.Sleep(delay)
+			select {
+			case <-time.After(delay):
+			case <-req.Context().Done():
+				return nil, req.Context().Err()
+			}
 			continue
 		}
 
@@ -230,7 +237,11 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 
 			c.emitEvent(RestEvent{Type: RestEventRetry, Request: attemptReq, Response: resp, Attempt: attempt, RetryAfter: delay})
 			_ = resp.Body.Close()
-			time.Sleep(delay)
+			select {
+			case <-time.After(delay):
+			case <-req.Context().Done():
+				return nil, req.Context().Err()
+			}
 			continue
 		}
 
@@ -276,7 +287,7 @@ func (c *RestClient) retryDelay(attempt int, retryAfter time.Duration) time.Dura
 }
 
 // waitForMinInterval enforces the optional MinRequestInterval global delay.
-func (c *RestClient) waitForMinInterval() error {
+func (c *RestClient) waitForMinInterval(ctx context.Context) error {
 	if c.minRequestInterval <= 0 {
 		return nil
 	}
@@ -291,19 +302,25 @@ func (c *RestClient) waitForMinInterval() error {
 
 	if wait > 0 {
 		c.emitEvent(RestEvent{Type: RestEventRateLimit, RetryAfter: wait})
-		time.Sleep(wait)
+		select {
+		case <-time.After(wait):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 
 	return nil
 }
 
 func decodeGatewayError(resp *http.Response) error {
-	var respErr common.GatewayError
-	if err := json.NewDecoder(resp.Body).Decode(&respErr); err == nil && (respErr.Message != "" || respErr.Code != 0) {
-		return respErr
+	var body common.GatewayError
+	_ = json.NewDecoder(resp.Body).Decode(&body)
+	return &APIError{
+		HTTPStatus: resp.StatusCode,
+		Code:       common.GatewayErrorCode(body.Code),
+		Message:    body.Message,
+		Errors:     body.Errors,
 	}
-
-	return fmt.Errorf("request failed with status %s", resp.Status)
 }
 
 func captureRequestBody(req *http.Request) ([]byte, error) {

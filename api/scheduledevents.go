@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -77,13 +78,13 @@ type GuildScheduledEventUser struct {
 
 // ListGuildScheduledEvents returns all scheduled events for a guild.
 // Set withUserCount to true to include subscriber counts.
-func (c *RestClient) ListGuildScheduledEvents(guildID common.Snowflake, withUserCount bool) ([]*common.GuildScheduledEvent, error) {
+func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID common.Snowflake, withUserCount bool) ([]*common.GuildScheduledEvent, error) {
 	path := "/guilds/" + guildID.String() + "/scheduled-events"
 	if withUserCount {
 		path += "?with_user_count=true"
 	}
 
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -97,13 +98,13 @@ func (c *RestClient) ListGuildScheduledEvents(guildID common.Snowflake, withUser
 }
 
 // CreateGuildScheduledEvent creates a new scheduled event in a guild.
-func (c *RestClient) CreateGuildScheduledEvent(guildID common.Snowflake, params CreateGuildScheduledEventParams) (*common.GuildScheduledEvent, error) {
+func (c *RestClient) CreateGuildScheduledEvent(ctx context.Context, guildID common.Snowflake, params CreateGuildScheduledEventParams) (*common.GuildScheduledEvent, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest(http.MethodPost, "/guilds/"+guildID.String()+"/scheduled-events", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/scheduled-events", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -118,13 +119,13 @@ func (c *RestClient) CreateGuildScheduledEvent(guildID common.Snowflake, params 
 
 // GetGuildScheduledEvent returns a single scheduled event.
 // Set withUserCount to true to include subscriber count.
-func (c *RestClient) GetGuildScheduledEvent(guildID, eventID common.Snowflake, withUserCount bool) (*common.GuildScheduledEvent, error) {
+func (c *RestClient) GetGuildScheduledEvent(ctx context.Context, guildID, eventID common.Snowflake, withUserCount bool) (*common.GuildScheduledEvent, error) {
 	path := "/guilds/" + guildID.String() + "/scheduled-events/" + eventID.String()
 	if withUserCount {
 		path += "?with_user_count=true"
 	}
 
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -138,14 +139,14 @@ func (c *RestClient) GetGuildScheduledEvent(guildID, eventID common.Snowflake, w
 }
 
 // ModifyGuildScheduledEvent updates a scheduled event.
-func (c *RestClient) ModifyGuildScheduledEvent(guildID, eventID common.Snowflake, params ModifyGuildScheduledEventParams) (*common.GuildScheduledEvent, error) {
+func (c *RestClient) ModifyGuildScheduledEvent(ctx context.Context, guildID, eventID common.Snowflake, params ModifyGuildScheduledEventParams) (*common.GuildScheduledEvent, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
 	path := "/guilds/" + guildID.String() + "/scheduled-events/" + eventID.String()
-	req, err := c.generateRequest(http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -159,9 +160,9 @@ func (c *RestClient) ModifyGuildScheduledEvent(guildID, eventID common.Snowflake
 }
 
 // DeleteGuildScheduledEvent deletes a scheduled event.
-func (c *RestClient) DeleteGuildScheduledEvent(guildID, eventID common.Snowflake) error {
+func (c *RestClient) DeleteGuildScheduledEvent(ctx context.Context, guildID, eventID common.Snowflake) error {
 	path := "/guilds/" + guildID.String() + "/scheduled-events/" + eventID.String()
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -171,9 +172,9 @@ func (c *RestClient) DeleteGuildScheduledEvent(guildID, eventID common.Snowflake
 }
 
 // GetGuildScheduledEventUsers returns users subscribed to a scheduled event.
-func (c *RestClient) GetGuildScheduledEventUsers(guildID, eventID common.Snowflake, params GetGuildScheduledEventUsersParams) ([]*GuildScheduledEventUser, error) {
+func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID common.Snowflake, params GetGuildScheduledEventUsersParams) ([]*GuildScheduledEventUser, error) {
 	path := "/guilds/" + guildID.String() + "/scheduled-events/" + eventID.String() + "/users" + params.toQuery()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}

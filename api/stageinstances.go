@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -26,13 +27,13 @@ type ModifyStageInstanceParams struct {
 // ── Stage instance endpoints ──────────────────────────────────────────────────
 
 // CreateStageInstance creates a new stage instance in a stage voice channel.
-func (c *RestClient) CreateStageInstance(params CreateStageInstanceParams) (*common.StageInstance, error) {
+func (c *RestClient) CreateStageInstance(ctx context.Context, params CreateStageInstanceParams) (*common.StageInstance, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest(http.MethodPost, "/stage-instances", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/stage-instances", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -46,8 +47,8 @@ func (c *RestClient) CreateStageInstance(params CreateStageInstanceParams) (*com
 }
 
 // GetStageInstance returns the stage instance for the given stage channel.
-func (c *RestClient) GetStageInstance(channelID common.Snowflake) (*common.StageInstance, error) {
-	req, err := c.generateRequest(http.MethodGet, "/stage-instances/"+channelID.String(), nil)
+func (c *RestClient) GetStageInstance(ctx context.Context, channelID common.Snowflake) (*common.StageInstance, error) {
+	req, err := c.generateRequest(ctx, http.MethodGet, "/stage-instances/"+channelID.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -61,13 +62,13 @@ func (c *RestClient) GetStageInstance(channelID common.Snowflake) (*common.Stage
 }
 
 // ModifyStageInstance updates fields on an existing stage instance.
-func (c *RestClient) ModifyStageInstance(channelID common.Snowflake, params ModifyStageInstanceParams) (*common.StageInstance, error) {
+func (c *RestClient) ModifyStageInstance(ctx context.Context, channelID common.Snowflake, params ModifyStageInstanceParams) (*common.StageInstance, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest(http.MethodPatch, "/stage-instances/"+channelID.String(), bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/stage-instances/"+channelID.String(), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +82,8 @@ func (c *RestClient) ModifyStageInstance(channelID common.Snowflake, params Modi
 }
 
 // DeleteStageInstance deletes the stage instance for the given stage channel.
-func (c *RestClient) DeleteStageInstance(channelID common.Snowflake) error {
-	req, err := c.generateRequest(http.MethodDelete, "/stage-instances/"+channelID.String(), nil)
+func (c *RestClient) DeleteStageInstance(ctx context.Context, channelID common.Snowflake) error {
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/stage-instances/"+channelID.String(), nil)
 	if err != nil {
 		return err
 	}

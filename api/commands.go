@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -10,13 +11,13 @@ import (
 )
 
 // RegisterCommand registers a single application command for the given application ID.
-func (c *RestClient) RegisterCommand(appID common.Snowflake, cmd *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+func (c *RestClient) RegisterCommand(ctx context.Context, appID common.Snowflake, cmd *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
 	body, err := json.Marshal(cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest("POST", "/applications/"+appID.String()+"/commands", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, "POST", "/applications/"+appID.String()+"/commands", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -31,13 +32,13 @@ func (c *RestClient) RegisterCommand(appID common.Snowflake, cmd *commands.Appli
 
 // BulkRegisterCommands overwrites all global application commands for the given application ID.
 // Any commands not included in cmds are deleted.
-func (c *RestClient) BulkRegisterCommands(appID common.Snowflake, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
+func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID common.Snowflake, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
 	body, err := json.Marshal(cmds)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest("PUT", "/applications/"+appID.String()+"/commands", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, "PUT", "/applications/"+appID.String()+"/commands", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -54,13 +55,13 @@ func (c *RestClient) BulkRegisterCommands(appID common.Snowflake, cmds []*comman
 
 // GetGlobalApplicationCommands returns all global application commands for the given application ID.
 // Set withLocalizations to true to include localization dictionaries.
-func (c *RestClient) GetGlobalApplicationCommands(appID common.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
+func (c *RestClient) GetGlobalApplicationCommands(ctx context.Context, appID common.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
 	path := "/applications/" + appID.String() + "/commands"
 	if withLocalizations {
 		path += "?with_localizations=true"
 	}
 
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -74,9 +75,9 @@ func (c *RestClient) GetGlobalApplicationCommands(appID common.Snowflake, withLo
 }
 
 // GetGlobalApplicationCommand returns a single global application command.
-func (c *RestClient) GetGlobalApplicationCommand(appID, cmdID common.Snowflake) (*commands.ApplicationCommand, error) {
+func (c *RestClient) GetGlobalApplicationCommand(ctx context.Context, appID, cmdID common.Snowflake) (*commands.ApplicationCommand, error) {
 	path := "/applications/" + appID.String() + "/commands/" + cmdID.String()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -90,14 +91,14 @@ func (c *RestClient) GetGlobalApplicationCommand(appID, cmdID common.Snowflake) 
 }
 
 // EditGlobalApplicationCommand updates a global application command.
-func (c *RestClient) EditGlobalApplicationCommand(appID, cmdID common.Snowflake, params *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+func (c *RestClient) EditGlobalApplicationCommand(ctx context.Context, appID, cmdID common.Snowflake, params *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
 	path := "/applications/" + appID.String() + "/commands/" + cmdID.String()
-	req, err := c.generateRequest(http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -111,9 +112,9 @@ func (c *RestClient) EditGlobalApplicationCommand(appID, cmdID common.Snowflake,
 }
 
 // DeleteGlobalApplicationCommand deletes a global application command.
-func (c *RestClient) DeleteGlobalApplicationCommand(appID, cmdID common.Snowflake) error {
+func (c *RestClient) DeleteGlobalApplicationCommand(ctx context.Context, appID, cmdID common.Snowflake) error {
 	path := "/applications/" + appID.String() + "/commands/" + cmdID.String()
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -125,13 +126,13 @@ func (c *RestClient) DeleteGlobalApplicationCommand(appID, cmdID common.Snowflak
 // ── Guild command management ──────────────────────────────────────────────────
 
 // GetGuildApplicationCommands returns all application commands registered to a specific guild.
-func (c *RestClient) GetGuildApplicationCommands(appID, guildID common.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
+func (c *RestClient) GetGuildApplicationCommands(ctx context.Context, appID, guildID common.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands"
 	if withLocalizations {
 		path += "?with_localizations=true"
 	}
 
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -145,14 +146,14 @@ func (c *RestClient) GetGuildApplicationCommands(appID, guildID common.Snowflake
 }
 
 // CreateGuildApplicationCommand registers a command in a specific guild.
-func (c *RestClient) CreateGuildApplicationCommand(appID, guildID common.Snowflake, cmd *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+func (c *RestClient) CreateGuildApplicationCommand(ctx context.Context, appID, guildID common.Snowflake, cmd *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
 	body, err := json.Marshal(cmd)
 	if err != nil {
 		return nil, err
 	}
 
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands"
-	req, err := c.generateRequest(http.MethodPost, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -166,9 +167,9 @@ func (c *RestClient) CreateGuildApplicationCommand(appID, guildID common.Snowfla
 }
 
 // GetGuildApplicationCommand returns a single guild-specific application command.
-func (c *RestClient) GetGuildApplicationCommand(appID, guildID, cmdID common.Snowflake) (*commands.ApplicationCommand, error) {
+func (c *RestClient) GetGuildApplicationCommand(ctx context.Context, appID, guildID, cmdID common.Snowflake) (*commands.ApplicationCommand, error) {
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/" + cmdID.String()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -182,14 +183,14 @@ func (c *RestClient) GetGuildApplicationCommand(appID, guildID, cmdID common.Sno
 }
 
 // EditGuildApplicationCommand updates a guild-specific application command.
-func (c *RestClient) EditGuildApplicationCommand(appID, guildID, cmdID common.Snowflake, params *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+func (c *RestClient) EditGuildApplicationCommand(ctx context.Context, appID, guildID, cmdID common.Snowflake, params *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/" + cmdID.String()
-	req, err := c.generateRequest(http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -203,9 +204,9 @@ func (c *RestClient) EditGuildApplicationCommand(appID, guildID, cmdID common.Sn
 }
 
 // DeleteGuildApplicationCommand deletes a guild-specific application command.
-func (c *RestClient) DeleteGuildApplicationCommand(appID, guildID, cmdID common.Snowflake) error {
+func (c *RestClient) DeleteGuildApplicationCommand(ctx context.Context, appID, guildID, cmdID common.Snowflake) error {
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/" + cmdID.String()
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -216,14 +217,14 @@ func (c *RestClient) DeleteGuildApplicationCommand(appID, guildID, cmdID common.
 
 // BulkOverwriteGuildApplicationCommands overwrites all guild-specific commands for the given guild.
 // Any commands not included in cmds are deleted.
-func (c *RestClient) BulkOverwriteGuildApplicationCommands(appID, guildID common.Snowflake, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
+func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, appID, guildID common.Snowflake, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
 	body, err := json.Marshal(cmds)
 	if err != nil {
 		return nil, err
 	}
 
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands"
-	req, err := c.generateRequest(http.MethodPut, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -239,9 +240,9 @@ func (c *RestClient) BulkOverwriteGuildApplicationCommands(appID, guildID common
 // ── Command permissions ───────────────────────────────────────────────────────
 
 // GetGuildApplicationCommandPermissions returns all permission overrides for every command in a guild.
-func (c *RestClient) GetGuildApplicationCommandPermissions(appID, guildID common.Snowflake) ([]*common.GuildApplicationCommandPermissions, error) {
+func (c *RestClient) GetGuildApplicationCommandPermissions(ctx context.Context, appID, guildID common.Snowflake) ([]*common.GuildApplicationCommandPermissions, error) {
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/permissions"
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -255,9 +256,9 @@ func (c *RestClient) GetGuildApplicationCommandPermissions(appID, guildID common
 }
 
 // GetApplicationCommandPermissions returns the permission overrides for a specific command in a guild.
-func (c *RestClient) GetApplicationCommandPermissions(appID, guildID, cmdID common.Snowflake) (*common.GuildApplicationCommandPermissions, error) {
+func (c *RestClient) GetApplicationCommandPermissions(ctx context.Context, appID, guildID, cmdID common.Snowflake) (*common.GuildApplicationCommandPermissions, error) {
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/" + cmdID.String() + "/permissions"
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -272,14 +273,14 @@ func (c *RestClient) GetApplicationCommandPermissions(appID, guildID, cmdID comm
 
 // EditApplicationCommandPermissions overwrites the permission overrides for a specific command in a guild.
 // Requires a Bearer token with applications.commands.permissions.update scope; bot tokens cannot use this endpoint.
-func (c *RestClient) EditApplicationCommandPermissions(appID, guildID, cmdID common.Snowflake, permissions []common.ApplicationCommandPermission) (*common.GuildApplicationCommandPermissions, error) {
+func (c *RestClient) EditApplicationCommandPermissions(ctx context.Context, appID, guildID, cmdID common.Snowflake, permissions []common.ApplicationCommandPermission) (*common.GuildApplicationCommandPermissions, error) {
 	body, err := json.Marshal(map[string]any{"permissions": permissions})
 	if err != nil {
 		return nil, err
 	}
 
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/" + cmdID.String() + "/permissions"
-	req, err := c.generateRequest(http.MethodPut, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}

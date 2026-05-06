@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -94,14 +95,14 @@ type ActiveThreadsResponse struct {
 // ── Thread endpoints ──────────────────────────────────────────────────────────
 
 // CreateThreadFromMessage starts a public thread from an existing message.
-func (c *RestClient) CreateThreadFromMessage(channelID, messageID common.Snowflake, params CreateThreadFromMessageParams) (*common.Channel, error) {
+func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, messageID common.Snowflake, params CreateThreadFromMessageParams) (*common.Channel, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
 	path := "/channels/" + channelID.String() + "/messages/" + messageID.String() + "/threads"
-	req, err := c.generateRequest(http.MethodPost, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -115,13 +116,13 @@ func (c *RestClient) CreateThreadFromMessage(channelID, messageID common.Snowfla
 }
 
 // CreateThread starts a thread that is not connected to an existing message.
-func (c *RestClient) CreateThread(channelID common.Snowflake, params CreateThreadParams) (*common.Channel, error) {
+func (c *RestClient) CreateThread(ctx context.Context, channelID common.Snowflake, params CreateThreadParams) (*common.Channel, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest(http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -135,13 +136,13 @@ func (c *RestClient) CreateThread(channelID common.Snowflake, params CreateThrea
 }
 
 // CreateForumThread starts a thread in a forum or media channel.
-func (c *RestClient) CreateForumThread(channelID common.Snowflake, params CreateForumThreadParams) (*common.Channel, error) {
+func (c *RestClient) CreateForumThread(ctx context.Context, channelID common.Snowflake, params CreateForumThreadParams) (*common.Channel, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest(http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -155,8 +156,8 @@ func (c *RestClient) CreateForumThread(channelID common.Snowflake, params Create
 }
 
 // JoinThread adds the current user to a thread.
-func (c *RestClient) JoinThread(channelID common.Snowflake) error {
-	req, err := c.generateRequest(http.MethodPut, "/channels/"+channelID.String()+"/thread-members/@me", nil)
+func (c *RestClient) JoinThread(ctx context.Context, channelID common.Snowflake) error {
+	req, err := c.generateRequest(ctx, http.MethodPut, "/channels/"+channelID.String()+"/thread-members/@me", nil)
 	if err != nil {
 		return err
 	}
@@ -166,8 +167,8 @@ func (c *RestClient) JoinThread(channelID common.Snowflake) error {
 }
 
 // LeaveThread removes the current user from a thread.
-func (c *RestClient) LeaveThread(channelID common.Snowflake) error {
-	req, err := c.generateRequest(http.MethodDelete, "/channels/"+channelID.String()+"/thread-members/@me", nil)
+func (c *RestClient) LeaveThread(ctx context.Context, channelID common.Snowflake) error {
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/channels/"+channelID.String()+"/thread-members/@me", nil)
 	if err != nil {
 		return err
 	}
@@ -177,9 +178,9 @@ func (c *RestClient) LeaveThread(channelID common.Snowflake) error {
 }
 
 // AddThreadMember adds another user to a thread.
-func (c *RestClient) AddThreadMember(channelID, userID common.Snowflake) error {
+func (c *RestClient) AddThreadMember(ctx context.Context, channelID, userID common.Snowflake) error {
 	path := "/channels/" + channelID.String() + "/thread-members/" + userID.String()
-	req, err := c.generateRequest(http.MethodPut, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPut, path, nil)
 	if err != nil {
 		return err
 	}
@@ -189,9 +190,9 @@ func (c *RestClient) AddThreadMember(channelID, userID common.Snowflake) error {
 }
 
 // RemoveThreadMember removes a user from a thread.
-func (c *RestClient) RemoveThreadMember(channelID, userID common.Snowflake) error {
+func (c *RestClient) RemoveThreadMember(ctx context.Context, channelID, userID common.Snowflake) error {
 	path := "/channels/" + channelID.String() + "/thread-members/" + userID.String()
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -202,13 +203,13 @@ func (c *RestClient) RemoveThreadMember(channelID, userID common.Snowflake) erro
 
 // GetThreadMember returns the thread member object for the given user.
 // Set withMember to true to include the guild member object.
-func (c *RestClient) GetThreadMember(channelID, userID common.Snowflake, withMember bool) (*common.ThreadMember, error) {
+func (c *RestClient) GetThreadMember(ctx context.Context, channelID, userID common.Snowflake, withMember bool) (*common.ThreadMember, error) {
 	path := "/channels/" + channelID.String() + "/thread-members/" + userID.String()
 	if withMember {
 		path += "?with_member=true"
 	}
 
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -222,9 +223,9 @@ func (c *RestClient) GetThreadMember(channelID, userID common.Snowflake, withMem
 }
 
 // ListThreadMembers returns the members of a thread.
-func (c *RestClient) ListThreadMembers(channelID common.Snowflake, params ListThreadMembersParams) ([]*common.ThreadMember, error) {
+func (c *RestClient) ListThreadMembers(ctx context.Context, channelID common.Snowflake, params ListThreadMembersParams) ([]*common.ThreadMember, error) {
 	path := "/channels/" + channelID.String() + "/thread-members" + params.toQuery()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -238,9 +239,9 @@ func (c *RestClient) ListThreadMembers(channelID common.Snowflake, params ListTh
 }
 
 // ListPublicArchivedThreads returns archived public threads in a channel, newest first.
-func (c *RestClient) ListPublicArchivedThreads(channelID common.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
+func (c *RestClient) ListPublicArchivedThreads(ctx context.Context, channelID common.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
 	path := "/channels/" + channelID.String() + "/threads/archived/public" + params.toQuery()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -254,9 +255,9 @@ func (c *RestClient) ListPublicArchivedThreads(channelID common.Snowflake, param
 }
 
 // ListPrivateArchivedThreads returns archived private threads in a channel, newest first.
-func (c *RestClient) ListPrivateArchivedThreads(channelID common.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
+func (c *RestClient) ListPrivateArchivedThreads(ctx context.Context, channelID common.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
 	path := "/channels/" + channelID.String() + "/threads/archived/private" + params.toQuery()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -270,9 +271,9 @@ func (c *RestClient) ListPrivateArchivedThreads(channelID common.Snowflake, para
 }
 
 // ListJoinedPrivateArchivedThreads returns private archived threads the current user has joined.
-func (c *RestClient) ListJoinedPrivateArchivedThreads(channelID common.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
+func (c *RestClient) ListJoinedPrivateArchivedThreads(ctx context.Context, channelID common.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
 	path := "/channels/" + channelID.String() + "/users/@me/threads/archived/private" + params.toQuery()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -286,8 +287,8 @@ func (c *RestClient) ListJoinedPrivateArchivedThreads(channelID common.Snowflake
 }
 
 // ListActiveGuildThreads returns all active threads in the guild that the current user can access.
-func (c *RestClient) ListActiveGuildThreads(guildID common.Snowflake) (*ActiveThreadsResponse, error) {
-	req, err := c.generateRequest(http.MethodGet, "/guilds/"+guildID.String()+"/threads/active", nil)
+func (c *RestClient) ListActiveGuildThreads(ctx context.Context, guildID common.Snowflake) (*ActiveThreadsResponse, error) {
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/threads/active", nil)
 	if err != nil {
 		return nil, err
 	}

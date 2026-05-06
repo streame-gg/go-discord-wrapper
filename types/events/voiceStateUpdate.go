@@ -4,6 +4,9 @@ import "github.com/streame-gg/go-discord-wrapper/types/common"
 
 type VoiceStateUpdateEvent struct {
 	common.VoiceState
+	// OldState is the user's previous voice state. Nil if the user was not in
+	// any voice channel before this event (e.g. they just joined for the first time).
+	OldState *common.VoiceState
 }
 
 // VoiceServerUpdateEvent is dispatched when a guild's voice server is updated.

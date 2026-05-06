@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -33,8 +34,8 @@ type SendSoundboardSoundParams struct {
 // ── Soundboard endpoints ──────────────────────────────────────────────────────
 
 // ListDefaultSoundboardSounds returns the list of default sounds available to all users.
-func (c *RestClient) ListDefaultSoundboardSounds() ([]*common.SoundboardSound, error) {
-	req, err := c.generateRequest(http.MethodGet, "/soundboard-default-sounds", nil)
+func (c *RestClient) ListDefaultSoundboardSounds(ctx context.Context) ([]*common.SoundboardSound, error) {
+	req, err := c.generateRequest(ctx, http.MethodGet, "/soundboard-default-sounds", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -48,8 +49,8 @@ func (c *RestClient) ListDefaultSoundboardSounds() ([]*common.SoundboardSound, e
 }
 
 // ListGuildSoundboardSounds returns all soundboard sounds for a guild.
-func (c *RestClient) ListGuildSoundboardSounds(guildID common.Snowflake) ([]*common.SoundboardSound, error) {
-	req, err := c.generateRequest(http.MethodGet, "/guilds/"+guildID.String()+"/soundboard-sounds", nil)
+func (c *RestClient) ListGuildSoundboardSounds(ctx context.Context, guildID common.Snowflake) ([]*common.SoundboardSound, error) {
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/soundboard-sounds", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -65,9 +66,9 @@ func (c *RestClient) ListGuildSoundboardSounds(guildID common.Snowflake) ([]*com
 }
 
 // GetGuildSoundboardSound returns a single soundboard sound for a guild.
-func (c *RestClient) GetGuildSoundboardSound(guildID, soundID common.Snowflake) (*common.SoundboardSound, error) {
+func (c *RestClient) GetGuildSoundboardSound(ctx context.Context, guildID, soundID common.Snowflake) (*common.SoundboardSound, error) {
 	path := "/guilds/" + guildID.String() + "/soundboard-sounds/" + soundID.String()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -81,13 +82,13 @@ func (c *RestClient) GetGuildSoundboardSound(guildID, soundID common.Snowflake) 
 }
 
 // CreateGuildSoundboardSound creates a new soundboard sound in a guild. Requires MANAGE_GUILD_EXPRESSIONS.
-func (c *RestClient) CreateGuildSoundboardSound(guildID common.Snowflake, params CreateGuildSoundboardSoundParams) (*common.SoundboardSound, error) {
+func (c *RestClient) CreateGuildSoundboardSound(ctx context.Context, guildID common.Snowflake, params CreateGuildSoundboardSoundParams) (*common.SoundboardSound, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest(http.MethodPost, "/guilds/"+guildID.String()+"/soundboard-sounds", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/soundboard-sounds", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -101,14 +102,14 @@ func (c *RestClient) CreateGuildSoundboardSound(guildID common.Snowflake, params
 }
 
 // ModifyGuildSoundboardSound edits a soundboard sound. Requires MANAGE_GUILD_EXPRESSIONS.
-func (c *RestClient) ModifyGuildSoundboardSound(guildID, soundID common.Snowflake, params ModifyGuildSoundboardSoundParams) (*common.SoundboardSound, error) {
+func (c *RestClient) ModifyGuildSoundboardSound(ctx context.Context, guildID, soundID common.Snowflake, params ModifyGuildSoundboardSoundParams) (*common.SoundboardSound, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
 	path := "/guilds/" + guildID.String() + "/soundboard-sounds/" + soundID.String()
-	req, err := c.generateRequest(http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -122,9 +123,9 @@ func (c *RestClient) ModifyGuildSoundboardSound(guildID, soundID common.Snowflak
 }
 
 // DeleteGuildSoundboardSound deletes a soundboard sound. Requires MANAGE_GUILD_EXPRESSIONS.
-func (c *RestClient) DeleteGuildSoundboardSound(guildID, soundID common.Snowflake) error {
+func (c *RestClient) DeleteGuildSoundboardSound(ctx context.Context, guildID, soundID common.Snowflake) error {
 	path := "/guilds/" + guildID.String() + "/soundboard-sounds/" + soundID.String()
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -134,14 +135,14 @@ func (c *RestClient) DeleteGuildSoundboardSound(guildID, soundID common.Snowflak
 }
 
 // SendSoundboardSound sends a soundboard sound to a voice channel the user is connected to.
-func (c *RestClient) SendSoundboardSound(channelID common.Snowflake, params SendSoundboardSoundParams) error {
+func (c *RestClient) SendSoundboardSound(ctx context.Context, channelID common.Snowflake, params SendSoundboardSoundParams) error {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return err
 	}
 
 	path := "/channels/" + channelID.String() + "/send-soundboard-sound"
-	req, err := c.generateRequest(http.MethodPost, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

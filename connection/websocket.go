@@ -248,18 +248,34 @@ func (d *Client) reconnect(freshConnect bool) error {
 		reconnectURL = "wss://gateway.discord.gg"
 	}
 
-	maxRetries := 3
-	for i := 0; i < maxRetries; i++ {
+	maxRetries := d.maxReconnectRetries
+	if maxRetries == 0 {
+		maxRetries = 3
+	}
+
+	for i := 0; maxRetries < 0 || i < maxRetries; i++ {
+		if d.shutdown.Load() {
+			return nil
+		}
+
 		if i > 0 {
 			backoff := time.Duration(i) * time.Second
-			d.Logger.Debug("Waiting before retry", slog.Duration("backoff", backoff), slog.Int("attempt", i+1), slog.Int("max", maxRetries))
+			if maxRetries < 0 {
+				d.Logger.Debug("Waiting before retry", slog.Duration("backoff", backoff), slog.Int("attempt", i+1))
+			} else {
+				d.Logger.Debug("Waiting before retry", slog.Duration("backoff", backoff), slog.Int("attempt", i+1), slog.Int("max", maxRetries))
+			}
 			time.Sleep(backoff)
 		}
 
 		if err := d.connectWebsocket(reconnectURL, !freshConnect, lastEventNum, sessionID); err != nil {
-			d.Logger.Warn("Reconnect attempt failed", slog.Int("attempt", i+1), slog.Int("max", maxRetries), slog.Any("err", err))
-			if i == maxRetries-1 {
-				return err
+			if maxRetries < 0 {
+				d.Logger.Warn("Reconnect attempt failed, retrying", slog.Int("attempt", i+1), slog.Any("err", err))
+			} else {
+				d.Logger.Warn("Reconnect attempt failed", slog.Int("attempt", i+1), slog.Int("max", maxRetries), slog.Any("err", err))
+				if i == maxRetries-1 {
+					return err
+				}
 			}
 			continue
 		}
@@ -269,6 +285,7 @@ func (d *Client) reconnect(freshConnect bool) error {
 		}
 
 		d.Logger.Info("Successfully reconnected to gateway")
+		d.emitReconnect()
 		return nil
 	}
 
@@ -354,11 +371,12 @@ func (d *Client) listenWebsocket() error {
 				_ = json.Unmarshal(payload.D, &anyVal)
 				d.Logger.Debug("Failed event payload", slog.Any("payload", anyVal))
 				d.Logger.Error("Failed to unmarshal event", slog.String("type", string(payload.T)), slog.Any("err", err))
+				d.emitPacketError(err)
 				continue
 			}
 
 			go func() {
-				if canContinue := d.internalEventHandler(payload.D, event.Event()); canContinue {
+				if canContinue := d.internalEventHandler(payload.D, event.Event(), event); canContinue {
 					d.dispatch(event)
 				}
 			}()

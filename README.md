@@ -240,14 +240,87 @@ Covered resource groups: channels, guilds, members, roles, bans, messages, react
 import "github.com/streame-gg/go-discord-wrapper/api"
 
 client := api.NewRestClient(os.Getenv("DISCORD_TOKEN"))
-msg, err := client.CreateMessage(channelID, api.CreateMessageParams{
+msg, err := client.CreateMessage(context.Background(), channelID, api.CreateMessageParams{
     Content: "Hello!",
 })
 ```
 
+## Error Handling
+
+All REST methods return `*api.APIError` on failure. Use the sentinel errors for common HTTP status checks:
+
+```go
+import "github.com/streame-gg/go-discord-wrapper/api"
+
+msg, err := client.CreateMessage(ctx, channelID, params)
+if err != nil {
+    if errors.Is(err, api.ErrNotFound) {
+        // channel was deleted
+    } else if errors.Is(err, api.ErrForbidden) {
+        // bot lacks permission
+    } else if errors.Is(err, api.ErrRateLimited) {
+        // rate limited (normally retried automatically)
+    }
+}
+```
+
+To access the full Discord error detail (JSON error code, message, field errors):
+
+```go
+var apiErr *api.APIError
+if errors.As(err, &apiErr) {
+    log.Printf("discord code %d: %s (http %d)", apiErr.Code, apiErr.Message, apiErr.HTTPStatus)
+}
+```
+
+## Context and Timeouts
+
+Every REST method accepts a `context.Context` as its first argument. Pass a context with a deadline to enforce per-request timeouts:
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
+
+guild, err := client.GetGuild(ctx, guildID, false)
+```
+
+Cancel a context to abort an in-flight request or any pending retry/rate-limit sleep:
+
+```go
+ctx, cancel := context.WithCancel(context.Background())
+go func() {
+    time.Sleep(2 * time.Second)
+    cancel() // abort the request
+}()
+
+msg, err := client.CreateMessage(ctx, channelID, params)
+if errors.Is(err, context.Canceled) {
+    // request was cancelled
+}
+```
+
+The `connection.Client` wrapper methods (e.g. `bot.GetChannel`, `bot.CreateMessage`) pass `context.Background()` internally. Use `api.NewRestClient` directly when you need per-call context control.
+
 ## Documentation
 
 Full API reference: [pkg.go.dev/github.com/streame-gg/go-discord-wrapper](https://pkg.go.dev/github.com/streame-gg/go-discord-wrapper)
+
+## Troubleshooting
+
+**Bot connects but receives no events**
+Check that you have the correct intents. `IntentGuildMessages` is needed for `MESSAGE_CREATE`; `IntentGuildMembers` and `IntentPresences` are privileged and must be enabled in the Discord Developer Portal.
+
+**4014 Disallowed Intents**
+A privileged intent (`GuildMembers`, `GuildPresences`, `MessageContent`) was requested but not enabled in the Developer Portal. Go to your application's "Bot" page and toggle the intent on.
+
+**WebSocket close code 4004 / Authentication failed**
+The bot token is invalid or was regenerated. Ensure `DISCORD_TOKEN` is set to the current token from the Developer Portal.
+
+**WebSocket close code 4011 / Sharding required**
+Your bot is in too many servers for a single shard. Use `options.WithSharding` and increase `TotalShards`.
+
+**REST returns 429 even with rate limiting enabled**
+Global rate limits apply across all bots sharing an IP. Consider `options.WithRateLimiting(options.RateLimiterOptions{SafetyMargin: 2})` for extra headroom when running many concurrent goroutines.
 
 ## Contributing
 

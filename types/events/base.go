@@ -98,4 +98,12 @@ const (
 
 	EventVoiceServerUpdate      EventType = "VOICE_SERVER_UPDATE"
 	EventVoiceChannelEffectSend EventType = "VOICE_CHANNEL_EFFECT_SEND"
+
+	EventSubscriptionCreate EventType = "SUBSCRIPTION_CREATE"
+	EventSubscriptionUpdate EventType = "SUBSCRIPTION_UPDATE"
+	EventSubscriptionDelete EventType = "SUBSCRIPTION_DELETE"
+
+	EventVoiceChannelStatusUpdate    EventType = "VOICE_CHANNEL_STATUS_UPDATE"
+	EventVoiceChannelStartTimeUpdate EventType = "VOICE_CHANNEL_START_TIME_UPDATE"
+	EventSoundboardSounds            EventType = "SOUNDBOARD_SOUNDS"
 )

@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
@@ -62,9 +63,9 @@ type ModifyCurrentMemberParams struct {
 // ── Guild member endpoints ────────────────────────────────────────────────────
 
 // GetGuildMember returns the guild member object for a user in a guild.
-func (c *RestClient) GetGuildMember(guildID, userID common.Snowflake) (*common.GuildMember, error) {
+func (c *RestClient) GetGuildMember(ctx context.Context, guildID, userID common.Snowflake) (*common.GuildMember, error) {
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -78,9 +79,9 @@ func (c *RestClient) GetGuildMember(guildID, userID common.Snowflake) (*common.G
 }
 
 // ListGuildMembers returns a paginated list of members in a guild (max 1000 per request).
-func (c *RestClient) ListGuildMembers(guildID common.Snowflake, params GetGuildMembersParams) ([]*common.GuildMember, error) {
+func (c *RestClient) ListGuildMembers(ctx context.Context, guildID common.Snowflake, params GetGuildMembersParams) ([]*common.GuildMember, error) {
 	path := "/guilds/" + guildID.String() + "/members" + params.toQuery()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -94,9 +95,9 @@ func (c *RestClient) ListGuildMembers(guildID common.Snowflake, params GetGuildM
 }
 
 // SearchGuildMembers returns members whose username or nickname starts with the given query string.
-func (c *RestClient) SearchGuildMembers(guildID common.Snowflake, params SearchGuildMembersParams) ([]*common.GuildMember, error) {
+func (c *RestClient) SearchGuildMembers(ctx context.Context, guildID common.Snowflake, params SearchGuildMembersParams) ([]*common.GuildMember, error) {
 	path := "/guilds/" + guildID.String() + "/members/search" + params.toQuery()
-	req, err := c.generateRequest(http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -110,14 +111,14 @@ func (c *RestClient) SearchGuildMembers(guildID common.Snowflake, params SearchG
 }
 
 // ModifyGuildMember updates attributes of a guild member.
-func (c *RestClient) ModifyGuildMember(guildID, userID common.Snowflake, params ModifyGuildMemberParams) (*common.GuildMember, error) {
+func (c *RestClient) ModifyGuildMember(ctx context.Context, guildID, userID common.Snowflake, params ModifyGuildMemberParams) (*common.GuildMember, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String()
-	req, err := c.generateRequest(http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -131,14 +132,14 @@ func (c *RestClient) ModifyGuildMember(guildID, userID common.Snowflake, params 
 }
 
 // ModifyCurrentMember updates the current user's member object in a guild (e.g. nickname).
-func (c *RestClient) ModifyCurrentMember(guildID common.Snowflake, params ModifyCurrentMemberParams) (*common.GuildMember, error) {
+func (c *RestClient) ModifyCurrentMember(ctx context.Context, guildID common.Snowflake, params ModifyCurrentMemberParams) (*common.GuildMember, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/@me"
-	req, err := c.generateRequest(http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -152,9 +153,9 @@ func (c *RestClient) ModifyCurrentMember(guildID common.Snowflake, params Modify
 }
 
 // AddGuildMemberRole grants a role to a guild member. Requires MANAGE_ROLES.
-func (c *RestClient) AddGuildMemberRole(guildID, userID, roleID common.Snowflake) error {
+func (c *RestClient) AddGuildMemberRole(ctx context.Context, guildID, userID, roleID common.Snowflake) error {
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String() + "/roles/" + roleID.String()
-	req, err := c.generateRequest(http.MethodPut, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPut, path, nil)
 	if err != nil {
 		return err
 	}
@@ -164,9 +165,9 @@ func (c *RestClient) AddGuildMemberRole(guildID, userID, roleID common.Snowflake
 }
 
 // RemoveGuildMemberRole removes a role from a guild member. Requires MANAGE_ROLES.
-func (c *RestClient) RemoveGuildMemberRole(guildID, userID, roleID common.Snowflake) error {
+func (c *RestClient) RemoveGuildMemberRole(ctx context.Context, guildID, userID, roleID common.Snowflake) error {
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String() + "/roles/" + roleID.String()
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
@@ -176,9 +177,9 @@ func (c *RestClient) RemoveGuildMemberRole(guildID, userID, roleID common.Snowfl
 }
 
 // RemoveGuildMember kicks a member from a guild. Requires KICK_MEMBERS.
-func (c *RestClient) RemoveGuildMember(guildID, userID common.Snowflake) error {
+func (c *RestClient) RemoveGuildMember(ctx context.Context, guildID, userID common.Snowflake) error {
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String()
-	req, err := c.generateRequest(http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}
