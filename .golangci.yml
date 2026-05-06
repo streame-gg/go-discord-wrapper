@@ -1,30 +1,43 @@
-run:
-  timeout: 5m
-
+version: "2"
 linters:
-  disable-all: true
+  default: none
   enable:
-    - errcheck      # unchecked errors
-    - govet         # suspicious constructs
-    - staticcheck   # static analysis checks (includes SA, S1, ST1 families)
-    - ineffassign   # assignments whose values are never used
-    - misspell      # common spelling mistakes in comments and strings
-    - godot         # comments should end with a period
-    - unused        # unused code
-
-linters-settings:
-  godot:
-    scope: declarations
-    capital: false
-
+    - errcheck
+    - godot
+    - govet
+    - ineffassign
+    - misspell
+    - staticcheck
+    - unused
+  settings:
+    godot:
+      scope: declarations
+      capital: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - godot
+        path: _test\.go
+      - linters:
+          - errcheck
+        text: Error return value of .*(Close|Body.Close).*is not checked
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-rules:
-    - path: "_test\\.go"
-      linters:
-        - godot
-    - text: "Error return value of .*(Close|Body.Close).*is not checked"
-      linters:
-        - errcheck
-
   max-issues-per-linter: 0
   max-same-issues: 0
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
