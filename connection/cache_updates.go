@@ -163,9 +163,8 @@ func (d *Client) trackChannel(channel *common.Channel) {
 	d.channelIndexMu.Lock()
 	defer d.channelIndexMu.Unlock()
 
-	if d.channelsByGuild == nil {
-		d.channelsByGuild = make(map[common.Snowflake]map[common.Snowflake]struct{})
-		d.guildByChannel = make(map[common.Snowflake]common.Snowflake)
+	if d.channelsByGuild == nil || d.guildByChannel == nil {
+		return
 	}
 
 	if oldGuildID, ok := d.guildByChannel[channel.ID]; ok {
