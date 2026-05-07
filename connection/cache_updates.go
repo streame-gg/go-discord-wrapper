@@ -117,7 +117,7 @@ func (d *Client) removeGuildFromCache(guildID common.Snowflake) {
 	d.Cache.Members().DeleteGuild(guildID)
 	d.Cache.Roles().DeleteGuild(guildID)
 
-	for _, channelID := range d.takeGuildChannelIDs(guildID) {
+	for _, channelID := range d.drainGuildChannelIDs(guildID) {
 		d.Cache.Channels().Delete(channelID)
 		d.Cache.Messages().DeleteChannel(channelID)
 	}
@@ -163,10 +163,6 @@ func (d *Client) trackChannel(channel *common.Channel) {
 	d.channelIndexMu.Lock()
 	defer d.channelIndexMu.Unlock()
 
-	if d.channelsByGuild == nil || d.guildByChannel == nil {
-		return
-	}
-
 	if oldGuildID, ok := d.guildByChannel[channel.ID]; ok {
 		if channel.GuildID == nil || oldGuildID != *channel.GuildID {
 			if set := d.channelsByGuild[oldGuildID]; set != nil {
@@ -197,10 +193,6 @@ func (d *Client) untrackChannel(channelID common.Snowflake) {
 	d.channelIndexMu.Lock()
 	defer d.channelIndexMu.Unlock()
 
-	if d.guildByChannel == nil {
-		return
-	}
-
 	guildID, ok := d.guildByChannel[channelID]
 	if !ok {
 		return
@@ -215,7 +207,7 @@ func (d *Client) untrackChannel(channelID common.Snowflake) {
 	delete(d.guildByChannel, channelID)
 }
 
-func (d *Client) takeGuildChannelIDs(guildID common.Snowflake) []common.Snowflake {
+func (d *Client) drainGuildChannelIDs(guildID common.Snowflake) []common.Snowflake {
 	d.channelIndexMu.Lock()
 	defer d.channelIndexMu.Unlock()
 
