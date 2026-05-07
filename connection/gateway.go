@@ -73,6 +73,10 @@ type Client struct {
 	// Nil when no cache was configured via options.WithCache.
 	Cache cache.Cache
 
+	channelIndexMu  sync.RWMutex
+	channelsByGuild map[common.Snowflake]map[common.Snowflake]struct{}
+	guildByChannel  map[common.Snowflake]common.Snowflake
+
 	// guildMemberCounts tracks the member_count for every available guild on
 	// this shard, updated from GUILD_CREATE / GUILD_DELETE gateway events.
 	guildMemberCounts map[common.Snowflake]int
@@ -136,6 +140,8 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 		Sharding:                   cfg.Sharding,
 		Coordinator:                cfg.Coordinator,
 		Cache:                      cfg.Cache,
+		channelsByGuild:            make(map[common.Snowflake]map[common.Snowflake]struct{}),
+		guildByChannel:             make(map[common.Snowflake]common.Snowflake),
 		maxReconnectRetries:        cfg.MaxReconnectRetries,
 		disableCacheAutoPopulation: cfg.DisableCacheAutoPopulation,
 	}
@@ -585,9 +591,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			d.guildMu.Unlock()
 
 			if d.cacheEnabled() {
-				d.Cache.Guilds().Delete(guildDeleteEvent.ID)
-				d.Cache.Members().DeleteGuild(guildDeleteEvent.ID)
-				d.Cache.Roles().DeleteGuild(guildDeleteEvent.ID)
+				d.removeGuildFromCache(guildDeleteEvent.ID)
 			}
 		}
 	case events.EventVoiceStateUpdate:
@@ -739,7 +743,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal GUILD_ROLE_DELETE event", slog.Any("err", err))
 					return false
 				}
-				d.Cache.Roles().Delete(ev.RoleID)
+				d.removeRoleFromCache(ev.RoleID)
 			}
 		}
 	case events.EventChannelCreate:
@@ -751,7 +755,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				ch := ev.Channel
-				d.Cache.Channels().Set(&ch)
+				d.cacheChannel(&ch)
 			}
 		}
 	case events.EventChannelUpdate:
@@ -763,7 +767,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				ch := ev.Channel
-				d.Cache.Channels().Set(&ch)
+				d.cacheChannel(&ch)
 			}
 		}
 	case events.EventChannelDelete:
@@ -774,8 +778,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal CHANNEL_DELETE event", slog.Any("err", err))
 					return false
 				}
-				d.Cache.Channels().Delete(ev.ID)
-				d.Cache.Messages().DeleteChannel(ev.ID)
+				d.removeChannelFromCache(ev.ID)
 			}
 		}
 	case events.EventMessageCreate:
