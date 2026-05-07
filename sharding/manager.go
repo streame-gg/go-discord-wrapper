@@ -1,6 +1,7 @@
 package sharding
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -65,7 +66,7 @@ func (m *ShardManager) Start() error {
 	for id := 0; id < m.total; id++ {
 		client := m.factory(id, m.total)
 
-		if err := client.Login(); err != nil {
+		if err := client.Login(context.Background()); err != nil {
 			return fmt.Errorf("sharding: shard %d failed to connect: %w", id, err)
 		}
 

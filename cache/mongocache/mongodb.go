@@ -12,11 +12,18 @@
 //
 // Each entity type maps to its own collection:
 //
-//	guilds    — Guild documents
-//	channels  — Channel documents
-//	users     — User documents
-//	members   — GuildMember documents keyed by "{guildID}:{userID}"
-//	messages  — Message documents keyed by "{channelID}:{messageID}"
+//	guilds            — Guild documents
+//	channels          — Channel documents
+//	users             — User documents
+//	members           — GuildMember documents keyed by "{guildID}:{userID}"
+//	roles             — Role documents keyed by role ID
+//	voice_states      — VoiceState documents keyed by "{guildID}:{userID}"
+//	soundboard_sounds — SoundboardSound documents keyed by sound ID
+//	scheduled_events  — GuildScheduledEvent documents keyed by event ID
+//	stage_instances   — StageInstance documents keyed by instance ID
+//	emojis            — Emoji documents keyed by emoji ID
+//	presences         — Presence documents keyed by "{guildID}:{userID}"
+//	messages          — Message documents keyed by "{channelID}:{messageID}"
 //
 // # Document schema
 //
@@ -32,7 +39,9 @@
 // [NewMongoDBCache] creates the following indexes automatically:
 //   - Sparse TTL index on expires_at (all collections) — MongoDB deletes expired
 //     documents in the background. Documents without expires_at never expire.
-//   - Index on guild_id (members) — used by AllInGuild and DeleteGuild.
+//   - Index on guild_id (members, roles, voice_states, soundboard_sounds,
+//     scheduled_events, stage_instances, emojis, presences) — used by
+//     GetByGuild/AllInGuild and DeleteGuild.
 //   - Compound index on (channel_id, inserted_at) (messages) — used by Channel
 //     and per-channel ring enforcement.
 //
@@ -74,6 +83,24 @@ type memberDoc struct {
 // roleDoc is the MongoDB document used for guild roles.
 type roleDoc struct {
 	ID        string    `bson:"_id"` // roleID
+	GuildID   string    `bson:"guild_id"`
+	JSON      string    `bson:"json"`
+	ExpiresAt time.Time `bson:"expires_at,omitempty"`
+}
+
+// guildEntityDoc is a MongoDB document used for guild-scoped entities like
+// soundboard sounds, emojis, scheduled events, and stage instances.
+type guildEntityDoc struct {
+	ID        string    `bson:"_id"`
+	GuildID   string    `bson:"guild_id"`
+	JSON      string    `bson:"json"`
+	ExpiresAt time.Time `bson:"expires_at,omitempty"`
+}
+
+// guildUserDoc is the MongoDB document used for per-guild user-scoped entities
+// like voice states and presences.
+type guildUserDoc struct {
+	ID        string    `bson:"_id"` // "{guildID}:{userID}"
 	GuildID   string    `bson:"guild_id"`
 	JSON      string    `bson:"json"`
 	ExpiresAt time.Time `bson:"expires_at,omitempty"`
@@ -139,7 +166,20 @@ func (c *MongoDBCache) ensureIndexes() {
 		Keys:    bson.D{{Key: "expires_at", Value: 1}},
 		Options: options.Index().SetExpireAfterSeconds(0).SetSparse(true),
 	}
-	for _, name := range []string{"guilds", "channels", "users", "members", "roles", "messages"} {
+	for _, name := range []string{
+		"guilds",
+		"channels",
+		"users",
+		"members",
+		"roles",
+		"messages",
+		"voice_states",
+		"soundboard_sounds",
+		"scheduled_events",
+		"stage_instances",
+		"emojis",
+		"presences",
+	} {
 		col := c.db.Collection(name)
 		_, _ = col.Indexes().CreateOne(c.ctx, ttlIndex)
 	}
@@ -153,6 +193,19 @@ func (c *MongoDBCache) ensureIndexes() {
 	_, _ = c.db.Collection("roles").Indexes().CreateOne(c.ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "guild_id", Value: 1}},
 	})
+
+	for _, name := range []string{
+		"voice_states",
+		"soundboard_sounds",
+		"scheduled_events",
+		"stage_instances",
+		"emojis",
+		"presences",
+	} {
+		_, _ = c.db.Collection(name).Indexes().CreateOne(c.ctx, mongo.IndexModel{
+			Keys: bson.D{{Key: "guild_id", Value: 1}},
+		})
+	}
 
 	// messages: compound index for per-channel ordered queries and ring enforcement.
 	_, _ = c.db.Collection("messages").Indexes().CreateOne(c.ctx, mongo.IndexModel{
@@ -184,6 +237,22 @@ func (c *MongoDBCache) Users() cache.UserStore       { return &mongoUserStore{c}
 func (c *MongoDBCache) Members() cache.MemberStore   { return &mongoMemberStore{c} }
 func (c *MongoDBCache) Roles() cache.RoleStore       { return &mongoRoleStore{c} }
 func (c *MongoDBCache) Messages() cache.MessageStore { return &mongoMessageStore{c} }
+func (c *MongoDBCache) VoiceStates() cache.VoiceStateStore {
+	return &mongoVoiceStateStore{c}
+}
+func (c *MongoDBCache) Soundboard() cache.SoundboardStore {
+	return &mongoSoundboardStore{c}
+}
+func (c *MongoDBCache) ScheduledEvents() cache.ScheduledEventStore {
+	return &mongoScheduledEventStore{c}
+}
+func (c *MongoDBCache) StageInstances() cache.StageInstanceStore {
+	return &mongoStageInstanceStore{c}
+}
+func (c *MongoDBCache) Emojis() cache.EmojiStore { return &mongoEmojiStore{c} }
+func (c *MongoDBCache) Presences() cache.PresenceStore {
+	return &mongoPresenceStore{c}
+}
 
 // Close cancels the internal context used for all MongoDB operations.
 // The underlying [*mongo.Database] and its client are not closed.
@@ -214,6 +283,10 @@ func extractID(doc any) string {
 	case memberDoc:
 		return d.ID
 	case roleDoc:
+		return d.ID
+	case guildEntityDoc:
+		return d.ID
+	case guildUserDoc:
 		return d.ID
 	case msgDoc:
 		return d.ID
@@ -423,6 +496,10 @@ func memberID(guildID, userID common.Snowflake) string {
 	return string(guildID) + ":" + string(userID)
 }
 
+func guildUserID(guildID, userID common.Snowflake) string {
+	return string(guildID) + ":" + string(userID)
+}
+
 func (s *mongoMemberStore) Set(guildID common.Snowflake, member *common.GuildMember) {
 	if member.User == nil {
 		return
@@ -582,6 +659,462 @@ func (s *mongoRoleStore) All() []*common.Role {
 }
 
 func (s *mongoRoleStore) Size() int {
+	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
+	return int(n)
+}
+
+// ── Voice state store ──────────────────────────────────────────────────────────
+
+type mongoVoiceStateStore struct{ c *MongoDBCache }
+
+func (s *mongoVoiceStateStore) col() *mongo.Collection { return s.c.db.Collection("voice_states") }
+
+func (s *mongoVoiceStateStore) Set(guildID common.Snowflake, state *common.VoiceState) {
+	b, err := json.Marshal(state)
+	if err != nil {
+		return
+	}
+	doc := guildUserDoc{
+		ID:        guildUserID(guildID, state.UserID),
+		GuildID:   string(guildID),
+		JSON:      string(b),
+		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+	}
+	_ = upsertByID(s.c.ctx, s.col(), doc)
+}
+
+func (s *mongoVoiceStateStore) Get(guildID, userID common.Snowflake) (*common.VoiceState, bool) {
+	filter := bson.M{"_id": guildUserID(guildID, userID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	var doc guildUserDoc
+	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
+		return nil, false
+	}
+	var state common.VoiceState
+	if err := json.Unmarshal([]byte(doc.JSON), &state); err != nil {
+		return nil, false
+	}
+	return &state, true
+}
+
+func (s *mongoVoiceStateStore) Delete(guildID, userID common.Snowflake) {
+	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": guildUserID(guildID, userID)})
+}
+
+func (s *mongoVoiceStateStore) DeleteGuild(guildID common.Snowflake) {
+	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
+}
+
+func (s *mongoVoiceStateStore) AllInGuild(guildID common.Snowflake) []*common.VoiceState {
+	filter := bson.M{"guild_id": string(guildID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	cursor, err := s.col().Find(s.c.ctx, filter)
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []guildUserDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.VoiceState, 0, len(docs))
+	for _, d := range docs {
+		var state common.VoiceState
+		if json.Unmarshal([]byte(d.JSON), &state) == nil {
+			out = append(out, &state)
+		}
+	}
+	return out
+}
+
+func (s *mongoVoiceStateStore) Size() int {
+	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
+	return int(n)
+}
+
+// ── Soundboard store ───────────────────────────────────────────────────────────
+
+type mongoSoundboardStore struct{ c *MongoDBCache }
+
+func (s *mongoSoundboardStore) col() *mongo.Collection { return s.c.db.Collection("soundboard_sounds") }
+
+func (s *mongoSoundboardStore) Set(guildID common.Snowflake, sound *common.SoundboardSound) {
+	b, err := json.Marshal(sound)
+	if err != nil {
+		return
+	}
+	doc := guildEntityDoc{
+		ID:        string(sound.SoundID),
+		GuildID:   string(guildID),
+		JSON:      string(b),
+		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+	}
+	_ = upsertByID(s.c.ctx, s.col(), doc)
+}
+
+func (s *mongoSoundboardStore) Get(soundID common.Snowflake) (*common.SoundboardSound, bool) {
+	filter := bson.M{"_id": string(soundID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	var doc guildEntityDoc
+	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
+		return nil, false
+	}
+	var sound common.SoundboardSound
+	if err := json.Unmarshal([]byte(doc.JSON), &sound); err != nil {
+		return nil, false
+	}
+	return &sound, true
+}
+
+func (s *mongoSoundboardStore) GetByGuild(guildID common.Snowflake) []*common.SoundboardSound {
+	filter := bson.M{"guild_id": string(guildID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	cursor, err := s.col().Find(s.c.ctx, filter)
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []guildEntityDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.SoundboardSound, 0, len(docs))
+	for _, d := range docs {
+		var sound common.SoundboardSound
+		if json.Unmarshal([]byte(d.JSON), &sound) == nil {
+			out = append(out, &sound)
+		}
+	}
+	return out
+}
+
+func (s *mongoSoundboardStore) SetAll(guildID common.Snowflake, sounds []*common.SoundboardSound) {
+	s.DeleteGuild(guildID)
+	for _, sound := range sounds {
+		if sound != nil {
+			s.Set(guildID, sound)
+		}
+	}
+}
+
+func (s *mongoSoundboardStore) Delete(soundID common.Snowflake) {
+	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(soundID)})
+}
+
+func (s *mongoSoundboardStore) DeleteGuild(guildID common.Snowflake) {
+	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
+}
+
+func (s *mongoSoundboardStore) Size() int {
+	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
+	return int(n)
+}
+
+// ── Scheduled event store ──────────────────────────────────────────────────────
+
+type mongoScheduledEventStore struct{ c *MongoDBCache }
+
+func (s *mongoScheduledEventStore) col() *mongo.Collection { return s.c.db.Collection("scheduled_events") }
+
+func (s *mongoScheduledEventStore) Set(event *common.GuildScheduledEvent) {
+	b, err := json.Marshal(event)
+	if err != nil {
+		return
+	}
+	doc := guildEntityDoc{
+		ID:        string(event.ID),
+		GuildID:   string(event.GuildID),
+		JSON:      string(b),
+		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+	}
+	_ = upsertByID(s.c.ctx, s.col(), doc)
+}
+
+func (s *mongoScheduledEventStore) Get(eventID common.Snowflake) (*common.GuildScheduledEvent, bool) {
+	filter := bson.M{"_id": string(eventID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	var doc guildEntityDoc
+	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
+		return nil, false
+	}
+	var event common.GuildScheduledEvent
+	if err := json.Unmarshal([]byte(doc.JSON), &event); err != nil {
+		return nil, false
+	}
+	return &event, true
+}
+
+func (s *mongoScheduledEventStore) GetByGuild(guildID common.Snowflake) []*common.GuildScheduledEvent {
+	filter := bson.M{"guild_id": string(guildID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	cursor, err := s.col().Find(s.c.ctx, filter)
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []guildEntityDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.GuildScheduledEvent, 0, len(docs))
+	for _, d := range docs {
+		var event common.GuildScheduledEvent
+		if json.Unmarshal([]byte(d.JSON), &event) == nil {
+			out = append(out, &event)
+		}
+	}
+	return out
+}
+
+func (s *mongoScheduledEventStore) Delete(eventID common.Snowflake) {
+	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(eventID)})
+}
+
+func (s *mongoScheduledEventStore) DeleteGuild(guildID common.Snowflake) {
+	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
+}
+
+func (s *mongoScheduledEventStore) Size() int {
+	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
+	return int(n)
+}
+
+// ── Stage instance store ───────────────────────────────────────────────────────
+
+type mongoStageInstanceStore struct{ c *MongoDBCache }
+
+func (s *mongoStageInstanceStore) col() *mongo.Collection { return s.c.db.Collection("stage_instances") }
+
+func (s *mongoStageInstanceStore) Set(instance *common.StageInstance) {
+	b, err := json.Marshal(instance)
+	if err != nil {
+		return
+	}
+	doc := guildEntityDoc{
+		ID:        string(instance.ID),
+		GuildID:   string(instance.GuildID),
+		JSON:      string(b),
+		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+	}
+	_ = upsertByID(s.c.ctx, s.col(), doc)
+}
+
+func (s *mongoStageInstanceStore) Get(instanceID common.Snowflake) (*common.StageInstance, bool) {
+	filter := bson.M{"_id": string(instanceID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	var doc guildEntityDoc
+	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
+		return nil, false
+	}
+	var instance common.StageInstance
+	if err := json.Unmarshal([]byte(doc.JSON), &instance); err != nil {
+		return nil, false
+	}
+	return &instance, true
+}
+
+func (s *mongoStageInstanceStore) GetByGuild(guildID common.Snowflake) []*common.StageInstance {
+	filter := bson.M{"guild_id": string(guildID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	cursor, err := s.col().Find(s.c.ctx, filter)
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []guildEntityDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.StageInstance, 0, len(docs))
+	for _, d := range docs {
+		var instance common.StageInstance
+		if json.Unmarshal([]byte(d.JSON), &instance) == nil {
+			out = append(out, &instance)
+		}
+	}
+	return out
+}
+
+func (s *mongoStageInstanceStore) Delete(instanceID common.Snowflake) {
+	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(instanceID)})
+}
+
+func (s *mongoStageInstanceStore) DeleteGuild(guildID common.Snowflake) {
+	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
+}
+
+func (s *mongoStageInstanceStore) Size() int {
+	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
+	return int(n)
+}
+
+// ── Emoji store ────────────────────────────────────────────────────────────────
+
+type mongoEmojiStore struct{ c *MongoDBCache }
+
+func (s *mongoEmojiStore) col() *mongo.Collection { return s.c.db.Collection("emojis") }
+
+func (s *mongoEmojiStore) Set(guildID common.Snowflake, emoji *common.Emoji) {
+	b, err := json.Marshal(emoji)
+	if err != nil {
+		return
+	}
+	doc := guildEntityDoc{
+		ID:        string(emoji.ID),
+		GuildID:   string(guildID),
+		JSON:      string(b),
+		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+	}
+	_ = upsertByID(s.c.ctx, s.col(), doc)
+}
+
+func (s *mongoEmojiStore) Get(emojiID common.Snowflake) (*common.Emoji, bool) {
+	filter := bson.M{"_id": string(emojiID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	var doc guildEntityDoc
+	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
+		return nil, false
+	}
+	var emoji common.Emoji
+	if err := json.Unmarshal([]byte(doc.JSON), &emoji); err != nil {
+		return nil, false
+	}
+	return &emoji, true
+}
+
+func (s *mongoEmojiStore) GetByGuild(guildID common.Snowflake) []*common.Emoji {
+	filter := bson.M{"guild_id": string(guildID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	cursor, err := s.col().Find(s.c.ctx, filter)
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []guildEntityDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.Emoji, 0, len(docs))
+	for _, d := range docs {
+		var emoji common.Emoji
+		if json.Unmarshal([]byte(d.JSON), &emoji) == nil {
+			out = append(out, &emoji)
+		}
+	}
+	return out
+}
+
+func (s *mongoEmojiStore) SetAll(guildID common.Snowflake, emojis []*common.Emoji) {
+	s.DeleteGuild(guildID)
+	for _, emoji := range emojis {
+		if emoji != nil && emoji.ID != "" {
+			s.Set(guildID, emoji)
+		}
+	}
+}
+
+func (s *mongoEmojiStore) Delete(emojiID common.Snowflake) {
+	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(emojiID)})
+}
+
+func (s *mongoEmojiStore) DeleteGuild(guildID common.Snowflake) {
+	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
+}
+
+func (s *mongoEmojiStore) Size() int {
+	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
+	return int(n)
+}
+
+// ── Presence store ─────────────────────────────────────────────────────────────
+
+type mongoPresenceStore struct{ c *MongoDBCache }
+
+func (s *mongoPresenceStore) col() *mongo.Collection { return s.c.db.Collection("presences") }
+
+func (s *mongoPresenceStore) Set(presence *common.Presence) {
+	b, err := json.Marshal(presence)
+	if err != nil {
+		return
+	}
+	doc := guildUserDoc{
+		ID:        guildUserID(presence.GuildID, presence.User.ID),
+		GuildID:   string(presence.GuildID),
+		JSON:      string(b),
+		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+	}
+	_ = upsertByID(s.c.ctx, s.col(), doc)
+}
+
+func (s *mongoPresenceStore) Get(guildID, userID common.Snowflake) (*common.Presence, bool) {
+	filter := bson.M{"_id": guildUserID(guildID, userID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	var doc guildUserDoc
+	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
+		return nil, false
+	}
+	var presence common.Presence
+	if err := json.Unmarshal([]byte(doc.JSON), &presence); err != nil {
+		return nil, false
+	}
+	return &presence, true
+}
+
+func (s *mongoPresenceStore) GetByGuild(guildID common.Snowflake) []*common.Presence {
+	filter := bson.M{"guild_id": string(guildID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	cursor, err := s.col().Find(s.c.ctx, filter)
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []guildUserDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.Presence, 0, len(docs))
+	for _, d := range docs {
+		var presence common.Presence
+		if json.Unmarshal([]byte(d.JSON), &presence) == nil {
+			out = append(out, &presence)
+		}
+	}
+	return out
+}
+
+func (s *mongoPresenceStore) Delete(guildID, userID common.Snowflake) {
+	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": guildUserID(guildID, userID)})
+}
+
+func (s *mongoPresenceStore) DeleteGuild(guildID common.Snowflake) {
+	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
+}
+
+func (s *mongoPresenceStore) Size() int {
 	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
 	return int(n)
 }

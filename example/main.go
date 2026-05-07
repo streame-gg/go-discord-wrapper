@@ -215,7 +215,7 @@ func main() {
 		}
 	})
 
-	if err := bot.Login(); err != nil {
+	if err := bot.Login(context.Background()); err != nil {
 		panic(err)
 	}
 

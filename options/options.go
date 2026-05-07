@@ -37,6 +37,9 @@ type Config struct {
 	// writing entities into the cache from gateway events. Set this when you want
 	// to manage the cache yourself.
 	DisableCacheAutoPopulation bool
+	// CacheStores selects which cache stores are auto-populated from gateway events.
+	// Default: cache.CategoryAll. Ignored when DisableCacheAutoPopulation is true.
+	CacheStores cache.OverflowCategory
 
 	// Shared between Client and its embedded RestClient
 	APIVersion common.APIVersion
@@ -206,7 +209,32 @@ func WithLogLevel(level slog.Level) Option {
 // WithDisableCacheAutoPopulation disables automatic cache population from gateway
 // events. Use this when you want full control over what goes into the cache.
 func WithDisableCacheAutoPopulation() Option {
-	return func(c *Config) { c.DisableCacheAutoPopulation = true }
+	return func(c *Config) {
+		c.DisableCacheAutoPopulation = true
+		c.CacheStores = 0
+	}
+}
+
+// WithCacheStores sets the cache stores that are auto-populated from gateway events.
+// Pass a bitmask of cache.Category* values, for example:
+//
+//	options.WithCacheStores(cache.CategoryGuilds | cache.CategoryChannels)
+func WithCacheStores(stores cache.OverflowCategory) Option {
+	return func(c *Config) {
+		c.CacheStores = stores
+		c.DisableCacheAutoPopulation = false
+	}
+}
+
+// WithDisableCacheStore disables auto-population for the specified stores.
+// It starts from the default CategoryAll unless you have already set CacheStores.
+func WithDisableCacheStore(stores cache.OverflowCategory) Option {
+	return func(c *Config) {
+		if c.CacheStores == 0 {
+			c.CacheStores = cache.CategoryAll
+		}
+		c.CacheStores &^= stores
+	}
 }
 
 // WithCache attaches a Cache to the client.
