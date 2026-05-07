@@ -192,6 +192,9 @@ if ch, ok := bot.Cache.Channels().Get(channelID); ok {
 }
 ```
 
+REST calls made through `connection.Client` always hit Discord and, when a cache
+is configured, refresh the relevant cache entries with the API response.
+
 ## Sharding
 
 Use `options.WithSharding` for single-process sharding and `sharding.NewShardManager` to orchestrate multiple shards:
