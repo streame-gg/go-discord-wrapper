@@ -328,6 +328,68 @@ func (m *memMemberStore) AllInGuild(guildID common.Snowflake) []*common.GuildMem
 
 func (m *memMemberStore) Size() int { return m.s.size() }
 
+// ── Role store ────────────────────────────────────────────────────────────────
+
+type roleValue struct {
+	GuildID common.Snowflake
+	Role    *common.Role
+}
+
+type memRoleStore struct {
+	s *genericStore[common.Snowflake, roleValue]
+}
+
+func (r *memRoleStore) Set(guildID common.Snowflake, role *common.Role) {
+	r.s.set(role.ID, roleValue{GuildID: guildID, Role: role})
+}
+
+func (r *memRoleStore) Get(roleID common.Snowflake) (*common.Role, bool) {
+	v, ok := r.s.get(roleID)
+	if !ok {
+		return nil, false
+	}
+	return v.Role, true
+}
+
+func (r *memRoleStore) GetByGuild(guildID common.Snowflake) []*common.Role {
+	now := time.Now()
+	r.s.mu.RLock()
+	defer r.s.mu.RUnlock()
+	var out []*common.Role
+	for _, e := range r.s.items {
+		if e.value.GuildID == guildID && !e.expired(now) {
+			out = append(out, e.value.Role)
+		}
+	}
+	return out
+}
+
+func (r *memRoleStore) Delete(roleID common.Snowflake) {
+	r.s.delete(roleID)
+}
+
+func (r *memRoleStore) DeleteGuild(guildID common.Snowflake) {
+	r.s.mu.Lock()
+	defer r.s.mu.Unlock()
+	for k, e := range r.s.items {
+		if e.value.GuildID == guildID {
+			r.s.totalBytes.Add(-e.sizeBytes)
+			delete(r.s.items, k)
+		}
+	}
+}
+
+func (r *memRoleStore) All() []*common.Role {
+	vals := r.s.all()
+	out := make([]*common.Role, len(vals))
+	for i, v := range vals {
+		out[i] = v.Role
+	}
+	return out
+}
+
+func (r *memRoleStore) Size() int { return r.s.size() }
+
 // ── Message store ─────────────────────────────────────────────────────────────
 
 type msgEntry struct {
@@ -439,7 +501,9 @@ func (r *channelRing) delete(id common.Snowflake) (delta int64) {
 	for i, e := range r.msgs {
 		if e.msg.ID == id {
 			delta = -e.sizeBytes
-			r.msgs = append(r.msgs[:i], r.msgs[i+1:]...)
+			copy(r.msgs[i:], r.msgs[i+1:])
+			r.msgs[len(r.msgs)-1] = nil // zero tail so GC can collect it
+			r.msgs = r.msgs[:len(r.msgs)-1]
 			return
 		}
 	}
@@ -451,13 +515,18 @@ func (r *channelRing) deleteBulk(ids []common.Snowflake) (delta int64) {
 	for _, id := range ids {
 		set[id] = struct{}{}
 	}
-	keep := r.msgs[:0]
-	for _, e := range r.msgs {
+	old := r.msgs
+	keep := old[:0]
+	for _, e := range old {
 		if _, drop := set[e.msg.ID]; drop {
 			delta -= e.sizeBytes
 		} else {
 			keep = append(keep, e)
 		}
+	}
+	// Zero freed tail slots so GC can collect the dropped entries.
+	for i := len(keep); i < len(old); i++ {
+		old[i] = nil
 	}
 	r.msgs = keep
 	return
@@ -815,6 +884,7 @@ type MemoryCache struct {
 	channels *memChannelStore
 	users    *memUserStore
 	members  *memMemberStore
+	roles    *memRoleStore
 	messages *memMessageStore
 
 	stopOnce sync.Once
@@ -859,6 +929,7 @@ func NewMemoryCache(opts Options) *MemoryCache {
 		channels: &memChannelStore{s: newGenericStore[common.Snowflake, *common.Channel](sc(opts.Limits.MaxChannels))},
 		users:    &memUserStore{s: newGenericStore[common.Snowflake, *common.User](sc(opts.Limits.MaxUsers))},
 		members:  &memMemberStore{s: newGenericStore[memberKey, *common.GuildMember](sc(opts.Limits.MaxMembers))},
+		roles:    &memRoleStore{s: newGenericStore[common.Snowflake, roleValue](sc(opts.Limits.MaxRoles))},
 		messages: newMemMessageStore(opts.Messages, trackBytes, opts.Limits.MaxMessages, by),
 		stopCh:   make(chan struct{}),
 	}
@@ -872,6 +943,7 @@ func (c *MemoryCache) Guilds() GuildStore     { return c.guilds }
 func (c *MemoryCache) Channels() ChannelStore { return c.channels }
 func (c *MemoryCache) Users() UserStore       { return c.users }
 func (c *MemoryCache) Members() MemberStore   { return c.members }
+func (c *MemoryCache) Roles() RoleStore       { return c.roles }
 func (c *MemoryCache) Messages() MessageStore { return c.messages }
 
 // Close stops the background sweeper. Safe to call multiple times.
@@ -904,6 +976,7 @@ func (c *MemoryCache) sweep() {
 	c.channels.s.sweep(now, b, uw)
 	c.users.s.sweep(now, b, uw)
 	c.members.s.sweep(now, b, uw)
+	c.roles.s.sweep(now, b, uw)
 	c.messages.sweep(now, b, uw)
 
 	c.enforceGlobalLimits()
@@ -917,7 +990,7 @@ func (c *MemoryCache) enforceGlobalLimits() {
 
 	if lim.MaxEntries > 0 {
 		total := c.guilds.s.size() + c.channels.s.size() +
-			c.users.s.size() + c.members.s.size() + c.messages.Size()
+			c.users.s.size() + c.members.s.size() + c.roles.s.size() + c.messages.Size()
 		if total > lim.MaxEntries {
 			c.evictGloballyByCount(total-lim.MaxEntries, pol.Target, pol.ClearBy)
 		}
@@ -926,7 +999,7 @@ func (c *MemoryCache) enforceGlobalLimits() {
 	if lim.MaxSizeMB > 0 {
 		maxBytes := int64(lim.MaxSizeMB * 1024 * 1024)
 		totalBytes := c.guilds.s.bytes() + c.channels.s.bytes() +
-			c.users.s.bytes() + c.members.s.bytes() + c.messages.bytes()
+			c.users.s.bytes() + c.members.s.bytes() + c.roles.s.bytes() + c.messages.bytes()
 		if totalBytes > maxBytes {
 			c.evictGloballyByBytes(totalBytes-maxBytes, pol.Target, pol.ClearBy)
 		}
@@ -941,7 +1014,7 @@ func (c *MemoryCache) evictGloballyByCount(need int, target OverflowCategory, by
 		evictN func(n int, by ClearBy) int64
 	}
 
-	stores := make([]storeRef, 0, 5)
+	stores := make([]storeRef, 0, 6)
 	total := 0
 	if target&CategoryGuilds != 0 {
 		n := c.guilds.s.size()
@@ -961,6 +1034,11 @@ func (c *MemoryCache) evictGloballyByCount(need int, target OverflowCategory, by
 	if target&CategoryMembers != 0 {
 		n := c.members.s.size()
 		stores = append(stores, storeRef{n, func(n int, by ClearBy) int64 { return c.members.s.evictN(n, by) }})
+		total += n
+	}
+	if target&CategoryRoles != 0 {
+		n := c.roles.s.size()
+		stores = append(stores, storeRef{n, func(n int, by ClearBy) int64 { return c.roles.s.evictN(n, by) }})
 		total += n
 	}
 	if target&CategoryMessages != 0 {
@@ -998,7 +1076,7 @@ func (c *MemoryCache) evictGloballyByBytes(need int64, target OverflowCategory, 
 		evictN func(n int, by ClearBy) int64
 	}
 
-	stores := make([]storeRef, 0, 5)
+	stores := make([]storeRef, 0, 6)
 	totalBytes := int64(0)
 	if target&CategoryGuilds != 0 {
 		b := c.guilds.s.bytes()
@@ -1018,6 +1096,11 @@ func (c *MemoryCache) evictGloballyByBytes(need int64, target OverflowCategory, 
 	if target&CategoryMembers != 0 {
 		b := c.members.s.bytes()
 		stores = append(stores, storeRef{b, c.members.s.size(), func(n int, by ClearBy) int64 { return c.members.s.evictN(n, by) }})
+		totalBytes += b
+	}
+	if target&CategoryRoles != 0 {
+		b := c.roles.s.bytes()
+		stores = append(stores, storeRef{b, c.roles.s.size(), func(n int, by ClearBy) int64 { return c.roles.s.evictN(n, by) }})
 		totalBytes += b
 	}
 	if target&CategoryMessages != 0 {

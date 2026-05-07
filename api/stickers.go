@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -153,8 +154,19 @@ func (c *RestClient) GetStickerPack(ctx context.Context, packID common.Snowflake
 	return &pack, nil
 }
 
+var validStickerContentTypes = map[string]bool{
+	"image/png":        true,
+	"image/apng":       true,
+	"image/gif":        true,
+	"application/json": true, // Lottie
+}
+
 // CreateGuildSticker uploads a new sticker to a guild using multipart form encoding.
 func (c *RestClient) CreateGuildSticker(ctx context.Context, guildID common.Snowflake, params CreateGuildStickerParams) (*common.Sticker, error) {
+	if !validStickerContentTypes[params.ContentType] {
+		return nil, fmt.Errorf("invalid sticker content type %q: must be image/png, image/apng, image/gif, or application/json", params.ContentType)
+	}
+
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
 

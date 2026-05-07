@@ -99,6 +99,9 @@ type UnavailableGuild struct {
 }
 
 func (ug UnavailableGuild) IsAvailable() bool {
+	if ug.Unavailable == nil {
+		return false
+	}
 	return !*ug.Unavailable
 }
 

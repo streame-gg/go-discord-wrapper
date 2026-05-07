@@ -85,3 +85,87 @@ func (c *RestClient) FetchAllGuildBans(ctx context.Context, guildID common.Snowf
 		params.After = &last.User.ID
 	}
 }
+
+// FetchAllAuditLogEntries fetches all audit log entries for a guild by paginating
+// backwards in time (max 100 per request). The optional filter is forwarded to
+// every request so callers can scope by user or action type.
+func (c *RestClient) FetchAllAuditLogEntries(ctx context.Context, guildID common.Snowflake, filter GetGuildAuditLogParams) ([]common.AuditLogEntry, error) {
+	const pageSize = 100
+
+	filter.Limit = util.PointerOf(pageSize)
+
+	var all []common.AuditLogEntry
+
+	for {
+		log, err := c.GetGuildAuditLog(ctx, guildID, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		all = append(all, log.AuditLogEntries...)
+
+		if len(log.AuditLogEntries) < pageSize {
+			return all, nil
+		}
+
+		// Entries are returned newest-first; walk backwards using the oldest entry's ID.
+		oldest := log.AuditLogEntries[len(log.AuditLogEntries)-1]
+		filter.Before = &oldest.ID
+	}
+}
+
+// FetchAllEntitlements fetches every entitlement for an application by paginating
+// forward (max 100 per request). The filter is forwarded as-is so callers can
+// scope by user, guild, or SKU.
+func (c *RestClient) FetchAllEntitlements(ctx context.Context, appID common.Snowflake, filter ListEntitlementsParams) ([]*common.Entitlement, error) {
+	const pageSize = 100
+
+	filter.Limit = util.PointerOf(pageSize)
+
+	var all []*common.Entitlement
+
+	for {
+		page, err := c.ListEntitlements(ctx, appID, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		all = append(all, page...)
+
+		if len(page) < pageSize {
+			return all, nil
+		}
+
+		last := page[len(page)-1]
+		filter.After = &last.ID
+	}
+}
+
+// FetchAllScheduledEventUsers fetches every subscriber for a scheduled event by
+// paginating forward (max 100 per request). Set withMember=true to include the
+// full GuildMember object alongside each user.
+func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, eventID common.Snowflake, withMember bool) ([]*GuildScheduledEventUser, error) {
+	const pageSize = 100
+
+	var all []*GuildScheduledEventUser
+	params := GetGuildScheduledEventUsersParams{
+		Limit:      util.PointerOf(pageSize),
+		WithMember: util.PointerOf(withMember),
+	}
+
+	for {
+		page, err := c.GetGuildScheduledEventUsers(ctx, guildID, eventID, params)
+		if err != nil {
+			return nil, err
+		}
+
+		all = append(all, page...)
+
+		if len(page) < pageSize {
+			return all, nil
+		}
+
+		last := page[len(page)-1]
+		params.After = &last.User.ID
+	}
+}

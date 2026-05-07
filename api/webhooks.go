@@ -32,6 +32,9 @@ type ExecuteWebhookParams struct {
 	Components      []common.AnyComponent   `json:"-"`
 	Flags           common.MessageFlag      `json:"flags,omitempty"`
 	ThreadName      *string                 `json:"thread_name,omitempty"`
+	// Files are binary attachments sent via multipart/form-data.
+	// When set, the request is encoded as multipart rather than JSON.
+	Files []MessageFile `json:"-"`
 }
 
 func (p ExecuteWebhookParams) MarshalJSON() ([]byte, error) {
@@ -207,16 +210,31 @@ func (c *RestClient) DeleteWebhookWithToken(ctx context.Context, webhookID commo
 }
 
 // ExecuteWebhook sends a message via a webhook. Returns the created message when query.Wait is true.
+// When params.Files is non-empty the request is sent as multipart/form-data.
 func (c *RestClient) ExecuteWebhook(ctx context.Context, webhookID common.Snowflake, token string, params ExecuteWebhookParams, query ExecuteWebhookQueryParams) (*common.Message, error) {
-	body, err := json.Marshal(params)
+	path := "/webhooks/" + webhookID.String() + "/" + token + query.toQuery()
+
+	jsonBody, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	path := "/webhooks/" + webhookID.String() + "/" + token + query.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
-	if err != nil {
-		return nil, err
+	var req *http.Request
+	if len(params.Files) > 0 {
+		buf, ct, err := buildMultipartMessage(jsonBody, params.Files)
+		if err != nil {
+			return nil, err
+		}
+		req, err = c.generateRequest(ctx, http.MethodPost, path, buf)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", ct)
+	} else {
+		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(jsonBody))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if query.Wait != nil && *query.Wait {

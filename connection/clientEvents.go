@@ -6,8 +6,42 @@ import (
 	"reflect"
 
 	"github.com/streame-gg/go-discord-wrapper/types/events"
-	"github.com/streame-gg/go-discord-wrapper/util"
 )
+
+// Middleware wraps an EventHandler to add cross-cutting behaviour such as
+// logging, permission checks, or metrics collection. The next handler must be
+// called for the chain to continue; not calling it short-circuits processing.
+//
+//	client.Use(func(next connection.EventHandler) connection.EventHandler {
+//	    return func(c *connection.Client, ev events.Event) {
+//	        log.Println("before", ev.Event())
+//	        next(c, ev)
+//	        log.Println("after", ev.Event())
+//	    }
+//	})
+type Middleware func(next EventHandler) EventHandler
+
+// Use registers one or more middleware that wrap every event handler registered
+// after this call. Middleware are applied in registration order — the first
+// registered middleware is the outermost wrapper.
+func (d *Client) Use(mw ...Middleware) {
+	d.middlewareMu.Lock()
+	d.middleware = append(d.middleware, mw...)
+	d.middlewareMu.Unlock()
+}
+
+// applyMiddleware wraps handler with the current middleware chain (snapshot).
+func (d *Client) applyMiddleware(handler EventHandler) EventHandler {
+	d.middlewareMu.RLock()
+	chain := make([]Middleware, len(d.middleware))
+	copy(chain, d.middleware)
+	d.middlewareMu.RUnlock()
+
+	for i := len(chain) - 1; i >= 0; i-- {
+		handler = chain[i](handler)
+	}
+	return handler
+}
 
 // ── Client lifecycle events ───────────────────────────────────────────────────
 
@@ -280,18 +314,8 @@ func (d *Client) onRawEvent(
 	eventName events.EventType,
 	handler EventHandler,
 ) {
-	d.mu.Lock()
-	if d.events == nil {
-		d.events = make(map[events.EventType][]EventHandler)
-	}
-	d.events[eventName] = append(d.events[eventName], handler)
-	d.mu.Unlock()
-
-	if d.discordEventEmitter == nil {
-		d.discordEventEmitter = util.NewEventEmitter[events.EventType, EventHandler]()
-	}
-
-	d.discordEventEmitter.On(eventName, handler)
+	wrapped := d.applyMiddleware(handler)
+	d.discordEventEmitter.On(eventName, wrapped)
 }
 
 func (d *Client) OnEvent(eventName events.EventType, handler interface{}) {

@@ -18,6 +18,40 @@ var (
 	ErrRateLimited  = errors.New("discord: rate limited")
 )
 
+// discordCodeError is a sentinel value for checking a specific Discord JSON error code.
+type discordCodeError struct {
+	code common.GatewayErrorCode
+}
+
+func (e *discordCodeError) Error() string {
+	return fmt.Sprintf("discord: error code %d", int(e.code))
+}
+
+// Typed sentinels for the most commonly checked Discord JSON error codes.
+// Use errors.Is to test:
+//
+//	if errors.Is(err, api.ErrMissingPermissions) { ... }
+var (
+	ErrUnknownChannel                 = &discordCodeError{common.GatewayErrorCodeUnknownChannel}
+	ErrUnknownGuild                   = &discordCodeError{common.GatewayErrorCodeUnknownGuild}
+	ErrUnknownMessage                 = &discordCodeError{common.GatewayErrorCodeUnknownMessage}
+	ErrUnknownMember                  = &discordCodeError{common.GatewayErrorCodeUnknownMember}
+	ErrUnknownRole                    = &discordCodeError{common.GatewayErrorCodeUnknownRole}
+	ErrUnknownWebhook                 = &discordCodeError{common.GatewayErrorCodeUnknownWebhook}
+	ErrUnknownUser                    = &discordCodeError{common.GatewayErrorCodeUnknownUser}
+	ErrUnknownEmoji                   = &discordCodeError{common.GatewayErrorCodeUnknownEmoji}
+	ErrUnknownInteraction             = &discordCodeError{common.GatewayErrorCodeUnknownInteraction}
+	ErrMissingAccess                  = &discordCodeError{common.GatewayErrorCodeMissingAccess}
+	ErrMissingPermissions             = &discordCodeError{common.GatewayErrorCodeMissingPermissions}
+	ErrCannotSendMessagesToUser       = &discordCodeError{common.GatewayErrorCodeCannotSendMessagesToThisUser}
+	ErrInteractionAlreadyAcknowledged = &discordCodeError{common.GatewayErrorCodeInteractionAlreadyAcknowledged}
+	ErrThreadIsLocked                 = &discordCodeError{common.GatewayErrorCodeThreadIsLocked}
+	ErrMessageTooOldForBulkDelete     = &discordCodeError{common.GatewayErrorCodeMessageTooOldForBulkDelete}
+	ErrInvalidFormBody                = &discordCodeError{common.GatewayErrorCodeInvalidFormBody}
+	ErrMaxReactionsReached            = &discordCodeError{common.GatewayErrorCodeMaxReactions}
+	ErrCannotExecuteOnSystemMessage   = &discordCodeError{common.GatewayErrorCodeCannotExecuteOnSystemMessage}
+)
+
 // APIError is returned by all REST methods when Discord responds with a non-success status.
 // It carries the HTTP status, the Discord JSON error code and message, and a field-level
 // error map when present.
@@ -50,7 +84,8 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("discord api error: http %d", e.HTTPStatus)
 }
 
-// Is maps the sentinel errors to HTTP status codes so callers can use errors.Is.
+// Is maps sentinel errors to HTTP status codes and Discord JSON error codes
+// so callers can use errors.Is.
 func (e *APIError) Is(target error) bool {
 	switch target {
 	case ErrUnauthorized:
@@ -61,6 +96,9 @@ func (e *APIError) Is(target error) bool {
 		return e.HTTPStatus == http.StatusNotFound
 	case ErrRateLimited:
 		return e.HTTPStatus == http.StatusTooManyRequests
+	}
+	if ce, ok := target.(*discordCodeError); ok {
+		return e.Code == ce.code
 	}
 	return false
 }

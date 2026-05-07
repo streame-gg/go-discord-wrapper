@@ -41,14 +41,17 @@ func main() {
 			MaxPerChannel: 200,
 		},
 	})
-	defer c.Close()
 
-	bot := connection.NewClient(
+	bot, clientErr := connection.NewClient(
 		os.Getenv("TOKEN"),
 		common.AllIntentsExceptDirectMessage,
 		options.WithSharding(1, 0),
 		options.WithCache(c),
 	)
+	if clientErr != nil {
+		slog.Error("Failed to create client", slog.Any("err", clientErr))
+		os.Exit(1)
+	}
 
 	bot.OnEvent(events.EventChannelCreate, func(client *connection.Client, event *events.ChannelCreateEvent) {
 		client.Logger.Info("Channel created", slog.String("name", event.Name), slog.String("id", event.ID.String()))
@@ -60,7 +63,7 @@ func main() {
 		if event.GetFullCommand() == "info channel" {
 			bot.Logger.Debug("Received info channel command", slog.String("executingUser", event.Member.User.DisplayName()))
 
-			if err := client.ReplyWithModal(i, &components.Modal{
+			if err := client.ReplyWithModal(context.Background(), i, &components.Modal{
 				Title:    "Modal",
 				CustomID: "modal",
 				Components: &[]components.LabelComponent{
@@ -124,7 +127,7 @@ func main() {
 		if event.IsCommand() {
 			bot.Logger.Debug("Received interaction command", slog.String("fullCommand", event.GetFullCommand()), slog.String("user", event.Member.User.DisplayName()))
 
-			_, err := client.Reply(i, &responses.InteractionResponseDataDefault{
+			_, err := client.Reply(context.Background(), i, &responses.InteractionResponseDataDefault{
 				Flags: common.MessageFlagEphemeral | common.MessageFlagIsComponentsV2,
 				Components: &[]common.AnyComponent{
 					&components.TextDisplayComponent{
@@ -174,7 +177,7 @@ func main() {
 			bot.Logger.Info("Received button interaction", slog.String("customID", event.GetCustomID()), slog.String("user", event.Member.User.DisplayName()))
 
 			if event.GetCustomID() == "button_click_me" {
-				_, err := client.Reply(i, &responses.InteractionResponseDataDefault{
+				_, err := client.Reply(context.Background(), i, &responses.InteractionResponseDataDefault{
 					Content: "You clicked the button!",
 					Flags:   common.MessageFlagEphemeral,
 				}, false)
@@ -201,7 +204,7 @@ func main() {
 				if ch, ok := bot.Cache.Channels().Get(*event.ChannelID); ok {
 					bot.Logger.Debug("Channel resolved from cache", slog.String("channelId", ch.ID.String()), slog.String("name", ch.Name))
 				} else {
-					ch, err := client.GetChannel(*event.ChannelID)
+					ch, err := client.GetChannel(context.Background(), *event.ChannelID)
 					if err != nil {
 						bot.Logger.Error("Failed to get channel", slog.Any("err", err))
 					} else {
@@ -216,7 +219,7 @@ func main() {
 		panic(err)
 	}
 
-	_, err := bot.BulkRegisterCommands([]*commands.ApplicationCommand{
+	_, err := bot.BulkRegisterCommands(context.Background(), []*commands.ApplicationCommand{
 		{
 			Name:        "info",
 			Description: "Get information",
@@ -251,5 +254,7 @@ func main() {
 
 	<-ctx.Done()
 	bot.Logger.Info("Shutting down...")
-	bot.Shutdown()
+	if err := bot.Shutdown(); err != nil {
+		slog.Error("Shutdown failed", slog.Any("err", err))
+	}
 }

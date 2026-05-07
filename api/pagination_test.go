@@ -18,7 +18,7 @@ import (
 )
 
 func newPaginationClient(ts *httptest.Server) *RestClient {
-	return NewRestClient("test-token",
+	rc, err := NewRestClient("test-token",
 		options.WithBaseURL(ts.URL),
 		options.WithRateLimiting(options.RateLimiterOptions{Disabled: true}),
 		options.WithRetry(options.RetryOptions{
@@ -27,6 +27,10 @@ func newPaginationClient(ts *httptest.Server) *RestClient {
 			RetryOnServerErrors: false,
 		}),
 	)
+	if err != nil {
+		panic(err)
+	}
+	return rc
 }
 
 func makeMembersPage(n int, startID int) []*common.GuildMember {
@@ -241,4 +245,204 @@ func TestFetchAllGuildBansOnePage(t *testing.T) {
 
 	// suppress unused import
 	_ = time.Second
+}
+
+// ── FetchAllAuditLogEntries ───────────────────────────────────────────────────
+
+func makeAuditLogPage(ids []string) *AuditLog {
+	entries := make([]common.AuditLogEntry, len(ids))
+	for i, id := range ids {
+		entries[i] = common.AuditLogEntry{ID: common.Snowflake(id)}
+	}
+	return &AuditLog{AuditLogEntries: entries}
+}
+
+func TestFetchAllAuditLogEntriesOnePage(t *testing.T) {
+	page := makeAuditLogPage([]string{"10", "9", "8", "7", "6"})
+
+	var reqCount int32
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&reqCount, 1)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(page)
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	entries, err := client.FetchAllAuditLogEntries(context.Background(), "guild1", GetGuildAuditLogParams{})
+
+	require.NoError(t, err)
+	assert.Len(t, entries, 5)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount))
+}
+
+func TestFetchAllAuditLogEntriesMultiplePages(t *testing.T) {
+	// Build 100 entries (page 1) + 3 entries (page 2)
+	ids1 := make([]string, 100)
+	for i := range ids1 {
+		ids1[i] = intToSnowflake(1000 - i)
+	}
+	page1 := makeAuditLogPage(ids1)
+	oldestID1 := ids1[99]
+
+	ids2 := []string{"901", "902", "903"}
+	page2 := makeAuditLogPage(ids2)
+
+	var reqCount int32
+	var secondBefore string
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := atomic.AddInt32(&reqCount, 1)
+		parsed, _ := url.ParseQuery(r.URL.RawQuery)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if n == 1 {
+			_ = json.NewEncoder(w).Encode(page1)
+		} else {
+			secondBefore = parsed.Get("before")
+			_ = json.NewEncoder(w).Encode(page2)
+		}
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	entries, err := client.FetchAllAuditLogEntries(context.Background(), "guild1", GetGuildAuditLogParams{})
+
+	require.NoError(t, err)
+	assert.Len(t, entries, 103)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
+	assert.Equal(t, oldestID1, secondBefore, "second request should use before=oldest entry on page 1")
+}
+
+// ── FetchAllEntitlements ──────────────────────────────────────────────────────
+
+func makeEntitlementPage(ids []string) []*common.Entitlement {
+	page := make([]*common.Entitlement, len(ids))
+	for i, id := range ids {
+		page[i] = &common.Entitlement{ID: common.Snowflake(id)}
+	}
+	return page
+}
+
+func TestFetchAllEntitlementsOnePage(t *testing.T) {
+	page := makeEntitlementPage([]string{"1", "2", "3"})
+
+	var reqCount int32
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&reqCount, 1)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(page)
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	result, err := client.FetchAllEntitlements(context.Background(), "app1", ListEntitlementsParams{})
+
+	require.NoError(t, err)
+	assert.Len(t, result, 3)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount))
+}
+
+func TestFetchAllEntitlementsMultiplePages(t *testing.T) {
+	ids1 := make([]string, 100)
+	for i := range ids1 {
+		ids1[i] = intToSnowflake(i + 1)
+	}
+	lastID1 := ids1[99]
+	page1 := makeEntitlementPage(ids1)
+	page2 := makeEntitlementPage([]string{"101", "102"})
+
+	var reqCount int32
+	var secondAfter string
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := atomic.AddInt32(&reqCount, 1)
+		parsed, _ := url.ParseQuery(r.URL.RawQuery)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if n == 1 {
+			_ = json.NewEncoder(w).Encode(page1)
+		} else {
+			secondAfter = parsed.Get("after")
+			_ = json.NewEncoder(w).Encode(page2)
+		}
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	result, err := client.FetchAllEntitlements(context.Background(), "app1", ListEntitlementsParams{})
+
+	require.NoError(t, err)
+	assert.Len(t, result, 102)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
+	assert.Equal(t, lastID1, secondAfter, "second request should advance cursor past last entitlement on page 1")
+}
+
+// ── FetchAllScheduledEventUsers ───────────────────────────────────────────────
+
+func makeScheduledEventUsersPage(userIDs []string) []*GuildScheduledEventUser {
+	page := make([]*GuildScheduledEventUser, len(userIDs))
+	for i, id := range userIDs {
+		page[i] = &GuildScheduledEventUser{
+			User: common.User{ID: common.Snowflake(id)},
+		}
+	}
+	return page
+}
+
+func TestFetchAllScheduledEventUsersOnePage(t *testing.T) {
+	page := makeScheduledEventUsersPage([]string{"u1", "u2", "u3"})
+
+	var reqCount int32
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&reqCount, 1)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(page)
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	result, err := client.FetchAllScheduledEventUsers(context.Background(), "guild1", "event1", false)
+
+	require.NoError(t, err)
+	assert.Len(t, result, 3)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount))
+}
+
+func TestFetchAllScheduledEventUsersMultiplePages(t *testing.T) {
+	ids1 := make([]string, 100)
+	for i := range ids1 {
+		ids1[i] = intToSnowflake(i + 1)
+	}
+	lastID1 := ids1[99]
+	page1 := makeScheduledEventUsersPage(ids1)
+	page2 := makeScheduledEventUsersPage([]string{"101", "102"})
+
+	var reqCount int32
+	var secondAfter string
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := atomic.AddInt32(&reqCount, 1)
+		parsed, _ := url.ParseQuery(r.URL.RawQuery)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if n == 1 {
+			_ = json.NewEncoder(w).Encode(page1)
+		} else {
+			secondAfter = parsed.Get("after")
+			_ = json.NewEncoder(w).Encode(page2)
+		}
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	result, err := client.FetchAllScheduledEventUsers(context.Background(), "guild1", "event1", false)
+
+	require.NoError(t, err)
+	assert.Len(t, result, 102)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
+	assert.Equal(t, lastID1, secondAfter)
 }

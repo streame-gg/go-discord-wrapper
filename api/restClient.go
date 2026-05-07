@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -66,11 +67,11 @@ type RestClient struct {
 // NewRestClient creates a REST client for the Discord API.
 // Configure it using options from the options package:
 //
-//	api.NewRestClient(token,
+//	rc, err := api.NewRestClient(token,
 //	    options.WithRetry(options.RetryOptions{MaxRetries: 5}),
 //	    options.WithRateLimiting(options.RateLimiterOptions{SafetyMargin: 1}),
 //	)
-func NewRestClient(token string, opts ...options.Option) *RestClient {
+func NewRestClient(token string, opts ...options.Option) (*RestClient, error) {
 	cfg := options.Build(options.Config{
 		BaseURL:    "https://discord.com/api",
 		APIVersion: common.APIVersion10,
@@ -83,12 +84,12 @@ func NewRestClient(token string, opts ...options.Option) *RestClient {
 		},
 	}, opts)
 	if err := cfg.Validate(); err != nil {
-		panic("go-discord-wrapper: " + err.Error())
+		return nil, fmt.Errorf("go-discord-wrapper: %w", err)
 	}
 
 	httpClient := cfg.HTTPClient
 	if httpClient == nil {
-		httpClient = http.DefaultClient
+		httpClient = &http.Client{Timeout: 30 * time.Second}
 	}
 
 	// Build rate limiter. Proactive throttling is on by default unless explicitly
@@ -111,7 +112,7 @@ func NewRestClient(token string, opts ...options.Option) *RestClient {
 		minRequestInterval: cfg.MinRequestInterval,
 		rateLimiter:        rl,
 		eventEmitter:       util.NewEventEmitter[RestEventType, RestEventHandler](),
-	}
+	}, nil
 }
 
 func (c *RestClient) buildURL() string {
@@ -125,6 +126,27 @@ func (c *RestClient) OnEvent(eventType RestEventType, handler RestEventHandler) 
 	}
 
 	c.eventEmitter.On(eventType, handler)
+}
+
+// redactWebhookToken returns a clone of req with the webhook token replaced by
+// "[REDACTED]" so that lifecycle hook payloads never expose credentials.
+// Paths of the form /webhooks/{id}/{token}/... are detected by structure.
+func redactWebhookToken(req *http.Request) *http.Request {
+	if req == nil || req.URL == nil {
+		return req
+	}
+	parts := strings.Split(strings.Trim(req.URL.Path, "/"), "/")
+	if len(parts) < 3 || parts[0] != "webhooks" {
+		return req
+	}
+	clone := req.Clone(req.Context())
+	urlCopy := *req.URL
+	redacted := make([]string, len(parts))
+	copy(redacted, parts)
+	redacted[2] = "[REDACTED]"
+	urlCopy.Path = "/" + strings.Join(redacted, "/")
+	clone.URL = &urlCopy
+	return clone
 }
 
 func (c *RestClient) emitEvent(event RestEvent) {
@@ -189,17 +211,18 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 			return nil, err
 		}
 
-		c.emitEvent(RestEvent{Type: RestEventRequest, Request: attemptReq, Attempt: attempt})
+		safeReq := redactWebhookToken(attemptReq)
+		c.emitEvent(RestEvent{Type: RestEventRequest, Request: safeReq, Attempt: attempt})
 
 		resp, reqErr := c.httpClient.Do(attemptReq)
 		if reqErr != nil {
-			c.emitEvent(RestEvent{Type: RestEventError, Request: attemptReq, Attempt: attempt, Err: reqErr})
+			c.emitEvent(RestEvent{Type: RestEventError, Request: safeReq, Attempt: attempt, Err: reqErr})
 			if attempt == maxAttempts {
 				return nil, reqErr
 			}
 
 			delay := c.retryDelay(attempt, 0)
-			c.emitEvent(RestEvent{Type: RestEventRetry, Request: attemptReq, Attempt: attempt, RetryAfter: delay, Err: reqErr})
+			c.emitEvent(RestEvent{Type: RestEventRetry, Request: safeReq, Attempt: attempt, RetryAfter: delay, Err: reqErr})
 			select {
 			case <-time.After(delay):
 			case <-req.Context().Done():
@@ -214,7 +237,7 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 			c.rateLimiter.update(req.Method, routePath, resp)
 		}
 
-		c.emitEvent(RestEvent{Type: RestEventResponse, Request: attemptReq, Response: resp, Attempt: attempt})
+		c.emitEvent(RestEvent{Type: RestEventResponse, Request: safeReq, Response: resp, Attempt: attempt})
 
 		if resp.StatusCode == successResponseCode {
 			if v != nil && resp.StatusCode != http.StatusNoContent {
@@ -232,10 +255,10 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 			retryAfter := parseRetryAfter(resp)
 			delay := c.retryDelay(attempt, retryAfter)
 			if retryAfter > 0 {
-				c.emitEvent(RestEvent{Type: RestEventRateLimit, Request: attemptReq, Response: resp, Attempt: attempt, RetryAfter: retryAfter})
+				c.emitEvent(RestEvent{Type: RestEventRateLimit, Request: safeReq, Response: resp, Attempt: attempt, RetryAfter: retryAfter})
 			}
 
-			c.emitEvent(RestEvent{Type: RestEventRetry, Request: attemptReq, Response: resp, Attempt: attempt, RetryAfter: delay})
+			c.emitEvent(RestEvent{Type: RestEventRetry, Request: safeReq, Response: resp, Attempt: attempt, RetryAfter: delay})
 			_ = resp.Body.Close()
 			select {
 			case <-time.After(delay):
@@ -247,7 +270,7 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 
 		respErr := decodeGatewayError(resp)
 		_ = resp.Body.Close()
-		c.emitEvent(RestEvent{Type: RestEventError, Request: attemptReq, Response: resp, Attempt: attempt, Err: respErr})
+		c.emitEvent(RestEvent{Type: RestEventError, Request: safeReq, Response: resp, Attempt: attempt, Err: respErr})
 		return nil, respErr
 	}
 

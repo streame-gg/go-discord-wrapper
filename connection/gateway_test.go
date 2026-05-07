@@ -14,14 +14,13 @@ import (
 var _ io.Closer = (*Client)(nil)
 
 func TestNewClientValidConfig(t *testing.T) {
-	assert.NotPanics(t, func() {
-		_ = NewClient("test-token", common.IntentGuilds)
-	})
+	c, err := NewClient("test-token", common.IntentGuilds)
+	assert.NoError(t, err)
+	assert.NotNil(t, c)
 }
 
-func TestNewClientPanicsOnBadSharding(t *testing.T) {
-	assert.Panics(t, func() {
-		// ShardID (5) >= TotalShards (4) — invalid configuration, must panic.
-		_ = NewClient("test-token", common.IntentGuilds, options.WithSharding(4, 5))
-	})
+func TestNewClientErrorOnBadSharding(t *testing.T) {
+	// ShardID (5) >= TotalShards (4) — invalid configuration, must return error.
+	_, err := NewClient("test-token", common.IntentGuilds, options.WithSharding(4, 5))
+	assert.Error(t, err)
 }

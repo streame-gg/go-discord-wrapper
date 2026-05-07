@@ -101,9 +101,10 @@ const (
 	CategoryUsers    OverflowCategory = 1 << 2
 	CategoryMembers  OverflowCategory = 1 << 3
 	CategoryMessages OverflowCategory = 1 << 4
+	CategoryRoles    OverflowCategory = 1 << 5
 
 	// CategoryAll targets every entity store. This is the default.
-	CategoryAll OverflowCategory = (1 << 5) - 1
+	CategoryAll OverflowCategory = (1 << 6) - 1
 )
 
 // OverflowPolicy configures what happens when a [Limits] value is exceeded.
@@ -149,6 +150,7 @@ type Limits struct {
 	MaxUsers    int // max User entries
 	MaxMembers  int // max GuildMember entries (summed across all guilds)
 	MaxMessages int // max total Message entries (summed across all channels)
+	MaxRoles    int // max Role entries (summed across all guilds)
 }
 
 // ── Message options ───────────────────────────────────────────────────────────
@@ -237,6 +239,19 @@ type MemberStore interface {
 	Size() int
 }
 
+// RoleStore is a thread-safe cache for [common.Role] objects, keyed by role ID.
+// Roles can also be looked up or deleted by guild ID.
+type RoleStore interface {
+	Set(guildID common.Snowflake, role *common.Role)
+	Get(roleID common.Snowflake) (*common.Role, bool)
+	GetByGuild(guildID common.Snowflake) []*common.Role
+	Delete(roleID common.Snowflake)
+	// DeleteGuild removes every role entry for guildID. Call on GUILD_DELETE.
+	DeleteGuild(guildID common.Snowflake)
+	All() []*common.Role
+	Size() int
+}
+
 // MessageStore caches per-channel message history in bounded ring buffers.
 // Each channel is bounded by Options.Messages.MaxPerChannel.
 type MessageStore interface {
@@ -262,5 +277,6 @@ type Cache interface {
 	Users() UserStore
 	Members() MemberStore
 	Messages() MessageStore
+	Roles() RoleStore
 	Close() error
 }

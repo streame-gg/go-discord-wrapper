@@ -29,7 +29,11 @@ func (e InteractionCreateEvent) IsButton() bool {
 		return false
 	}
 
-	return e.Data.(*responses.InteractionDataMessageComponent).ComponentType == common.ComponentTypeButton
+	comp, ok := e.Data.(*responses.InteractionDataMessageComponent)
+	if !ok {
+		return false
+	}
+	return comp.ComponentType == common.ComponentTypeButton
 }
 
 func (e InteractionCreateEvent) IsAnySelectMenu() bool {
@@ -37,7 +41,11 @@ func (e InteractionCreateEvent) IsAnySelectMenu() bool {
 		return false
 	}
 
-	return e.Data.(*responses.InteractionDataMessageComponent).ComponentType.IsAnySelectMenu()
+	comp, ok := e.Data.(*responses.InteractionDataMessageComponent)
+	if !ok {
+		return false
+	}
+	return comp.ComponentType.IsAnySelectMenu()
 }
 
 func (e InteractionCreateEvent) IsAutocomplete() bool {

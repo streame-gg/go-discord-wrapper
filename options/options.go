@@ -92,8 +92,7 @@ func Build(defaults Config, opts []Option) Config {
 // Validate checks that the Config is self-consistent. It returns a descriptive
 // error for any configuration that would cause undefined or harmful behaviour at
 // runtime: invalid shard range, negative retry counts, negative intervals, etc.
-// NewClient and NewRestClient call this automatically and panic on failure, because
-// bad config is a programming error rather than a runtime condition.
+// Both NewClient and NewRestClient return an error on invalid configuration.
 func (c Config) Validate() error {
 	if c.Sharding != nil {
 		if c.Sharding.TotalShards <= 0 {

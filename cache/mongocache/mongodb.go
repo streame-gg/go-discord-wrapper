@@ -71,6 +71,14 @@ type memberDoc struct {
 	ExpiresAt time.Time `bson:"expires_at,omitempty"`
 }
 
+// roleDoc is the MongoDB document used for guild roles.
+type roleDoc struct {
+	ID        string    `bson:"_id"` // roleID
+	GuildID   string    `bson:"guild_id"`
+	JSON      string    `bson:"json"`
+	ExpiresAt time.Time `bson:"expires_at,omitempty"`
+}
+
 // msgDoc is the MongoDB document used for messages.
 type msgDoc struct {
 	ID         string    `bson:"_id"` // "{channelID}:{messageID}"
@@ -95,6 +103,9 @@ type MongoDBCache struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
 	stopOnce sync.Once
+	// msgChannelMu serializes insert+evict per channel to prevent TOCTOU races
+	// when enforcing MaxPerChannel.
+	msgChannelMu sync.Map // map[string]*sync.Mutex
 }
 
 // NewMongoDBCache creates a MongoDBCache backed by db and creates the required
@@ -128,13 +139,18 @@ func (c *MongoDBCache) ensureIndexes() {
 		Keys:    bson.D{{Key: "expires_at", Value: 1}},
 		Options: options.Index().SetExpireAfterSeconds(0).SetSparse(true),
 	}
-	for _, name := range []string{"guilds", "channels", "users", "members", "messages"} {
+	for _, name := range []string{"guilds", "channels", "users", "members", "roles", "messages"} {
 		col := c.db.Collection(name)
 		_, _ = col.Indexes().CreateOne(c.ctx, ttlIndex)
 	}
 
 	// members: index on guild_id for AllInGuild / DeleteGuild queries.
 	_, _ = c.db.Collection("members").Indexes().CreateOne(c.ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "guild_id", Value: 1}},
+	})
+
+	// roles: index on guild_id for GetByGuild / DeleteGuild queries.
+	_, _ = c.db.Collection("roles").Indexes().CreateOne(c.ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "guild_id", Value: 1}},
 	})
 
@@ -166,6 +182,7 @@ func (c *MongoDBCache) Guilds() cache.GuildStore     { return &mongoGuildStore{c
 func (c *MongoDBCache) Channels() cache.ChannelStore { return &mongoChannelStore{c} }
 func (c *MongoDBCache) Users() cache.UserStore       { return &mongoUserStore{c} }
 func (c *MongoDBCache) Members() cache.MemberStore   { return &mongoMemberStore{c} }
+func (c *MongoDBCache) Roles() cache.RoleStore       { return &mongoRoleStore{c} }
 func (c *MongoDBCache) Messages() cache.MessageStore { return &mongoMessageStore{c} }
 
 // Close cancels the internal context used for all MongoDB operations.
@@ -189,12 +206,14 @@ func upsertByID(ctx context.Context, col *mongo.Collection, doc any) error {
 	return err
 }
 
-// extractID reads the _id field from an entityDoc, memberDoc, or msgDoc.
+// extractID reads the _id field from an entityDoc, memberDoc, roleDoc, or msgDoc.
 func extractID(doc any) string {
 	switch d := doc.(type) {
 	case entityDoc:
 		return d.ID
 	case memberDoc:
+		return d.ID
+	case roleDoc:
 		return d.ID
 	case msgDoc:
 		return d.ID
@@ -474,6 +493,99 @@ func (s *mongoMemberStore) Size() int {
 	return int(n)
 }
 
+// ── Role store ────────────────────────────────────────────────────────────────
+
+type mongoRoleStore struct{ c *MongoDBCache }
+
+func (s *mongoRoleStore) col() *mongo.Collection { return s.c.db.Collection("roles") }
+
+func (s *mongoRoleStore) Set(guildID common.Snowflake, role *common.Role) {
+	b, err := json.Marshal(role)
+	if err != nil {
+		return
+	}
+	doc := roleDoc{
+		ID:        string(role.ID),
+		GuildID:   string(guildID),
+		JSON:      string(b),
+		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+	}
+	_ = upsertByID(s.c.ctx, s.col(), doc)
+}
+
+func (s *mongoRoleStore) Get(roleID common.Snowflake) (*common.Role, bool) {
+	filter := bson.M{"_id": string(roleID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	var doc roleDoc
+	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
+		return nil, false
+	}
+	var role common.Role
+	if err := json.Unmarshal([]byte(doc.JSON), &role); err != nil {
+		return nil, false
+	}
+	return &role, true
+}
+
+func (s *mongoRoleStore) GetByGuild(guildID common.Snowflake) []*common.Role {
+	filter := bson.M{"guild_id": string(guildID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	cursor, err := s.col().Find(s.c.ctx, filter)
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []roleDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.Role, 0, len(docs))
+	for _, d := range docs {
+		var role common.Role
+		if json.Unmarshal([]byte(d.JSON), &role) == nil {
+			out = append(out, &role)
+		}
+	}
+	return out
+}
+
+func (s *mongoRoleStore) Delete(roleID common.Snowflake) {
+	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(roleID)})
+}
+
+func (s *mongoRoleStore) DeleteGuild(guildID common.Snowflake) {
+	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
+}
+
+func (s *mongoRoleStore) All() []*common.Role {
+	cursor, err := s.col().Find(s.c.ctx, liveFilter(s.c.opts.TTL))
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []roleDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.Role, 0, len(docs))
+	for _, d := range docs {
+		var role common.Role
+		if json.Unmarshal([]byte(d.JSON), &role) == nil {
+			out = append(out, &role)
+		}
+	}
+	return out
+}
+
+func (s *mongoRoleStore) Size() int {
+	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
+	return int(n)
+}
+
 // ── Message store ─────────────────────────────────────────────────────────────
 
 type mongoMessageStore struct{ c *MongoDBCache }
@@ -488,6 +600,12 @@ func (s *mongoMessageStore) Add(msg *common.Message) {
 	if s.c.opts.Messages.MaxPerChannel == 0 {
 		return
 	}
+
+	// Serialize insert+count+evict per channel to prevent TOCTOU races.
+	mu, _ := s.c.msgChannelMu.LoadOrStore(string(msg.ChannelID), &sync.Mutex{})
+	mu.(*sync.Mutex).Lock()
+	defer mu.(*sync.Mutex).Unlock()
+
 	b, err := json.Marshal(msg)
 	if err != nil {
 		return

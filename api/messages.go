@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"strconv"
 
@@ -43,6 +45,55 @@ func (p GetMessagesParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
+// MessageFile is a binary file attachment included in a message or webhook.
+type MessageFile struct {
+	// Name is the filename Discord will display (e.g. "image.png").
+	Name string
+	// ContentType is the MIME type (e.g. "image/png"). Defaults to "application/octet-stream".
+	ContentType string
+	// Data is the raw file content.
+	Data []byte
+}
+
+// buildMultipartMessage encodes payload as multipart/form-data with optional file parts.
+// Returns the body buffer and the Content-Type header value (including boundary).
+func buildMultipartMessage(payload []byte, files []MessageFile) (*bytes.Buffer, string, error) {
+	var buf bytes.Buffer
+	w := multipart.NewWriter(&buf)
+
+	// Write the JSON payload as the "payload_json" part.
+	jsonPart, err := w.CreatePart(textproto.MIMEHeader{
+		"Content-Disposition": []string{`form-data; name="payload_json"`},
+		"Content-Type":        []string{"application/json"},
+	})
+	if err != nil {
+		return nil, "", err
+	}
+	if _, err := jsonPart.Write(payload); err != nil {
+		return nil, "", err
+	}
+
+	for i, f := range files {
+		ct := f.ContentType
+		if ct == "" {
+			ct = "application/octet-stream"
+		}
+		h := textproto.MIMEHeader{
+			"Content-Disposition": []string{fmt.Sprintf(`form-data; name="files[%d]"; filename=%q`, i, f.Name)},
+			"Content-Type":        []string{ct},
+		}
+		part, err := w.CreatePart(h)
+		if err != nil {
+			return nil, "", err
+		}
+		if _, err := part.Write(f.Data); err != nil {
+			return nil, "", err
+		}
+	}
+	w.Close()
+	return &buf, w.FormDataContentType(), nil
+}
+
 // CreateMessageParams are the parameters for sending a new message.
 type CreateMessageParams struct {
 	Content          string                          `json:"content,omitempty"`
@@ -56,6 +107,9 @@ type CreateMessageParams struct {
 	Flags        common.MessageFlag    `json:"flags,omitempty"`
 	Nonce        interface{}           `json:"nonce,omitempty"`
 	EnforceNonce bool                  `json:"enforce_nonce,omitempty"`
+	// Files are binary attachments sent via multipart/form-data.
+	// When set, the request is encoded as multipart rather than JSON.
+	Files []MessageFile `json:"-"`
 }
 
 func (p CreateMessageParams) MarshalJSON() ([]byte, error) {
@@ -81,6 +135,9 @@ type EditMessageParams struct {
 	// Set to an empty (non-nil) slice to remove all components.
 	Components  []common.AnyComponent `json:"-"`
 	Attachments *[]common.Attachment  `json:"attachments,omitempty"`
+	// Files are binary attachments added via multipart/form-data.
+	// When set, the request is encoded as multipart rather than JSON.
+	Files []MessageFile `json:"-"`
 }
 
 func (p EditMessageParams) MarshalJSON() ([]byte, error) {
@@ -159,15 +216,31 @@ func (c *RestClient) GetMessage(ctx context.Context, channelID, messageID common
 }
 
 // CreateMessage sends a new message to a channel.
+// When params.Files is non-empty the request is sent as multipart/form-data.
 func (c *RestClient) CreateMessage(ctx context.Context, channelID common.Snowflake, params CreateMessageParams) (*common.Message, error) {
-	body, err := json.Marshal(params)
+	path := "/channels/" + channelID.String() + "/messages"
+
+	jsonBody, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/messages", bytes.NewReader(body))
-	if err != nil {
-		return nil, err
+	var req *http.Request
+	if len(params.Files) > 0 {
+		buf, ct, err := buildMultipartMessage(jsonBody, params.Files)
+		if err != nil {
+			return nil, err
+		}
+		req, err = c.generateRequest(ctx, http.MethodPost, path, buf)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", ct)
+	} else {
+		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(jsonBody))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var msg common.Message
@@ -179,16 +252,31 @@ func (c *RestClient) CreateMessage(ctx context.Context, channelID common.Snowfla
 }
 
 // EditMessage edits a previously sent message. Only fields set in params are changed.
+// When params.Files is non-empty the request is sent as multipart/form-data.
 func (c *RestClient) EditMessage(ctx context.Context, channelID, messageID common.Snowflake, params EditMessageParams) (*common.Message, error) {
-	body, err := json.Marshal(params)
+	path := "/channels/" + channelID.String() + "/messages/" + messageID.String()
+
+	jsonBody, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	path := "/channels/" + channelID.String() + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
-	if err != nil {
-		return nil, err
+	var req *http.Request
+	if len(params.Files) > 0 {
+		buf, ct, err := buildMultipartMessage(jsonBody, params.Files)
+		if err != nil {
+			return nil, err
+		}
+		req, err = c.generateRequest(ctx, http.MethodPatch, path, buf)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", ct)
+	} else {
+		req, err = c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(jsonBody))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var msg common.Message

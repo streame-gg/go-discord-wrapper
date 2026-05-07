@@ -19,7 +19,7 @@ import (
 
 // newTestClient creates a RestClient pointed at ts with rate limiting disabled.
 func newTestClient(ts *httptest.Server) *RestClient {
-	return NewRestClient("test-token",
+	rc, err := NewRestClient("test-token",
 		options.WithBaseURL(ts.URL),
 		options.WithRateLimiting(options.RateLimiterOptions{Disabled: true}),
 		options.WithRetry(options.RetryOptions{
@@ -28,6 +28,10 @@ func newTestClient(ts *httptest.Server) *RestClient {
 			RetryOnServerErrors: false,
 		}),
 	)
+	if err != nil {
+		panic(err)
+	}
+	return rc
 }
 
 func TestGetChannel(t *testing.T) {
@@ -211,7 +215,7 @@ func TestRetryOn429(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	client := NewRestClient("test-token",
+	client, err := NewRestClient("test-token",
 		options.WithBaseURL(ts.URL),
 		options.WithRateLimiting(options.RateLimiterOptions{Disabled: true}),
 		options.WithRetry(options.RetryOptions{
@@ -221,6 +225,7 @@ func TestRetryOn429(t *testing.T) {
 			RetryOnServerErrors: false,
 		}),
 	)
+	require.NoError(t, err)
 
 	ch, err := client.GetChannel(context.Background(), "1")
 	require.NoError(t, err)
@@ -238,7 +243,7 @@ func TestNoRetryWhenDisabled(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	client := NewRestClient("test-token",
+	client, err := NewRestClient("test-token",
 		options.WithBaseURL(ts.URL),
 		options.WithRateLimiting(options.RateLimiterOptions{Disabled: true}),
 		options.WithRetry(options.RetryOptions{
@@ -247,8 +252,9 @@ func TestNoRetryWhenDisabled(t *testing.T) {
 			RetryOnServerErrors: false,
 		}),
 	)
+	require.NoError(t, err)
 
-	_, err := client.GetChannel(context.Background(), "1")
+	_, err = client.GetChannel(context.Background(), "1")
 	require.Error(t, err)
 	assert.Equal(t, int32(1), atomic.LoadInt32(&callCount), "expected exactly 1 request")
 }

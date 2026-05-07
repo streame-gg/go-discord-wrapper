@@ -2,8 +2,12 @@ package connection
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log/slog"
+	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/types/common"
@@ -21,7 +25,7 @@ type Websocket struct {
 
 	SessionID *string
 
-	LastEventNum *int
+	LastEventNum atomic.Pointer[int]
 
 	ReconnectURL *string
 
@@ -29,6 +33,7 @@ type Websocket struct {
 
 	Ready chan struct{}
 
+	writeMu              sync.Mutex
 	heartbeatMu          sync.Mutex
 	lastHeartbeatSentAt  time.Time
 	awaitingHeartbeatAck bool
@@ -36,6 +41,10 @@ type Websocket struct {
 }
 
 func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int, sessionID *string) (*Websocket, error) {
+	if bot.token == nil {
+		return nil, errors.New("bot token is nil")
+	}
+
 	dialer := *websocket.DefaultDialer
 	dialer.HandshakeTimeout = 30 * time.Second
 
@@ -44,7 +53,6 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 		return nil, err
 	}
 
-	_ = c.SetReadDeadline(time.Time{})
 	_ = c.SetWriteDeadline(time.Time{})
 
 	c.SetPongHandler(func(string) error {
@@ -116,8 +124,8 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 					}
 
 					var heartbeatData json.RawMessage
-					if ws.LastEventNum != nil {
-						data, _ := json.Marshal(*ws.LastEventNum)
+					if seq := ws.LastEventNum.Load(); seq != nil {
+						data, _ := json.Marshal(*seq)
 						heartbeatData = data
 					} else {
 						heartbeatData = json.RawMessage("null")
@@ -128,12 +136,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 						D:  heartbeatData,
 					}
 
-					if err := c.SetWriteDeadline(time.Now().Add(10 * time.Second)); err != nil {
-						bot.Logger.Error("Failed to set write deadline", slog.Any("err", err))
-						return
-					}
-
-					if err := c.WriteJSON(heartbeatPayload); err != nil {
+					if err := ws.writeJSONDeadline(heartbeatPayload, 10*time.Second); err != nil {
 						bot.Logger.Error("Failed to send heartbeat", slog.Any("err", err))
 
 						if websocket.IsUnexpectedCloseError(err) {
@@ -152,8 +155,6 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 					}
 					ws.heartbeatMu.Unlock()
 
-					_ = c.SetWriteDeadline(time.Time{})
-
 					bot.Logger.Debug("Heartbeat sent")
 				}
 			case <-ws.Closed:
@@ -164,7 +165,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 	}()
 
 	if isReconnect && lastEventNum != nil && sessionID != nil {
-		if err := c.WriteJSON(map[string]interface{}{
+		if err := ws.writeJSON(map[string]interface{}{
 			"op": 6,
 			"d": map[string]interface{}{
 				"token":      *bot.token,
@@ -181,7 +182,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 				"token":   *bot.token,
 				"intents": *bot.Intents,
 				"properties": map[string]string{
-					"$os":      "windows",
+					"$os":      runtime.GOOS,
 					"$browser": "https://github.com/streame-gg/go-discord-wrapper@alpha",
 					"$device":  "https://github.com/streame-gg/go-discord-wrapper@alpha",
 				},
@@ -192,7 +193,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 			data["d"].(map[string]interface{})["shard"] = []int{bot.Sharding.ShardID, bot.Sharding.TotalShards}
 		}
 
-		if err := c.WriteJSON(data); err != nil {
+		if err := ws.writeJSON(data); err != nil {
 			return nil, err
 		}
 	}
@@ -206,7 +207,9 @@ func (d *Client) connectWebsocket(url string, isReconnect bool, lastEventNum *in
 		return err
 	}
 
+	d.wsMu.Lock()
 	d.Websocket = ws
+	d.wsMu.Unlock()
 	return nil
 }
 
@@ -232,8 +235,9 @@ func (d *Client) reconnect(freshConnect bool) error {
 	var sessionID *string
 	var reconnectURL string
 
+	d.wsMu.Lock()
 	if d.Websocket != nil {
-		lastEventNum = d.Websocket.LastEventNum
+		lastEventNum = d.Websocket.LastEventNum.Load()
 		sessionID = d.Websocket.SessionID
 
 		if !freshConnect && d.Websocket.ReconnectURL != nil {
@@ -243,6 +247,7 @@ func (d *Client) reconnect(freshConnect bool) error {
 		d.Websocket.close()
 		d.Websocket = nil
 	}
+	d.wsMu.Unlock()
 
 	if reconnectURL == "" {
 		reconnectURL = "wss://gateway.discord.gg"
@@ -281,7 +286,11 @@ func (d *Client) reconnect(freshConnect bool) error {
 		}
 
 		if !freshConnect && sessionID != nil {
-			d.Websocket.SessionID = sessionID
+			d.wsMu.RLock()
+			if d.Websocket != nil {
+				d.Websocket.SessionID = sessionID
+			}
+			d.wsMu.RUnlock()
 		}
 
 		d.Logger.Info("Successfully reconnected to gateway")
@@ -289,12 +298,26 @@ func (d *Client) reconnect(freshConnect bool) error {
 		return nil
 	}
 
-	return nil
+	return fmt.Errorf("failed to reconnect after %d attempts", maxRetries)
 }
 
 func (d *Client) listenWebsocket() error {
 	for {
-		_, message, err := d.Websocket.Connection.ReadMessage()
+		d.wsMu.RLock()
+		ws := d.Websocket
+		d.wsMu.RUnlock()
+
+		if ws == nil {
+			return nil
+		}
+
+		// Refresh read deadline before blocking — if no message arrives within
+		// two heartbeat intervals the connection is considered a zombie.
+		if ws.HeartbeatInterval > 0 {
+			_ = ws.Connection.SetReadDeadline(time.Now().Add(ws.HeartbeatInterval * 2))
+		}
+
+		_, message, err := ws.Connection.ReadMessage()
 		if err != nil {
 			return err
 		}
@@ -345,16 +368,16 @@ func (d *Client) listenWebsocket() error {
 
 		if payload.Op == 11 {
 			now := time.Now()
-			d.Websocket.heartbeatMu.Lock()
-			d.Websocket.awaitingHeartbeatAck = false
-			d.Websocket.missedHeartbeatAcks = 0
-			d.Websocket.LastHeartBeat = &now
-			d.Websocket.heartbeatMu.Unlock()
+			ws.heartbeatMu.Lock()
+			ws.awaitingHeartbeatAck = false
+			ws.missedHeartbeatAcks = 0
+			ws.LastHeartBeat = &now
+			ws.heartbeatMu.Unlock()
 			d.Logger.Debug("Heartbeat ACK received")
 		}
 
 		if payload.S != nil {
-			d.Websocket.LastEventNum = payload.S
+			ws.LastEventNum.Store(payload.S)
 		}
 
 		if payload.T != "" {
@@ -376,6 +399,11 @@ func (d *Client) listenWebsocket() error {
 			}
 
 			go func() {
+				defer func() {
+					if r := recover(); r != nil {
+						d.Logger.Error("panic in event dispatch", slog.Any("recover", r))
+					}
+				}()
 				if canContinue := d.internalEventHandler(payload.D, event.Event(), event); canContinue {
 					d.dispatch(event)
 				}
@@ -384,13 +412,32 @@ func (d *Client) listenWebsocket() error {
 	}
 }
 
-func (d *Websocket) close() {
+func (ws *Websocket) writeJSON(v any) error {
+	ws.writeMu.Lock()
+	defer ws.writeMu.Unlock()
+	return ws.Connection.WriteJSON(v)
+}
+
+func (ws *Websocket) writeJSONDeadline(v any, d time.Duration) error {
+	ws.writeMu.Lock()
+	defer ws.writeMu.Unlock()
+	if err := ws.Connection.SetWriteDeadline(time.Now().Add(d)); err != nil {
+		return err
+	}
+	err := ws.Connection.WriteJSON(v)
+	_ = ws.Connection.SetWriteDeadline(time.Time{})
+	return err
+}
+
+func (d *Websocket) close() error {
 	if d != nil {
-		_ = d.Connection.Close()
+		err := d.Connection.Close()
 		select {
 		case <-d.Closed:
 		default:
 			close(d.Closed)
 		}
+		return err
 	}
+	return nil
 }

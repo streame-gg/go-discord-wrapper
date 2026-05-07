@@ -210,6 +210,7 @@ type CreateGroupDMParams struct {
 }
 
 // GetCurrentUserConnections returns the connections linked to the current user's account.
+// Requires an OAuth2 bearer token with the connections scope; bot tokens will receive a 401.
 func (c *RestClient) GetCurrentUserConnections(ctx context.Context) ([]*UserConnection, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/users/@me/connections", nil)
 	if err != nil {
@@ -225,6 +226,7 @@ func (c *RestClient) GetCurrentUserConnections(ctx context.Context) ([]*UserConn
 }
 
 // GetCurrentUserApplicationRoleConnection returns the application role connection for the current user.
+// Requires an OAuth2 bearer token with the role_connections.write scope; bot tokens will receive a 401.
 func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context, appID common.Snowflake) (*ApplicationRoleConnection, error) {
 	path := "/users/@me/applications/" + appID.String() + "/role-connection"
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
@@ -241,6 +243,7 @@ func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context
 }
 
 // UpdateCurrentUserApplicationRoleConnection updates the application role connection for the current user.
+// Requires an OAuth2 bearer token with the role_connections.write scope; bot tokens will receive a 401.
 func (c *RestClient) UpdateCurrentUserApplicationRoleConnection(ctx context.Context, appID common.Snowflake, params UpdateRoleConnectionParams) (*ApplicationRoleConnection, error) {
 	body, err := json.Marshal(params)
 	if err != nil {

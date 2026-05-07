@@ -13,27 +13,44 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
 
+// applicationID returns the bot's application ID, or an error if the bot has
+// not yet received the READY event and d.User is nil.
+func (d *Client) applicationID() (common.Snowflake, error) {
+	if d.User == nil {
+		return "", errors.New("application ID unavailable: bot is not yet ready")
+	}
+	return d.User.ID, nil
+}
+
 // ── Application commands ──────────────────────────────────────────────────────
 
 // RegisterCommand registers a single application command.
 // Must be called after Login() so that the application ID is available.
-func (d *Client) RegisterCommand(cmd *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
-	return d.RestClient.RegisterCommand(context.Background(), d.User.ID, cmd)
+func (d *Client) RegisterCommand(ctx context.Context, cmd *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+	appID, err := d.applicationID()
+	if err != nil {
+		return nil, err
+	}
+	return d.RestClient.RegisterCommand(ctx, appID, cmd)
 }
 
 // BulkRegisterCommands overwrites all application commands with the provided list.
 // Any existing commands not included will be deleted.
 // Must be called after Login() so that the application ID is available.
-func (d *Client) BulkRegisterCommands(cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
-	return d.RestClient.BulkRegisterCommands(context.Background(), d.User.ID, cmds)
+func (d *Client) BulkRegisterCommands(ctx context.Context, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
+	appID, err := d.applicationID()
+	if err != nil {
+		return nil, err
+	}
+	return d.RestClient.BulkRegisterCommands(ctx, appID, cmds)
 }
 
 // ── Interaction responses ─────────────────────────────────────────────────────
 
 // Reply sends an immediate message response to an interaction.
 // Pass withResponse=true to get the created message back.
-func (d *Client) Reply(i *interactions.Interaction, data *responses.InteractionResponseDataDefault, withResponse bool) (*responses.InteractionCallbackResponse, error) {
-	return d.RestClient.CreateInteractionResponse(context.Background(), i.ID, i.Token, responses.InteractionResponse{
+func (d *Client) Reply(ctx context.Context, i *interactions.Interaction, data *responses.InteractionResponseDataDefault, withResponse bool) (*responses.InteractionCallbackResponse, error) {
+	return d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
 		Type: common.InteractionCallbackTypeChannelMessageWithSource,
 		Data: data,
 	}, withResponse)
@@ -41,12 +58,12 @@ func (d *Client) Reply(i *interactions.Interaction, data *responses.InteractionR
 
 // DeferReply acknowledges the interaction, telling Discord the bot will respond later.
 // Set ephemeral=true to make the eventual follow-up visible only to the invoker.
-func (d *Client) DeferReply(i *interactions.Interaction, ephemeral bool) error {
+func (d *Client) DeferReply(ctx context.Context, i *interactions.Interaction, ephemeral bool) error {
 	var data *responses.InteractionResponseDataDefault
 	if ephemeral {
 		data = &responses.InteractionResponseDataDefault{Flags: common.MessageFlagEphemeral}
 	}
-	_, err := d.RestClient.CreateInteractionResponse(context.Background(), i.ID, i.Token, responses.InteractionResponse{
+	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
 		Type: common.InteractionCallbackTypeDeferredChannelMessageWithSource,
 		Data: data,
 	}, false)
@@ -55,16 +72,16 @@ func (d *Client) DeferReply(i *interactions.Interaction, ephemeral bool) error {
 
 // DeferUpdateMessage acknowledges a component interaction without editing the original message.
 // Use EditReply afterwards to push the actual update.
-func (d *Client) DeferUpdateMessage(i *interactions.Interaction) error {
-	_, err := d.RestClient.CreateInteractionResponse(context.Background(), i.ID, i.Token, responses.InteractionResponse{
+func (d *Client) DeferUpdateMessage(ctx context.Context, i *interactions.Interaction) error {
+	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
 		Type: common.InteractionCallbackTypeDeferredUpdateMessage,
 	}, false)
 	return err
 }
 
 // UpdateMessage edits the message that triggered a component interaction.
-func (d *Client) UpdateMessage(i *interactions.Interaction, data *responses.InteractionResponseDataDefault) error {
-	_, err := d.RestClient.CreateInteractionResponse(context.Background(), i.ID, i.Token, responses.InteractionResponse{
+func (d *Client) UpdateMessage(ctx context.Context, i *interactions.Interaction, data *responses.InteractionResponseDataDefault) error {
+	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
 		Type: common.InteractionCallbackTypeUpdateMessage,
 		Data: data,
 	}, false)
@@ -72,8 +89,8 @@ func (d *Client) UpdateMessage(i *interactions.Interaction, data *responses.Inte
 }
 
 // ReplyWithModal responds to an interaction with a modal dialog.
-func (d *Client) ReplyWithModal(i *interactions.Interaction, modal *components.Modal) error {
-	_, err := d.RestClient.CreateInteractionResponse(context.Background(), i.ID, i.Token, responses.InteractionResponse{
+func (d *Client) ReplyWithModal(ctx context.Context, i *interactions.Interaction, modal *components.Modal) error {
+	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
 		Type: common.InteractionCallbackTypeModal,
 		Data: modal,
 	}, false)
@@ -81,8 +98,8 @@ func (d *Client) ReplyWithModal(i *interactions.Interaction, modal *components.M
 }
 
 // ReplyAutocomplete sends autocomplete choices in response to an autocomplete interaction.
-func (d *Client) ReplyAutocomplete(i *interactions.Interaction, choices []responses.AutocompleteChoice) error {
-	_, err := d.RestClient.CreateInteractionResponse(context.Background(), i.ID, i.Token, responses.InteractionResponse{
+func (d *Client) ReplyAutocomplete(ctx context.Context, i *interactions.Interaction, choices []responses.AutocompleteChoice) error {
+	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
 		Type: common.InteractionCallbackTypeApplicationCommandAutocompleteResult,
 		Data: &responses.InteractionResponseDataAutocomplete{Choices: choices},
 	}, false)
@@ -90,268 +107,291 @@ func (d *Client) ReplyAutocomplete(i *interactions.Interaction, choices []respon
 }
 
 // GetOriginalResponse fetches the original message sent in response to an interaction.
-func (d *Client) GetOriginalResponse(i *interactions.Interaction) (*common.Message, error) {
-	return d.RestClient.GetOriginalInteractionResponse(context.Background(), d.User.ID, i.Token)
+func (d *Client) GetOriginalResponse(ctx context.Context, i *interactions.Interaction) (*common.Message, error) {
+	appID, err := d.applicationID()
+	if err != nil {
+		return nil, err
+	}
+	return d.RestClient.GetOriginalInteractionResponse(ctx, appID, i.Token)
 }
 
 // EditReply edits the original interaction response.
-func (d *Client) EditReply(i *interactions.Interaction, params api.EditMessageParams) (*common.Message, error) {
-	return d.RestClient.EditOriginalInteractionResponse(context.Background(), d.User.ID, i.Token, params)
+func (d *Client) EditReply(ctx context.Context, i *interactions.Interaction, params api.EditMessageParams) (*common.Message, error) {
+	appID, err := d.applicationID()
+	if err != nil {
+		return nil, err
+	}
+	return d.RestClient.EditOriginalInteractionResponse(ctx, appID, i.Token, params)
 }
 
 // DeleteReply deletes the original interaction response.
-func (d *Client) DeleteReply(i *interactions.Interaction) error {
-	return d.RestClient.DeleteOriginalInteractionResponse(context.Background(), d.User.ID, i.Token)
+func (d *Client) DeleteReply(ctx context.Context, i *interactions.Interaction) error {
+	appID, err := d.applicationID()
+	if err != nil {
+		return err
+	}
+	return d.RestClient.DeleteOriginalInteractionResponse(ctx, appID, i.Token)
 }
 
 // CreateFollowup sends a follow-up message to an interaction (up to 15 minutes after the initial response).
-func (d *Client) CreateFollowup(i *interactions.Interaction, params api.CreateMessageParams) (*common.Message, error) {
-	return d.RestClient.CreateFollowupMessage(context.Background(), d.User.ID, i.Token, params)
+func (d *Client) CreateFollowup(ctx context.Context, i *interactions.Interaction, params api.CreateMessageParams) (*common.Message, error) {
+	appID, err := d.applicationID()
+	if err != nil {
+		return nil, err
+	}
+	return d.RestClient.CreateFollowupMessage(ctx, appID, i.Token, params)
 }
 
 // GetFollowup fetches a follow-up message.
-func (d *Client) GetFollowup(i *interactions.Interaction, messageID common.Snowflake) (*common.Message, error) {
-	return d.RestClient.GetFollowupMessage(context.Background(), d.User.ID, i.Token, messageID)
+func (d *Client) GetFollowup(ctx context.Context, i *interactions.Interaction, messageID common.Snowflake) (*common.Message, error) {
+	appID, err := d.applicationID()
+	if err != nil {
+		return nil, err
+	}
+	return d.RestClient.GetFollowupMessage(ctx, appID, i.Token, messageID)
 }
 
 // EditFollowup edits a follow-up message.
-func (d *Client) EditFollowup(i *interactions.Interaction, messageID common.Snowflake, params api.EditMessageParams) (*common.Message, error) {
-	return d.RestClient.EditFollowupMessage(context.Background(), d.User.ID, i.Token, messageID, params)
+func (d *Client) EditFollowup(ctx context.Context, i *interactions.Interaction, messageID common.Snowflake, params api.EditMessageParams) (*common.Message, error) {
+	appID, err := d.applicationID()
+	if err != nil {
+		return nil, err
+	}
+	return d.RestClient.EditFollowupMessage(ctx, appID, i.Token, messageID, params)
 }
 
 // DeleteFollowup deletes a follow-up message.
-func (d *Client) DeleteFollowup(i *interactions.Interaction, messageID common.Snowflake) error {
-	return d.RestClient.DeleteFollowupMessage(context.Background(), d.User.ID, i.Token, messageID)
+func (d *Client) DeleteFollowup(ctx context.Context, i *interactions.Interaction, messageID common.Snowflake) error {
+	appID, err := d.applicationID()
+	if err != nil {
+		return err
+	}
+	return d.RestClient.DeleteFollowupMessage(ctx, appID, i.Token, messageID)
 }
 
 // ── Message methods ───────────────────────────────────────────────────────────
 
-func (d *Client) GetMessages(channelID common.Snowflake, params api.GetMessagesParams) ([]*common.Message, error) {
-	return d.RestClient.GetMessages(context.Background(), channelID, params)
+func (d *Client) GetMessages(ctx context.Context, channelID common.Snowflake, params api.GetMessagesParams) ([]*common.Message, error) {
+	return d.RestClient.GetMessages(ctx, channelID, params)
 }
 
-func (d *Client) GetMessage(channelID, messageID common.Snowflake) (*common.Message, error) {
-	return d.RestClient.GetMessage(context.Background(), channelID, messageID)
+func (d *Client) GetMessage(ctx context.Context, channelID, messageID common.Snowflake) (*common.Message, error) {
+	return d.RestClient.GetMessage(ctx, channelID, messageID)
 }
 
-func (d *Client) SendMessage(channelID common.Snowflake, params api.CreateMessageParams) (*common.Message, error) {
-	return d.RestClient.CreateMessage(context.Background(), channelID, params)
+func (d *Client) SendMessage(ctx context.Context, channelID common.Snowflake, params api.CreateMessageParams) (*common.Message, error) {
+	return d.RestClient.CreateMessage(ctx, channelID, params)
 }
 
-func (d *Client) EditMessage(channelID, messageID common.Snowflake, params api.EditMessageParams) (*common.Message, error) {
-	return d.RestClient.EditMessage(context.Background(), channelID, messageID, params)
+func (d *Client) EditMessage(ctx context.Context, channelID, messageID common.Snowflake, params api.EditMessageParams) (*common.Message, error) {
+	return d.RestClient.EditMessage(ctx, channelID, messageID, params)
 }
 
-func (d *Client) DeleteMessage(channelID, messageID common.Snowflake) error {
-	return d.RestClient.DeleteMessage(context.Background(), channelID, messageID)
+func (d *Client) DeleteMessage(ctx context.Context, channelID, messageID common.Snowflake) error {
+	return d.RestClient.DeleteMessage(ctx, channelID, messageID)
 }
 
-func (d *Client) BulkDeleteMessages(channelID common.Snowflake, messageIDs []common.Snowflake) error {
-	return d.RestClient.BulkDeleteMessages(context.Background(), channelID, messageIDs)
+func (d *Client) BulkDeleteMessages(ctx context.Context, channelID common.Snowflake, messageIDs []common.Snowflake) error {
+	return d.RestClient.BulkDeleteMessages(ctx, channelID, messageIDs)
 }
 
-func (d *Client) CrosspostMessage(channelID, messageID common.Snowflake) (*common.Message, error) {
-	return d.RestClient.CrosspostMessage(context.Background(), channelID, messageID)
+func (d *Client) CrosspostMessage(ctx context.Context, channelID, messageID common.Snowflake) (*common.Message, error) {
+	return d.RestClient.CrosspostMessage(ctx, channelID, messageID)
 }
 
-func (d *Client) GetPinnedMessages(channelID common.Snowflake) ([]*common.Message, error) {
-	return d.RestClient.GetPinnedMessages(context.Background(), channelID)
+func (d *Client) GetPinnedMessages(ctx context.Context, channelID common.Snowflake) ([]*common.Message, error) {
+	return d.RestClient.GetPinnedMessages(ctx, channelID)
 }
 
-func (d *Client) PinMessage(channelID, messageID common.Snowflake) error {
-	return d.RestClient.PinMessage(context.Background(), channelID, messageID)
+func (d *Client) PinMessage(ctx context.Context, channelID, messageID common.Snowflake) error {
+	return d.RestClient.PinMessage(ctx, channelID, messageID)
 }
 
-func (d *Client) UnpinMessage(channelID, messageID common.Snowflake) error {
-	return d.RestClient.UnpinMessage(context.Background(), channelID, messageID)
+func (d *Client) UnpinMessage(ctx context.Context, channelID, messageID common.Snowflake) error {
+	return d.RestClient.UnpinMessage(ctx, channelID, messageID)
 }
 
-func (d *Client) AddReaction(channelID, messageID common.Snowflake, emoji string) error {
-	return d.RestClient.AddReaction(context.Background(), channelID, messageID, emoji)
+func (d *Client) AddReaction(ctx context.Context, channelID, messageID common.Snowflake, emoji string) error {
+	return d.RestClient.AddReaction(ctx, channelID, messageID, emoji)
 }
 
-func (d *Client) DeleteOwnReaction(channelID, messageID common.Snowflake, emoji string) error {
-	return d.RestClient.DeleteOwnReaction(context.Background(), channelID, messageID, emoji)
+func (d *Client) DeleteOwnReaction(ctx context.Context, channelID, messageID common.Snowflake, emoji string) error {
+	return d.RestClient.DeleteOwnReaction(ctx, channelID, messageID, emoji)
 }
 
-func (d *Client) DeleteUserReaction(channelID, messageID common.Snowflake, emoji string, userID common.Snowflake) error {
-	return d.RestClient.DeleteUserReaction(context.Background(), channelID, messageID, emoji, userID)
+func (d *Client) DeleteUserReaction(ctx context.Context, channelID, messageID common.Snowflake, emoji string, userID common.Snowflake) error {
+	return d.RestClient.DeleteUserReaction(ctx, channelID, messageID, emoji, userID)
 }
 
-func (d *Client) GetReactions(channelID, messageID common.Snowflake, emoji string, params api.GetReactionsParams) ([]*common.User, error) {
-	return d.RestClient.GetReactions(context.Background(), channelID, messageID, emoji, params)
+func (d *Client) GetReactions(ctx context.Context, channelID, messageID common.Snowflake, emoji string, params api.GetReactionsParams) ([]*common.User, error) {
+	return d.RestClient.GetReactions(ctx, channelID, messageID, emoji, params)
 }
 
-func (d *Client) DeleteAllReactions(channelID, messageID common.Snowflake) error {
-	return d.RestClient.DeleteAllReactions(context.Background(), channelID, messageID)
+func (d *Client) DeleteAllReactions(ctx context.Context, channelID, messageID common.Snowflake) error {
+	return d.RestClient.DeleteAllReactions(ctx, channelID, messageID)
 }
 
-func (d *Client) DeleteAllReactionsForEmoji(channelID, messageID common.Snowflake, emoji string) error {
-	return d.RestClient.DeleteAllReactionsForEmoji(context.Background(), channelID, messageID, emoji)
+func (d *Client) DeleteAllReactionsForEmoji(ctx context.Context, channelID, messageID common.Snowflake, emoji string) error {
+	return d.RestClient.DeleteAllReactionsForEmoji(ctx, channelID, messageID, emoji)
 }
 
 // ── Channel methods ───────────────────────────────────────────────────────────
 
-func (d *Client) GetChannel(channelID common.Snowflake) (*common.Channel, error) {
-	return d.RestClient.GetChannel(context.Background(), channelID)
+func (d *Client) GetChannel(ctx context.Context, channelID common.Snowflake) (*common.Channel, error) {
+	return d.RestClient.GetChannel(ctx, channelID)
 }
 
-func (d *Client) ModifyChannel(channelID common.Snowflake, params api.ModifyChannelParams) (*common.Channel, error) {
-	return d.RestClient.ModifyChannel(context.Background(), channelID, params)
+func (d *Client) ModifyChannel(ctx context.Context, channelID common.Snowflake, params api.ModifyChannelParams) (*common.Channel, error) {
+	return d.RestClient.ModifyChannel(ctx, channelID, params)
 }
 
-func (d *Client) DeleteChannel(channelID common.Snowflake) (*common.Channel, error) {
-	return d.RestClient.DeleteChannel(context.Background(), channelID)
+func (d *Client) DeleteChannel(ctx context.Context, channelID common.Snowflake) (*common.Channel, error) {
+	return d.RestClient.DeleteChannel(ctx, channelID)
 }
 
-func (d *Client) GetChannelInvites(channelID common.Snowflake) ([]*api.Invite, error) {
-	return d.RestClient.GetChannelInvites(context.Background(), channelID)
+func (d *Client) GetChannelInvites(ctx context.Context, channelID common.Snowflake) ([]*api.Invite, error) {
+	return d.RestClient.GetChannelInvites(ctx, channelID)
 }
 
-func (d *Client) CreateChannelInvite(channelID common.Snowflake, params api.CreateChannelInviteParams) (*api.Invite, error) {
-	return d.RestClient.CreateChannelInvite(context.Background(), channelID, params)
+func (d *Client) CreateChannelInvite(ctx context.Context, channelID common.Snowflake, params api.CreateChannelInviteParams) (*api.Invite, error) {
+	return d.RestClient.CreateChannelInvite(ctx, channelID, params)
 }
 
-func (d *Client) EditChannelPermissions(channelID, overwriteID common.Snowflake, params api.EditChannelPermissionsParams) error {
-	return d.RestClient.EditChannelPermissions(context.Background(), channelID, overwriteID, params)
+func (d *Client) EditChannelPermissions(ctx context.Context, channelID, overwriteID common.Snowflake, params api.EditChannelPermissionsParams) error {
+	return d.RestClient.EditChannelPermissions(ctx, channelID, overwriteID, params)
 }
 
-func (d *Client) DeleteChannelPermission(channelID, overwriteID common.Snowflake) error {
-	return d.RestClient.DeleteChannelPermission(context.Background(), channelID, overwriteID)
+func (d *Client) DeleteChannelPermission(ctx context.Context, channelID, overwriteID common.Snowflake) error {
+	return d.RestClient.DeleteChannelPermission(ctx, channelID, overwriteID)
 }
 
-func (d *Client) TriggerTypingIndicator(channelID common.Snowflake) error {
-	return d.RestClient.TriggerTypingIndicator(context.Background(), channelID)
+func (d *Client) TriggerTypingIndicator(ctx context.Context, channelID common.Snowflake) error {
+	return d.RestClient.TriggerTypingIndicator(ctx, channelID)
 }
 
 // ── Guild methods ─────────────────────────────────────────────────────────────
 
-func (d *Client) GetGuild(guildID common.Snowflake, withCounts bool) (*common.Guild, error) {
-	return d.RestClient.GetGuild(context.Background(), guildID, withCounts)
+func (d *Client) GetGuild(ctx context.Context, guildID common.Snowflake, withCounts bool) (*common.Guild, error) {
+	return d.RestClient.GetGuild(ctx, guildID, withCounts)
 }
 
-func (d *Client) GetGuildPreview(guildID common.Snowflake) (*common.Guild, error) {
-	return d.RestClient.GetGuildPreview(context.Background(), guildID)
+func (d *Client) GetGuildPreview(ctx context.Context, guildID common.Snowflake) (*common.Guild, error) {
+	return d.RestClient.GetGuildPreview(ctx, guildID)
 }
 
-func (d *Client) ModifyGuild(guildID common.Snowflake, params api.ModifyGuildParams) (*common.Guild, error) {
-	return d.RestClient.ModifyGuild(context.Background(), guildID, params)
+func (d *Client) ModifyGuild(ctx context.Context, guildID common.Snowflake, params api.ModifyGuildParams) (*common.Guild, error) {
+	return d.RestClient.ModifyGuild(ctx, guildID, params)
 }
 
-func (d *Client) DeleteGuild(guildID common.Snowflake) error {
-	return d.RestClient.DeleteGuild(context.Background(), guildID)
+func (d *Client) DeleteGuild(ctx context.Context, guildID common.Snowflake) error {
+	return d.RestClient.DeleteGuild(ctx, guildID)
 }
 
-func (d *Client) GetGuildChannels(guildID common.Snowflake) ([]*common.Channel, error) {
-	return d.RestClient.GetGuildChannels(context.Background(), guildID)
+func (d *Client) GetGuildChannels(ctx context.Context, guildID common.Snowflake) ([]*common.Channel, error) {
+	return d.RestClient.GetGuildChannels(ctx, guildID)
 }
 
-func (d *Client) CreateGuildChannel(guildID common.Snowflake, params api.CreateGuildChannelParams) (*common.Channel, error) {
-	return d.RestClient.CreateGuildChannel(context.Background(), guildID, params)
+func (d *Client) CreateGuildChannel(ctx context.Context, guildID common.Snowflake, params api.CreateGuildChannelParams) (*common.Channel, error) {
+	return d.RestClient.CreateGuildChannel(ctx, guildID, params)
 }
 
-func (d *Client) ModifyGuildChannelPositions(guildID common.Snowflake, entries []api.ModifyGuildChannelPositionsEntry) error {
-	return d.RestClient.ModifyGuildChannelPositions(context.Background(), guildID, entries)
+func (d *Client) ModifyGuildChannelPositions(ctx context.Context, guildID common.Snowflake, entries []api.ModifyGuildChannelPositionsEntry) error {
+	return d.RestClient.ModifyGuildChannelPositions(ctx, guildID, entries)
 }
 
-func (d *Client) GetGuildRoles(guildID common.Snowflake) ([]*common.Role, error) {
-	return d.RestClient.GetGuildRoles(context.Background(), guildID)
+func (d *Client) GetGuildRoles(ctx context.Context, guildID common.Snowflake) ([]*common.Role, error) {
+	return d.RestClient.GetGuildRoles(ctx, guildID)
 }
 
-func (d *Client) GetGuildRole(guildID, roleID common.Snowflake) (*common.Role, error) {
-	return d.RestClient.GetGuildRole(context.Background(), guildID, roleID)
+func (d *Client) GetGuildRole(ctx context.Context, guildID, roleID common.Snowflake) (*common.Role, error) {
+	return d.RestClient.GetGuildRole(ctx, guildID, roleID)
 }
 
-func (d *Client) CreateGuildRole(guildID common.Snowflake, params api.CreateGuildRoleParams) (*common.Role, error) {
-	return d.RestClient.CreateGuildRole(context.Background(), guildID, params)
+func (d *Client) CreateGuildRole(ctx context.Context, guildID common.Snowflake, params api.CreateGuildRoleParams) (*common.Role, error) {
+	return d.RestClient.CreateGuildRole(ctx, guildID, params)
 }
 
-func (d *Client) ModifyGuildRolePositions(guildID common.Snowflake, entries []api.ModifyGuildRolePositionsEntry) ([]*common.Role, error) {
-	return d.RestClient.ModifyGuildRolePositions(context.Background(), guildID, entries)
+func (d *Client) ModifyGuildRolePositions(ctx context.Context, guildID common.Snowflake, entries []api.ModifyGuildRolePositionsEntry) ([]*common.Role, error) {
+	return d.RestClient.ModifyGuildRolePositions(ctx, guildID, entries)
 }
 
-func (d *Client) ModifyGuildRole(guildID, roleID common.Snowflake, params api.ModifyGuildRoleParams) (*common.Role, error) {
-	return d.RestClient.ModifyGuildRole(context.Background(), guildID, roleID, params)
+func (d *Client) ModifyGuildRole(ctx context.Context, guildID, roleID common.Snowflake, params api.ModifyGuildRoleParams) (*common.Role, error) {
+	return d.RestClient.ModifyGuildRole(ctx, guildID, roleID, params)
 }
 
-func (d *Client) DeleteGuildRole(guildID, roleID common.Snowflake) error {
-	return d.RestClient.DeleteGuildRole(context.Background(), guildID, roleID)
+func (d *Client) DeleteGuildRole(ctx context.Context, guildID, roleID common.Snowflake) error {
+	return d.RestClient.DeleteGuildRole(ctx, guildID, roleID)
 }
 
-func (d *Client) GetGuildBans(guildID common.Snowflake, params api.GetGuildBansParams) ([]*api.Ban, error) {
-	return d.RestClient.GetGuildBans(context.Background(), guildID, params)
+func (d *Client) GetGuildBans(ctx context.Context, guildID common.Snowflake, params api.GetGuildBansParams) ([]*api.Ban, error) {
+	return d.RestClient.GetGuildBans(ctx, guildID, params)
 }
 
-func (d *Client) GetGuildBan(guildID, userID common.Snowflake) (*api.Ban, error) {
-	return d.RestClient.GetGuildBan(context.Background(), guildID, userID)
+func (d *Client) GetGuildBan(ctx context.Context, guildID, userID common.Snowflake) (*api.Ban, error) {
+	return d.RestClient.GetGuildBan(ctx, guildID, userID)
 }
 
-func (d *Client) CreateGuildBan(guildID, userID common.Snowflake, params api.CreateGuildBanParams) error {
-	return d.RestClient.CreateGuildBan(context.Background(), guildID, userID, params)
+func (d *Client) CreateGuildBan(ctx context.Context, guildID, userID common.Snowflake, params api.CreateGuildBanParams) error {
+	return d.RestClient.CreateGuildBan(ctx, guildID, userID, params)
 }
 
-func (d *Client) RemoveGuildBan(guildID, userID common.Snowflake) error {
-	return d.RestClient.RemoveGuildBan(context.Background(), guildID, userID)
+func (d *Client) RemoveGuildBan(ctx context.Context, guildID, userID common.Snowflake) error {
+	return d.RestClient.RemoveGuildBan(ctx, guildID, userID)
 }
 
-func (d *Client) GetGuildPruneCount(guildID common.Snowflake, params api.GetGuildPruneCountParams) (*api.GuildPruneCountResult, error) {
-	return d.RestClient.GetGuildPruneCount(context.Background(), guildID, params)
+func (d *Client) GetGuildPruneCount(ctx context.Context, guildID common.Snowflake, params api.GetGuildPruneCountParams) (*api.GuildPruneCountResult, error) {
+	return d.RestClient.GetGuildPruneCount(ctx, guildID, params)
 }
 
-func (d *Client) BeginGuildPrune(guildID common.Snowflake, params api.BeginGuildPruneParams) (*api.GuildPruneCountResult, error) {
-	return d.RestClient.BeginGuildPrune(context.Background(), guildID, params)
+func (d *Client) BeginGuildPrune(ctx context.Context, guildID common.Snowflake, params api.BeginGuildPruneParams) (*api.GuildPruneCountResult, error) {
+	return d.RestClient.BeginGuildPrune(ctx, guildID, params)
 }
 
-func (d *Client) GetGuildInvites(guildID common.Snowflake) ([]*api.Invite, error) {
-	return d.RestClient.GetGuildInvites(context.Background(), guildID)
+func (d *Client) GetGuildInvites(ctx context.Context, guildID common.Snowflake) ([]*api.Invite, error) {
+	return d.RestClient.GetGuildInvites(ctx, guildID)
 }
 
-func (d *Client) GetGuildVanityURL(guildID common.Snowflake) (*api.GuildVanityURL, error) {
-	return d.RestClient.GetGuildVanityURL(context.Background(), guildID)
+func (d *Client) GetGuildVanityURL(ctx context.Context, guildID common.Snowflake) (*api.GuildVanityURL, error) {
+	return d.RestClient.GetGuildVanityURL(ctx, guildID)
 }
 
-func (d *Client) GetGuildAuditLog(guildID common.Snowflake, params api.GetGuildAuditLogParams) (*api.AuditLog, error) {
-	return d.RestClient.GetGuildAuditLog(context.Background(), guildID, params)
+func (d *Client) GetGuildAuditLog(ctx context.Context, guildID common.Snowflake, params api.GetGuildAuditLogParams) (*api.AuditLog, error) {
+	return d.RestClient.GetGuildAuditLog(ctx, guildID, params)
 }
 
 // ── Member methods ────────────────────────────────────────────────────────────
 
-func (d *Client) GetGuildMember(guildID, userID common.Snowflake) (*common.GuildMember, error) {
-	return d.RestClient.GetGuildMember(context.Background(), guildID, userID)
+func (d *Client) GetGuildMember(ctx context.Context, guildID, userID common.Snowflake) (*common.GuildMember, error) {
+	return d.RestClient.GetGuildMember(ctx, guildID, userID)
 }
 
-func (d *Client) ListGuildMembers(guildID common.Snowflake, params api.GetGuildMembersParams) ([]*common.GuildMember, error) {
-	return d.RestClient.ListGuildMembers(context.Background(), guildID, params)
+func (d *Client) ListGuildMembers(ctx context.Context, guildID common.Snowflake, params api.GetGuildMembersParams) ([]*common.GuildMember, error) {
+	return d.RestClient.ListGuildMembers(ctx, guildID, params)
 }
 
-func (d *Client) SearchGuildMembers(guildID common.Snowflake, params api.SearchGuildMembersParams) ([]*common.GuildMember, error) {
-	return d.RestClient.SearchGuildMembers(context.Background(), guildID, params)
+func (d *Client) SearchGuildMembers(ctx context.Context, guildID common.Snowflake, params api.SearchGuildMembersParams) ([]*common.GuildMember, error) {
+	return d.RestClient.SearchGuildMembers(ctx, guildID, params)
 }
 
-func (d *Client) ModifyGuildMember(guildID, userID common.Snowflake, params api.ModifyGuildMemberParams) (*common.GuildMember, error) {
-	return d.RestClient.ModifyGuildMember(context.Background(), guildID, userID, params)
+func (d *Client) ModifyGuildMember(ctx context.Context, guildID, userID common.Snowflake, params api.ModifyGuildMemberParams) (*common.GuildMember, error) {
+	return d.RestClient.ModifyGuildMember(ctx, guildID, userID, params)
 }
 
-func (d *Client) ModifyCurrentMember(guildID common.Snowflake, params api.ModifyCurrentMemberParams) (*common.GuildMember, error) {
-	return d.RestClient.ModifyCurrentMember(context.Background(), guildID, params)
+func (d *Client) ModifyCurrentMember(ctx context.Context, guildID common.Snowflake, params api.ModifyCurrentMemberParams) (*common.GuildMember, error) {
+	return d.RestClient.ModifyCurrentMember(ctx, guildID, params)
 }
 
-func (d *Client) AddGuildMemberRole(guildID, userID, roleID common.Snowflake) error {
-	return d.RestClient.AddGuildMemberRole(context.Background(), guildID, userID, roleID)
+func (d *Client) AddGuildMemberRole(ctx context.Context, guildID, userID, roleID common.Snowflake) error {
+	return d.RestClient.AddGuildMemberRole(ctx, guildID, userID, roleID)
 }
 
-func (d *Client) RemoveGuildMemberRole(guildID, userID, roleID common.Snowflake) error {
-	return d.RestClient.RemoveGuildMemberRole(context.Background(), guildID, userID, roleID)
+func (d *Client) RemoveGuildMemberRole(ctx context.Context, guildID, userID, roleID common.Snowflake) error {
+	return d.RestClient.RemoveGuildMemberRole(ctx, guildID, userID, roleID)
 }
 
 // RemoveGuildMember removes a member from a guild. Requires KICK_MEMBERS.
-func (d *Client) RemoveGuildMember(guildID, userID common.Snowflake) error {
-	return d.RestClient.RemoveGuildMember(context.Background(), guildID, userID)
-}
-
-// KickGuildMember removes a member from a guild. Requires KICK_MEMBERS.
-func (d *Client) KickGuildMember(guildID, userID common.Snowflake) error {
-	return d.RestClient.RemoveGuildMember(context.Background(), guildID, userID)
+func (d *Client) RemoveGuildMember(ctx context.Context, guildID, userID common.Snowflake) error {
+	return d.RestClient.RemoveGuildMember(ctx, guildID, userID)
 }
 
 // FetchAllGuildMembers retrieves every member in a guild by paginating the REST
@@ -359,31 +399,8 @@ func (d *Client) KickGuildMember(guildID, userID common.Snowflake) error {
 //
 // Requires the GUILD_MEMBERS privileged intent to be enabled both in the Discord
 // developer portal and in the intents passed to NewClient.
-func (d *Client) FetchAllGuildMembers(guildID common.Snowflake) ([]*common.GuildMember, error) {
-	const pageSize = 1000
-	limit := pageSize
-	var all []*common.GuildMember
-	var after *common.Snowflake
-
-	for {
-		batch, err := d.RestClient.ListGuildMembers(context.Background(), guildID, api.GetGuildMembersParams{
-			Limit: &limit,
-			After: after,
-		})
-		if err != nil {
-			return nil, err
-		}
-		all = append(all, batch...)
-		if len(batch) < pageSize {
-			break
-		}
-		last := batch[len(batch)-1]
-		if last.User == nil {
-			break
-		}
-		after = &last.User.ID
-	}
-	return all, nil
+func (d *Client) FetchAllGuildMembers(ctx context.Context, guildID common.Snowflake) ([]*common.GuildMember, error) {
+	return d.RestClient.FetchAllGuildMembers(ctx, guildID)
 }
 
 // RequestGuildMembersParams controls what the OP 8 Request Guild Members
@@ -428,287 +445,345 @@ func (d *Client) RequestGuildMembers(guildID common.Snowflake, params RequestGui
 	if params.Nonce != nil {
 		data["nonce"] = *params.Nonce
 	}
-	return d.Websocket.Connection.WriteJSON(map[string]interface{}{
+	return d.Websocket.writeJSON(map[string]interface{}{
 		"op": 8,
+		"d":  data,
+	})
+}
+
+// UpdatePresenceParams controls the bot's displayed presence in Discord.
+type UpdatePresenceParams struct {
+	// Since is the unix time (in milliseconds) of when the client went idle.
+	// Set to nil if the client is not idle.
+	Since *int64
+	// Activities is the list of activities the bot is performing (e.g. "Playing X").
+	// Pass nil or an empty slice to clear all activities.
+	Activities []common.FullActivity
+	// Status is the bot's status ("online", "dnd", "idle", "invisible", "offline").
+	Status common.PresenceStatus
+	// AFK indicates whether the bot is AFK.
+	AFK bool
+}
+
+// UpdatePresence sends an OP 3 Presence Update to the Discord gateway,
+// updating the bot's displayed status and activity.
+func (d *Client) UpdatePresence(params UpdatePresenceParams) error {
+	if d.Websocket == nil || d.Websocket.Connection == nil {
+		return errors.New("not connected to gateway")
+	}
+
+	activities := params.Activities
+	if activities == nil {
+		activities = []common.FullActivity{}
+	}
+
+	data := map[string]interface{}{
+		"since":      params.Since,
+		"activities": activities,
+		"status":     string(params.Status),
+		"afk":        params.AFK,
+	}
+	return d.Websocket.writeJSON(map[string]interface{}{
+		"op": 3,
 		"d":  data,
 	})
 }
 
 // ── Guild widget ──────────────────────────────────────────────────────────────
 
-func (d *Client) GetGuildWidgetSettings(guildID common.Snowflake) (*common.GuildWidgetSettings, error) {
-	return d.RestClient.GetGuildWidgetSettings(context.Background(), guildID)
+func (d *Client) GetGuildWidgetSettings(ctx context.Context, guildID common.Snowflake) (*common.GuildWidgetSettings, error) {
+	return d.RestClient.GetGuildWidgetSettings(ctx, guildID)
 }
 
-func (d *Client) ModifyGuildWidgetSettings(guildID common.Snowflake, params api.ModifyGuildWidgetParams) (*common.GuildWidgetSettings, error) {
-	return d.RestClient.ModifyGuildWidgetSettings(context.Background(), guildID, params)
+func (d *Client) ModifyGuildWidgetSettings(ctx context.Context, guildID common.Snowflake, params api.ModifyGuildWidgetParams) (*common.GuildWidgetSettings, error) {
+	return d.RestClient.ModifyGuildWidgetSettings(ctx, guildID, params)
 }
 
-func (d *Client) GetGuildWidget(guildID common.Snowflake) (*common.GuildWidget, error) {
-	return d.RestClient.GetGuildWidget(context.Background(), guildID)
+func (d *Client) GetGuildWidget(ctx context.Context, guildID common.Snowflake) (*common.GuildWidget, error) {
+	return d.RestClient.GetGuildWidget(ctx, guildID)
+}
+
+// GetGuildWidgetImage returns the PNG widget image for a guild as raw bytes.
+// style is an optional widget style ("shield", "banner1"–"banner4"); pass "" for the default.
+func (d *Client) GetGuildWidgetImage(ctx context.Context, guildID common.Snowflake, style string) ([]byte, error) {
+	return d.RestClient.GetGuildWidgetImage(ctx, guildID, style)
+}
+
+// ModifyGuildMFALevel sets the required MFA level for moderators in a guild.
+// Requires guild ownership. level: 0 = none, 1 = elevated.
+func (d *Client) ModifyGuildMFALevel(ctx context.Context, guildID common.Snowflake, level int) (int, error) {
+	return d.RestClient.ModifyGuildMFALevel(ctx, guildID, level)
 }
 
 // ── Welcome screen ────────────────────────────────────────────────────────────
 
-func (d *Client) GetGuildWelcomeScreen(guildID common.Snowflake) (*common.GuildWelcomeScreen, error) {
-	return d.RestClient.GetGuildWelcomeScreen(context.Background(), guildID)
+func (d *Client) GetGuildWelcomeScreen(ctx context.Context, guildID common.Snowflake) (*common.GuildWelcomeScreen, error) {
+	return d.RestClient.GetGuildWelcomeScreen(ctx, guildID)
 }
 
-func (d *Client) ModifyGuildWelcomeScreen(guildID common.Snowflake, params api.ModifyGuildWelcomeScreenParams) (*common.GuildWelcomeScreen, error) {
-	return d.RestClient.ModifyGuildWelcomeScreen(context.Background(), guildID, params)
+func (d *Client) ModifyGuildWelcomeScreen(ctx context.Context, guildID common.Snowflake, params api.ModifyGuildWelcomeScreenParams) (*common.GuildWelcomeScreen, error) {
+	return d.RestClient.ModifyGuildWelcomeScreen(ctx, guildID, params)
 }
 
 // ── Guild onboarding ──────────────────────────────────────────────────────────
 
-func (d *Client) GetGuildOnboarding(guildID common.Snowflake) (*common.GuildOnboarding, error) {
-	return d.RestClient.GetGuildOnboarding(context.Background(), guildID)
+func (d *Client) GetGuildOnboarding(ctx context.Context, guildID common.Snowflake) (*common.GuildOnboarding, error) {
+	return d.RestClient.GetGuildOnboarding(ctx, guildID)
 }
 
-func (d *Client) ModifyGuildOnboarding(guildID common.Snowflake, params api.ModifyGuildOnboardingParams) (*common.GuildOnboarding, error) {
-	return d.RestClient.ModifyGuildOnboarding(context.Background(), guildID, params)
+func (d *Client) ModifyGuildOnboarding(ctx context.Context, guildID common.Snowflake, params api.ModifyGuildOnboardingParams) (*common.GuildOnboarding, error) {
+	return d.RestClient.ModifyGuildOnboarding(ctx, guildID, params)
 }
 
 // ── Voice ─────────────────────────────────────────────────────────────────────
 
-func (d *Client) ListVoiceRegions() ([]*common.VoiceRegion, error) {
-	return d.RestClient.ListVoiceRegions(context.Background())
+func (d *Client) ListVoiceRegions(ctx context.Context) ([]*common.VoiceRegion, error) {
+	return d.RestClient.ListVoiceRegions(ctx)
 }
 
-func (d *Client) ListGuildVoiceRegions(guildID common.Snowflake) ([]*common.VoiceRegion, error) {
-	return d.RestClient.ListGuildVoiceRegions(context.Background(), guildID)
+func (d *Client) ListGuildVoiceRegions(ctx context.Context, guildID common.Snowflake) ([]*common.VoiceRegion, error) {
+	return d.RestClient.ListGuildVoiceRegions(ctx, guildID)
 }
 
-func (d *Client) ModifyCurrentUserVoiceState(guildID common.Snowflake, params api.ModifyCurrentUserVoiceStateParams) error {
-	return d.RestClient.ModifyCurrentUserVoiceState(context.Background(), guildID, params)
+func (d *Client) ModifyCurrentUserVoiceState(ctx context.Context, guildID common.Snowflake, params api.ModifyCurrentUserVoiceStateParams) error {
+	return d.RestClient.ModifyCurrentUserVoiceState(ctx, guildID, params)
 }
 
-func (d *Client) ModifyUserVoiceState(guildID, userID common.Snowflake, params api.ModifyUserVoiceStateParams) error {
-	return d.RestClient.ModifyUserVoiceState(context.Background(), guildID, userID, params)
+func (d *Client) ModifyUserVoiceState(ctx context.Context, guildID, userID common.Snowflake, params api.ModifyUserVoiceStateParams) error {
+	return d.RestClient.ModifyUserVoiceState(ctx, guildID, userID, params)
 }
 
 // ── Soundboard ────────────────────────────────────────────────────────────────
 
-func (d *Client) ListDefaultSoundboardSounds() ([]*common.SoundboardSound, error) {
-	return d.RestClient.ListDefaultSoundboardSounds(context.Background())
+func (d *Client) ListDefaultSoundboardSounds(ctx context.Context) ([]*common.SoundboardSound, error) {
+	return d.RestClient.ListDefaultSoundboardSounds(ctx)
 }
 
-func (d *Client) ListGuildSoundboardSounds(guildID common.Snowflake) ([]*common.SoundboardSound, error) {
-	return d.RestClient.ListGuildSoundboardSounds(context.Background(), guildID)
+func (d *Client) ListGuildSoundboardSounds(ctx context.Context, guildID common.Snowflake) ([]*common.SoundboardSound, error) {
+	return d.RestClient.ListGuildSoundboardSounds(ctx, guildID)
 }
 
-func (d *Client) GetGuildSoundboardSound(guildID, soundID common.Snowflake) (*common.SoundboardSound, error) {
-	return d.RestClient.GetGuildSoundboardSound(context.Background(), guildID, soundID)
+func (d *Client) GetGuildSoundboardSound(ctx context.Context, guildID, soundID common.Snowflake) (*common.SoundboardSound, error) {
+	return d.RestClient.GetGuildSoundboardSound(ctx, guildID, soundID)
 }
 
-func (d *Client) CreateGuildSoundboardSound(guildID common.Snowflake, params api.CreateGuildSoundboardSoundParams) (*common.SoundboardSound, error) {
-	return d.RestClient.CreateGuildSoundboardSound(context.Background(), guildID, params)
+func (d *Client) CreateGuildSoundboardSound(ctx context.Context, guildID common.Snowflake, params api.CreateGuildSoundboardSoundParams) (*common.SoundboardSound, error) {
+	return d.RestClient.CreateGuildSoundboardSound(ctx, guildID, params)
 }
 
-func (d *Client) ModifyGuildSoundboardSound(guildID, soundID common.Snowflake, params api.ModifyGuildSoundboardSoundParams) (*common.SoundboardSound, error) {
-	return d.RestClient.ModifyGuildSoundboardSound(context.Background(), guildID, soundID, params)
+func (d *Client) ModifyGuildSoundboardSound(ctx context.Context, guildID, soundID common.Snowflake, params api.ModifyGuildSoundboardSoundParams) (*common.SoundboardSound, error) {
+	return d.RestClient.ModifyGuildSoundboardSound(ctx, guildID, soundID, params)
 }
 
-func (d *Client) DeleteGuildSoundboardSound(guildID, soundID common.Snowflake) error {
-	return d.RestClient.DeleteGuildSoundboardSound(context.Background(), guildID, soundID)
+func (d *Client) DeleteGuildSoundboardSound(ctx context.Context, guildID, soundID common.Snowflake) error {
+	return d.RestClient.DeleteGuildSoundboardSound(ctx, guildID, soundID)
 }
 
-func (d *Client) SendSoundboardSound(channelID common.Snowflake, params api.SendSoundboardSoundParams) error {
-	return d.RestClient.SendSoundboardSound(context.Background(), channelID, params)
+func (d *Client) SendSoundboardSound(ctx context.Context, channelID common.Snowflake, params api.SendSoundboardSoundParams) error {
+	return d.RestClient.SendSoundboardSound(ctx, channelID, params)
 }
 
 // ── Application ───────────────────────────────────────────────────────────────
 
-func (d *Client) GetCurrentApplication() (*common.Application, error) {
-	return d.RestClient.GetCurrentApplication(context.Background())
+func (d *Client) GetCurrentApplication(ctx context.Context) (*common.Application, error) {
+	return d.RestClient.GetCurrentApplication(ctx)
 }
 
-func (d *Client) ModifyCurrentApplication(params api.ModifyCurrentApplicationParams) (*common.Application, error) {
-	return d.RestClient.ModifyCurrentApplication(context.Background(), params)
+func (d *Client) ModifyCurrentApplication(ctx context.Context, params api.ModifyCurrentApplicationParams) (*common.Application, error) {
+	return d.RestClient.ModifyCurrentApplication(ctx, params)
 }
 
 // ── Command permissions ───────────────────────────────────────────────────────
 
 // GetGuildApplicationCommandPermissions returns all permission overrides for every command in a guild.
 // Uses the bot's own application ID automatically.
-func (d *Client) GetGuildApplicationCommandPermissions(guildID common.Snowflake) ([]*common.GuildApplicationCommandPermissions, error) {
-	return d.RestClient.GetGuildApplicationCommandPermissions(context.Background(), d.User.ID, guildID)
+func (d *Client) GetGuildApplicationCommandPermissions(ctx context.Context, guildID common.Snowflake) ([]*common.GuildApplicationCommandPermissions, error) {
+	appID, err := d.applicationID()
+	if err != nil {
+		return nil, err
+	}
+	return d.RestClient.GetGuildApplicationCommandPermissions(ctx, appID, guildID)
 }
 
 // GetApplicationCommandPermissions returns the permission overrides for a specific command.
-func (d *Client) GetApplicationCommandPermissions(guildID, cmdID common.Snowflake) (*common.GuildApplicationCommandPermissions, error) {
-	return d.RestClient.GetApplicationCommandPermissions(context.Background(), d.User.ID, guildID, cmdID)
+func (d *Client) GetApplicationCommandPermissions(ctx context.Context, guildID, cmdID common.Snowflake) (*common.GuildApplicationCommandPermissions, error) {
+	appID, err := d.applicationID()
+	if err != nil {
+		return nil, err
+	}
+	return d.RestClient.GetApplicationCommandPermissions(ctx, appID, guildID, cmdID)
 }
 
 // ── Application emojis ────────────────────────────────────────────────────────
 
-func (d *Client) ListApplicationEmojis(appID common.Snowflake) ([]*common.Emoji, error) {
-	return d.RestClient.ListApplicationEmojis(context.Background(), appID)
+func (d *Client) ListApplicationEmojis(ctx context.Context, appID common.Snowflake) ([]*common.Emoji, error) {
+	return d.RestClient.ListApplicationEmojis(ctx, appID)
 }
 
-func (d *Client) GetApplicationEmoji(appID, emojiID common.Snowflake) (*common.Emoji, error) {
-	return d.RestClient.GetApplicationEmoji(context.Background(), appID, emojiID)
+func (d *Client) GetApplicationEmoji(ctx context.Context, appID, emojiID common.Snowflake) (*common.Emoji, error) {
+	return d.RestClient.GetApplicationEmoji(ctx, appID, emojiID)
 }
 
-func (d *Client) CreateApplicationEmoji(appID common.Snowflake, params api.CreateEmojiParams) (*common.Emoji, error) {
-	return d.RestClient.CreateApplicationEmoji(context.Background(), appID, params)
+func (d *Client) CreateApplicationEmoji(ctx context.Context, appID common.Snowflake, params api.CreateEmojiParams) (*common.Emoji, error) {
+	return d.RestClient.CreateApplicationEmoji(ctx, appID, params)
 }
 
-func (d *Client) ModifyApplicationEmoji(appID, emojiID common.Snowflake, params api.ModifyEmojiParams) (*common.Emoji, error) {
-	return d.RestClient.ModifyApplicationEmoji(context.Background(), appID, emojiID, params)
+func (d *Client) ModifyApplicationEmoji(ctx context.Context, appID, emojiID common.Snowflake, params api.ModifyEmojiParams) (*common.Emoji, error) {
+	return d.RestClient.ModifyApplicationEmoji(ctx, appID, emojiID, params)
 }
 
-func (d *Client) DeleteApplicationEmoji(appID, emojiID common.Snowflake) error {
-	return d.RestClient.DeleteApplicationEmoji(context.Background(), appID, emojiID)
+func (d *Client) DeleteApplicationEmoji(ctx context.Context, appID, emojiID common.Snowflake) error {
+	return d.RestClient.DeleteApplicationEmoji(ctx, appID, emojiID)
 }
 
 // ── Entitlements ──────────────────────────────────────────────────────────────
 
-func (d *Client) ListEntitlements(appID common.Snowflake, params api.ListEntitlementsParams) ([]*common.Entitlement, error) {
-	return d.RestClient.ListEntitlements(context.Background(), appID, params)
+func (d *Client) ListEntitlements(ctx context.Context, appID common.Snowflake, params api.ListEntitlementsParams) ([]*common.Entitlement, error) {
+	return d.RestClient.ListEntitlements(ctx, appID, params)
 }
 
-func (d *Client) GetEntitlement(appID, entitlementID common.Snowflake) (*common.Entitlement, error) {
-	return d.RestClient.GetEntitlement(context.Background(), appID, entitlementID)
+func (d *Client) GetEntitlement(ctx context.Context, appID, entitlementID common.Snowflake) (*common.Entitlement, error) {
+	return d.RestClient.GetEntitlement(ctx, appID, entitlementID)
 }
 
-func (d *Client) CreateTestEntitlement(appID common.Snowflake, params api.CreateTestEntitlementParams) (*common.Entitlement, error) {
-	return d.RestClient.CreateTestEntitlement(context.Background(), appID, params)
+func (d *Client) CreateTestEntitlement(ctx context.Context, appID common.Snowflake, params api.CreateTestEntitlementParams) (*common.Entitlement, error) {
+	return d.RestClient.CreateTestEntitlement(ctx, appID, params)
 }
 
-func (d *Client) ConsumeEntitlement(appID, entitlementID common.Snowflake) error {
-	return d.RestClient.ConsumeEntitlement(context.Background(), appID, entitlementID)
+func (d *Client) ConsumeEntitlement(ctx context.Context, appID, entitlementID common.Snowflake) error {
+	return d.RestClient.ConsumeEntitlement(ctx, appID, entitlementID)
 }
 
-func (d *Client) DeleteTestEntitlement(appID, entitlementID common.Snowflake) error {
-	return d.RestClient.DeleteTestEntitlement(context.Background(), appID, entitlementID)
+func (d *Client) DeleteTestEntitlement(ctx context.Context, appID, entitlementID common.Snowflake) error {
+	return d.RestClient.DeleteTestEntitlement(ctx, appID, entitlementID)
 }
 
 // ── SKUs ──────────────────────────────────────────────────────────────────────
 
-func (d *Client) ListSKUs(appID common.Snowflake) ([]*common.SKU, error) {
-	return d.RestClient.ListSKUs(context.Background(), appID)
+func (d *Client) ListSKUs(ctx context.Context, appID common.Snowflake) ([]*common.SKU, error) {
+	return d.RestClient.ListSKUs(ctx, appID)
 }
 
 // ── Subscriptions ─────────────────────────────────────────────────────────────
 
-func (d *Client) ListSKUSubscriptions(skuID common.Snowflake, params api.ListSKUSubscriptionsParams) ([]*common.Subscription, error) {
-	return d.RestClient.ListSKUSubscriptions(context.Background(), skuID, params)
+func (d *Client) ListSKUSubscriptions(ctx context.Context, skuID common.Snowflake, params api.ListSKUSubscriptionsParams) ([]*common.Subscription, error) {
+	return d.RestClient.ListSKUSubscriptions(ctx, skuID, params)
 }
 
-func (d *Client) GetSKUSubscription(skuID, subscriptionID common.Snowflake) (*common.Subscription, error) {
-	return d.RestClient.GetSKUSubscription(context.Background(), skuID, subscriptionID)
+func (d *Client) GetSKUSubscription(ctx context.Context, skuID, subscriptionID common.Snowflake) (*common.Subscription, error) {
+	return d.RestClient.GetSKUSubscription(ctx, skuID, subscriptionID)
 }
 
 // ── Poll ──────────────────────────────────────────────────────────────────────
 
-func (d *Client) GetPollAnswerVoters(channelID, messageID common.Snowflake, answerID int, params api.GetPollAnswerVotersParams) ([]*common.User, error) {
-	return d.RestClient.GetPollAnswerVoters(context.Background(), channelID, messageID, answerID, params)
+func (d *Client) GetPollAnswerVoters(ctx context.Context, channelID, messageID common.Snowflake, answerID int, params api.GetPollAnswerVotersParams) ([]*common.User, error) {
+	return d.RestClient.GetPollAnswerVoters(ctx, channelID, messageID, answerID, params)
 }
 
-func (d *Client) EndPoll(channelID, messageID common.Snowflake) (*common.Message, error) {
-	return d.RestClient.EndPoll(context.Background(), channelID, messageID)
+func (d *Client) EndPoll(ctx context.Context, channelID, messageID common.Snowflake) (*common.Message, error) {
+	return d.RestClient.EndPoll(ctx, channelID, messageID)
 }
 
 // ── Activity ──────────────────────────────────────────────────────────────────
 
-func (d *Client) GetActivityInstance(appID common.Snowflake, instanceID string) (*common.ActivityInstance, error) {
-	return d.RestClient.GetActivityInstance(context.Background(), appID, instanceID)
+func (d *Client) GetActivityInstance(ctx context.Context, appID common.Snowflake, instanceID string) (*common.ActivityInstance, error) {
+	return d.RestClient.GetActivityInstance(ctx, appID, instanceID)
 }
 
 // ── Additional channel methods ────────────────────────────────────────────────
 
-func (d *Client) SetVoiceChannelStatus(channelID common.Snowflake, status *string) error {
-	return d.RestClient.SetVoiceChannelStatus(context.Background(), channelID, status)
+func (d *Client) SetVoiceChannelStatus(ctx context.Context, channelID common.Snowflake, status *string) error {
+	return d.RestClient.SetVoiceChannelStatus(ctx, channelID, status)
 }
 
-func (d *Client) FollowAnnouncementChannel(channelID, webhookChannelID common.Snowflake) (*api.FollowedChannel, error) {
-	return d.RestClient.FollowAnnouncementChannel(context.Background(), channelID, webhookChannelID)
+func (d *Client) FollowAnnouncementChannel(ctx context.Context, channelID, webhookChannelID common.Snowflake) (*api.FollowedChannel, error) {
+	return d.RestClient.FollowAnnouncementChannel(ctx, channelID, webhookChannelID)
 }
 
-func (d *Client) AddGroupDMRecipient(channelID, userID common.Snowflake, params api.AddGroupDMRecipientParams) error {
-	return d.RestClient.AddGroupDMRecipient(context.Background(), channelID, userID, params)
+func (d *Client) AddGroupDMRecipient(ctx context.Context, channelID, userID common.Snowflake, params api.AddGroupDMRecipientParams) error {
+	return d.RestClient.AddGroupDMRecipient(ctx, channelID, userID, params)
 }
 
-func (d *Client) RemoveGroupDMRecipient(channelID, userID common.Snowflake) error {
-	return d.RestClient.RemoveGroupDMRecipient(context.Background(), channelID, userID)
+func (d *Client) RemoveGroupDMRecipient(ctx context.Context, channelID, userID common.Snowflake) error {
+	return d.RestClient.RemoveGroupDMRecipient(ctx, channelID, userID)
 }
 
 // ── Additional guild methods ──────────────────────────────────────────────────
 
-func (d *Client) CreateGuild(params api.CreateGuildParams) (*common.Guild, error) {
-	return d.RestClient.CreateGuild(context.Background(), params)
+func (d *Client) CreateGuild(ctx context.Context, params api.CreateGuildParams) (*common.Guild, error) {
+	return d.RestClient.CreateGuild(ctx, params)
 }
 
-func (d *Client) AddGuildMember(guildID, userID common.Snowflake, params api.AddGuildMemberParams) (*common.GuildMember, error) {
-	return d.RestClient.AddGuildMember(context.Background(), guildID, userID, params)
+func (d *Client) AddGuildMember(ctx context.Context, guildID, userID common.Snowflake, params api.AddGuildMemberParams) (*common.GuildMember, error) {
+	return d.RestClient.AddGuildMember(ctx, guildID, userID, params)
 }
 
-func (d *Client) BulkBanGuildMembers(guildID common.Snowflake, params api.BulkBanParams) (*api.BulkBanResult, error) {
-	return d.RestClient.BulkBanGuildMembers(context.Background(), guildID, params)
+func (d *Client) BulkBanGuildMembers(ctx context.Context, guildID common.Snowflake, params api.BulkBanParams) (*api.BulkBanResult, error) {
+	return d.RestClient.BulkBanGuildMembers(ctx, guildID, params)
 }
 
-func (d *Client) GetGuildIntegrations(guildID common.Snowflake) ([]*common.Integration, error) {
-	return d.RestClient.GetGuildIntegrations(context.Background(), guildID)
+func (d *Client) GetGuildIntegrations(ctx context.Context, guildID common.Snowflake) ([]*common.Integration, error) {
+	return d.RestClient.GetGuildIntegrations(ctx, guildID)
 }
 
-func (d *Client) DeleteGuildIntegration(guildID, integrationID common.Snowflake) error {
-	return d.RestClient.DeleteGuildIntegration(context.Background(), guildID, integrationID)
+func (d *Client) DeleteGuildIntegration(ctx context.Context, guildID, integrationID common.Snowflake) error {
+	return d.RestClient.DeleteGuildIntegration(ctx, guildID, integrationID)
 }
 
 // ── Additional voice methods ──────────────────────────────────────────────────
 
-func (d *Client) GetCurrentUserVoiceState(guildID common.Snowflake) (*common.VoiceState, error) {
-	return d.RestClient.GetCurrentUserVoiceState(context.Background(), guildID)
+func (d *Client) GetCurrentUserVoiceState(ctx context.Context, guildID common.Snowflake) (*common.VoiceState, error) {
+	return d.RestClient.GetCurrentUserVoiceState(ctx, guildID)
 }
 
-func (d *Client) GetUserVoiceState(guildID, userID common.Snowflake) (*common.VoiceState, error) {
-	return d.RestClient.GetUserVoiceState(context.Background(), guildID, userID)
+func (d *Client) GetUserVoiceState(ctx context.Context, guildID, userID common.Snowflake) (*common.VoiceState, error) {
+	return d.RestClient.GetUserVoiceState(ctx, guildID, userID)
 }
 
 // ── Additional sticker methods ────────────────────────────────────────────────
 
-func (d *Client) GetStickerPack(packID common.Snowflake) (*api.StickerPack, error) {
-	return d.RestClient.GetStickerPack(context.Background(), packID)
+func (d *Client) GetStickerPack(ctx context.Context, packID common.Snowflake) (*api.StickerPack, error) {
+	return d.RestClient.GetStickerPack(ctx, packID)
 }
 
-func (d *Client) CreateGuildSticker(guildID common.Snowflake, params api.CreateGuildStickerParams) (*common.Sticker, error) {
-	return d.RestClient.CreateGuildSticker(context.Background(), guildID, params)
+func (d *Client) CreateGuildSticker(ctx context.Context, guildID common.Snowflake, params api.CreateGuildStickerParams) (*common.Sticker, error) {
+	return d.RestClient.CreateGuildSticker(ctx, guildID, params)
 }
 
 // ── Invite methods ────────────────────────────────────────────────────────────
 
-func (d *Client) GetInvite(code string, params api.GetInviteParams) (*api.Invite, error) {
-	return d.RestClient.GetInvite(context.Background(), code, params)
+func (d *Client) GetInvite(ctx context.Context, code string, params api.GetInviteParams) (*api.Invite, error) {
+	return d.RestClient.GetInvite(ctx, code, params)
 }
 
-func (d *Client) DeleteInvite(code string) (*api.Invite, error) {
-	return d.RestClient.DeleteInvite(context.Background(), code)
+func (d *Client) DeleteInvite(ctx context.Context, code string) (*api.Invite, error) {
+	return d.RestClient.DeleteInvite(ctx, code)
 }
 
 // ── Additional user methods ───────────────────────────────────────────────────
 
-func (d *Client) GetCurrentUserConnections() ([]*api.UserConnection, error) {
-	return d.RestClient.GetCurrentUserConnections(context.Background())
+func (d *Client) GetCurrentUserConnections(ctx context.Context) ([]*api.UserConnection, error) {
+	return d.RestClient.GetCurrentUserConnections(ctx)
 }
 
-func (d *Client) GetCurrentUserApplicationRoleConnection(appID common.Snowflake) (*api.ApplicationRoleConnection, error) {
-	return d.RestClient.GetCurrentUserApplicationRoleConnection(context.Background(), appID)
+func (d *Client) GetCurrentUserApplicationRoleConnection(ctx context.Context, appID common.Snowflake) (*api.ApplicationRoleConnection, error) {
+	return d.RestClient.GetCurrentUserApplicationRoleConnection(ctx, appID)
 }
 
-func (d *Client) UpdateCurrentUserApplicationRoleConnection(appID common.Snowflake, params api.UpdateRoleConnectionParams) (*api.ApplicationRoleConnection, error) {
-	return d.RestClient.UpdateCurrentUserApplicationRoleConnection(context.Background(), appID, params)
+func (d *Client) UpdateCurrentUserApplicationRoleConnection(ctx context.Context, appID common.Snowflake, params api.UpdateRoleConnectionParams) (*api.ApplicationRoleConnection, error) {
+	return d.RestClient.UpdateCurrentUserApplicationRoleConnection(ctx, appID, params)
 }
 
-func (d *Client) CreateGroupDM(params api.CreateGroupDMParams) (*common.Channel, error) {
-	return d.RestClient.CreateGroupDM(context.Background(), params)
+func (d *Client) CreateGroupDM(ctx context.Context, params api.CreateGroupDMParams) (*common.Channel, error) {
+	return d.RestClient.CreateGroupDM(ctx, params)
 }
 
 // ── Additional webhook methods ────────────────────────────────────────────────
 
-func (d *Client) ExecuteSlackWebhook(webhookID common.Snowflake, token string, wait bool, body json.RawMessage) error {
-	return d.RestClient.ExecuteSlackWebhook(context.Background(), webhookID, token, wait, body)
+func (d *Client) ExecuteSlackWebhook(ctx context.Context, webhookID common.Snowflake, token string, wait bool, body json.RawMessage) error {
+	return d.RestClient.ExecuteSlackWebhook(ctx, webhookID, token, wait, body)
 }
 
-func (d *Client) ExecuteGitHubWebhook(webhookID common.Snowflake, token string, wait bool, body json.RawMessage) error {
-	return d.RestClient.ExecuteGitHubWebhook(context.Background(), webhookID, token, wait, body)
+func (d *Client) ExecuteGitHubWebhook(ctx context.Context, webhookID common.Snowflake, token string, wait bool, body json.RawMessage) error {
+	return d.RestClient.ExecuteGitHubWebhook(ctx, webhookID, token, wait, body)
 }

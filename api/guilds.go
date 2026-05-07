@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -655,6 +656,30 @@ func (c *RestClient) ModifyGuildWidgetSettings(ctx context.Context, guildID comm
 	return &settings, nil
 }
 
+// GetGuildWidgetImage returns the PNG widget image for a guild as raw bytes.
+// style is an optional widget style ("shield", "banner1"–"banner4"); pass "" for the default.
+func (c *RestClient) GetGuildWidgetImage(ctx context.Context, guildID common.Snowflake, style string) ([]byte, error) {
+	path := "/guilds/" + guildID.String() + "/widget.png"
+	if style != "" {
+		path += "?style=" + style
+	}
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Widget image is PNG, not JSON — bypass the normal do() JSON decoder.
+	resp, reqErr := c.httpClient.Do(req)
+	if reqErr != nil {
+		return nil, reqErr
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, decodeGatewayError(resp)
+	}
+	return io.ReadAll(resp.Body)
+}
+
 // GetGuildWidget returns the public JSON widget for a guild (no authentication required).
 func (c *RestClient) GetGuildWidget(ctx context.Context, guildID common.Snowflake) (*common.GuildWidget, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/widget.json", nil)
@@ -853,6 +878,27 @@ func (c *RestClient) GetGuildIntegrations(ctx context.Context, guildID common.Sn
 	var result []*common.Integration
 	if _, err := c.do(req, http.StatusOK, &result); err != nil {
 		return nil, err
+	}
+
+	return result, nil
+}
+
+// ModifyGuildMFALevel sets the required MFA level for moderators in a guild.
+// Requires guild ownership. level: 0 = none, 1 = elevated.
+func (c *RestClient) ModifyGuildMFALevel(ctx context.Context, guildID common.Snowflake, level int) (int, error) {
+	body, err := json.Marshal(map[string]int{"level": level})
+	if err != nil {
+		return 0, err
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/mfa", bytes.NewReader(body))
+	if err != nil {
+		return 0, err
+	}
+
+	var result int
+	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+		return 0, err
 	}
 
 	return result, nil

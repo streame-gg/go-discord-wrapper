@@ -10,6 +10,7 @@ import (
 	"os"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/api"
 	"github.com/streame-gg/go-discord-wrapper/cache"
@@ -34,11 +35,15 @@ type Client struct {
 
 	Websocket *Websocket
 
-	events map[events.EventType][]EventHandler
-
 	discordEventEmitter *util.EventEmitter[events.EventType, EventHandler]
 
 	mu sync.RWMutex
+
+	// wsMu protects concurrent reads and writes of the Websocket pointer.
+	wsMu sync.RWMutex
+
+	// dispatchWg tracks in-flight event handler goroutines for graceful shutdown.
+	dispatchWg sync.WaitGroup
 
 	reconnectMu  sync.Mutex
 	reconnecting bool
@@ -93,20 +98,30 @@ type Client struct {
 	// RequestAll uses to collect responses without holding a permanent handler.
 	pendingShardReqs   map[string]chan options.ShardMessage
 	pendingShardReqsMu sync.Mutex
+
+	// middleware is the ordered chain applied to every event handler registered
+	// after a Use call. Middleware registered first wraps outermost.
+	middleware   []Middleware
+	middlewareMu sync.RWMutex
 }
 
 // NewClient creates a new Discord gateway client.
 // Configure it with options from the options package:
 //
-//	connection.NewClient(token, intents,
+//	bot, err := connection.NewClient(token, intents,
 //	    options.WithSharding(4, 0),
 //	    options.WithCoordinator(coord),
 //	    options.WithLogger(&myLogger),
 //	)
-func NewClient(token string, intents common.Intent, opts ...options.Option) *Client {
+func NewClient(token string, intents common.Intent, opts ...options.Option) (*Client, error) {
 	cfg := options.Build(options.Config{APIVersion: common.APIVersion10}, opts)
 	if err := cfg.Validate(); err != nil {
-		panic("go-discord-wrapper: " + err.Error())
+		return nil, fmt.Errorf("go-discord-wrapper: %w", err)
+	}
+
+	rc, err := api.NewRestClient(token, opts...)
+	if err != nil {
+		return nil, err
 	}
 
 	c := &Client{
@@ -117,7 +132,7 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) *Cli
 		UnavailableGuilds:          make(map[common.Snowflake]struct{}),
 		guildMemberCounts:          make(map[common.Snowflake]int),
 		voiceStates:                make(map[string]*common.VoiceState),
-		RestClient:                 api.NewRestClient(token, opts...),
+		RestClient:                 rc,
 		Sharding:                   cfg.Sharding,
 		Coordinator:                cfg.Coordinator,
 		Cache:                      cfg.Cache,
@@ -141,7 +156,7 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) *Cli
 		}
 	}
 
-	return c
+	return c, nil
 }
 
 // ── Shard messaging ─────────────────────────────────────────────────────────
@@ -323,7 +338,8 @@ func (d *Client) dispatchShardMessage(msg options.ShardMessage) {
 // ── Gateway connection ───────────────────────────────────────────────────────
 
 func (d *Client) initializeGatewayConnection() (*common.BotRegisterResponse, error) {
-	do, err := http.DefaultClient.Do(&http.Request{
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+	do, err := httpClient.Do(&http.Request{
 		Method: "GET",
 		URL: &url.URL{
 			Scheme: "https",
@@ -379,7 +395,10 @@ func (d *Client) Login() error {
 				d.Logger.Error("Error listening to websocket", slog.Any("err", err))
 				d.emitDisconnect(err)
 
-				if d.Websocket == nil {
+				d.wsMu.RLock()
+				wsNil := d.Websocket == nil
+				d.wsMu.RUnlock()
+				if wsNil {
 					d.Logger.Debug("Websocket is nil, stopping listener")
 					return
 				}
@@ -429,7 +448,10 @@ func (d *Client) Login() error {
 				continue
 			}
 
-			if d.Websocket != nil {
+			d.wsMu.RLock()
+			wsAlive := d.Websocket != nil
+			d.wsMu.RUnlock()
+			if wsAlive {
 				d.Logger.Debug("Restarting websocket listener")
 				continue
 			}
@@ -438,7 +460,10 @@ func (d *Client) Login() error {
 		}
 	}()
 
-	<-d.Websocket.Ready
+	d.wsMu.RLock()
+	ready := d.Websocket.Ready
+	d.wsMu.RUnlock()
+	<-ready
 
 	d.Logger.Info("Successfully connected to the Discord gateway")
 	d.emitConnect()
@@ -448,16 +473,22 @@ func (d *Client) Login() error {
 
 func (d *Client) dispatch(event events.Event) {
 	handlers := d.discordEventEmitter.Handlers(event.Event())
-	if len(handlers) == 0 {
-		d.mu.RLock()
-		handlers = d.events[event.Event()]
-		d.mu.RUnlock()
-	}
 
 	// Each handler runs in its own goroutine so a slow handler cannot stall
 	// the gateway event loop or block subsequent event processing.
+	// dispatchWg tracks in-flight handlers so Shutdown can drain them.
 	for _, h := range handlers {
-		go h(d, event)
+		h := h
+		d.dispatchWg.Add(1)
+		go func() {
+			defer d.dispatchWg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					d.Logger.Error("panic in event handler", slog.Any("recover", r))
+				}
+			}()
+			h(d, event)
+		}()
 	}
 }
 
@@ -510,6 +541,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					if g, ok := guildCreateEvent.Guild.(common.Guild); ok {
 						gcopy := g
 						d.Cache.Guilds().Set(&gcopy)
+						for i := range gcopy.Roles {
+							role := gcopy.Roles[i]
+							d.Cache.Roles().Set(gcopy.ID, &role)
+						}
 					}
 				}
 			}
@@ -552,6 +587,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			if d.cacheEnabled() {
 				d.Cache.Guilds().Delete(guildDeleteEvent.ID)
 				d.Cache.Members().DeleteGuild(guildDeleteEvent.ID)
+				d.Cache.Roles().DeleteGuild(guildDeleteEvent.ID)
 			}
 		}
 	case events.EventVoiceStateUpdate:
@@ -595,6 +631,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				g := ev.Guild
 				d.Cache.Guilds().Set(&g)
+				for i := range g.Roles {
+					role := g.Roles[i]
+					d.Cache.Roles().Set(g.ID, &role)
+				}
 			}
 		}
 	case events.EventGuildMemberAdd:
@@ -636,12 +676,18 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal GUILD_MEMBER_UPDATE event", slog.Any("err", err))
 					return false
 				}
-				m := common.GuildMember{
-					User:                       &ev.User,
-					Nick:                       ev.Nick,
-					AvatarHash:                 ev.AvatarHash,
-					PremiumSince:               ev.PremiumSince,
-					CommunicationDisabledUntil: ev.CommunicationDisabledUntil,
+				m, ok := d.Cache.Members().Get(ev.GuildID, ev.User.ID)
+				if !ok {
+					m = &common.GuildMember{}
+				}
+				m.User = &ev.User
+				m.Nick = ev.Nick
+				m.AvatarHash = ev.AvatarHash
+				m.PremiumSince = ev.PremiumSince
+				m.CommunicationDisabledUntil = ev.CommunicationDisabledUntil
+				m.Roles = make([]string, 0, len(ev.Roles))
+				for _, r := range ev.Roles {
+					m.Roles = append(m.Roles, r.String())
 				}
 				if ev.JoinedAt != nil {
 					m.JoinedAt = *ev.JoinedAt
@@ -658,10 +704,42 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				if ev.Flags != nil {
 					m.Flags = *ev.Flags
 				}
-				for _, r := range ev.Roles {
-					m.Roles = append(m.Roles, r.String())
+				d.Cache.Members().Set(ev.GuildID, m)
+			}
+		}
+	case events.EventGuildRoleCreate:
+		{
+			if d.cacheEnabled() {
+				var ev events.GuildRoleCreateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_ROLE_CREATE event", slog.Any("err", err))
+					return false
 				}
-				d.Cache.Members().Set(ev.GuildID, &m)
+				role := ev.Role
+				d.Cache.Roles().Set(ev.GuildID, &role)
+			}
+		}
+	case events.EventGuildRoleUpdate:
+		{
+			if d.cacheEnabled() {
+				var ev events.GuildRoleUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_ROLE_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				role := ev.Role
+				d.Cache.Roles().Set(ev.GuildID, &role)
+			}
+		}
+	case events.EventGuildRoleDelete:
+		{
+			if d.cacheEnabled() {
+				var ev events.GuildRoleDeleteEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_ROLE_DELETE event", slog.Any("err", err))
+					return false
+				}
+				d.Cache.Roles().Delete(ev.RoleID)
 			}
 		}
 	case events.EventChannelCreate:
@@ -749,6 +827,26 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				d.Cache.Messages().DeleteBulk(ev.ChannelID, ev.IDs)
 			}
 		}
+	case events.EventGuildMembersChunk:
+		{
+			if d.cacheEnabled() {
+				var ev events.GuildMembersChunkEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_MEMBERS_CHUNK event", slog.Any("err", err))
+					return false
+				}
+				for i := range ev.Members {
+					m := ev.Members[i]
+					d.Cache.Members().Set(ev.GuildID, &m)
+				}
+				d.Logger.Debug("Cached guild members chunk",
+					slog.Any("guildId", ev.GuildID),
+					slog.Int("chunk", ev.ChunkIndex+1),
+					slog.Int("total", ev.ChunkCount),
+					slog.Int("members", len(ev.Members)),
+				)
+			}
+		}
 	default:
 		return true
 	}
@@ -782,15 +880,19 @@ func (d *Client) Close() error {
 }
 
 // Shutdown gracefully closes the gateway connection and the entity cache.
-// It returns a non-nil error if either close operation fails.
+// It waits for all in-flight event handlers to finish before returning.
 func (d *Client) Shutdown() error {
 	d.shutdown.Store(true)
 	var errs []error
-	if d.Websocket != nil {
-		if err := d.Websocket.Connection.Close(); err != nil {
+	d.wsMu.RLock()
+	ws := d.Websocket
+	d.wsMu.RUnlock()
+	if ws != nil {
+		if err := ws.close(); err != nil {
 			errs = append(errs, err)
 		}
 	}
+	d.dispatchWg.Wait()
 	if d.Cache != nil {
 		if err := d.Cache.Close(); err != nil {
 			errs = append(errs, err)
