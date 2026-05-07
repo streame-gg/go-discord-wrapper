@@ -102,3 +102,13 @@ type PartialPresenceUser struct {
 	Bot           *bool     `json:"bot,omitempty"`
 	PublicFlags   *int      `json:"public_flags,omitempty"`
 }
+
+// Presence is the cached form of a user's presence in a guild.
+// Populated from GUILD_CREATE (initial state) and PRESENCE_UPDATE events.
+type Presence struct {
+	User         PartialPresenceUser `json:"user"`
+	GuildID      Snowflake           `json:"guild_id"`
+	Status       PresenceStatus      `json:"status"`
+	Activities   []FullActivity      `json:"activities"`
+	ClientStatus ClientStatus        `json:"client_status"`
+}

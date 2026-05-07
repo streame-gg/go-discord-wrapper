@@ -879,13 +879,19 @@ func (r *channelRing) ring_rank(by ClearBy) float64 {
 // Create with [NewMemoryCache] and wire it to the gateway client via
 // options.WithCache. Always call [MemoryCache.Close] on shutdown.
 type MemoryCache struct {
-	opts     Options
-	guilds   *memGuildStore
-	channels *memChannelStore
-	users    *memUserStore
-	members  *memMemberStore
-	roles    *memRoleStore
-	messages *memMessageStore
+	opts            Options
+	guilds          *memGuildStore
+	channels        *memChannelStore
+	users           *memUserStore
+	members         *memMemberStore
+	roles           *memRoleStore
+	messages        *memMessageStore
+	voiceStates     *memVoiceStateStore
+	soundboard      *memSoundboardStore
+	scheduledEvents *memScheduledEventStore
+	stageInstances  *memStageInstanceStore
+	emojis          *memEmojiStore
+	presences       *memPresenceStore
 
 	stopOnce sync.Once
 	stopCh   chan struct{}
@@ -1125,3 +1131,309 @@ func (c *MemoryCache) evictGloballyByBytes(need int64, target OverflowCategory, 
 		need -= freed
 	}
 }
+
+// ── Voice state store ──────────────────────────────────────────────────────────
+
+type memVoiceStateStore struct {
+	s *genericStore[memberKey, *common.VoiceState]
+}
+
+func (v *memVoiceStateStore) Set(guildID common.Snowflake, vs *common.VoiceState) {
+	v.s.set(memberKey{guildID, vs.UserID}, vs)
+}
+
+func (v *memVoiceStateStore) Get(guildID, userID common.Snowflake) (*common.VoiceState, bool) {
+	return v.s.get(memberKey{guildID, userID})
+}
+
+func (v *memVoiceStateStore) Delete(guildID, userID common.Snowflake) {
+	v.s.delete(memberKey{guildID, userID})
+}
+
+func (v *memVoiceStateStore) DeleteGuild(guildID common.Snowflake) {
+	v.s.mu.Lock()
+	defer v.s.mu.Unlock()
+	for k, e := range v.s.items {
+		if k.guildID == guildID {
+			v.s.totalBytes.Add(-e.sizeBytes)
+			delete(v.s.items, k)
+		}
+	}
+}
+
+func (v *memVoiceStateStore) AllInGuild(guildID common.Snowflake) []*common.VoiceState {
+	now := time.Now()
+	v.s.mu.RLock()
+	defer v.s.mu.RUnlock()
+	var out []*common.VoiceState
+	for k, e := range v.s.items {
+		if k.guildID == guildID && !e.expired(now) {
+			out = append(out, e.value)
+		}
+	}
+	return out
+}
+
+func (v *memVoiceStateStore) Size() int { return v.s.size() }
+
+// ── Soundboard store ───────────────────────────────────────────────────────────
+
+type soundboardValue struct {
+	GuildID common.Snowflake
+	Sound   *common.SoundboardSound
+}
+
+type memSoundboardStore struct {
+	s *genericStore[common.Snowflake, soundboardValue]
+}
+
+func (ss *memSoundboardStore) Set(guildID common.Snowflake, sound *common.SoundboardSound) {
+	ss.s.set(sound.SoundID, soundboardValue{GuildID: guildID, Sound: sound})
+}
+
+func (ss *memSoundboardStore) Get(soundID common.Snowflake) (*common.SoundboardSound, bool) {
+	v, ok := ss.s.get(soundID)
+	if !ok {
+		return nil, false
+	}
+	return v.Sound, true
+}
+
+func (ss *memSoundboardStore) GetByGuild(guildID common.Snowflake) []*common.SoundboardSound {
+	now := time.Now()
+	ss.s.mu.RLock()
+	defer ss.s.mu.RUnlock()
+	var out []*common.SoundboardSound
+	for _, e := range ss.s.items {
+		if e.value.GuildID == guildID && !e.expired(now) {
+			out = append(out, e.value.Sound)
+		}
+	}
+	return out
+}
+
+func (ss *memSoundboardStore) SetAll(guildID common.Snowflake, sounds []*common.SoundboardSound) {
+	ss.s.mu.Lock()
+	for k, e := range ss.s.items {
+		if e.value.GuildID == guildID {
+			ss.s.totalBytes.Add(-e.sizeBytes)
+			delete(ss.s.items, k)
+		}
+	}
+	ss.s.mu.Unlock()
+	for _, s := range sounds {
+		if s != nil {
+			ss.Set(guildID, s)
+		}
+	}
+}
+
+func (ss *memSoundboardStore) Delete(soundID common.Snowflake) { ss.s.delete(soundID) }
+
+func (ss *memSoundboardStore) DeleteGuild(guildID common.Snowflake) {
+	ss.s.mu.Lock()
+	defer ss.s.mu.Unlock()
+	for k, e := range ss.s.items {
+		if e.value.GuildID == guildID {
+			ss.s.totalBytes.Add(-e.sizeBytes)
+			delete(ss.s.items, k)
+		}
+	}
+}
+
+func (ss *memSoundboardStore) Size() int { return ss.s.size() }
+
+// ── Scheduled event store ──────────────────────────────────────────────────────
+
+type memScheduledEventStore struct {
+	s *genericStore[common.Snowflake, *common.GuildScheduledEvent]
+}
+
+func (se *memScheduledEventStore) Set(event *common.GuildScheduledEvent) {
+	se.s.set(event.ID, event)
+}
+
+func (se *memScheduledEventStore) Get(eventID common.Snowflake) (*common.GuildScheduledEvent, bool) {
+	return se.s.get(eventID)
+}
+
+func (se *memScheduledEventStore) GetByGuild(guildID common.Snowflake) []*common.GuildScheduledEvent {
+	now := time.Now()
+	se.s.mu.RLock()
+	defer se.s.mu.RUnlock()
+	var out []*common.GuildScheduledEvent
+	for _, e := range se.s.items {
+		if e.value.GuildID == guildID && !e.expired(now) {
+			out = append(out, e.value)
+		}
+	}
+	return out
+}
+
+func (se *memScheduledEventStore) Delete(eventID common.Snowflake) { se.s.delete(eventID) }
+
+func (se *memScheduledEventStore) DeleteGuild(guildID common.Snowflake) {
+	se.s.mu.Lock()
+	defer se.s.mu.Unlock()
+	for k, e := range se.s.items {
+		if e.value.GuildID == guildID {
+			se.s.totalBytes.Add(-e.sizeBytes)
+			delete(se.s.items, k)
+		}
+	}
+}
+
+func (se *memScheduledEventStore) Size() int { return se.s.size() }
+
+// ── Stage instance store ───────────────────────────────────────────────────────
+
+type memStageInstanceStore struct {
+	s *genericStore[common.Snowflake, *common.StageInstance]
+}
+
+func (si *memStageInstanceStore) Set(instance *common.StageInstance) {
+	si.s.set(instance.ID, instance)
+}
+
+func (si *memStageInstanceStore) Get(instanceID common.Snowflake) (*common.StageInstance, bool) {
+	return si.s.get(instanceID)
+}
+
+func (si *memStageInstanceStore) GetByGuild(guildID common.Snowflake) []*common.StageInstance {
+	now := time.Now()
+	si.s.mu.RLock()
+	defer si.s.mu.RUnlock()
+	var out []*common.StageInstance
+	for _, e := range si.s.items {
+		if e.value.GuildID == guildID && !e.expired(now) {
+			out = append(out, e.value)
+		}
+	}
+	return out
+}
+
+func (si *memStageInstanceStore) Delete(instanceID common.Snowflake) { si.s.delete(instanceID) }
+
+func (si *memStageInstanceStore) DeleteGuild(guildID common.Snowflake) {
+	si.s.mu.Lock()
+	defer si.s.mu.Unlock()
+	for k, e := range si.s.items {
+		if e.value.GuildID == guildID {
+			si.s.totalBytes.Add(-e.sizeBytes)
+			delete(si.s.items, k)
+		}
+	}
+}
+
+func (si *memStageInstanceStore) Size() int { return si.s.size() }
+
+// ── Emoji store ────────────────────────────────────────────────────────────────
+
+type emojiValue struct {
+	GuildID common.Snowflake
+	Emoji   *common.Emoji
+}
+
+type memEmojiStore struct {
+	s *genericStore[common.Snowflake, emojiValue]
+}
+
+func (es *memEmojiStore) Set(guildID common.Snowflake, emoji *common.Emoji) {
+	es.s.set(emoji.ID, emojiValue{GuildID: guildID, Emoji: emoji})
+}
+
+func (es *memEmojiStore) Get(emojiID common.Snowflake) (*common.Emoji, bool) {
+	v, ok := es.s.get(emojiID)
+	if !ok {
+		return nil, false
+	}
+	return v.Emoji, true
+}
+
+func (es *memEmojiStore) GetByGuild(guildID common.Snowflake) []*common.Emoji {
+	now := time.Now()
+	es.s.mu.RLock()
+	defer es.s.mu.RUnlock()
+	var out []*common.Emoji
+	for _, e := range es.s.items {
+		if e.value.GuildID == guildID && !e.expired(now) {
+			out = append(out, e.value.Emoji)
+		}
+	}
+	return out
+}
+
+func (es *memEmojiStore) SetAll(guildID common.Snowflake, emojis []*common.Emoji) {
+	es.s.mu.Lock()
+	for k, e := range es.s.items {
+		if e.value.GuildID == guildID {
+			es.s.totalBytes.Add(-e.sizeBytes)
+			delete(es.s.items, k)
+		}
+	}
+	es.s.mu.Unlock()
+	for _, emoji := range emojis {
+		if emoji != nil && emoji.ID != "" {
+			es.Set(guildID, emoji)
+		}
+	}
+}
+
+func (es *memEmojiStore) Delete(emojiID common.Snowflake) { es.s.delete(emojiID) }
+
+func (es *memEmojiStore) DeleteGuild(guildID common.Snowflake) {
+	es.s.mu.Lock()
+	defer es.s.mu.Unlock()
+	for k, e := range es.s.items {
+		if e.value.GuildID == guildID {
+			es.s.totalBytes.Add(-e.sizeBytes)
+			delete(es.s.items, k)
+		}
+	}
+}
+
+func (es *memEmojiStore) Size() int { return es.s.size() }
+
+// ── Presence store ─────────────────────────────────────────────────────────────
+
+type memPresenceStore struct {
+	s *genericStore[memberKey, *common.Presence]
+}
+
+func (ps *memPresenceStore) Set(presence *common.Presence) {
+	ps.s.set(memberKey{presence.GuildID, presence.User.ID}, presence)
+}
+
+func (ps *memPresenceStore) Get(guildID, userID common.Snowflake) (*common.Presence, bool) {
+	return ps.s.get(memberKey{guildID, userID})
+}
+
+func (ps *memPresenceStore) GetByGuild(guildID common.Snowflake) []*common.Presence {
+	now := time.Now()
+	ps.s.mu.RLock()
+	defer ps.s.mu.RUnlock()
+	var out []*common.Presence
+	for k, e := range ps.s.items {
+		if k.guildID == guildID && !e.expired(now) {
+			out = append(out, e.value)
+		}
+	}
+	return out
+}
+
+func (ps *memPresenceStore) Delete(guildID, userID common.Snowflake) {
+	ps.s.delete(memberKey{guildID, userID})
+}
+
+func (ps *memPresenceStore) DeleteGuild(guildID common.Snowflake) {
+	ps.s.mu.Lock()
+	defer ps.s.mu.Unlock()
+	for k, e := range ps.s.items {
+		if k.guildID == guildID {
+			ps.s.totalBytes.Add(-e.sizeBytes)
+			delete(ps.s.items, k)
+		}
+	}
+}
+
+func (ps *memPresenceStore) Size() int { return ps.s.size() }

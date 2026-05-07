@@ -307,3 +307,64 @@ type GuildWidget struct {
 	Members       []User    `json:"members"`
 	PresenceCount int       `json:"presence_count"`
 }
+
+// GatewayGuild extends [Guild] with fields that are only present in the
+// GUILD_CREATE gateway event payload and are never sent in REST responses.
+type GatewayGuild struct {
+	Guild
+	JoinedAt             *time.Time            `json:"joined_at,omitempty"`
+	Large                bool                  `json:"large"`
+	Unavailable          *bool                 `json:"unavailable,omitempty"`
+	MemberCount          int                   `json:"member_count,omitempty"`
+	VoiceStates          []VoiceState          `json:"voice_states,omitempty"`
+	Members              []GuildMember         `json:"members,omitempty"`
+	Channels             []Channel             `json:"channels,omitempty"`
+	Threads              []Channel             `json:"threads,omitempty"`
+	Presences            []GatewayPresence     `json:"presences,omitempty"`
+	StageInstances       []StageInstance       `json:"stage_instances,omitempty"`
+	GuildScheduledEvents []GuildScheduledEvent `json:"guild_scheduled_events,omitempty"`
+	SoundboardSounds     []SoundboardSound     `json:"soundboard_sounds,omitempty"`
+}
+
+func (g GatewayGuild) IsAvailable() bool { return true }
+func (g GatewayGuild) GetID() Snowflake  { return g.ID }
+
+// GatewayPresence is a stripped-down presence record as sent inside the
+// GUILD_CREATE payload. It has no guild_id field; the enclosing guild provides
+// that context.
+type GatewayPresence struct {
+	User         PartialPresenceUser `json:"user"`
+	Status       PresenceStatus      `json:"status"`
+	Activities   []FullActivity      `json:"activities"`
+	ClientStatus ClientStatus        `json:"client_status"`
+}
+
+// GatewayGuildWrapper is like [AnyGuildWrapper] but deserialises available
+// guilds as [GatewayGuild] so that gateway-only fields (channels, members,
+// voice states, etc.) are retained. Used by [GuildCreateEvent].
+type GatewayGuildWrapper struct {
+	Guild AnyGuild
+}
+
+func (ag *GatewayGuildWrapper) UnmarshalJSON(data []byte) error {
+	var probe struct {
+		Unavailable *bool `json:"unavailable"`
+	}
+	if err := json.Unmarshal(data, &probe); err != nil {
+		return err
+	}
+	if probe.Unavailable != nil && *probe.Unavailable {
+		var ug UnavailableGuild
+		if err := json.Unmarshal(data, &ug); err != nil {
+			return err
+		}
+		ag.Guild = ug
+		return nil
+	}
+	var g GatewayGuild
+	if err := json.Unmarshal(data, &g); err != nil {
+		return err
+	}
+	ag.Guild = g
+	return nil
+}
