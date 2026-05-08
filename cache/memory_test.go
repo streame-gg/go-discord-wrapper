@@ -29,6 +29,10 @@ func member(userID string) *common.GuildMember {
 	return &common.GuildMember{User: user(userID)}
 }
 
+func sticker(id string) *common.Sticker {
+	return &common.Sticker{ID: common.Snowflake(id), Name: "sticker-" + id}
+}
+
 func message(id, channelID string) *common.Message {
 	return &common.Message{
 		ID:        common.Snowflake(id),
@@ -158,6 +162,29 @@ func (s *memoryTestSuite) TestMemberStore_NilUser() {
 
 	c.Members().Set("guild1", &common.GuildMember{})
 	s.Equalf(0, c.Members().Size(), "expected size 0 when member.User is nil")
+}
+
+// ── StickerStore ──────────────────────────────────────────────────────────────
+
+func (s *memoryTestSuite) TestStickerStore_CRUDAndSetAll() {
+	c := newCache(cache.Options{})
+	defer c.Close()
+
+	c.Stickers().Set("guild1", sticker("s1"))
+	got, ok := c.Stickers().Get("s1")
+	s.Truef(ok && got.ID == "s1", "expected sticker s1, ok=%v", ok)
+
+	c.Stickers().SetAll("guild1", []*common.Sticker{sticker("s2"), sticker("s3")})
+	_, ok = c.Stickers().Get("s1")
+	s.False(ok, "expected old guild stickers replaced by SetAll")
+	s.Lenf(c.Stickers().GetByGuild("guild1"), 2, "expected 2 stickers after SetAll")
+
+	c.Stickers().Delete("s2")
+	_, ok = c.Stickers().Get("s2")
+	s.False(ok, "expected sticker s2 deleted")
+
+	c.Stickers().DeleteGuild("guild1")
+	s.Lenf(c.Stickers().GetByGuild("guild1"), 0, "expected guild stickers deleted")
 }
 
 // ── MessageStore ──────────────────────────────────────────────────────────────

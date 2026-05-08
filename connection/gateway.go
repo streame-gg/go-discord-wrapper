@@ -1,6 +1,7 @@
 package connection
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -54,8 +55,8 @@ type Client struct {
 	// maxReconnectRetries mirrors options.Config.MaxReconnectRetries.
 	maxReconnectRetries int
 
-	// disableCacheAutoPopulation mirrors options.Config.DisableCacheAutoPopulation.
-	disableCacheAutoPopulation bool
+	// cacheAutoPopulate mirrors options.Config.CacheStores, zero disables auto-population.
+	cacheAutoPopulate cache.OverflowCategory
 
 	UnavailableGuilds map[common.Snowflake]struct{}
 
@@ -124,7 +125,10 @@ type Client struct {
 //	    options.WithLogger(&myLogger),
 //	)
 func NewClient(token string, intents common.Intent, opts ...options.Option) (*Client, error) {
-	cfg := options.Build(options.Config{APIVersion: common.APIVersion10}, opts)
+	cfg := options.Build(options.Config{
+		APIVersion:  common.APIVersion10,
+		CacheStores: cache.CategoryAll,
+	}, opts)
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("go-discord-wrapper: %w", err)
 	}
@@ -134,22 +138,25 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 		return nil, err
 	}
 
+	cacheStores := cfg.CacheStores
+	if cfg.DisableCacheAutoPopulation {
+		cacheStores = 0
+	}
+
 	c := &Client{
-		token:                      &token,
-		APIVersion:                 util.PointerOf(cfg.APIVersion),
-		Intents:                    &intents,
-		discordEventEmitter:        util.NewEventEmitter[events.EventType, EventHandler](),
-		UnavailableGuilds:          make(map[common.Snowflake]struct{}),
-		guildMemberCounts:          make(map[common.Snowflake]int),
-		voiceStates:                make(map[string]*common.VoiceState),
-		RestClient:                 rc,
-		Sharding:                   cfg.Sharding,
-		Coordinator:                cfg.Coordinator,
-		Cache:                      cfg.Cache,
-		channelsByGuild:            make(map[common.Snowflake]map[common.Snowflake]struct{}),
-		guildByChannel:             make(map[common.Snowflake]common.Snowflake),
-		maxReconnectRetries:        cfg.MaxReconnectRetries,
-		disableCacheAutoPopulation: cfg.DisableCacheAutoPopulation,
+		token:               &token,
+		APIVersion:          util.PointerOf(cfg.APIVersion),
+		Intents:             &intents,
+		discordEventEmitter: util.NewEventEmitter[events.EventType, EventHandler](),
+		UnavailableGuilds:   make(map[common.Snowflake]struct{}),
+		guildMemberCounts:   make(map[common.Snowflake]int),
+		voiceStates:         make(map[string]*common.VoiceState),
+		RestClient:          rc,
+		Sharding:            cfg.Sharding,
+		Coordinator:         cfg.Coordinator,
+		Cache:               cfg.Cache,
+		maxReconnectRetries: cfg.MaxReconnectRetries,
+		cacheAutoPopulate:   cacheStores,
 	}
 
 	switch {
@@ -383,7 +390,11 @@ func (d *Client) initializeGatewayConnection() (*common.BotRegisterResponse, err
 	return &resp, nil
 }
 
-func (d *Client) Login() error {
+func (d *Client) Login(ctx context.Context) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	gatewayResp, err := d.initializeGatewayConnection()
 	if err != nil {
 		return err
@@ -393,6 +404,13 @@ func (d *Client) Login() error {
 
 	if err := d.connectWebsocket(gatewayResp.Url, false, nil, nil); err != nil {
 		return err
+	}
+
+	if ctx.Done() != nil {
+		go func() {
+			<-ctx.Done()
+			_ = d.Shutdown()
+		}()
 	}
 
 	go func() {
@@ -505,7 +523,11 @@ func (d *Client) dispatch(event events.Event) {
 }
 
 func (d *Client) cacheEnabled() bool {
-	return d.Cache != nil && !d.disableCacheAutoPopulation
+	return d.Cache != nil && d.cacheAutoPopulate != 0
+}
+
+func (d *Client) cacheStoreEnabled(category cache.OverflowCategory) bool {
+	return d.Cache != nil && d.cacheAutoPopulate&category != 0
 }
 
 func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.EventType, event events.Event) bool {
@@ -535,6 +557,12 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 
 			return true
 		}
+	case events.EventResumed:
+		{
+			d.Logger.Info("Gateway session resumed")
+			d.emitReconnect()
+			return true
+		}
 	case events.EventGuildCreate:
 		{
 			var guildCreateEvent events.GuildCreateEvent
@@ -544,17 +572,142 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			}
 
 			if guildCreateEvent.Guild.IsAvailable() {
+				memberCount := guildCreateEvent.MemberCount
+				var guild common.Guild
+				var gatewayGuild common.GatewayGuild
+				hasGateway := false
+				switch g := guildCreateEvent.Guild.(type) {
+				case common.GatewayGuild:
+					guild = g.Guild
+					gatewayGuild = g
+					hasGateway = true
+					if memberCount == 0 && g.MemberCount > 0 {
+						memberCount = g.MemberCount
+					}
+				case common.Guild:
+					guild = g
+				}
+
 				// Record (or refresh) the member count for this guild.
 				d.guildMu.Lock()
-				d.guildMemberCounts[guildCreateEvent.Guild.GetID()] = guildCreateEvent.MemberCount
+				d.guildMemberCounts[guildCreateEvent.Guild.GetID()] = memberCount
 				d.guildMu.Unlock()
 
+				if hasGateway {
+					guildID := guildCreateEvent.Guild.GetID()
+					d.voiceStatesMu.Lock()
+					for i := range gatewayGuild.VoiceStates {
+						vs := gatewayGuild.VoiceStates[i]
+						key := string(guildID) + ":" + string(vs.UserID)
+						vscopy := vs
+						d.voiceStates[key] = &vscopy
+					}
+					d.voiceStatesMu.Unlock()
+				}
+
 				if d.cacheEnabled() {
-					if g, ok := guildCreateEvent.Guild.(common.Guild); ok {
-						gcopy := g
+					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryGuilds) {
+						gcopy := guild
 						d.Cache.Guilds().Set(&gcopy)
-						for i := range gcopy.Roles {
-							d.Cache.Roles().Set(gcopy.ID, &gcopy.Roles[i])
+					}
+
+					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryRoles) {
+						for i := range guild.Roles {
+							role := guild.Roles[i]
+							d.Cache.Roles().Set(guild.ID, &role)
+						}
+					}
+
+					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryEmojis) {
+						for i := range guild.Emojis {
+							emoji := guild.Emojis[i]
+							if emoji.ID != "" {
+								d.Cache.Emojis().Set(guild.ID, &emoji)
+							}
+						}
+					}
+					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryStickers) && guild.Stickers != nil {
+						for i := range *guild.Stickers {
+							sticker := (*guild.Stickers)[i]
+							if sticker.ID != "" {
+								d.Cache.Stickers().Set(guild.ID, &sticker)
+							}
+						}
+					}
+
+					if hasGateway {
+						guildID := guildCreateEvent.Guild.GetID()
+						if d.cacheStoreEnabled(cache.CategoryChannels) {
+							for i := range gatewayGuild.Channels {
+								ch := gatewayGuild.Channels[i]
+								d.Cache.Channels().Set(&ch)
+							}
+							for i := range gatewayGuild.Threads {
+								ch := gatewayGuild.Threads[i]
+								d.Cache.Channels().Set(&ch)
+							}
+						}
+
+						if d.cacheStoreEnabled(cache.CategoryMembers) {
+							for i := range gatewayGuild.Members {
+								m := gatewayGuild.Members[i]
+								d.Cache.Members().Set(guildID, &m)
+							}
+						}
+
+						if d.cacheStoreEnabled(cache.CategoryUsers) {
+							for i := range gatewayGuild.Members {
+								if gatewayGuild.Members[i].User == nil {
+									continue
+								}
+								u := *gatewayGuild.Members[i].User
+								d.Cache.Users().Set(&u)
+							}
+						}
+
+						if d.cacheStoreEnabled(cache.CategoryVoiceStates) {
+							for i := range gatewayGuild.VoiceStates {
+								vs := gatewayGuild.VoiceStates[i]
+								if vs.GuildID == nil {
+									vs.GuildID = &guildID
+								}
+								d.Cache.VoiceStates().Set(guildID, &vs)
+							}
+						}
+
+						if d.cacheStoreEnabled(cache.CategoryPresences) {
+							for i := range gatewayGuild.Presences {
+								p := gatewayGuild.Presences[i]
+								presence := common.Presence{
+									User:         p.User,
+									GuildID:      guildID,
+									Status:       p.Status,
+									Activities:   p.Activities,
+									ClientStatus: p.ClientStatus,
+								}
+								d.Cache.Presences().Set(&presence)
+							}
+						}
+
+						if d.cacheStoreEnabled(cache.CategorySoundboard) {
+							for i := range gatewayGuild.SoundboardSounds {
+								sound := gatewayGuild.SoundboardSounds[i]
+								d.Cache.Soundboard().Set(guildID, &sound)
+							}
+						}
+
+						if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
+							for i := range gatewayGuild.GuildScheduledEvents {
+								ev := gatewayGuild.GuildScheduledEvents[i]
+								d.Cache.ScheduledEvents().Set(&ev)
+							}
+						}
+
+						if d.cacheStoreEnabled(cache.CategoryStageInstances) {
+							for i := range gatewayGuild.StageInstances {
+								instance := gatewayGuild.StageInstances[i]
+								d.Cache.StageInstances().Set(&instance)
+							}
 						}
 					}
 				}
@@ -595,8 +748,35 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			delete(d.guildMemberCounts, guildDeleteEvent.ID)
 			d.guildMu.Unlock()
 
-			if d.cacheEnabled() {
-				d.removeGuildFromCache(guildDeleteEvent.ID)
+			if d.cacheStoreEnabled(cache.CategoryGuilds) {
+				d.Cache.Guilds().Delete(guildDeleteEvent.ID)
+			}
+			if d.cacheStoreEnabled(cache.CategoryMembers) {
+				d.Cache.Members().DeleteGuild(guildDeleteEvent.ID)
+			}
+			if d.cacheStoreEnabled(cache.CategoryRoles) {
+				d.Cache.Roles().DeleteGuild(guildDeleteEvent.ID)
+			}
+			if d.cacheStoreEnabled(cache.CategoryVoiceStates) {
+				d.Cache.VoiceStates().DeleteGuild(guildDeleteEvent.ID)
+			}
+			if d.cacheStoreEnabled(cache.CategoryPresences) {
+				d.Cache.Presences().DeleteGuild(guildDeleteEvent.ID)
+			}
+			if d.cacheStoreEnabled(cache.CategorySoundboard) {
+				d.Cache.Soundboard().DeleteGuild(guildDeleteEvent.ID)
+			}
+			if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
+				d.Cache.ScheduledEvents().DeleteGuild(guildDeleteEvent.ID)
+			}
+			if d.cacheStoreEnabled(cache.CategoryStageInstances) {
+				d.Cache.StageInstances().DeleteGuild(guildDeleteEvent.ID)
+			}
+			if d.cacheStoreEnabled(cache.CategoryEmojis) {
+				d.Cache.Emojis().DeleteGuild(guildDeleteEvent.ID)
+			}
+			if d.cacheStoreEnabled(cache.CategoryStickers) {
+				d.Cache.Stickers().DeleteGuild(guildDeleteEvent.ID)
 			}
 		}
 	case events.EventVoiceStateUpdate:
@@ -616,11 +796,21 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.voiceStates[key] = &s
 				}
 				d.voiceStatesMu.Unlock()
+
+				if d.cacheStoreEnabled(cache.CategoryVoiceStates) {
+					guildID := *vse.GuildID
+					if vse.ChannelID == nil {
+						d.Cache.VoiceStates().Delete(guildID, vse.UserID)
+					} else {
+						state := vse.VoiceState
+						d.Cache.VoiceStates().Set(guildID, &state)
+					}
+				}
 			}
 		}
 	case events.EventUserUpdate:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryUsers) {
 				var ev events.UserUpdateEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal USER_UPDATE event", slog.Any("err", err))
@@ -630,19 +820,74 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				d.Cache.Users().Set(&u)
 			}
 		}
+	case events.EventPresenceUpdate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryPresences) {
+				var ev events.PresenceUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal PRESENCE_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				presence := common.Presence{
+					User:         ev.User,
+					GuildID:      ev.GuildID,
+					Status:       ev.Status,
+					Activities:   ev.Activities,
+					ClientStatus: ev.ClientStatus,
+				}
+				d.Cache.Presences().Set(&presence)
+			}
+		}
 	case events.EventGuildUpdate:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryGuilds) || d.cacheStoreEnabled(cache.CategoryRoles) {
 				var ev events.GuildUpdateEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal GUILD_UPDATE event", slog.Any("err", err))
 					return false
 				}
 				g := ev.Guild
-				d.Cache.Guilds().Set(&g)
-				for i := range g.Roles {
-					d.Cache.Roles().Set(g.ID, &g.Roles[i])
+				if d.cacheStoreEnabled(cache.CategoryGuilds) {
+					d.Cache.Guilds().Set(&g)
 				}
+				if d.cacheStoreEnabled(cache.CategoryRoles) {
+					for i := range g.Roles {
+						role := g.Roles[i]
+						d.Cache.Roles().Set(g.ID, &role)
+					}
+				}
+			}
+		}
+	case events.EventGuildEmojisUpdate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryEmojis) {
+				var ev events.GuildEmojisUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_EMOJIS_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				emojis := make([]*common.Emoji, 0, len(ev.Emojis))
+				for i := range ev.Emojis {
+					emoji := ev.Emojis[i]
+					emojis = append(emojis, &emoji)
+				}
+				d.Cache.Emojis().SetAll(ev.GuildID, emojis)
+			}
+		}
+	case events.EventGuildStickersUpdate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryStickers) {
+				var ev events.GuildStickersUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_STICKERS_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				stickers := make([]*common.Sticker, 0, len(ev.Stickers))
+				for i := range ev.Stickers {
+					sticker := ev.Stickers[i]
+					stickers = append(stickers, &sticker)
+				}
+				d.Cache.Stickers().SetAll(ev.GuildID, stickers)
 			}
 		}
 	case events.EventGuildMemberAdd:
@@ -655,7 +900,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			d.guildMu.Lock()
 			d.guildMemberCounts[ev.GuildID]++
 			d.guildMu.Unlock()
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryMembers) {
 				m := ev.GuildMember
 				d.Cache.Members().Set(ev.GuildID, &m)
 			}
@@ -672,13 +917,13 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				d.guildMemberCounts[ev.GuildID]--
 			}
 			d.guildMu.Unlock()
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryMembers) {
 				d.Cache.Members().Delete(ev.GuildID, ev.User.ID)
 			}
 		}
 	case events.EventGuildMemberUpdate:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryMembers) {
 				var ev events.GuildMemberUpdateEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal GUILD_MEMBER_UPDATE event", slog.Any("err", err))
@@ -717,7 +962,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildRoleCreate:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryRoles) {
 				var ev events.GuildRoleCreateEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal GUILD_ROLE_CREATE event", slog.Any("err", err))
@@ -729,7 +974,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildRoleUpdate:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryRoles) {
 				var ev events.GuildRoleUpdateEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal GUILD_ROLE_UPDATE event", slog.Any("err", err))
@@ -741,7 +986,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildRoleDelete:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryRoles) {
 				var ev events.GuildRoleDeleteEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal GUILD_ROLE_DELETE event", slog.Any("err", err))
@@ -750,9 +995,150 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				d.removeRoleFromCache(ev.RoleID)
 			}
 		}
+	case events.EventGuildScheduledEventCreate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
+				var ev events.GuildScheduledEventCreateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_SCHEDULED_EVENT_CREATE event", slog.Any("err", err))
+					return false
+				}
+				scheduled := ev.GuildScheduledEvent
+				d.Cache.ScheduledEvents().Set(&scheduled)
+			}
+		}
+	case events.EventGuildScheduledEventUpdate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
+				var ev events.GuildScheduledEventUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_SCHEDULED_EVENT_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				scheduled := ev.GuildScheduledEvent
+				d.Cache.ScheduledEvents().Set(&scheduled)
+			}
+		}
+	case events.EventGuildScheduledEventDelete:
+		{
+			if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
+				var ev events.GuildScheduledEventDeleteEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_SCHEDULED_EVENT_DELETE event", slog.Any("err", err))
+					return false
+				}
+				d.Cache.ScheduledEvents().Delete(ev.ID)
+			}
+		}
+	case events.EventStageInstanceCreate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryStageInstances) {
+				var ev events.StageInstanceCreateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal STAGE_INSTANCE_CREATE event", slog.Any("err", err))
+					return false
+				}
+				instance := ev.StageInstance
+				d.Cache.StageInstances().Set(&instance)
+			}
+		}
+	case events.EventStageInstanceUpdate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryStageInstances) {
+				var ev events.StageInstanceUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal STAGE_INSTANCE_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				instance := ev.StageInstance
+				d.Cache.StageInstances().Set(&instance)
+			}
+		}
+	case events.EventStageInstanceDelete:
+		{
+			if d.cacheStoreEnabled(cache.CategoryStageInstances) {
+				var ev events.StageInstanceDeleteEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal STAGE_INSTANCE_DELETE event", slog.Any("err", err))
+					return false
+				}
+				d.Cache.StageInstances().Delete(ev.ID)
+			}
+		}
+	case events.EventGuildSoundboardSoundCreate:
+		{
+			if d.cacheStoreEnabled(cache.CategorySoundboard) {
+				var ev events.GuildSoundboardSoundCreateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_SOUNDBOARD_SOUND_CREATE event", slog.Any("err", err))
+					return false
+				}
+				sound := ev.SoundboardSound
+				if sound.GuildID != nil {
+					d.Cache.Soundboard().Set(*sound.GuildID, &sound)
+				}
+			}
+		}
+	case events.EventGuildSoundboardSoundUpdate:
+		{
+			if d.cacheStoreEnabled(cache.CategorySoundboard) {
+				var ev events.GuildSoundboardSoundUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_SOUNDBOARD_SOUND_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				sound := ev.SoundboardSound
+				if sound.GuildID != nil {
+					d.Cache.Soundboard().Set(*sound.GuildID, &sound)
+				}
+			}
+		}
+	case events.EventGuildSoundboardSoundDelete:
+		{
+			if d.cacheStoreEnabled(cache.CategorySoundboard) {
+				var ev events.GuildSoundboardSoundDeleteEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_SOUNDBOARD_SOUND_DELETE event", slog.Any("err", err))
+					return false
+				}
+				d.Cache.Soundboard().Delete(ev.SoundID)
+			}
+		}
+	case events.EventGuildSoundboardSoundsUpdate:
+		{
+			if d.cacheStoreEnabled(cache.CategorySoundboard) {
+				var ev events.GuildSoundboardSoundsUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_SOUNDBOARD_SOUNDS_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				sounds := make([]*common.SoundboardSound, 0, len(ev.SoundboardSounds))
+				for i := range ev.SoundboardSounds {
+					sound := ev.SoundboardSounds[i]
+					sounds = append(sounds, &sound)
+				}
+				d.Cache.Soundboard().SetAll(ev.GuildID, sounds)
+			}
+		}
+	case events.EventSoundboardSounds:
+		{
+			if d.cacheStoreEnabled(cache.CategorySoundboard) {
+				var ev events.SoundboardSoundsEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal SOUNDBOARD_SOUNDS event", slog.Any("err", err))
+					return false
+				}
+				sounds := make([]*common.SoundboardSound, 0, len(ev.SoundboardSounds))
+				for i := range ev.SoundboardSounds {
+					sound := ev.SoundboardSounds[i]
+					sounds = append(sounds, &sound)
+				}
+				d.Cache.Soundboard().SetAll(ev.GuildID, sounds)
+			}
+		}
 	case events.EventChannelCreate:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryChannels) {
 				var ev events.ChannelCreateEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal CHANNEL_CREATE event", slog.Any("err", err))
@@ -764,7 +1150,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventChannelUpdate:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryChannels) {
 				var ev events.ChannelUpdateEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal CHANNEL_UPDATE event", slog.Any("err", err))
@@ -776,33 +1162,94 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventChannelDelete:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryChannels) || d.cacheStoreEnabled(cache.CategoryMessages) {
 				var ev events.ChannelDeleteEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal CHANNEL_DELETE event", slog.Any("err", err))
 					return false
 				}
-				d.removeChannelFromCache(ev.ID)
+				if d.cacheStoreEnabled(cache.CategoryChannels) {
+					d.Cache.Channels().Delete(ev.ID)
+				}
+				if d.cacheStoreEnabled(cache.CategoryMessages) {
+					d.Cache.Messages().DeleteChannel(ev.ID)
+				}
+			}
+		}
+	case events.EventThreadCreate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryChannels) {
+				var ev events.ThreadCreateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal THREAD_CREATE event", slog.Any("err", err))
+					return false
+				}
+				ch := ev.Channel
+				d.Cache.Channels().Set(&ch)
+			}
+		}
+	case events.EventThreadUpdate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryChannels) {
+				var ev events.ThreadUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal THREAD_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				ch := ev.Channel
+				d.Cache.Channels().Set(&ch)
+			}
+		}
+	case events.EventThreadDelete:
+		{
+			if d.cacheStoreEnabled(cache.CategoryChannels) || d.cacheStoreEnabled(cache.CategoryMessages) {
+				var ev events.ThreadDeleteEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal THREAD_DELETE event", slog.Any("err", err))
+					return false
+				}
+				if d.cacheStoreEnabled(cache.CategoryChannels) {
+					d.Cache.Channels().Delete(ev.ID)
+				}
+				if d.cacheStoreEnabled(cache.CategoryMessages) {
+					d.Cache.Messages().DeleteChannel(ev.ID)
+				}
+			}
+		}
+	case events.EventThreadListSync:
+		{
+			if d.cacheStoreEnabled(cache.CategoryChannels) {
+				var ev events.ThreadListSyncEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal THREAD_LIST_SYNC event", slog.Any("err", err))
+					return false
+				}
+				for i := range ev.Threads {
+					ch := ev.Threads[i]
+					d.Cache.Channels().Set(&ch)
+				}
 			}
 		}
 	case events.EventMessageCreate:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryMessages) || d.cacheStoreEnabled(cache.CategoryUsers) {
 				var ev events.MessageCreateEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal MESSAGE_CREATE event", slog.Any("err", err))
 					return false
 				}
 				msg := ev.Message
-				d.Cache.Messages().Add(&msg)
-				if ev.Author != nil {
+				if d.cacheStoreEnabled(cache.CategoryMessages) {
+					d.Cache.Messages().Add(&msg)
+				}
+				if ev.Author != nil && d.cacheStoreEnabled(cache.CategoryUsers) {
 					d.Cache.Users().Set(ev.Author)
 				}
 			}
 		}
 	case events.EventMessageUpdate:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryMessages) {
 				var ev events.MessageUpdateEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal MESSAGE_UPDATE event", slog.Any("err", err))
@@ -814,7 +1261,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventMessageDelete:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryMessages) {
 				var ev events.MessageDeleteEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal MESSAGE_DELETE event", slog.Any("err", err))
@@ -825,7 +1272,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventMessageDeleteBulk:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryMessages) {
 				var ev events.MessageDeleteBulkEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal MESSAGE_DELETE_BULK event", slog.Any("err", err))
@@ -836,7 +1283,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildMembersChunk:
 		{
-			if d.cacheEnabled() {
+			if d.cacheStoreEnabled(cache.CategoryMembers) {
 				var ev events.GuildMembersChunkEvent
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal GUILD_MEMBERS_CHUNK event", slog.Any("err", err))

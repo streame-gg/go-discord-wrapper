@@ -3,12 +3,20 @@
 //
 // # Interface design
 //
-// [Cache] is the top-level interface with five typed sub-stores:
-//   - [GuildStore]   — discord guilds
-//   - [ChannelStore] — discord channels
-//   - [UserStore]    — discord users
-//   - [MemberStore]  — guild members keyed by (guildID, userID)
-//   - [MessageStore] — per-channel message history with bounded ring buffers
+// [Cache] is the top-level interface with typed sub-stores:
+//   - [GuildStore]         — discord guilds
+//   - [ChannelStore]       — discord channels (including threads)
+//   - [UserStore]          — discord users
+//   - [MemberStore]        — guild members keyed by (guildID, userID)
+//   - [MessageStore]       — per-channel message history with bounded ring buffers
+//   - [RoleStore]          — guild roles
+//   - [VoiceStateStore]    — guild voice states keyed by (guildID, userID)
+//   - [SoundboardStore]    — guild soundboard sounds
+//   - [ScheduledEventStore]— guild scheduled events
+//   - [StageInstanceStore] — guild stage instances
+//   - [EmojiStore]         — guild emojis
+//   - [StickerStore]       — guild stickers
+//   - [PresenceStore]      — guild presences (optional, high volume)
 //
 // Implement [Cache] for any external backend (Redis, MongoDB, etc.) and pass
 // it to options.WithCache; the gateway client populates all stores automatically
@@ -96,15 +104,22 @@ const (
 type OverflowCategory uint
 
 const (
-	CategoryGuilds   OverflowCategory = 1 << 0
-	CategoryChannels OverflowCategory = 1 << 1
-	CategoryUsers    OverflowCategory = 1 << 2
-	CategoryMembers  OverflowCategory = 1 << 3
-	CategoryMessages OverflowCategory = 1 << 4
-	CategoryRoles    OverflowCategory = 1 << 5
+	CategoryGuilds          OverflowCategory = 1 << 0
+	CategoryChannels        OverflowCategory = 1 << 1
+	CategoryUsers           OverflowCategory = 1 << 2
+	CategoryMembers         OverflowCategory = 1 << 3
+	CategoryMessages        OverflowCategory = 1 << 4
+	CategoryRoles           OverflowCategory = 1 << 5
+	CategoryVoiceStates     OverflowCategory = 1 << 6
+	CategorySoundboard      OverflowCategory = 1 << 7
+	CategoryScheduledEvents OverflowCategory = 1 << 8
+	CategoryStageInstances  OverflowCategory = 1 << 9
+	CategoryEmojis          OverflowCategory = 1 << 10
+	CategoryStickers        OverflowCategory = 1 << 11
+	CategoryPresences       OverflowCategory = 1 << 12
 
 	// CategoryAll targets every entity store. This is the default.
-	CategoryAll OverflowCategory = (1 << 6) - 1
+	CategoryAll OverflowCategory = (1 << 13) - 1
 )
 
 // OverflowPolicy configures what happens when a [Limits] value is exceeded.
@@ -151,6 +166,7 @@ type Limits struct {
 	MaxMembers  int // max GuildMember entries (summed across all guilds)
 	MaxMessages int // max total Message entries (summed across all channels)
 	MaxRoles    int // max Role entries (summed across all guilds)
+	MaxStickers int // max Sticker entries (summed across all guilds)
 }
 
 // ── Message options ───────────────────────────────────────────────────────────
@@ -268,6 +284,87 @@ type MessageStore interface {
 	Size() int
 }
 
+// VoiceStateStore is a thread-safe cache for [common.VoiceState] objects,
+// keyed by the composite (guildID, userID) pair.
+type VoiceStateStore interface {
+	Set(guildID common.Snowflake, state *common.VoiceState)
+	Get(guildID, userID common.Snowflake) (*common.VoiceState, bool)
+	Delete(guildID, userID common.Snowflake)
+	// DeleteGuild removes every voice state entry for guildID. Call on GUILD_DELETE.
+	DeleteGuild(guildID common.Snowflake)
+	AllInGuild(guildID common.Snowflake) []*common.VoiceState
+	Size() int
+}
+
+// SoundboardStore is a thread-safe cache for [common.SoundboardSound] objects.
+type SoundboardStore interface {
+	Set(guildID common.Snowflake, sound *common.SoundboardSound)
+	Get(soundID common.Snowflake) (*common.SoundboardSound, bool)
+	GetByGuild(guildID common.Snowflake) []*common.SoundboardSound
+	SetAll(guildID common.Snowflake, sounds []*common.SoundboardSound)
+	Delete(soundID common.Snowflake)
+	// DeleteGuild removes every soundboard sound for guildID. Call on GUILD_DELETE.
+	DeleteGuild(guildID common.Snowflake)
+	Size() int
+}
+
+// ScheduledEventStore is a thread-safe cache for [common.GuildScheduledEvent] objects.
+type ScheduledEventStore interface {
+	Set(event *common.GuildScheduledEvent)
+	Get(eventID common.Snowflake) (*common.GuildScheduledEvent, bool)
+	GetByGuild(guildID common.Snowflake) []*common.GuildScheduledEvent
+	Delete(eventID common.Snowflake)
+	// DeleteGuild removes every scheduled event for guildID. Call on GUILD_DELETE.
+	DeleteGuild(guildID common.Snowflake)
+	Size() int
+}
+
+// StageInstanceStore is a thread-safe cache for [common.StageInstance] objects.
+type StageInstanceStore interface {
+	Set(instance *common.StageInstance)
+	Get(instanceID common.Snowflake) (*common.StageInstance, bool)
+	GetByGuild(guildID common.Snowflake) []*common.StageInstance
+	Delete(instanceID common.Snowflake)
+	// DeleteGuild removes every stage instance for guildID. Call on GUILD_DELETE.
+	DeleteGuild(guildID common.Snowflake)
+	Size() int
+}
+
+// EmojiStore is a thread-safe cache for [common.Emoji] objects.
+type EmojiStore interface {
+	Set(guildID common.Snowflake, emoji *common.Emoji)
+	Get(emojiID common.Snowflake) (*common.Emoji, bool)
+	GetByGuild(guildID common.Snowflake) []*common.Emoji
+	SetAll(guildID common.Snowflake, emojis []*common.Emoji)
+	Delete(emojiID common.Snowflake)
+	// DeleteGuild removes every emoji for guildID. Call on GUILD_DELETE.
+	DeleteGuild(guildID common.Snowflake)
+	Size() int
+}
+
+// StickerStore is a thread-safe cache for [common.Sticker] objects.
+type StickerStore interface {
+	Set(guildID common.Snowflake, sticker *common.Sticker)
+	Get(stickerID common.Snowflake) (*common.Sticker, bool)
+	GetByGuild(guildID common.Snowflake) []*common.Sticker
+	SetAll(guildID common.Snowflake, stickers []*common.Sticker)
+	Delete(stickerID common.Snowflake)
+	// DeleteGuild removes every sticker for guildID. Call on GUILD_DELETE.
+	DeleteGuild(guildID common.Snowflake)
+	Size() int
+}
+
+// PresenceStore is a thread-safe cache for [common.Presence] objects.
+type PresenceStore interface {
+	Set(presence *common.Presence)
+	Get(guildID, userID common.Snowflake) (*common.Presence, bool)
+	GetByGuild(guildID common.Snowflake) []*common.Presence
+	Delete(guildID, userID common.Snowflake)
+	// DeleteGuild removes every presence entry for guildID. Call on GUILD_DELETE.
+	DeleteGuild(guildID common.Snowflake)
+	Size() int
+}
+
 // Cache is the top-level caching interface for Discord entities.
 // All methods and the stores they return are safe for concurrent use.
 // Close stops background goroutines; the cache must not be used after it returns.
@@ -278,5 +375,12 @@ type Cache interface {
 	Members() MemberStore
 	Messages() MessageStore
 	Roles() RoleStore
+	VoiceStates() VoiceStateStore
+	Soundboard() SoundboardStore
+	ScheduledEvents() ScheduledEventStore
+	StageInstances() StageInstanceStore
+	Emojis() EmojiStore
+	Stickers() StickerStore
+	Presences() PresenceStore
 	Close() error
 }

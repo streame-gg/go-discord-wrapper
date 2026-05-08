@@ -5,7 +5,7 @@ import (
 )
 
 type GuildCreateEvent struct {
-	common.AnyGuildWrapper
+	common.GatewayGuildWrapper
 	Large       bool  `json:"large"`
 	Unavailable *bool `json:"unavailable"`
 	MemberCount int   `json:"member_count"`

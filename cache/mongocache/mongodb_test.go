@@ -93,6 +93,10 @@ func member(userID string) *common.GuildMember {
 	return &common.GuildMember{User: user(userID)}
 }
 
+func sticker(id string) *common.Sticker {
+	return &common.Sticker{ID: common.Snowflake(id), Name: "sticker-" + id}
+}
+
 func message(id, channelID string) *common.Message {
 	return &common.Message{
 		ID:        common.Snowflake(id),
@@ -320,6 +324,36 @@ func TestMemberStore_TTL(t *testing.T) {
 	time.Sleep(300 * time.Millisecond)
 	if _, ok := c.Members().Get("g1", "1"); ok {
 		t.Fatal("expected member expired after TTL")
+	}
+}
+
+// ── StickerStore ──────────────────────────────────────────────────────────────
+
+func TestStickerStore_CRUDAndSetAll(t *testing.T) {
+	c := newCache(t, cache.Options{})
+
+	c.Stickers().Set("guild1", sticker("s1"))
+	got, ok := c.Stickers().Get("s1")
+	if !ok || got.ID != "s1" {
+		t.Fatalf("expected sticker s1, ok=%v", ok)
+	}
+
+	c.Stickers().SetAll("guild1", []*common.Sticker{sticker("s2"), sticker("s3")})
+	if _, ok := c.Stickers().Get("s1"); ok {
+		t.Fatal("expected old guild stickers replaced by SetAll")
+	}
+	if stickers := c.Stickers().GetByGuild("guild1"); len(stickers) != 2 {
+		t.Fatalf("expected 2 stickers in guild1, got %d", len(stickers))
+	}
+
+	c.Stickers().Delete("s2")
+	if _, ok := c.Stickers().Get("s2"); ok {
+		t.Fatal("expected sticker s2 deleted")
+	}
+
+	c.Stickers().DeleteGuild("guild1")
+	if stickers := c.Stickers().GetByGuild("guild1"); len(stickers) != 0 {
+		t.Fatalf("expected guild stickers deleted, got %d", len(stickers))
 	}
 }
 

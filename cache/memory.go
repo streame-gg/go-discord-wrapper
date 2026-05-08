@@ -891,6 +891,7 @@ type MemoryCache struct {
 	scheduledEvents *memScheduledEventStore
 	stageInstances  *memStageInstanceStore
 	emojis          *memEmojiStore
+	stickers        *memStickerStore
 	presences       *memPresenceStore
 
 	stopOnce sync.Once
@@ -937,7 +938,28 @@ func NewMemoryCache(opts Options) *MemoryCache {
 		members:  &memMemberStore{s: newGenericStore[memberKey, *common.GuildMember](sc(opts.Limits.MaxMembers))},
 		roles:    &memRoleStore{s: newGenericStore[common.Snowflake, roleValue](sc(opts.Limits.MaxRoles))},
 		messages: newMemMessageStore(opts.Messages, trackBytes, opts.Limits.MaxMessages, by),
-		stopCh:   make(chan struct{}),
+		voiceStates: &memVoiceStateStore{
+			s: newGenericStore[memberKey, *common.VoiceState](sc(0)),
+		},
+		soundboard: &memSoundboardStore{
+			s: newGenericStore[common.Snowflake, soundboardValue](sc(0)),
+		},
+		scheduledEvents: &memScheduledEventStore{
+			s: newGenericStore[common.Snowflake, *common.GuildScheduledEvent](sc(0)),
+		},
+		stageInstances: &memStageInstanceStore{
+			s: newGenericStore[common.Snowflake, *common.StageInstance](sc(0)),
+		},
+		emojis: &memEmojiStore{
+			s: newGenericStore[common.Snowflake, emojiValue](sc(0)),
+		},
+		stickers: &memStickerStore{
+			s: newGenericStore[common.Snowflake, stickerValue](sc(opts.Limits.MaxStickers)),
+		},
+		presences: &memPresenceStore{
+			s: newGenericStore[memberKey, *common.Presence](sc(0)),
+		},
+		stopCh: make(chan struct{}),
 	}
 
 	c.wg.Add(1)
@@ -951,6 +973,25 @@ func (c *MemoryCache) Users() UserStore       { return c.users }
 func (c *MemoryCache) Members() MemberStore   { return c.members }
 func (c *MemoryCache) Roles() RoleStore       { return c.roles }
 func (c *MemoryCache) Messages() MessageStore { return c.messages }
+func (c *MemoryCache) VoiceStates() VoiceStateStore {
+	return c.voiceStates
+}
+func (c *MemoryCache) Soundboard() SoundboardStore {
+	return c.soundboard
+}
+func (c *MemoryCache) ScheduledEvents() ScheduledEventStore {
+	return c.scheduledEvents
+}
+func (c *MemoryCache) StageInstances() StageInstanceStore {
+	return c.stageInstances
+}
+func (c *MemoryCache) Emojis() EmojiStore { return c.emojis }
+func (c *MemoryCache) Stickers() StickerStore {
+	return c.stickers
+}
+func (c *MemoryCache) Presences() PresenceStore {
+	return c.presences
+}
 
 // Close stops the background sweeper. Safe to call multiple times.
 func (c *MemoryCache) Close() error {
@@ -984,6 +1025,13 @@ func (c *MemoryCache) sweep() {
 	c.members.s.sweep(now, b, uw)
 	c.roles.s.sweep(now, b, uw)
 	c.messages.sweep(now, b, uw)
+	c.voiceStates.s.sweep(now, b, uw)
+	c.soundboard.s.sweep(now, b, uw)
+	c.scheduledEvents.s.sweep(now, b, uw)
+	c.stageInstances.s.sweep(now, b, uw)
+	c.emojis.s.sweep(now, b, uw)
+	c.stickers.s.sweep(now, b, uw)
+	c.presences.s.sweep(now, b, uw)
 
 	c.enforceGlobalLimits()
 }
@@ -996,7 +1044,9 @@ func (c *MemoryCache) enforceGlobalLimits() {
 
 	if lim.MaxEntries > 0 {
 		total := c.guilds.s.size() + c.channels.s.size() +
-			c.users.s.size() + c.members.s.size() + c.roles.s.size() + c.messages.Size()
+			c.users.s.size() + c.members.s.size() + c.roles.s.size() + c.messages.Size() +
+			c.voiceStates.s.size() + c.soundboard.s.size() + c.scheduledEvents.s.size() +
+			c.stageInstances.s.size() + c.emojis.s.size() + c.presences.s.size()
 		if total > lim.MaxEntries {
 			c.evictGloballyByCount(total-lim.MaxEntries, pol.Target, pol.ClearBy)
 		}
@@ -1005,7 +1055,9 @@ func (c *MemoryCache) enforceGlobalLimits() {
 	if lim.MaxSizeMB > 0 {
 		maxBytes := int64(lim.MaxSizeMB * 1024 * 1024)
 		totalBytes := c.guilds.s.bytes() + c.channels.s.bytes() +
-			c.users.s.bytes() + c.members.s.bytes() + c.roles.s.bytes() + c.messages.bytes()
+			c.users.s.bytes() + c.members.s.bytes() + c.roles.s.bytes() + c.messages.bytes() +
+			c.voiceStates.s.bytes() + c.soundboard.s.bytes() + c.scheduledEvents.s.bytes() +
+			c.stageInstances.s.bytes() + c.emojis.s.bytes() + c.presences.s.bytes()
 		if totalBytes > maxBytes {
 			c.evictGloballyByBytes(totalBytes-maxBytes, pol.Target, pol.ClearBy)
 		}
@@ -1050,6 +1102,41 @@ func (c *MemoryCache) evictGloballyByCount(need int, target OverflowCategory, by
 	if target&CategoryMessages != 0 {
 		n := c.messages.Size()
 		stores = append(stores, storeRef{n, func(n int, by ClearBy) int64 { return c.messages.evictN(n, by) }})
+		total += n
+	}
+	if target&CategoryVoiceStates != 0 {
+		n := c.voiceStates.s.size()
+		stores = append(stores, storeRef{n, func(n int, by ClearBy) int64 { return c.voiceStates.s.evictN(n, by) }})
+		total += n
+	}
+	if target&CategorySoundboard != 0 {
+		n := c.soundboard.s.size()
+		stores = append(stores, storeRef{n, func(n int, by ClearBy) int64 { return c.soundboard.s.evictN(n, by) }})
+		total += n
+	}
+	if target&CategoryScheduledEvents != 0 {
+		n := c.scheduledEvents.s.size()
+		stores = append(stores, storeRef{n, func(n int, by ClearBy) int64 { return c.scheduledEvents.s.evictN(n, by) }})
+		total += n
+	}
+	if target&CategoryStageInstances != 0 {
+		n := c.stageInstances.s.size()
+		stores = append(stores, storeRef{n, func(n int, by ClearBy) int64 { return c.stageInstances.s.evictN(n, by) }})
+		total += n
+	}
+	if target&CategoryEmojis != 0 {
+		n := c.emojis.s.size()
+		stores = append(stores, storeRef{n, func(n int, by ClearBy) int64 { return c.emojis.s.evictN(n, by) }})
+		total += n
+	}
+	if target&CategoryStickers != 0 {
+		n := c.stickers.s.size()
+		stores = append(stores, storeRef{n, func(n int, by ClearBy) int64 { return c.stickers.s.evictN(n, by) }})
+		total += n
+	}
+	if target&CategoryPresences != 0 {
+		n := c.presences.s.size()
+		stores = append(stores, storeRef{n, func(n int, by ClearBy) int64 { return c.presences.s.evictN(n, by) }})
 		total += n
 	}
 
@@ -1112,6 +1199,41 @@ func (c *MemoryCache) evictGloballyByBytes(need int64, target OverflowCategory, 
 	if target&CategoryMessages != 0 {
 		b := c.messages.bytes()
 		stores = append(stores, storeRef{b, c.messages.Size(), func(n int, by ClearBy) int64 { return c.messages.evictN(n, by) }})
+		totalBytes += b
+	}
+	if target&CategoryVoiceStates != 0 {
+		b := c.voiceStates.s.bytes()
+		stores = append(stores, storeRef{b, c.voiceStates.s.size(), func(n int, by ClearBy) int64 { return c.voiceStates.s.evictN(n, by) }})
+		totalBytes += b
+	}
+	if target&CategorySoundboard != 0 {
+		b := c.soundboard.s.bytes()
+		stores = append(stores, storeRef{b, c.soundboard.s.size(), func(n int, by ClearBy) int64 { return c.soundboard.s.evictN(n, by) }})
+		totalBytes += b
+	}
+	if target&CategoryScheduledEvents != 0 {
+		b := c.scheduledEvents.s.bytes()
+		stores = append(stores, storeRef{b, c.scheduledEvents.s.size(), func(n int, by ClearBy) int64 { return c.scheduledEvents.s.evictN(n, by) }})
+		totalBytes += b
+	}
+	if target&CategoryStageInstances != 0 {
+		b := c.stageInstances.s.bytes()
+		stores = append(stores, storeRef{b, c.stageInstances.s.size(), func(n int, by ClearBy) int64 { return c.stageInstances.s.evictN(n, by) }})
+		totalBytes += b
+	}
+	if target&CategoryEmojis != 0 {
+		b := c.emojis.s.bytes()
+		stores = append(stores, storeRef{b, c.emojis.s.size(), func(n int, by ClearBy) int64 { return c.emojis.s.evictN(n, by) }})
+		totalBytes += b
+	}
+	if target&CategoryStickers != 0 {
+		b := c.stickers.s.bytes()
+		stores = append(stores, storeRef{b, c.stickers.s.size(), func(n int, by ClearBy) int64 { return c.stickers.s.evictN(n, by) }})
+		totalBytes += b
+	}
+	if target&CategoryPresences != 0 {
+		b := c.presences.s.bytes()
+		stores = append(stores, storeRef{b, c.presences.s.size(), func(n int, by ClearBy) int64 { return c.presences.s.evictN(n, by) }})
 		totalBytes += b
 	}
 
@@ -1393,6 +1515,73 @@ func (es *memEmojiStore) DeleteGuild(guildID common.Snowflake) {
 }
 
 func (es *memEmojiStore) Size() int { return es.s.size() }
+
+// ── Sticker store ──────────────────────────────────────────────────────────────
+
+type stickerValue struct {
+	GuildID common.Snowflake
+	Sticker *common.Sticker
+}
+
+type memStickerStore struct {
+	s *genericStore[common.Snowflake, stickerValue]
+}
+
+func (ss *memStickerStore) Set(guildID common.Snowflake, sticker *common.Sticker) {
+	ss.s.set(sticker.ID, stickerValue{GuildID: guildID, Sticker: sticker})
+}
+
+func (ss *memStickerStore) Get(stickerID common.Snowflake) (*common.Sticker, bool) {
+	v, ok := ss.s.get(stickerID)
+	if !ok {
+		return nil, false
+	}
+	return v.Sticker, true
+}
+
+func (ss *memStickerStore) GetByGuild(guildID common.Snowflake) []*common.Sticker {
+	now := time.Now()
+	ss.s.mu.RLock()
+	defer ss.s.mu.RUnlock()
+	var out []*common.Sticker
+	for _, e := range ss.s.items {
+		if e.value.GuildID == guildID && !e.expired(now) {
+			out = append(out, e.value.Sticker)
+		}
+	}
+	return out
+}
+
+func (ss *memStickerStore) SetAll(guildID common.Snowflake, stickers []*common.Sticker) {
+	ss.s.mu.Lock()
+	for k, e := range ss.s.items {
+		if e.value.GuildID == guildID {
+			ss.s.totalBytes.Add(-e.sizeBytes)
+			delete(ss.s.items, k)
+		}
+	}
+	ss.s.mu.Unlock()
+	for _, sticker := range stickers {
+		if sticker != nil && sticker.ID != "" {
+			ss.Set(guildID, sticker)
+		}
+	}
+}
+
+func (ss *memStickerStore) Delete(stickerID common.Snowflake) { ss.s.delete(stickerID) }
+
+func (ss *memStickerStore) DeleteGuild(guildID common.Snowflake) {
+	ss.s.mu.Lock()
+	defer ss.s.mu.Unlock()
+	for k, e := range ss.s.items {
+		if e.value.GuildID == guildID {
+			ss.s.totalBytes.Add(-e.sizeBytes)
+			delete(ss.s.items, k)
+		}
+	}
+}
+
+func (ss *memStickerStore) Size() int { return ss.s.size() }
 
 // ── Presence store ─────────────────────────────────────────────────────────────
 
