@@ -153,6 +153,10 @@ func (d *Client) removeRoleFromCache(roleID common.Snowflake) {
 	d.Cache.Roles().Delete(roleID)
 }
 
+// trackChannel records the channel→guild association in the bidirectional
+// index so that all channels belonging to a guild can be found efficiently.
+// If the channel has no GuildID it is a DM channel and is not indexed.
+// Safe for concurrent use; acquires channelIndexMu internally.
 func (d *Client) trackChannel(channel *common.Channel) {
 	if channel == nil {
 		return
@@ -187,6 +191,10 @@ func (d *Client) trackChannel(channel *common.Channel) {
 	d.guildByChannel[channel.ID] = guildID
 }
 
+// untrackChannel removes a channel from the bidirectional index. It is called
+// when a channel is deleted (CHANNEL_DELETE) or when the entire guild is
+// evicted from the cache.
+// Safe for concurrent use; acquires channelIndexMu internally.
 func (d *Client) untrackChannel(channelID common.Snowflake) {
 	d.channelIndexMu.Lock()
 	defer d.channelIndexMu.Unlock()
@@ -205,6 +213,11 @@ func (d *Client) untrackChannel(channelID common.Snowflake) {
 	delete(d.guildByChannel, channelID)
 }
 
+// drainGuildChannelIDs atomically removes and returns all channel IDs
+// associated with guildID from the bidirectional index. It is used during
+// GUILD_DELETE processing to collect every channel that must be evicted from
+// the cache.
+// Safe for concurrent use; acquires channelIndexMu internally.
 func (d *Client) drainGuildChannelIDs(guildID common.Snowflake) []common.Snowflake {
 	d.channelIndexMu.Lock()
 	defer d.channelIndexMu.Unlock()

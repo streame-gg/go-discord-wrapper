@@ -73,9 +73,15 @@ type Client struct {
 	// Nil when no cache was configured via options.WithCache.
 	Cache cache.Cache
 
-	channelIndexMu  sync.RWMutex
+	// channelIndexMu protects channelsByGuild and guildByChannel.
+	// Both maps must always be updated together to keep the bidirectional
+	// index consistent; acquire channelIndexMu (write lock) before any write.
+	channelIndexMu sync.RWMutex
+	// channelsByGuild maps each guild ID to the set of channel IDs that
+	// belong to it. Used to efficiently evict all guild channels on GUILD_DELETE.
 	channelsByGuild map[common.Snowflake]map[common.Snowflake]struct{}
-	guildByChannel  map[common.Snowflake]common.Snowflake
+	// guildByChannel is the reverse mapping: channel ID → guild ID.
+	guildByChannel map[common.Snowflake]common.Snowflake
 
 	// guildMemberCounts tracks the member_count for every available guild on
 	// this shard, updated from GUILD_CREATE / GUILD_DELETE gateway events.
