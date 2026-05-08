@@ -891,6 +891,7 @@ type MemoryCache struct {
 	scheduledEvents *memScheduledEventStore
 	stageInstances  *memStageInstanceStore
 	emojis          *memEmojiStore
+	stickers        *memStickerStore
 	presences       *memPresenceStore
 
 	stopOnce sync.Once
@@ -952,10 +953,13 @@ func NewMemoryCache(opts Options) *MemoryCache {
 		emojis: &memEmojiStore{
 			s: newGenericStore[common.Snowflake, emojiValue](sc(0)),
 		},
+		stickers: &memStickerStore{
+			s: newGenericStore[common.Snowflake, stickerValue](sc(opts.Limits.MaxStickers)),
+		},
 		presences: &memPresenceStore{
 			s: newGenericStore[memberKey, *common.Presence](sc(0)),
 		},
-		stopCh:   make(chan struct{}),
+		stopCh: make(chan struct{}),
 	}
 
 	c.wg.Add(1)
@@ -982,6 +986,9 @@ func (c *MemoryCache) StageInstances() StageInstanceStore {
 	return c.stageInstances
 }
 func (c *MemoryCache) Emojis() EmojiStore { return c.emojis }
+func (c *MemoryCache) Stickers() StickerStore {
+	return c.stickers
+}
 func (c *MemoryCache) Presences() PresenceStore {
 	return c.presences
 }
@@ -1023,6 +1030,7 @@ func (c *MemoryCache) sweep() {
 	c.scheduledEvents.s.sweep(now, b, uw)
 	c.stageInstances.s.sweep(now, b, uw)
 	c.emojis.s.sweep(now, b, uw)
+	c.stickers.s.sweep(now, b, uw)
 	c.presences.s.sweep(now, b, uw)
 
 	c.enforceGlobalLimits()
@@ -1121,6 +1129,11 @@ func (c *MemoryCache) evictGloballyByCount(need int, target OverflowCategory, by
 		stores = append(stores, storeRef{n, func(n int, by ClearBy) int64 { return c.emojis.s.evictN(n, by) }})
 		total += n
 	}
+	if target&CategoryStickers != 0 {
+		n := c.stickers.s.size()
+		stores = append(stores, storeRef{n, func(n int, by ClearBy) int64 { return c.stickers.s.evictN(n, by) }})
+		total += n
+	}
 	if target&CategoryPresences != 0 {
 		n := c.presences.s.size()
 		stores = append(stores, storeRef{n, func(n int, by ClearBy) int64 { return c.presences.s.evictN(n, by) }})
@@ -1211,6 +1224,11 @@ func (c *MemoryCache) evictGloballyByBytes(need int64, target OverflowCategory, 
 	if target&CategoryEmojis != 0 {
 		b := c.emojis.s.bytes()
 		stores = append(stores, storeRef{b, c.emojis.s.size(), func(n int, by ClearBy) int64 { return c.emojis.s.evictN(n, by) }})
+		totalBytes += b
+	}
+	if target&CategoryStickers != 0 {
+		b := c.stickers.s.bytes()
+		stores = append(stores, storeRef{b, c.stickers.s.size(), func(n int, by ClearBy) int64 { return c.stickers.s.evictN(n, by) }})
 		totalBytes += b
 	}
 	if target&CategoryPresences != 0 {
@@ -1497,6 +1515,73 @@ func (es *memEmojiStore) DeleteGuild(guildID common.Snowflake) {
 }
 
 func (es *memEmojiStore) Size() int { return es.s.size() }
+
+// ── Sticker store ──────────────────────────────────────────────────────────────
+
+type stickerValue struct {
+	GuildID common.Snowflake
+	Sticker *common.Sticker
+}
+
+type memStickerStore struct {
+	s *genericStore[common.Snowflake, stickerValue]
+}
+
+func (ss *memStickerStore) Set(guildID common.Snowflake, sticker *common.Sticker) {
+	ss.s.set(sticker.ID, stickerValue{GuildID: guildID, Sticker: sticker})
+}
+
+func (ss *memStickerStore) Get(stickerID common.Snowflake) (*common.Sticker, bool) {
+	v, ok := ss.s.get(stickerID)
+	if !ok {
+		return nil, false
+	}
+	return v.Sticker, true
+}
+
+func (ss *memStickerStore) GetByGuild(guildID common.Snowflake) []*common.Sticker {
+	now := time.Now()
+	ss.s.mu.RLock()
+	defer ss.s.mu.RUnlock()
+	var out []*common.Sticker
+	for _, e := range ss.s.items {
+		if e.value.GuildID == guildID && !e.expired(now) {
+			out = append(out, e.value.Sticker)
+		}
+	}
+	return out
+}
+
+func (ss *memStickerStore) SetAll(guildID common.Snowflake, stickers []*common.Sticker) {
+	ss.s.mu.Lock()
+	for k, e := range ss.s.items {
+		if e.value.GuildID == guildID {
+			ss.s.totalBytes.Add(-e.sizeBytes)
+			delete(ss.s.items, k)
+		}
+	}
+	ss.s.mu.Unlock()
+	for _, sticker := range stickers {
+		if sticker != nil && sticker.ID != "" {
+			ss.Set(guildID, sticker)
+		}
+	}
+}
+
+func (ss *memStickerStore) Delete(stickerID common.Snowflake) { ss.s.delete(stickerID) }
+
+func (ss *memStickerStore) DeleteGuild(guildID common.Snowflake) {
+	ss.s.mu.Lock()
+	defer ss.s.mu.Unlock()
+	for k, e := range ss.s.items {
+		if e.value.GuildID == guildID {
+			ss.s.totalBytes.Add(-e.sizeBytes)
+			delete(ss.s.items, k)
+		}
+	}
+}
+
+func (ss *memStickerStore) Size() int { return ss.s.size() }
 
 // ── Presence store ─────────────────────────────────────────────────────────────
 

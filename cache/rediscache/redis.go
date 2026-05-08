@@ -28,6 +28,8 @@
 //	{prefix}:stage_instance:guild:{gid} — Redis SET of stage IDs for guild gid
 //	{prefix}:emoji:{id}           — JSON-encoded Emoji
 //	{prefix}:emoji:guild:{gid}    — Redis SET of emoji IDs for guild gid
+//	{prefix}:sticker:{id}         — JSON-encoded Sticker
+//	{prefix}:sticker:guild:{gid}  — Redis SET of sticker IDs for guild gid
 //	{prefix}:presence:{gid}:{uid} — JSON-encoded Presence
 //	{prefix}:presence:guild:{gid} — Redis SET of userIDs for guild gid
 //	{prefix}:msg:{cid}:{mid}      — JSON-encoded Message; TTL from Options.Messages.TTL
@@ -156,6 +158,9 @@ func (c *RedisCache) StageInstances() cache.StageInstanceStore {
 	return &redisStageInstanceStore{c}
 }
 func (c *RedisCache) Emojis() cache.EmojiStore { return &redisEmojiStore{c} }
+func (c *RedisCache) Stickers() cache.StickerStore {
+	return &redisStickerStore{c}
+}
 func (c *RedisCache) Presences() cache.PresenceStore {
 	return &redisPresenceStore{c}
 }
@@ -1145,6 +1150,124 @@ func (s *redisEmojiStore) DeleteGuild(guildID common.Snowflake) {
 
 func (s *redisEmojiStore) Size() int {
 	pattern := s.c.k("emoji", "guild", "*")
+	var total int
+	var cursor uint64
+	for {
+		keys, next, err := s.c.client.Scan(s.c.ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			break
+		}
+		for _, k := range keys {
+			n, _ := s.c.client.SCard(s.c.ctx, k).Result()
+			total += int(n)
+		}
+		cursor = next
+		if cursor == 0 {
+			break
+		}
+	}
+	return total
+}
+
+// ── Sticker store ──────────────────────────────────────────────────────────────
+
+type redisStickerStore struct{ c *RedisCache }
+
+func (s *redisStickerStore) Set(guildID common.Snowflake, sticker *common.Sticker) {
+	key := s.c.k("sticker", string(sticker.ID))
+	idx := s.c.k("sticker", "guild", string(guildID))
+	mapKey := s.c.k("sticker", "map", string(sticker.ID))
+	_ = s.c.setJSON(key, sticker, s.c.opts.TTL)
+	_ = s.c.client.SAdd(s.c.ctx, idx, string(sticker.ID)).Err()
+	_ = s.c.client.Set(s.c.ctx, mapKey, string(guildID), s.c.opts.TTL).Err()
+}
+
+func (s *redisStickerStore) Get(stickerID common.Snowflake) (*common.Sticker, bool) {
+	key := s.c.k("sticker", string(stickerID))
+	var sticker common.Sticker
+	ok, err := s.c.getJSON(key, &sticker)
+	if err != nil || !ok {
+		if !ok {
+			mapKey := s.c.k("sticker", "map", string(stickerID))
+			guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
+			if err == nil {
+				_ = s.c.client.SRem(s.c.ctx, s.c.k("sticker", "guild", guildID), string(stickerID)).Err()
+			}
+			_ = s.c.client.Del(s.c.ctx, mapKey).Err()
+		}
+		return nil, false
+	}
+	return &sticker, true
+}
+
+func (s *redisStickerStore) GetByGuild(guildID common.Snowflake) []*common.Sticker {
+	idx := s.c.k("sticker", "guild", string(guildID))
+	stickerIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
+	if err != nil || len(stickerIDs) == 0 {
+		return nil
+	}
+	keys := make([]string, len(stickerIDs))
+	for i, id := range stickerIDs {
+		keys[i] = s.c.k("sticker", id)
+	}
+	vals, err := s.c.client.MGet(s.c.ctx, keys...).Result()
+	if err != nil {
+		return nil
+	}
+	out := make([]*common.Sticker, 0, len(vals))
+	var stale []any
+	for i, v := range vals {
+		if v == nil {
+			stale = append(stale, stickerIDs[i])
+			continue
+		}
+		var sticker common.Sticker
+		if json.Unmarshal([]byte(v.(string)), &sticker) == nil {
+			out = append(out, &sticker)
+		}
+	}
+	if len(stale) > 0 {
+		_ = s.c.client.SRem(s.c.ctx, idx, stale...).Err()
+		for _, id := range stale {
+			_ = s.c.client.Del(s.c.ctx, s.c.k("sticker", "map", id.(string))).Err()
+		}
+	}
+	return out
+}
+
+func (s *redisStickerStore) SetAll(guildID common.Snowflake, stickers []*common.Sticker) {
+	s.DeleteGuild(guildID)
+	for _, sticker := range stickers {
+		if sticker != nil && sticker.ID != "" {
+			s.Set(guildID, sticker)
+		}
+	}
+}
+
+func (s *redisStickerStore) Delete(stickerID common.Snowflake) {
+	mapKey := s.c.k("sticker", "map", string(stickerID))
+	guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
+	if err == nil {
+		_ = s.c.client.SRem(s.c.ctx, s.c.k("sticker", "guild", guildID), string(stickerID)).Err()
+	}
+	_ = s.c.client.Del(s.c.ctx, s.c.k("sticker", string(stickerID)), mapKey).Err()
+}
+
+func (s *redisStickerStore) DeleteGuild(guildID common.Snowflake) {
+	idx := s.c.k("sticker", "guild", string(guildID))
+	stickerIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
+	if err == nil && len(stickerIDs) > 0 {
+		keys := make([]string, 0, len(stickerIDs)*2)
+		for _, id := range stickerIDs {
+			keys = append(keys, s.c.k("sticker", id), s.c.k("sticker", "map", id))
+		}
+		_ = s.c.client.Del(s.c.ctx, keys...).Err()
+	}
+	_ = s.c.client.Del(s.c.ctx, idx).Err()
+}
+
+func (s *redisStickerStore) Size() int {
+	pattern := s.c.k("sticker", "guild", "*")
 	var total int
 	var cursor uint64
 	for {

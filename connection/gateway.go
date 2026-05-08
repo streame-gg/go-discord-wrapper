@@ -132,19 +132,19 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 	}
 
 	c := &Client{
-		token:                      &token,
-		APIVersion:                 util.PointerOf(cfg.APIVersion),
-		Intents:                    &intents,
-		discordEventEmitter:        util.NewEventEmitter[events.EventType, EventHandler](),
-		UnavailableGuilds:          make(map[common.Snowflake]struct{}),
-		guildMemberCounts:          make(map[common.Snowflake]int),
-		voiceStates:                make(map[string]*common.VoiceState),
-		RestClient:                 rc,
-		Sharding:                   cfg.Sharding,
-		Coordinator:                cfg.Coordinator,
-		Cache:                      cfg.Cache,
-		maxReconnectRetries:        cfg.MaxReconnectRetries,
-		cacheAutoPopulate:          cacheStores,
+		token:               &token,
+		APIVersion:          util.PointerOf(cfg.APIVersion),
+		Intents:             &intents,
+		discordEventEmitter: util.NewEventEmitter[events.EventType, EventHandler](),
+		UnavailableGuilds:   make(map[common.Snowflake]struct{}),
+		guildMemberCounts:   make(map[common.Snowflake]int),
+		voiceStates:         make(map[string]*common.VoiceState),
+		RestClient:          rc,
+		Sharding:            cfg.Sharding,
+		Coordinator:         cfg.Coordinator,
+		Cache:               cfg.Cache,
+		maxReconnectRetries: cfg.MaxReconnectRetries,
+		cacheAutoPopulate:   cacheStores,
 	}
 
 	switch {
@@ -589,6 +589,14 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 							}
 						}
 					}
+					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryStickers) && guild.Stickers != nil {
+						for i := range *guild.Stickers {
+							sticker := (*guild.Stickers)[i]
+							if sticker.ID != "" {
+								d.Cache.Stickers().Set(guild.ID, &sticker)
+							}
+						}
+					}
 
 					if hasGateway {
 						guildID := guildCreateEvent.Guild.GetID()
@@ -730,6 +738,9 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			if d.cacheStoreEnabled(cache.CategoryEmojis) {
 				d.Cache.Emojis().DeleteGuild(guildDeleteEvent.ID)
 			}
+			if d.cacheStoreEnabled(cache.CategoryStickers) {
+				d.Cache.Stickers().DeleteGuild(guildDeleteEvent.ID)
+			}
 		}
 	case events.EventVoiceStateUpdate:
 		{
@@ -824,6 +835,22 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					emojis = append(emojis, &emoji)
 				}
 				d.Cache.Emojis().SetAll(ev.GuildID, emojis)
+			}
+		}
+	case events.EventGuildStickersUpdate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryStickers) {
+				var ev events.GuildStickersUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_STICKERS_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				stickers := make([]*common.Sticker, 0, len(ev.Stickers))
+				for i := range ev.Stickers {
+					sticker := ev.Stickers[i]
+					stickers = append(stickers, &sticker)
+				}
+				d.Cache.Stickers().SetAll(ev.GuildID, stickers)
 			}
 		}
 	case events.EventGuildMemberAdd:

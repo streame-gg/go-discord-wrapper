@@ -22,6 +22,7 @@
 //	scheduled_events  — GuildScheduledEvent documents keyed by event ID
 //	stage_instances   — StageInstance documents keyed by instance ID
 //	emojis            — Emoji documents keyed by emoji ID
+//	stickers          — Sticker documents keyed by sticker ID
 //	presences         — Presence documents keyed by "{guildID}:{userID}"
 //	messages          — Message documents keyed by "{channelID}:{messageID}"
 //
@@ -40,7 +41,7 @@
 //   - Sparse TTL index on expires_at (all collections) — MongoDB deletes expired
 //     documents in the background. Documents without expires_at never expire.
 //   - Index on guild_id (members, roles, voice_states, soundboard_sounds,
-//     scheduled_events, stage_instances, emojis, presences) — used by
+//     scheduled_events, stage_instances, emojis, stickers, presences) — used by
 //     GetByGuild/AllInGuild and DeleteGuild.
 //   - Compound index on (channel_id, inserted_at) (messages) — used by Channel
 //     and per-channel ring enforcement.
@@ -178,6 +179,7 @@ func (c *MongoDBCache) ensureIndexes() {
 		"scheduled_events",
 		"stage_instances",
 		"emojis",
+		"stickers",
 		"presences",
 	} {
 		col := c.db.Collection(name)
@@ -200,6 +202,7 @@ func (c *MongoDBCache) ensureIndexes() {
 		"scheduled_events",
 		"stage_instances",
 		"emojis",
+		"stickers",
 		"presences",
 	} {
 		_, _ = c.db.Collection(name).Indexes().CreateOne(c.ctx, mongo.IndexModel{
@@ -250,6 +253,9 @@ func (c *MongoDBCache) StageInstances() cache.StageInstanceStore {
 	return &mongoStageInstanceStore{c}
 }
 func (c *MongoDBCache) Emojis() cache.EmojiStore { return &mongoEmojiStore{c} }
+func (c *MongoDBCache) Stickers() cache.StickerStore {
+	return &mongoStickerStore{c}
+}
 func (c *MongoDBCache) Presences() cache.PresenceStore {
 	return &mongoPresenceStore{c}
 }
@@ -822,7 +828,9 @@ func (s *mongoSoundboardStore) Size() int {
 
 type mongoScheduledEventStore struct{ c *MongoDBCache }
 
-func (s *mongoScheduledEventStore) col() *mongo.Collection { return s.c.db.Collection("scheduled_events") }
+func (s *mongoScheduledEventStore) col() *mongo.Collection {
+	return s.c.db.Collection("scheduled_events")
+}
 
 func (s *mongoScheduledEventStore) Set(event *common.GuildScheduledEvent) {
 	b, err := json.Marshal(event)
@@ -895,7 +903,9 @@ func (s *mongoScheduledEventStore) Size() int {
 
 type mongoStageInstanceStore struct{ c *MongoDBCache }
 
-func (s *mongoStageInstanceStore) col() *mongo.Collection { return s.c.db.Collection("stage_instances") }
+func (s *mongoStageInstanceStore) col() *mongo.Collection {
+	return s.c.db.Collection("stage_instances")
+}
 
 func (s *mongoStageInstanceStore) Set(instance *common.StageInstance) {
 	b, err := json.Marshal(instance)
@@ -1042,6 +1052,88 @@ func (s *mongoEmojiStore) DeleteGuild(guildID common.Snowflake) {
 }
 
 func (s *mongoEmojiStore) Size() int {
+	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
+	return int(n)
+}
+
+// ── Sticker store ──────────────────────────────────────────────────────────────
+
+type mongoStickerStore struct{ c *MongoDBCache }
+
+func (s *mongoStickerStore) col() *mongo.Collection { return s.c.db.Collection("stickers") }
+
+func (s *mongoStickerStore) Set(guildID common.Snowflake, sticker *common.Sticker) {
+	b, err := json.Marshal(sticker)
+	if err != nil {
+		return
+	}
+	doc := guildEntityDoc{
+		ID:        string(sticker.ID),
+		GuildID:   string(guildID),
+		JSON:      string(b),
+		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+	}
+	_ = upsertByID(s.c.ctx, s.col(), doc)
+}
+
+func (s *mongoStickerStore) Get(stickerID common.Snowflake) (*common.Sticker, bool) {
+	filter := bson.M{"_id": string(stickerID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	var doc guildEntityDoc
+	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
+		return nil, false
+	}
+	var sticker common.Sticker
+	if err := json.Unmarshal([]byte(doc.JSON), &sticker); err != nil {
+		return nil, false
+	}
+	return &sticker, true
+}
+
+func (s *mongoStickerStore) GetByGuild(guildID common.Snowflake) []*common.Sticker {
+	filter := bson.M{"guild_id": string(guildID)}
+	if s.c.opts.TTL > 0 {
+		filter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	cursor, err := s.col().Find(s.c.ctx, filter)
+	if err != nil {
+		return nil
+	}
+	defer cursor.Close(s.c.ctx)
+	var docs []guildEntityDoc
+	if err := cursor.All(s.c.ctx, &docs); err != nil {
+		return nil
+	}
+	out := make([]*common.Sticker, 0, len(docs))
+	for _, d := range docs {
+		var sticker common.Sticker
+		if json.Unmarshal([]byte(d.JSON), &sticker) == nil {
+			out = append(out, &sticker)
+		}
+	}
+	return out
+}
+
+func (s *mongoStickerStore) SetAll(guildID common.Snowflake, stickers []*common.Sticker) {
+	s.DeleteGuild(guildID)
+	for _, sticker := range stickers {
+		if sticker != nil && sticker.ID != "" {
+			s.Set(guildID, sticker)
+		}
+	}
+}
+
+func (s *mongoStickerStore) Delete(stickerID common.Snowflake) {
+	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(stickerID)})
+}
+
+func (s *mongoStickerStore) DeleteGuild(guildID common.Snowflake) {
+	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
+}
+
+func (s *mongoStickerStore) Size() int {
 	n, _ := s.col().CountDocuments(s.c.ctx, liveFilter(s.c.opts.TTL))
 	return int(n)
 }

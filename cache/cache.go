@@ -15,6 +15,7 @@
 //   - [ScheduledEventStore]— guild scheduled events
 //   - [StageInstanceStore] — guild stage instances
 //   - [EmojiStore]         — guild emojis
+//   - [StickerStore]       — guild stickers
 //   - [PresenceStore]      — guild presences (optional, high volume)
 //
 // Implement [Cache] for any external backend (Redis, MongoDB, etc.) and pass
@@ -103,21 +104,22 @@ const (
 type OverflowCategory uint
 
 const (
-	CategoryGuilds   OverflowCategory = 1 << 0
-	CategoryChannels OverflowCategory = 1 << 1
-	CategoryUsers    OverflowCategory = 1 << 2
-	CategoryMembers  OverflowCategory = 1 << 3
-	CategoryMessages OverflowCategory = 1 << 4
-	CategoryRoles    OverflowCategory = 1 << 5
+	CategoryGuilds          OverflowCategory = 1 << 0
+	CategoryChannels        OverflowCategory = 1 << 1
+	CategoryUsers           OverflowCategory = 1 << 2
+	CategoryMembers         OverflowCategory = 1 << 3
+	CategoryMessages        OverflowCategory = 1 << 4
+	CategoryRoles           OverflowCategory = 1 << 5
 	CategoryVoiceStates     OverflowCategory = 1 << 6
 	CategorySoundboard      OverflowCategory = 1 << 7
 	CategoryScheduledEvents OverflowCategory = 1 << 8
 	CategoryStageInstances  OverflowCategory = 1 << 9
 	CategoryEmojis          OverflowCategory = 1 << 10
-	CategoryPresences       OverflowCategory = 1 << 11
+	CategoryStickers        OverflowCategory = 1 << 11
+	CategoryPresences       OverflowCategory = 1 << 12
 
 	// CategoryAll targets every entity store. This is the default.
-	CategoryAll OverflowCategory = (1 << 12) - 1
+	CategoryAll OverflowCategory = (1 << 13) - 1
 )
 
 // OverflowPolicy configures what happens when a [Limits] value is exceeded.
@@ -164,6 +166,7 @@ type Limits struct {
 	MaxMembers  int // max GuildMember entries (summed across all guilds)
 	MaxMessages int // max total Message entries (summed across all channels)
 	MaxRoles    int // max Role entries (summed across all guilds)
+	MaxStickers int // max Sticker entries (summed across all guilds)
 }
 
 // ── Message options ───────────────────────────────────────────────────────────
@@ -339,6 +342,18 @@ type EmojiStore interface {
 	Size() int
 }
 
+// StickerStore is a thread-safe cache for [common.Sticker] objects.
+type StickerStore interface {
+	Set(guildID common.Snowflake, sticker *common.Sticker)
+	Get(stickerID common.Snowflake) (*common.Sticker, bool)
+	GetByGuild(guildID common.Snowflake) []*common.Sticker
+	SetAll(guildID common.Snowflake, stickers []*common.Sticker)
+	Delete(stickerID common.Snowflake)
+	// DeleteGuild removes every sticker for guildID. Call on GUILD_DELETE.
+	DeleteGuild(guildID common.Snowflake)
+	Size() int
+}
+
 // PresenceStore is a thread-safe cache for [common.Presence] objects.
 type PresenceStore interface {
 	Set(presence *common.Presence)
@@ -365,6 +380,7 @@ type Cache interface {
 	ScheduledEvents() ScheduledEventStore
 	StageInstances() StageInstanceStore
 	Emojis() EmojiStore
+	Stickers() StickerStore
 	Presences() PresenceStore
 	Close() error
 }
