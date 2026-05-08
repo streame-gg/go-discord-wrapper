@@ -72,6 +72,16 @@ type Client struct {
 	// Nil when no cache was configured via options.WithCache.
 	Cache cache.Cache
 
+	// channelIndexMu protects channelsByGuild and guildByChannel.
+	// Both maps must always be updated together to keep the bidirectional
+	// index consistent; acquire channelIndexMu (write lock) before any write.
+	channelIndexMu sync.RWMutex
+	// channelsByGuild maps each guild ID to the set of channel IDs that
+	// belong to it. Used to efficiently evict all guild channels on GUILD_DELETE.
+	channelsByGuild map[common.Snowflake]map[common.Snowflake]struct{}
+	// guildByChannel is the reverse mapping: channel ID → guild ID.
+	guildByChannel map[common.Snowflake]common.Snowflake
+
 	// guildMemberCounts tracks the member_count for every available guild on
 	// this shard, updated from GUILD_CREATE / GUILD_DELETE gateway events.
 	guildMemberCounts map[common.Snowflake]int
@@ -955,7 +965,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal GUILD_ROLE_DELETE event", slog.Any("err", err))
 					return false
 				}
-				d.Cache.Roles().Delete(ev.RoleID)
+				d.removeRoleFromCache(ev.RoleID)
 			}
 		}
 	case events.EventGuildScheduledEventCreate:
@@ -1108,7 +1118,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				ch := ev.Channel
-				d.Cache.Channels().Set(&ch)
+				d.cacheChannel(&ch)
 			}
 		}
 	case events.EventChannelUpdate:
@@ -1120,7 +1130,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				ch := ev.Channel
-				d.Cache.Channels().Set(&ch)
+				d.cacheChannel(&ch)
 			}
 		}
 	case events.EventChannelDelete:
@@ -1253,8 +1263,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				for i := range ev.Members {
-					m := ev.Members[i]
-					d.Cache.Members().Set(ev.GuildID, &m)
+					d.Cache.Members().Set(ev.GuildID, &ev.Members[i])
 				}
 				d.Logger.Debug("Cached guild members chunk",
 					slog.Any("guildId", ev.GuildID),
