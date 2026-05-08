@@ -52,7 +52,7 @@ var (
 	ErrCannotExecuteOnSystemMessage   = &discordCodeError{common.GatewayErrorCodeCannotExecuteOnSystemMessage}
 )
 
-// APIError is returned by all REST methods when Discord responds with a non-success status.
+// Error is returned by all REST methods when Discord responds with a non-success status.
 // It carries the HTTP status, the Discord JSON error code and message, and a field-level
 // error map when present.
 //
@@ -63,7 +63,7 @@ var (
 //	if errors.As(err, &apiErr) {
 //	    log.Printf("discord code %d: %s", apiErr.Code, apiErr.Message)
 //	}
-type APIError struct {
+type Error struct {
 	// HTTPStatus is the HTTP response status code (e.g. 403, 404).
 	HTTPStatus int
 
@@ -77,7 +77,7 @@ type APIError struct {
 	Errors map[string]interface{}
 }
 
-func (e *APIError) Error() string {
+func (e *Error) Error() string {
 	if e.Code != 0 {
 		return fmt.Sprintf("discord api error %d: %s (http %d)", int(e.Code), e.Message, e.HTTPStatus)
 	}
@@ -86,7 +86,7 @@ func (e *APIError) Error() string {
 
 // Is maps sentinel errors to HTTP status codes and Discord JSON error codes
 // so callers can use errors.Is.
-func (e *APIError) Is(target error) bool {
+func (e *Error) Is(target error) bool {
 	switch target {
 	case ErrUnauthorized:
 		return e.HTTPStatus == http.StatusUnauthorized
@@ -97,7 +97,8 @@ func (e *APIError) Is(target error) bool {
 	case ErrRateLimited:
 		return e.HTTPStatus == http.StatusTooManyRequests
 	}
-	if ce, ok := target.(*discordCodeError); ok {
+	var ce *discordCodeError
+	if errors.As(target, &ce) {
 		return e.Code == ce.code
 	}
 	return false

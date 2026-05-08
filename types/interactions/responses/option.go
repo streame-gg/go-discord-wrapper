@@ -2,6 +2,7 @@ package responses
 
 import (
 	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/common"
 )
 
@@ -35,33 +36,27 @@ func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) 
 		switch t.Type {
 		case common.ApplicationCommandOptionTypeString:
 			if strVal, ok := raw.Value.(string); ok {
-				var v T
-				v = any(strVal).(T)
+				v := any(strVal).(T)
 				t.Value = &v
 			}
 		case common.ApplicationCommandOptionTypeInteger:
-			// JSON numbers unmarshal to float64 when the target is interface{}.
 			if floatVal, ok := raw.Value.(float64); ok {
-				intVal := int(floatVal)
-				var v T
-				v = any(intVal).(T)
+				v := any(int(floatVal)).(T)
 				t.Value = &v
 			}
 		case common.ApplicationCommandOptionTypeNumber:
 			if floatVal, ok := raw.Value.(float64); ok {
-				var v T
-				v = any(floatVal).(T)
+				v := any(floatVal).(T)
 				t.Value = &v
 			}
 		case common.ApplicationCommandOptionTypeBoolean:
 			if boolVal, ok := raw.Value.(bool); ok {
-				var v T
-				v = any(boolVal).(T)
+				v := any(boolVal).(T)
 				t.Value = &v
 			}
 		default:
 			var v T
-			v = any(raw.Value).(T)
+			v = raw.Value.(T)
 			t.Value = &v
 		}
 	}

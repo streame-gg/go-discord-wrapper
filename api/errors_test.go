@@ -31,7 +31,7 @@ func TestAPIErrorIs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := &APIError{HTTPStatus: tc.httpStatus}
+			err := &Error{HTTPStatus: tc.httpStatus}
 			got := errors.Is(err, tc.target)
 			assert.Equal(t, tc.wantMatch, got)
 		})
@@ -39,7 +39,7 @@ func TestAPIErrorIs(t *testing.T) {
 }
 
 func TestAPIErrorAs(t *testing.T) {
-	original := &APIError{
+	original := &Error{
 		HTTPStatus: http.StatusNotFound,
 		Code:       common.GatewayErrorCode(10003),
 		Message:    "Unknown Channel",
@@ -47,7 +47,7 @@ func TestAPIErrorAs(t *testing.T) {
 
 	wrapped := fmt.Errorf("wrapping: %w", original)
 
-	var apiErr *APIError
+	var apiErr *Error
 	require.True(t, errors.As(wrapped, &apiErr), "errors.As should unwrap *APIError")
 	assert.Equal(t, http.StatusNotFound, apiErr.HTTPStatus)
 	assert.Equal(t, common.GatewayErrorCode(10003), apiErr.Code)
@@ -56,7 +56,7 @@ func TestAPIErrorAs(t *testing.T) {
 
 func TestAPIErrorString(t *testing.T) {
 	t.Run("with discord code", func(t *testing.T) {
-		err := &APIError{
+		err := &Error{
 			HTTPStatus: http.StatusNotFound,
 			Code:       common.GatewayErrorCode(10003),
 			Message:    "Unknown Channel",
@@ -67,7 +67,7 @@ func TestAPIErrorString(t *testing.T) {
 	})
 
 	t.Run("without discord code", func(t *testing.T) {
-		err := &APIError{
+		err := &Error{
 			HTTPStatus: http.StatusInternalServerError,
 			Code:       0,
 		}

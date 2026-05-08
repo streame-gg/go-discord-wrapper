@@ -151,7 +151,7 @@ func TestCreateMessage(t *testing.T) {
 		require.Error(t, err)
 		assert.Nil(t, msg)
 
-		var apiErr *APIError
+		var apiErr *Error
 		assert.True(t, errors.As(err, &apiErr))
 		assert.Equal(t, http.StatusForbidden, apiErr.HTTPStatus)
 	})
@@ -273,7 +273,7 @@ func TestDecodeAPIError(t *testing.T) {
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, ErrNotFound), "expected ErrNotFound")
 
-	var apiErr *APIError
+	var apiErr *Error
 	require.True(t, errors.As(err, &apiErr), "expected *APIError")
 	assert.Equal(t, 10003, int(apiErr.Code))
 	assert.Equal(t, "Unknown Channel", apiErr.Message)

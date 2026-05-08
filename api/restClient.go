@@ -338,7 +338,7 @@ func (c *RestClient) waitForMinInterval(ctx context.Context) error {
 func decodeGatewayError(resp *http.Response) error {
 	var body common.GatewayError
 	_ = json.NewDecoder(resp.Body).Decode(&body)
-	return &APIError{
+	return &Error{
 		HTTPStatus: resp.StatusCode,
 		Code:       common.GatewayErrorCode(body.Code),
 		Message:    body.Message,

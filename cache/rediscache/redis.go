@@ -1459,7 +1459,12 @@ func (s *redisMessageStore) DeleteBulk(channelID common.Snowflake, ids []common.
 func (s *redisMessageStore) Channel(channelID common.Snowflake) []*common.Message {
 	chKey := s.c.k("msg", "ch", string(channelID))
 	// ZREVRANGE: highest score (most recent insertedAt) first.
-	members, err := s.c.client.ZRevRange(s.c.ctx, chKey, 0, -1).Result()
+	members, err := s.c.client.ZRangeArgs(s.c.ctx, redis.ZRangeArgs{
+		Key:   chKey,
+		Start: 0,
+		Stop:  -1,
+		Rev:   true,
+	}).Result()
 	if err != nil || len(members) == 0 {
 		return nil
 	}

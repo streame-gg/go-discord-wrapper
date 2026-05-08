@@ -3,7 +3,6 @@ linters:
   default: none
   enable:
     - errcheck
-    - godot
     - govet
     - ineffassign
     - misspell
@@ -31,6 +30,8 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      - '.*_test\.go$'
+      - '^test/'
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

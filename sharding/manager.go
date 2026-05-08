@@ -98,11 +98,13 @@ func (m *ShardManager) Shards() []*connection.Client {
 }
 
 // Shutdown disconnects every shard and closes the coordinator.
-func (m *ShardManager) Shutdown() {
+func (m *ShardManager) Shutdown() error {
 	for _, c := range m.clients {
 		if c != nil {
-			c.Shutdown()
+			if err := c.Shutdown(); err != nil {
+				return err
+			}
 		}
 	}
-	_ = m.coordinator.Close()
+	return m.coordinator.Close()
 }
