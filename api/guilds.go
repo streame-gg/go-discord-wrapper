@@ -381,6 +381,22 @@ func (c *RestClient) GetGuildRoles(ctx context.Context, guildID common.Snowflake
 	return roles, nil
 }
 
+// GetGuildRoleMemberCounts returns the role.
+// https://docs.discord.com/developers/resources/guild#get-guild-role-member-counts
+func (c *RestClient) GetGuildRoleMemberCounts(ctx context.Context, guildID common.Snowflake) (map[string]int64, error) {
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/roles/member-counts", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var roles map[string]int64
+	if _, err := c.do(req, http.StatusOK, &roles); err != nil {
+		return nil, err
+	}
+
+	return roles, nil
+}
+
 // GetGuildRole returns a single role in a guild.
 func (c *RestClient) GetGuildRole(ctx context.Context, guildID, roleID common.Snowflake) (*common.Role, error) {
 	path := "/guilds/" + guildID.String() + "/roles/" + roleID.String()

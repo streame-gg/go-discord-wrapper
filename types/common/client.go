@@ -10,6 +10,7 @@ type RestClient interface {
 	// Guild operations
 	GetGuildChannels(guildID Snowflake) ([]*Channel, error)
 	GetGuildRoles(guildID Snowflake) ([]*Role, error)
+	GetGuildRoleMemberCounts(guildID Snowflake) (map[string]int, error)
 	DeleteGuild(guildID Snowflake) error
 	RemoveGuildBan(guildID, userID Snowflake) error
 	RemoveGuildMember(guildID, userID Snowflake) error
@@ -66,6 +67,10 @@ func (g *Guild) AddMemberRole(client RestClient, userID, roleID Snowflake) error
 // RemoveMemberRole removes a role from a guild member. Requires MANAGE_ROLES.
 func (g *Guild) RemoveMemberRole(client RestClient, userID, roleID Snowflake) error {
 	return client.RemoveGuildMemberRole(g.ID, userID, roleID)
+}
+
+func (g *Guild) GetGuildRoleMemberCounts(client RestClient) (map[string]int, error) {
+	return client.GetGuildRoleMemberCounts(g.ID)
 }
 
 // ── Channel methods ───────────────────────────────────────────────────────────
