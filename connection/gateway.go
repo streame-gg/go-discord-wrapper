@@ -548,8 +548,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						gcopy := g
 						d.Cache.Guilds().Set(&gcopy)
 						for i := range gcopy.Roles {
-							role := gcopy.Roles[i]
-							d.Cache.Roles().Set(gcopy.ID, &role)
+							d.Cache.Roles().Set(gcopy.ID, &gcopy.Roles[i])
 						}
 					}
 				}
@@ -636,8 +635,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				g := ev.Guild
 				d.Cache.Guilds().Set(&g)
 				for i := range g.Roles {
-					role := g.Roles[i]
-					d.Cache.Roles().Set(g.ID, &role)
+					d.Cache.Roles().Set(g.ID, &g.Roles[i])
 				}
 			}
 		}
@@ -839,8 +837,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				for i := range ev.Members {
-					m := ev.Members[i]
-					d.Cache.Members().Set(ev.GuildID, &m)
+					d.Cache.Members().Set(ev.GuildID, &ev.Members[i])
 				}
 				d.Logger.Debug("Cached guild members chunk",
 					slog.Any("guildId", ev.GuildID),
