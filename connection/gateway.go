@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"net/url"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -354,21 +356,46 @@ func (d *Client) dispatchShardMessage(msg options.ShardMessage) {
 
 // ── Gateway connection ───────────────────────────────────────────────────────
 
-func (d *Client) initializeGatewayConnection(ctx context.Context) (*common.BotRegisterResponse, error) {
-	if d.RestClient == nil {
-		return nil, errors.New("rest client is nil")
+func (d *Client) initializeGatewayConnection() (*common.BotRegisterResponse, error) {
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+	do, err := httpClient.Do(&http.Request{
+		Method: "GET",
+		URL: &url.URL{
+			Scheme: "https",
+			Host:   "discord.com",
+			Path:   common.APIBaseString(*d.APIVersion) + "gateway/bot",
+		},
+		Header: http.Header{
+			"Authorization": []string{"Bot " + *d.token},
+		},
+	})
+
+	if err != nil {
+		return nil, err
 	}
-	return d.RestClient.GetGatewayBot(ctx)
+
+	defer func() {
+		_ = do.Body.Close()
+	}()
+
+	if do.StatusCode != http.StatusOK {
+		return nil, errors.New("failed to register bot gateway connection, status code: " + do.Status)
+	}
+
+	var resp common.BotRegisterResponse
+	if err := json.NewDecoder(do.Body).Decode(&resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }
 
-// Login connects the client to the Discord gateway.
-// The context can be cancelled to trigger a graceful Shutdown.
 func (d *Client) Login(ctx context.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
-	gatewayResp, err := d.initializeGatewayConnection(ctx)
+	gatewayResp, err := d.initializeGatewayConnection()
 	if err != nil {
 		return err
 	}
