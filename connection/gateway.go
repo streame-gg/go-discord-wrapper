@@ -205,22 +205,21 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 }
 
 // dispatchJob carries a single gateway event through the worker pool.
+// Cache updates (internalEventHandler) run synchronously in listenWebsocket
+// before the job is enqueued, so rawPayload is no longer needed here.
 type dispatchJob struct {
-	rawPayload json.RawMessage
-	event      events.Event
+	event events.Event
 }
 
-// processEvent runs internalEventHandler and dispatch for one gateway event.
-// It is called both by worker goroutines (pool mode) and directly spawned goroutines (unlimited mode).
+// processEvent dispatches one gateway event to user handlers.
+// Cache updates have already been applied synchronously in listenWebsocket.
 func (d *Client) processEvent(job dispatchJob) {
 	defer func() {
 		if r := recover(); r != nil {
 			d.Logger.Error("panic in event dispatch", slog.Any("recover", r))
 		}
 	}()
-	if canContinue := d.internalEventHandler(job.rawPayload, job.event.Event(), job.event); canContinue {
-		d.dispatch(job.event)
-	}
+	d.dispatch(job.event)
 }
 
 // runEventWorker drains d.eventCh until it is closed by Shutdown.
@@ -599,6 +598,25 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				d.Logger.Debug("Connected to shard", slog.Int("shard", readyEvent.Shard[0]+1), slog.Int("total", readyEvent.Shard[1]))
 			}
 
+			// Build the set of guilds the bot currently belongs to.
+			currentGuildIDs := make(map[common.Snowflake]struct{}, len(readyEvent.Guilds))
+			for _, g := range readyEvent.Guilds {
+				currentGuildIDs[g.Guild.GetID()] = struct{}{}
+			}
+
+			// Remove cached guilds that are no longer present (bot was kicked while offline).
+			if d.cacheEnabled() {
+				for _, cachedGuild := range d.Cache.Guilds().All() {
+					if _, present := currentGuildIDs[cachedGuild.ID]; !present {
+						d.removeGuildFromCache(cachedGuild.ID)
+					}
+				}
+			}
+
+			// Reset unavailable-guild tracking and rebuild from the READY payload.
+			d.mu.Lock()
+			d.UnavailableGuilds = make(map[common.Snowflake]struct{})
+			d.mu.Unlock()
 			for _, guild := range readyEvent.Guilds {
 				if !guild.Guild.IsAvailable() {
 					d.addUnavailableGuild(guild.Guild.GetID())
@@ -667,6 +685,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					}
 
 					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryRoles) {
+						// Delete stale roles before re-adding so removed roles don't persist.
+						d.Cache.Roles().DeleteGuild(guild.ID)
 						for i := range guild.Roles {
 							role := guild.Roles[i]
 							d.Cache.Roles().Set(guild.ID, &role)
@@ -674,25 +694,34 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					}
 
 					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryEmojis) {
+						emojis := make([]*common.Emoji, 0, len(guild.Emojis))
 						for i := range guild.Emojis {
 							emoji := guild.Emojis[i]
 							if emoji.ID != "" {
-								d.Cache.Emojis().Set(guild.ID, &emoji)
+								emojis = append(emojis, &emoji)
 							}
 						}
+						d.Cache.Emojis().SetAll(guild.ID, emojis)
 					}
 					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryStickers) && guild.Stickers != nil {
+						stickers := make([]*common.Sticker, 0, len(*guild.Stickers))
 						for i := range *guild.Stickers {
 							sticker := (*guild.Stickers)[i]
 							if sticker.ID != "" {
-								d.Cache.Stickers().Set(guild.ID, &sticker)
+								stickers = append(stickers, &sticker)
 							}
 						}
+						d.Cache.Stickers().SetAll(guild.ID, stickers)
 					}
 
 					if hasGateway {
 						guildID := guildCreateEvent.Guild.GetID()
 						if d.cacheStoreEnabled(cache.CategoryChannels) {
+							// Drain stale channels before re-adding so deleted channels don't persist.
+							for _, oldID := range d.drainGuildChannelIDs(guildID) {
+								d.Cache.Channels().Delete(oldID)
+								d.Cache.Messages().DeleteChannel(oldID)
+							}
 							gid := guildCreateEvent.Guild.GetID()
 							for i := range gatewayGuild.Channels {
 								ch := gatewayGuild.Channels[i]
@@ -711,6 +740,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						}
 
 						if d.cacheStoreEnabled(cache.CategoryMembers) {
+							// Delete stale members before re-adding.
+							d.Cache.Members().DeleteGuild(guildID)
 							for i := range gatewayGuild.Members {
 								m := gatewayGuild.Members[i]
 								d.Cache.Members().Set(guildID, &m)
@@ -728,6 +759,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						}
 
 						if d.cacheStoreEnabled(cache.CategoryVoiceStates) {
+							// Delete stale voice states before re-adding.
+							d.Cache.VoiceStates().DeleteGuild(guildID)
 							for i := range gatewayGuild.VoiceStates {
 								vs := gatewayGuild.VoiceStates[i]
 								if vs.GuildID == nil {
@@ -738,6 +771,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						}
 
 						if d.cacheStoreEnabled(cache.CategoryPresences) {
+							// Delete stale presences before re-adding.
+							d.Cache.Presences().DeleteGuild(guildID)
 							for i := range gatewayGuild.Presences {
 								p := gatewayGuild.Presences[i]
 								presence := common.Presence{
@@ -752,19 +787,25 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						}
 
 						if d.cacheStoreEnabled(cache.CategorySoundboard) {
+							sounds := make([]*common.SoundboardSound, 0, len(gatewayGuild.SoundboardSounds))
 							for i := range gatewayGuild.SoundboardSounds {
-								sound := gatewayGuild.SoundboardSounds[i]
-								d.Cache.Soundboard().Set(guildID, &sound)
+								s := gatewayGuild.SoundboardSounds[i]
+								sounds = append(sounds, &s)
 							}
+							d.Cache.Soundboard().SetAll(guildID, sounds)
 						}
 
 						if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
+							// Delete stale scheduled events before re-adding.
+							d.Cache.ScheduledEvents().DeleteGuild(guildID)
 							for i := range gatewayGuild.GuildScheduledEvents {
 								ev := gatewayGuild.GuildScheduledEvents[i]
 								d.Cache.ScheduledEvents().Set(&ev)
 							}
 						}
 						if d.cacheStoreEnabled(cache.CategoryStageInstances) {
+							// Delete stale stage instances before re-adding.
+							d.Cache.StageInstances().DeleteGuild(guildID)
 							for i := range gatewayGuild.StageInstances {
 								instance := gatewayGuild.StageInstances[i]
 								d.Cache.StageInstances().Set(&instance)
@@ -890,6 +931,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Cache.Guilds().Set(&g)
 				}
 				if d.cacheStoreEnabled(cache.CategoryRoles) {
+					// Delete stale roles before re-adding so removed roles don't persist.
+					d.Cache.Roles().DeleteGuild(g.ID)
 					for i := range g.Roles {
 						role := g.Roles[i]
 						d.Cache.Roles().Set(g.ID, &role)
@@ -965,9 +1008,12 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal GUILD_MEMBER_UPDATE event", slog.Any("err", err))
 					return false
 				}
-				m, ok := d.Cache.Members().Get(ev.GuildID, ev.User.ID)
-				if !ok {
-					m = &common.GuildMember{}
+				// Copy the cached entry rather than mutating the stored pointer in-place.
+				// Mutating the stored pointer without a lock produces data races with
+				// concurrent Get() callers that read the same pointer.
+				var m common.GuildMember
+				if existing, ok := d.Cache.Members().Get(ev.GuildID, ev.User.ID); ok {
+					m = *existing
 				}
 				m.User = &ev.User
 				m.Nick = ev.Nick
@@ -993,7 +1039,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				if ev.Flags != nil {
 					m.Flags = *ev.Flags
 				}
-				d.Cache.Members().Set(ev.GuildID, m)
+				d.Cache.Members().Set(ev.GuildID, &m)
 			}
 		}
 	case events.EventGuildRoleCreate:
@@ -1029,6 +1075,36 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				d.removeRoleFromCache(ev.RoleID)
+
+				// Purge the deleted role from every cached member's Roles slice.
+				// Discord may send GUILD_MEMBER_UPDATEs for affected members, but
+				// delivery is not guaranteed — removing here keeps the cache
+				// consistent immediately so permission checks cannot see stale roles.
+				if d.cacheStoreEnabled(cache.CategoryMembers) {
+					roleStr := ev.RoleID.String()
+					for _, m := range d.Cache.Members().AllInGuild(ev.GuildID) {
+						found := false
+						for _, r := range m.Roles {
+							if r == roleStr {
+								found = true
+								break
+							}
+						}
+						if !found {
+							continue
+						}
+						// Copy and filter — never mutate the cached pointer directly.
+						updated := *m
+						filtered := make([]string, 0, len(m.Roles)-1)
+						for _, r := range m.Roles {
+							if r != roleStr {
+								filtered = append(filtered, r)
+							}
+						}
+						updated.Roles = filtered
+						d.Cache.Members().Set(ev.GuildID, &updated)
+					}
+				}
 			}
 		}
 	case events.EventGuildScheduledEventCreate:
@@ -1339,8 +1415,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				if ch, ok := d.Cache.Channels().Get(ev.ChannelID); ok {
-					ch.Status = ev.Status
-					d.Cache.Channels().Set(ch)
+					// Copy before mutating — never modify the cached pointer in-place.
+					updated := *ch
+					updated.Status = ev.Status
+					d.Cache.Channels().Set(&updated)
 				}
 			}
 		}

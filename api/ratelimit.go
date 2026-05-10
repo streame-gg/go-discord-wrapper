@@ -11,11 +11,12 @@ import (
 
 // rateLimitBucket holds proactive rate limit state for a single Discord bucket.
 type rateLimitBucket struct {
-	mu        sync.Mutex
-	limit     int       // X-RateLimit-Limit
-	remaining int       // X-RateLimit-Remaining (locally tracked)
-	resetAt   time.Time // when this bucket's window resets
-	lastUsed  time.Time // updated on every wait/update; drives eviction
+	mu               sync.Mutex
+	limit            int       // X-RateLimit-Limit
+	remaining        int       // X-RateLimit-Remaining (locally tracked)
+	resetAt          time.Time // when this bucket's window resets
+	lastUsed         time.Time // updated on every wait/update; drives eviction
+	windowRestoredAt time.Time // when remaining was last proactively restored
 }
 
 // rateLimiter implements proactive, header-driven rate limiting for the Discord API.
@@ -128,23 +129,31 @@ func (r *rateLimiter) wait(ctx context.Context, method, path string) error {
 	b.mu.Lock()
 	b.lastUsed = time.Now()
 
-	if b.remaining <= r.safetyMargin && !b.resetAt.IsZero() {
+	// Loop so that if the bucket is still exhausted after sleeping (e.g. the
+	// window didn't actually reset yet) we sleep again rather than over-sending.
+	for b.remaining <= r.safetyMargin && !b.resetAt.IsZero() {
 		wait := time.Until(b.resetAt)
-		b.mu.Unlock()
-
-		if wait > 0 {
-			select {
-			case <-time.After(wait):
-			case <-ctx.Done():
-				return ctx.Err()
+		if wait <= 0 {
+			// Window has elapsed; restore remaining exactly once per window.
+			// windowRestoredAt tracks when we last restored so that multiple
+			// goroutines that all slept for the same window do not each
+			// independently set remaining = limit (TOCTOU race).
+			if b.limit > 0 && b.windowRestoredAt.Before(b.resetAt) {
+				b.remaining = b.limit
+				b.windowRestoredAt = time.Now()
 			}
+			break
 		}
-
-		// Re-acquire and optimistically restore remaining so other goroutines
-		// do not all sleep again after this window has passed.
+		b.mu.Unlock()
+		select {
+		case <-time.After(wait):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 		b.mu.Lock()
-		if b.limit > 0 && !time.Now().Before(b.resetAt) {
+		if b.limit > 0 && !time.Now().Before(b.resetAt) && b.windowRestoredAt.Before(b.resetAt) {
 			b.remaining = b.limit
+			b.windowRestoredAt = time.Now()
 		}
 	}
 
