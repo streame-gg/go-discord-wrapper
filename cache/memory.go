@@ -1445,6 +1445,9 @@ type memSoundboardStore struct {
 }
 
 func (ss *memSoundboardStore) Set(guildID common.Snowflake, sound *common.SoundboardSound) {
+	if sound == nil {
+		return
+	}
 	ss.s.set(sound.SoundID, soundboardValue{GuildID: guildID, Sound: sound})
 }
 

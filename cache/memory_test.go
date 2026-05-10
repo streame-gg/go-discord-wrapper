@@ -568,6 +568,33 @@ func (s *memoryTestSuite) TestConcurrentAccess_NoRace() {
 	wg.Wait()
 }
 
+// TestBug14SoundboardSetNilDoesNotPanic verifies that passing nil to
+// memSoundboardStore.Set does not panic (Bug 14).
+func TestBug14SoundboardSetNilDoesNotPanic(t *testing.T) {
+	c := cache.NewMemoryCache(cache.Options{})
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Soundboard().Set(guild, nil) panicked: %v (Bug 14)", r)
+		}
+	}()
+	c.Soundboard().Set("g1", nil)
+}
+
+// TestBug15PresenceSetNilDoesNotPanic verifies that passing nil to
+// memPresenceStore.Set does not panic (Bug 15).
+// Note: Presence.User is a value type, so nil-User is not possible in this
+// implementation. The nil presence guard added here covers the panic on
+// presence == nil.
+func TestBug15PresenceSetNilDoesNotPanic(t *testing.T) {
+	c := cache.NewMemoryCache(cache.Options{})
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Presences().Set(nil) panicked: %v (Bug 15)", r)
+		}
+	}()
+	c.Presences().Set(nil)
+}
+
 // TestBug12EmptyRingRemovedAfterTTLExpiry verifies that once all messages in a
 // channel have expired (EvictExpired / default behavior), the channel's ring
 // entry is removed from the internal map during the next sweep, preventing
