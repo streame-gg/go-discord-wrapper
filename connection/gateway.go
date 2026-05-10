@@ -1,3 +1,5 @@
+// Package connection provides the Discord gateway (WebSocket) client, including
+// automatic reconnection, session resume, event dispatch, and middleware support.
 package connection
 
 import (

@@ -1,3 +1,5 @@
+// Package api implements the Discord REST API client with proactive rate limiting,
+// configurable retry logic, and full coverage of Discord API v10 endpoints.
 package api
 
 import (

@@ -1,3 +1,5 @@
+// Package common contains Discord data types shared across the gateway,
+// REST API, interactions, and cache packages.
 package common
 
 type ActivityLocation struct {

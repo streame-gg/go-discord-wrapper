@@ -1,3 +1,5 @@
+// Package sharding provides a local shard coordinator that manages multiple
+// gateway connections and routes cross-shard messages between them.
 package sharding
 
 import (

@@ -2,7 +2,7 @@
 
 A Go library for the Discord gateway and REST API.
 
-> **Status:** In active development toward a stable v0.1.0 release. Public APIs may still change. Bug reports and pull requests are welcome.
+> **Status:** v0.1.0 — first stable release. Bug reports and pull requests are welcome.
 
 ## Features
 
@@ -21,7 +21,7 @@ A Go library for the Discord gateway and REST API.
 go get github.com/streame-gg/go-discord-wrapper
 ```
 
-Requires Go 1.21 or later.
+Requires Go 1.26 or later.
 
 ## Quick start
 
@@ -141,6 +141,92 @@ _, err := bot.BulkRegisterCommands(ctx, []*commands.ApplicationCommand{
 | `options.WithRateLimiting(opts)` | Rate-limiter tuning (safety margin, disable) |
 | `options.WithMinRequestInterval(d)` | Global minimum delay between REST requests |
 | `options.WithAPIVersion(v)` | Discord API version (default: v10) |
+
+## Supported gateway events
+
+| Event | Constant |
+|-------|----------|
+| Ready | `events.EventReady` |
+| Resumed | `events.EventResumed` |
+| Application Command Permissions Update | `events.EventApplicationCommandPermissionsUpdate` |
+| Auto Moderation Rule Create | `events.EventAutoModerationRuleCreate` |
+| Auto Moderation Rule Update | `events.EventAutoModerationRuleUpdate` |
+| Auto Moderation Rule Delete | `events.EventAutoModerationRuleDelete` |
+| Auto Moderation Action Execution | `events.EventAutoModerationActionExecution` |
+| Channel Create | `events.EventChannelCreate` |
+| Channel Update | `events.EventChannelUpdate` |
+| Channel Delete | `events.EventChannelDelete` |
+| Channel Pins Update | `events.EventChannelPinsUpdate` |
+| Thread Create | `events.EventThreadCreate` |
+| Thread Update | `events.EventThreadUpdate` |
+| Thread Delete | `events.EventThreadDelete` |
+| Thread List Sync | `events.EventThreadListSync` |
+| Thread Member Update | `events.EventThreadMemberUpdate` |
+| Thread Members Update | `events.EventThreadMembersUpdate` |
+| Entitlement Create | `events.EventEntitlementCreate` |
+| Entitlement Update | `events.EventEntitlementUpdate` |
+| Entitlement Delete | `events.EventEntitlementDelete` |
+| Guild Create | `events.EventGuildCreate` |
+| Guild Update | `events.EventGuildUpdate` |
+| Guild Delete | `events.EventGuildDelete` |
+| Guild Audit Log Entry Create | `events.EventGuildAuditLogEntryCreate` |
+| Guild Ban Add | `events.EventGuildBanAdd` |
+| Guild Ban Remove | `events.EventGuildBanRemove` |
+| Guild Emojis Update | `events.EventGuildEmojisUpdate` |
+| Guild Stickers Update | `events.EventGuildStickersUpdate` |
+| Guild Integrations Update | `events.EventIntegrationUpdate` |
+| Guild Member Add | `events.EventGuildMemberAdd` |
+| Guild Member Update | `events.EventGuildMemberUpdate` |
+| Guild Member Remove | `events.EventGuildMemberRemove` |
+| Guild Members Chunk | `events.EventGuildMembersChunk` |
+| Guild Role Create | `events.EventGuildRoleCreate` |
+| Guild Role Update | `events.EventGuildRoleUpdate` |
+| Guild Role Delete | `events.EventGuildRoleDelete` |
+| Guild Scheduled Event Create | `events.EventGuildScheduledEventCreate` |
+| Guild Scheduled Event Update | `events.EventGuildScheduledEventUpdate` |
+| Guild Scheduled Event Delete | `events.EventGuildScheduledEventDelete` |
+| Guild Scheduled Event User Add | `events.EventGuildScheduledEventUserAdd` |
+| Guild Scheduled Event User Remove | `events.EventGuildScheduledEventUserRemove` |
+| Guild Soundboard Sound Create | `events.EventGuildSoundboardSoundCreate` |
+| Guild Soundboard Sound Update | `events.EventGuildSoundboardSoundUpdate` |
+| Guild Soundboard Sound Delete | `events.EventGuildSoundboardSoundDelete` |
+| Guild Soundboard Sounds Update | `events.EventGuildSoundboardSoundsUpdate` |
+| Soundboard Sounds | `events.EventSoundboardSounds` |
+| Integration Create | `events.EventIntegrationCreate` |
+| Integration Update | `events.EventIntegrationUpdate` |
+| Integration Delete | `events.EventIntegrationDelete` |
+| Interaction Create | `events.EventInteractionCreate` |
+| Invite Create | `events.EventInviteCreate` |
+| Invite Delete | `events.EventInviteDelete` |
+| Message Create | `events.EventMessageCreate` |
+| Message Update | `events.EventMessageUpdate` |
+| Message Delete | `events.EventMessageDelete` |
+| Message Delete Bulk | `events.EventMessageDeleteBulk` |
+| Message Reaction Add | `events.EventMessageReactionAdd` |
+| Message Reaction Remove | `events.EventMessageReactionRemove` |
+| Message Reaction Remove All | `events.EventMessageReactionRemoveAll` |
+| Message Reaction Remove Emoji | `events.EventMessageReactionRemoveEmoji` |
+| Message Poll Vote Add | `events.EventMessagePollVoteAdd` |
+| Message Poll Vote Remove | `events.EventMessagePollVoteRemove` |
+| Presence Update | `events.EventPresenceUpdate` |
+| Stage Instance Create | `events.EventStageInstanceCreate` |
+| Stage Instance Update | `events.EventStageInstanceUpdate` |
+| Stage Instance Delete | `events.EventStageInstanceDelete` |
+| Subscription Create | `events.EventSubscriptionCreate` |
+| Subscription Update | `events.EventSubscriptionUpdate` |
+| Subscription Delete | `events.EventSubscriptionDelete` |
+| Typing Start | `events.EventTypingStart` |
+| User Update | `events.EventUserUpdate` |
+| Voice State Update | `events.EventVoiceStateUpdate` |
+| Voice Server Update | `events.EventVoiceServerUpdate` |
+| Voice Channel Status Update | `events.EventVoiceChannelStatusUpdate` |
+| Voice Channel Start Time Update | `events.EventVoiceChannelStartTimeUpdate` |
+| Voice Channel Effect Send | `events.EventVoiceChannelEffectSend` |
+| Webhooks Update | `events.EventWebhooksUpdate` |
+
+## API reference
+
+Full API documentation is available at [pkg.go.dev/github.com/streame-gg/go-discord-wrapper](https://pkg.go.dev/github.com/streame-gg/go-discord-wrapper).
 
 ## Contributing
 

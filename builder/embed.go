@@ -1,3 +1,5 @@
+// Package builder provides fluent constructors for Discord UI components:
+// embeds, buttons, select menus, modals, action rows, and text inputs.
 package builder
 
 import (
