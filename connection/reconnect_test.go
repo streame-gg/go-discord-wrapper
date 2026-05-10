@@ -209,3 +209,40 @@ func TestBug16NoHeartbeatLeakOnWriteFailure(t *testing.T) {
 		"goroutine count grew by %d after failed NewWebsocket — heartbeat leak suspected", after-before)
 }
 
+// TestBug26ConcurrentCloseIsIdempotent verifies that calling Websocket.close()
+// from many goroutines concurrently only calls Connection.Close() once and does
+// not panic by attempting to close the already-closed Closed channel (Bug 26).
+func TestBug26ConcurrentCloseIsIdempotent(t *testing.T) {
+	wsURL, closeFn := mockGatewayThenClose(t, websocket.CloseNormalClosure)
+	defer closeFn()
+
+	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	require.NoError(t, err)
+
+	err = c.connectWebsocket(wsURL, false, nil, nil)
+	require.NoError(t, err)
+
+	ws := c.Websocket
+	require.NotNil(t, ws, "websocket must be set after connectWebsocket")
+
+	// 100 concurrent close() calls must not panic or deadlock.
+	const concurrency = 100
+	done := make(chan struct{}, concurrency)
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			ws.close() //nolint:errcheck
+			done <- struct{}{}
+		}()
+	}
+	for i := 0; i < concurrency; i++ {
+		<-done
+	}
+
+	// Closed channel must be closed (readable) after all close() calls.
+	select {
+	case <-ws.Closed:
+	default:
+		t.Error("ws.Closed was not closed after concurrent close() calls (Bug 26)")
+	}
+}
+

@@ -488,10 +488,13 @@ func (ws *Websocket) writeJSONDeadline(v any, d time.Duration) error {
 }
 
 func (d *Websocket) close() error {
-	if d != nil {
-		err := d.Connection.Close()
-		d.closeOnce.Do(func() { close(d.Closed) })
-		return err
+	if d == nil {
+		return nil
 	}
-	return nil
+	var err error
+	d.closeOnce.Do(func() {
+		err = d.Connection.Close()
+		close(d.Closed)
+	})
+	return err
 }
