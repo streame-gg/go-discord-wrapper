@@ -3,12 +3,14 @@ package sharding_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/connection"
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/sharding"
 	"github.com/stretchr/testify/suite"
@@ -325,6 +327,30 @@ func (s *shardingTestSuite) TestRequestAll_ContextCancellation() {
 	s.Require().Error(err, "expected context deadline error")
 	// We should have at least the one response that did arrive.
 	s.NotEmpty(results, "expected partial results before timeout")
+}
+
+// ── ShardManager ─────────────────────────────────────────────────────────────
+
+// failCoord satisfies options.ShardCoordinator and errors on Close.
+type failCoord struct{}
+
+func (f *failCoord) TotalShards() int                                     { return 0 }
+func (f *failCoord) Register(_ int, _ func(options.ShardMessage)) error   { return nil }
+func (f *failCoord) Send(_ options.ShardMessage) error                    { return nil }
+func (f *failCoord) Broadcast(_ options.ShardMessage) error               { return nil }
+func (f *failCoord) Close() error                                         { return errors.New("coord close failed") }
+
+// TestBug23ShutdownCollectsCoordinatorError verifies that ShardManager.Shutdown
+// returns the coordinator's Close error even when there are no shard clients.
+// Before the fix, an early return on the first shard error would prevent
+// coordinator.Close from ever being called (Bug 23).
+func (s *shardingTestSuite) TestBug23ShutdownCollectsCoordinatorError() {
+	// TotalShards()=0 → clients slice is empty → shard loop is a no-op.
+	// Only coordinator.Close() runs; it always returns an error.
+	mgr := sharding.NewShardManager(&failCoord{}, func(id, total int) *connection.Client { return nil })
+	err := mgr.Shutdown()
+	s.Require().Error(err, "coordinator Close error must be returned by Shutdown")
+	s.Contains(err.Error(), "coord")
 }
 
 func (s *shardingTestSuite) TestRequestAll_IsolatesCorrelationIDs() {

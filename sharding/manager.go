@@ -4,6 +4,7 @@ package sharding
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -100,13 +101,18 @@ func (m *ShardManager) Shards() []*connection.Client {
 }
 
 // Shutdown disconnects every shard and closes the coordinator.
+// All shards are shut down even if one returns an error; all errors are joined.
 func (m *ShardManager) Shutdown() error {
+	var errs []error
 	for _, c := range m.clients {
 		if c != nil {
 			if err := c.Shutdown(); err != nil {
-				return err
+				errs = append(errs, err)
 			}
 		}
 	}
-	return m.coordinator.Close()
+	if err := m.coordinator.Close(); err != nil {
+		errs = append(errs, err)
+	}
+	return errors.Join(errs...)
 }
