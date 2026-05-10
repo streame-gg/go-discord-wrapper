@@ -222,6 +222,10 @@ func (c *RestClient) generateRequest(ctx context.Context, method, path string, b
 	return req, nil
 }
 
+// do executes req and decodes a successful response into v (when v != nil).
+// The returned *http.Response has its Body already closed; callers must not
+// read from it. Inspect headers and status codes via the returned value, but
+// do not call resp.Body.Read or resp.Body.Close again.
 func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{}) (*http.Response, error) {
 	if req == nil {
 		return nil, errors.New("request must not be nil")
