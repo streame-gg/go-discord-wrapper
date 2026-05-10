@@ -547,7 +547,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			d.Websocket.ReconnectURL = &readyEvent.ResumeGatewayURL
 			d.User = &readyEvent.User
 
-			if readyEvent.Shard != nil && len(readyEvent.Shard) >= 2 {
+			if len(readyEvent.Shard) >= 2 {
 				d.Logger.Debug("Connected to shard", slog.Int("shard", readyEvent.Shard[0]+1), slog.Int("total", readyEvent.Shard[1]))
 			}
 
