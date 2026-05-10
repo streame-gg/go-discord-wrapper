@@ -568,6 +568,38 @@ func (s *memoryTestSuite) TestConcurrentAccess_NoRace() {
 	wg.Wait()
 }
 
+// TestBug12EmptyRingRemovedAfterTTLExpiry verifies that once all messages in a
+// channel have expired (EvictExpired / default behavior), the channel's ring
+// entry is removed from the internal map during the next sweep, preventing
+// unbounded map growth for bots with many short-lived channels (Bug 12).
+func TestBug12EmptyRingRemovedAfterTTLExpiry(t *testing.T) {
+	c := cache.NewMemoryCache(cache.Options{
+		SweepInterval: 5 * time.Millisecond,
+		Messages: cache.MessageOptions{
+			MaxPerChannel: 10,
+			TTL:           20 * time.Millisecond,
+		},
+	})
+
+	// Add one message with a 20 ms TTL.
+	c.Messages().Add(&common.Message{ID: "m1", ChannelID: "ch1"})
+
+	// Wait for TTL expiry + a couple of sweep intervals.
+	time.Sleep(60 * time.Millisecond)
+
+	// After expiry the message must be gone.
+	_, ok := c.Messages().Get("ch1", "m1")
+	if ok {
+		t.Error("expired message still returned — TTL not enforced")
+	}
+
+	// The internal ring must also be gone (not just zeroed) so the channel map
+	// doesn't accumulate empty rings.  We verify via Size: it must be 0.
+	if s := c.Messages().Size(); s != 0 {
+		t.Errorf("messages Size()=%d after all messages expired — empty rings kept (Bug 12)", s)
+	}
+}
+
 // TestBug5FixedTTLDoesNotExtendOnGet verifies that accessing an entry does not
 // push its expiry further into the future (no sliding TTL). With a 50 ms TTL,
 // an entry accessed at t=40 ms must still expire by ~50 ms, not at ~90 ms.

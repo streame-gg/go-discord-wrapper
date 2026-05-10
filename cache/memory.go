@@ -822,8 +822,7 @@ func (s *memMessageStore) sweep(now time.Time, behavior EvictBehavior, unusedWin
 	for id, r := range s.channels {
 		freed, empty := r.sweep(now, s.opts.TTL, behavior, unusedWindow)
 		s.totalBytes.Add(-freed)
-		if empty && behavior == EvictUnused {
-			s.totalMsgs.Add(-int64(len(r.msgs))) // already 0, but keep counter in sync
+		if empty {
 			delete(s.channels, id)
 		}
 	}
