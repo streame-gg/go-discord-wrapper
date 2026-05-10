@@ -114,6 +114,9 @@ func (c Config) Validate() error {
 	if c.Retry.MaxRetries < 0 {
 		return fmt.Errorf("options: Retry.MaxRetries must be >= 0, got %d", c.Retry.MaxRetries)
 	}
+	if c.MaxReconnectRetries < -1 {
+		return fmt.Errorf("options: MaxReconnectRetries must be >= -1 (use -1 for infinite), got %d", c.MaxReconnectRetries)
+	}
 	if c.MinRequestInterval < 0 {
 		return fmt.Errorf("options: MinRequestInterval must be >= 0, got %v", c.MinRequestInterval)
 	}
