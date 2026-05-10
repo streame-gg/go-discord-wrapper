@@ -107,6 +107,33 @@ func TestBug17NonRecoverableCloseCodesExitListenerLoop(t *testing.T) {
 	}
 }
 
+// TestBug18CorruptReadyPayloadDoesNotCloseReadyChan verifies that a corrupted
+// READY payload causes internalEventHandler to return false without closing
+// the Ready channel or modifying the cache.
+func TestBug18CorruptReadyPayloadDoesNotCloseReadyChan(t *testing.T) {
+	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	require.NoError(t, err)
+
+	// Construct a minimal websocket so we can call internalEventHandler directly.
+	c.Websocket = &Websocket{
+		Ready:  make(chan struct{}),
+		Closed: make(chan struct{}),
+	}
+
+	corruptPayload := []byte(`{invalid json`)
+
+	result := c.internalEventHandler(corruptPayload, "READY", nil)
+	assert.False(t, result, "internalEventHandler must return false on READY unmarshal failure")
+
+	// Ready channel must NOT be closed.
+	select {
+	case <-c.Websocket.Ready:
+		t.Fatal("Ready channel was closed despite corrupt READY payload")
+	default:
+		// correct — channel is still open
+	}
+}
+
 // TestBug16NoHeartbeatLeakOnWriteFailure verifies that if the Identify/Resume
 // write fails, no goroutine is left running. The heartbeat goroutine must not
 // start until after a successful write.

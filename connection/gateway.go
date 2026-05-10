@@ -591,6 +591,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			var readyEvent events.ReadyEvent
 			if err := json.Unmarshal(msg, &readyEvent); err != nil {
 				d.Logger.Error("Failed to unmarshal READY event", slog.Any("err", err))
+				return false
 			}
 
 			d.Websocket.SessionID = &readyEvent.SessionID
