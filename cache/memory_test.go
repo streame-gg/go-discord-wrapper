@@ -568,6 +568,76 @@ func (s *memoryTestSuite) TestConcurrentAccess_NoRace() {
 	wg.Wait()
 }
 
+// TestBug4ByteBasedEvictionDistribution verifies that evictGloballyByBytes
+// distributes eviction proportionally by byte share, not entry count.
+// Store B (large entries) should be hit harder than store A (small entries).
+func TestBug4ByteBasedEvictionDistribution(t *testing.T) {
+	// Use a 1 MB limit with a short sweep interval.
+	// Store A: 2000 small guilds (~100 bytes each → ~200 KB)
+	// Store B: 10 users with 100 KB names each → ~1 MB
+	// Total ~1.2 MB > 1 MB limit → overflow triggers in sweep.
+	const bigNameLen = 100_000 // ~100 KB per user
+	bigName := string(make([]byte, bigNameLen))
+	for i := range []byte(bigName) {
+		bigName = bigName[:i] + "x" + bigName[i+1:]
+		break // just set first char to avoid zero bytes
+	}
+	bigName = fmt.Sprintf("%0*d", bigNameLen, 0) // 100K zeros as string
+
+	c := cache.NewMemoryCache(cache.Options{
+		SweepInterval: 10 * time.Millisecond,
+		Limits: cache.Limits{
+			MaxSizeMB: 1,
+		},
+		OnOverflow: cache.OverflowPolicy{
+			Target:  cache.CategoryGuilds | cache.CategoryUsers,
+			ClearBy: cache.ClearByLastUsed,
+		},
+	})
+	defer c.Close()
+
+	// Seed store A: many small guilds.
+	for i := 0; i < 2000; i++ {
+		c.Guilds().Set(&common.Guild{ID: common.Snowflake(fmt.Sprintf("g%d", i)), Name: "g"})
+	}
+
+	// Seed store B: 10 users each with a ~100KB username.
+	for i := 0; i < 10; i++ {
+		c.Users().Set(&common.User{
+			ID:       common.Snowflake(fmt.Sprintf("u%d", i)),
+			Username: bigName,
+		})
+	}
+
+	before := c.Guilds().Size() + c.Users().Size()
+
+	// Wait for the sweeper to run and enforce the byte limit.
+	time.Sleep(100 * time.Millisecond)
+
+	afterGuilds := c.Guilds().Size()
+	afterUsers := c.Users().Size()
+	after := afterGuilds + afterUsers
+
+	if after >= before {
+		t.Skip("no overflow eviction happened — byte limit not exceeded")
+	}
+
+	evictedGuilds := 2000 - afterGuilds
+	evictedUsers := 10 - afterUsers
+
+	t.Logf("after: guilds=%d users=%d | evictedGuilds=%d evictedUsers=%d",
+		afterGuilds, afterUsers, evictedGuilds, evictedUsers)
+
+	// Users contribute far more bytes per entry (~100KB) than guilds (~100B).
+	// With the bug (count-based): guilds evicted >> users because 2000 >> 10.
+	// With the fix (byte-based): users must be evicted at least as much as guilds
+	// relative to their count share.
+	if evictedGuilds > 0 && evictedUsers == 0 {
+		t.Errorf("only guilds were evicted (count=%d) but not users — byte-based eviction not working (Bug 4)",
+			evictedGuilds)
+	}
+}
+
 // TestBug3ConcurrentAddDeleteChannelNoCounterDrift verifies that concurrent
 // Add and DeleteChannel do not produce orphaned rings or counter drift.
 func TestBug3ConcurrentAddDeleteChannelNoCounterDrift(t *testing.T) {

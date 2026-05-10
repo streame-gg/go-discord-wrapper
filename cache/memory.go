@@ -1320,11 +1320,21 @@ func (c *MemoryCache) evictGloballyByBytes(need int64, target OverflowCategory, 
 		return
 	}
 	for _, st := range stores {
-		if need <= 0 || st.size == 0 {
+		if need <= 0 || st.size == 0 || st.bytes == 0 {
 			continue
 		}
-		// Evict a proportional share of entries from this store.
-		share := int(float64(st.size) * float64(need) / float64(totalBytes))
+		// Distribute eviction proportionally by byte share, not entry count.
+		// byteShare is how many bytes we want to free from this store.
+		byteShare := need * st.bytes / totalBytes
+		if byteShare <= 0 {
+			continue
+		}
+		// Convert byte target to entry count via average entry size.
+		avgSize := st.bytes / int64(st.size)
+		if avgSize <= 0 {
+			avgSize = 1
+		}
+		share := int(byteShare / avgSize)
 		if share < 1 {
 			share = 1
 		}
