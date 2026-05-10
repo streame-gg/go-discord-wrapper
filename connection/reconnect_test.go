@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/common"
 )
 
@@ -207,6 +208,48 @@ func TestBug16NoHeartbeatLeakOnWriteFailure(t *testing.T) {
 	const tolerance = 3
 	assert.LessOrEqual(t, after, before+tolerance,
 		"goroutine count grew by %d after failed NewWebsocket — heartbeat leak suspected", after-before)
+}
+
+// TestBug28APIVersionInWebSocketURL verifies that WithAPIVersion is respected
+// in the WebSocket dial URL so that a client configured with APIVersion9 dials
+// "?v=9&encoding=json" rather than the hardcoded "?v=10" (Bug 28).
+func TestBug28APIVersionInWebSocketURL(t *testing.T) {
+	const want = "v=9"
+
+	dialedURL := make(chan string, 1)
+
+	// Minimal test server that records the raw request URL.
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		dialedURL <- r.URL.RawQuery
+		conn, err := wsUpgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		// Send HELLO so NewWebsocket can proceed.
+		_ = conn.WriteJSON(map[string]interface{}{
+			"op": 10,
+			"d":  map[string]interface{}{"heartbeat_interval": 60000},
+		})
+		// Read IDENTIFY/RESUME and close.
+		conn.ReadMessage() //nolint:errcheck
+	}))
+	defer ts.Close()
+	wsURL := "ws" + ts.URL[len("http"):]
+
+	c, err := NewClient("Bot fake-token", common.IntentGuilds,
+		options.WithAPIVersion(common.APIVersion9),
+	)
+	require.NoError(t, err)
+
+	_ = c.connectWebsocket(wsURL, false, nil, nil)
+
+	select {
+	case query := <-dialedURL:
+		assert.Contains(t, query, want, "WebSocket dial URL must contain version from WithAPIVersion (Bug 28)")
+	case <-time.After(3 * time.Second):
+		t.Fatal("server never received a connection")
+	}
 }
 
 // TestBug26ConcurrentCloseIsIdempotent verifies that calling Websocket.close()

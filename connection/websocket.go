@@ -50,7 +50,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 	dialer := *websocket.DefaultDialer
 	dialer.HandshakeTimeout = 30 * time.Second
 
-	c, _, err := dialer.Dial(host+"?v=10&encoding=json", nil)
+	c, _, err := dialer.Dial(host+"?v="+(*bot.APIVersion).ToString()+"&encoding=json", nil)
 	if err != nil {
 		return nil, err
 	}
