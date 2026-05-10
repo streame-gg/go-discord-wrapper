@@ -62,6 +62,9 @@ type ShardCoordinator interface {
 	Broadcast(msg ShardMessage) error
 
 	// TotalShards returns the total number of shards this coordinator manages.
+	// The value must be stable for the lifetime of the coordinator: RequestAll
+	// reads it once at the start of a call and uses it as the expected response
+	// count. Changing it mid-flight causes RequestAll to under- or over-collect.
 	TotalShards() int
 
 	// Close releases coordinator resources. Safe to call multiple times.
