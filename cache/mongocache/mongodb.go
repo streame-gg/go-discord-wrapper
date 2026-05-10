@@ -1248,7 +1248,13 @@ func (s *mongoMessageStore) Add(msg *common.Message) {
 	// Enforce MaxPerChannel: delete the oldest messages for this channel
 	// if the count exceeds the cap.
 	max := int64(s.c.opts.Messages.MaxPerChannel)
-	count, err := s.col().CountDocuments(s.c.ctx, bson.M{"channel_id": string(msg.ChannelID)})
+	// Bug 32 fix: exclude expired documents from the count so TTL-expired entries
+	// do not inflate the count and trigger unnecessary eviction of live messages.
+	countFilter := bson.M{"channel_id": string(msg.ChannelID)}
+	if s.c.opts.Messages.TTL > 0 {
+		countFilter["expires_at"] = bson.M{"$gt": time.Now()}
+	}
+	count, err := s.col().CountDocuments(s.c.ctx, countFilter)
 	if err != nil || count <= max {
 		return
 	}
@@ -1256,7 +1262,7 @@ func (s *mongoMessageStore) Add(msg *common.Message) {
 	// Find excess oldest messages (ascending by inserted_at) and delete them.
 	cursor, err := s.col().Find(
 		s.c.ctx,
-		bson.M{"channel_id": string(msg.ChannelID)},
+		countFilter,
 		options.Find().
 			SetSort(bson.D{{Key: "inserted_at", Value: 1}}).
 			SetLimit(excess).
@@ -1335,7 +1341,11 @@ func (s *mongoMessageStore) Channel(channelID common.Snowflake) []*common.Messag
 	cursor, err := s.col().Find(
 		s.c.ctx,
 		filter,
-		options.Find().SetSort(bson.D{{Key: "inserted_at", Value: -1}}),
+		// Bug 33 fix: limit the result set to MaxPerChannel to avoid loading the
+		// entire channel history into memory on large channels.
+		options.Find().
+			SetSort(bson.D{{Key: "inserted_at", Value: -1}}).
+			SetLimit(int64(s.c.opts.Messages.MaxPerChannel)),
 	)
 	if err != nil {
 		return nil
