@@ -99,11 +99,10 @@ func (s *genericStore[K, V]) set(key K, value V) {
 	}
 	s.items[key] = e
 	n := len(s.items)
-	s.mu.Unlock()
-
 	if s.cfg.trackBytes {
 		s.totalBytes.Add(sz)
 	}
+	s.mu.Unlock()
 
 	// Enforce per-category cap immediately (soft: may briefly exceed by 1).
 	if s.cfg.maxItems > 0 && n > s.cfg.maxItems {

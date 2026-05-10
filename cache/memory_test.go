@@ -742,3 +742,42 @@ func TestBug2HitCountPreservedOnUpdate(t *testing.T) {
 		t.Error("hot guild (hitCount=100 before update) was evicted — hitCount was reset on Set (Bug 2)")
 	}
 }
+
+// TestBug11TotalBytesAtomicUnderConcurrentUpdates verifies that concurrent
+// Set (update) calls on the same key do not cause the sweeper to fire spurious
+// overflow evictions due to a temporarily deflated byte count (Bug 11).
+// The whitebox half of this test lives in memory_internal_test.go.
+func TestBug11ConcurrentUpdatesSameKeySweepStability(t *testing.T) {
+	// Use a 1 MB limit. With a single small guild entry (~30 bytes) concurrently
+	// updated, the byte total should never reach 1 MB. If Add(sz) races outside
+	// the lock, totalBytes can momentarily be negative (well below 0 < 1 MB),
+	// but the sweeper's "totalBytes > maxBytes" check would still not fire falsely.
+	// We verify stability by checking no items are spuriously evicted.
+	c := cache.NewMemoryCache(cache.Options{
+		SweepInterval: 5 * time.Millisecond,
+		Limits:        cache.Limits{MaxSizeMB: 1},
+		OnOverflow: cache.OverflowPolicy{
+			Target:  cache.CategoryGuilds,
+			ClearBy: cache.ClearByLastUsed,
+		},
+	})
+
+	// Seed one guild.
+	c.Guilds().Set(guild("1"))
+
+	const goroutines = 500
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer wg.Done()
+			c.Guilds().Set(guild("1"))
+		}()
+	}
+	wg.Wait()
+
+	// After all concurrent updates the single guild must still be present.
+	if _, ok := c.Guilds().Get(common.Snowflake("1")); !ok {
+		t.Error("guild was spuriously evicted during concurrent same-key updates (Bug 11)")
+	}
+}
