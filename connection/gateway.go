@@ -113,8 +113,9 @@ type Client struct {
 	clientEventsMu sync.RWMutex
 
 	// shardHandlers are persistent handlers registered via OnShardMessage.
-	shardHandlers   []func(options.ShardMessage)
-	shardHandlersMu sync.RWMutex
+	shardHandlers    []func(options.ShardMessage)
+	shardHandlersMu  sync.RWMutex
+	shardDispatchSem chan struct{} // limits concurrent shard-message handler goroutines (Bug 35)
 
 	// pendingShardReqs maps "responseType:corrID" to a buffered channel that
 	// RequestAll uses to collect responses without holding a permanent handler.
@@ -170,6 +171,7 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 		Cache:               cfg.Cache,
 		maxReconnectRetries: cfg.MaxReconnectRetries,
 		cacheAutoPopulate:   cacheStores,
+		shardDispatchSem:    make(chan struct{}, 16),
 	}
 
 	if cfg.MaxConcurrentEvents == 0 {
@@ -405,7 +407,18 @@ func (d *Client) dispatchShardMessage(msg options.ShardMessage) {
 
 	for _, h := range handlers {
 		h := h
-		go h(msg)
+		select {
+		case d.shardDispatchSem <- struct{}{}:
+			// Acquired a slot: run handler in its own goroutine.
+			go func() {
+				defer func() { <-d.shardDispatchSem }()
+				h(msg)
+			}()
+		default:
+			// All 16 slots taken: execute synchronously to apply back-pressure
+			// rather than spawning an unbounded number of goroutines (Bug 35).
+			h(msg)
+		}
 	}
 }
 
