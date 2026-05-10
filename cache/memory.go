@@ -977,11 +977,11 @@ func NewMemoryCache(opts Options) *MemoryCache {
 		opts.SweepInterval = 30 * time.Second
 	}
 	if opts.Messages.MaxPerChannel < 0 {
-		opts.Messages.MaxPerChannel = 0
-	}
-	if opts.Messages.MaxPerChannel == 0 {
+		// Negative means "use default".
 		opts.Messages.MaxPerChannel = 100
 	}
+	// == 0 means "disabled" (caller set it explicitly) — leave as-is.
+	// > 0 means "user value" — leave as-is.
 	if opts.Messages.TTL == 0 {
 		opts.Messages.TTL = opts.TTL
 	}

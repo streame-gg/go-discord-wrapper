@@ -190,7 +190,7 @@ func (s *memoryTestSuite) TestStickerStore_CRUDAndSetAll() {
 // ── MessageStore ──────────────────────────────────────────────────────────────
 
 func (s *memoryTestSuite) TestMessageStore_AddGet() {
-	c := newCache(cache.Options{})
+	c := newCache(cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 100}})
 	defer c.Close()
 
 	c.Messages().Add(message("msg1", "chan1"))
@@ -199,7 +199,7 @@ func (s *memoryTestSuite) TestMessageStore_AddGet() {
 }
 
 func (s *memoryTestSuite) TestMessageStore_Update() {
-	c := newCache(cache.Options{})
+	c := newCache(cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 100}})
 	defer c.Close()
 
 	msg := message("msg1", "chan1")
@@ -214,7 +214,7 @@ func (s *memoryTestSuite) TestMessageStore_Update() {
 }
 
 func (s *memoryTestSuite) TestMessageStore_DeleteBulk() {
-	c := newCache(cache.Options{})
+	c := newCache(cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 100}})
 	defer c.Close()
 
 	for i := 1; i <= 5; i++ {
@@ -233,7 +233,7 @@ func (s *memoryTestSuite) TestMessageStore_DeleteBulk() {
 }
 
 func (s *memoryTestSuite) TestMessageStore_Channel_NewestFirst() {
-	c := newCache(cache.Options{})
+	c := newCache(cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 100}})
 	defer c.Close()
 
 	for i := 1; i <= 5; i++ {
@@ -245,7 +245,7 @@ func (s *memoryTestSuite) TestMessageStore_Channel_NewestFirst() {
 }
 
 func (s *memoryTestSuite) TestMessageStore_DeleteChannel() {
-	c := newCache(cache.Options{})
+	c := newCache(cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 100}})
 	defer c.Close()
 
 	c.Messages().Add(message("msg1", "chan1"))
@@ -288,7 +288,7 @@ func (s *memoryTestSuite) TestMessageStore_TTLExpiry() {
 }
 
 func (s *memoryTestSuite) TestMessageStore_SizeAccuracy() {
-	c := newCache(cache.Options{})
+	c := newCache(cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 100}})
 	defer c.Close()
 
 	for i := 1; i <= 10; i++ {
@@ -566,6 +566,22 @@ func (s *memoryTestSuite) TestConcurrentAccess_NoRace() {
 	}
 
 	wg.Wait()
+}
+
+// TestBug1MaxPerChannelZeroDisablesCaching verifies that MaxPerChannel=0
+// disables message caching as documented, rather than defaulting to 100.
+func TestBug1MaxPerChannelZeroDisablesCaching(t *testing.T) {
+	c := newCache(cache.Options{
+		Messages: cache.MessageOptions{MaxPerChannel: 0},
+	})
+	defer c.Close()
+
+	c.Messages().Add(message("1", "ch1"))
+	c.Messages().Add(message("2", "ch1"))
+
+	if got := c.Messages().Size(); got != 0 {
+		t.Errorf("expected 0 messages when MaxPerChannel=0, got %d", got)
+	}
 }
 
 // TestBug2HitCountPreservedOnUpdate verifies that a Set (update) for an
