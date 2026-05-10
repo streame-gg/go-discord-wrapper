@@ -492,9 +492,9 @@ func (d *Client) Login(ctx context.Context) error {
 					continue
 				}
 
-				// 4014: privileged intent not enabled — reconnecting will not help.
-				if websocket.IsCloseError(err, 4014) {
-					d.Logger.Error("A privileged intent is not enabled in the Discord developer portal; cannot reconnect")
+				// Non-recoverable close codes — reconnecting will not help.
+				if websocket.IsCloseError(err, 4004, 4010, 4011, 4012, 4013, 4014) {
+					d.Logger.Error("Gateway connection closed with a non-recoverable code; cannot reconnect", slog.Any("err", err))
 					return
 				}
 
