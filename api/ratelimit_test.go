@@ -362,3 +362,43 @@ func (s *ratelimitTestSuite) TestBug20OutOfOrderResponsesDoNotInflateRemaining()
 	_ = T
 	s.Equalf(4, got, "remaining must stay at 4 after out-of-order higher-remaining response, got %d", got)
 }
+
+// TestBug22PurgeStaleBucketsAlsoClearsRouteMapping verifies that
+// purgeStaleBuckets removes stale entries from routeToBucket in addition to
+// buckets, preventing unbounded map growth (Bug 22).
+func (s *ratelimitTestSuite) TestBug22PurgeStaleBucketsAlsoClearsRouteMapping() {
+	rl := newRateLimiter(0)
+	defer rl.close()
+
+	// Register a route → bucket mapping via a successful response.
+	rl.update("GET", "/channels/111/messages", makeResp(200, map[string]string{
+		"X-RateLimit-Bucket":      "stale-bucket",
+		"X-RateLimit-Limit":       "5",
+		"X-RateLimit-Remaining":   "4",
+		"X-RateLimit-Reset-After": "1",
+	}))
+
+	// Confirm both maps have entries.
+	_, bucketExists := rl.buckets.Load("stale-bucket")
+	s.Require().True(bucketExists, "bucket must exist after update")
+	routeKey := routeKey("GET", "/channels/111/messages")
+	_, routeExists := rl.routeToBucket.Load(routeKey)
+	s.Require().True(routeExists, "route mapping must exist after update")
+
+	// Age the bucket so it is considered stale immediately.
+	val, _ := rl.buckets.Load("stale-bucket")
+	b := val.(*rateLimitBucket)
+	b.mu.Lock()
+	b.lastUsed = time.Now().Add(-24 * time.Hour)
+	b.mu.Unlock()
+
+	// Purge stale buckets — should also clear the route mapping (Bug 22 fix).
+	rl.purgeStaleBuckets(time.Minute)
+
+	_, bucketExists = rl.buckets.Load("stale-bucket")
+	s.False(bucketExists, "stale bucket must be purged")
+
+	routeCount := 0
+	rl.routeToBucket.Range(func(_, _ any) bool { routeCount++; return true })
+	s.Zerof(routeCount, "routeToBucket must be empty after purge — found %d entries (Bug 22)", routeCount)
+}

@@ -86,6 +86,15 @@ func (r *rateLimiter) purgeStaleBuckets(maxAge time.Duration) {
 		b.mu.Unlock()
 		if stale {
 			r.buckets.Delete(key)
+			// Also remove all routeToBucket entries pointing at this bucket so
+			// routeToBucket does not grow unboundedly (Bug 22).
+			bucketID := key.(string)
+			r.routeToBucket.Range(func(rk, rv any) bool {
+				if rv.(string) == bucketID {
+					r.routeToBucket.Delete(rk)
+				}
+				return true
+			})
 		}
 		return true
 	})
