@@ -188,7 +188,7 @@ func (s *redisGuildStore) Get(id common.Snowflake) (*common.Guild, bool) {
 	var g common.Guild
 	ok, err := s.c.getJSON(key, &g)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			// Key expired in Redis but index still holds the ID — prune it.
 			_ = s.c.client.SRem(s.c.ctx, s.c.k("guild", "index"), string(id)).Err()
 		}
@@ -255,7 +255,7 @@ func (s *redisChannelStore) Get(id common.Snowflake) (*common.Channel, bool) {
 	var ch common.Channel
 	ok, err := s.c.getJSON(key, &ch)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			_ = s.c.client.SRem(s.c.ctx, s.c.k("channel", "index"), string(id)).Err()
 		}
 		return nil, false
@@ -321,7 +321,7 @@ func (s *redisUserStore) Get(id common.Snowflake) (*common.User, bool) {
 	var u common.User
 	ok, err := s.c.getJSON(key, &u)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			_ = s.c.client.SRem(s.c.ctx, s.c.k("user", "index"), string(id)).Err()
 		}
 		return nil, false
@@ -390,7 +390,7 @@ func (s *redisMemberStore) Get(guildID, userID common.Snowflake) (*common.GuildM
 	var m common.GuildMember
 	ok, err := s.c.getJSON(key, &m)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			_ = s.c.client.SRem(s.c.ctx, s.c.k("member", "guild", string(guildID)), string(userID)).Err()
 		}
 		return nil, false
@@ -489,7 +489,7 @@ func (s *redisRoleStore) Get(roleID common.Snowflake) (*common.Role, bool) {
 	var role common.Role
 	ok, err := s.c.getJSON(key, &role)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			mapKey := s.c.k("role", "map", string(roleID))
 			guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 			if err == nil {
@@ -636,7 +636,7 @@ func (s *redisVoiceStateStore) Get(guildID, userID common.Snowflake) (*common.Vo
 	var state common.VoiceState
 	ok, err := s.c.getJSON(key, &state)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			_ = s.c.client.SRem(s.c.ctx, s.c.k("voice_state", "guild", string(guildID)), string(userID)).Err()
 		}
 		return nil, false
@@ -733,7 +733,7 @@ func (s *redisSoundboardStore) Get(soundID common.Snowflake) (*common.Soundboard
 	var sound common.SoundboardSound
 	ok, err := s.c.getJSON(key, &sound)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			mapKey := s.c.k("soundboard", "map", string(soundID))
 			guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 			if err == nil {
@@ -851,7 +851,7 @@ func (s *redisScheduledEventStore) Get(eventID common.Snowflake) (*common.GuildS
 	var event common.GuildScheduledEvent
 	ok, err := s.c.getJSON(key, &event)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			mapKey := s.c.k("scheduled_event", "map", string(eventID))
 			guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 			if err == nil {
@@ -960,7 +960,7 @@ func (s *redisStageInstanceStore) Get(instanceID common.Snowflake) (*common.Stag
 	var instance common.StageInstance
 	ok, err := s.c.getJSON(key, &instance)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			mapKey := s.c.k("stage_instance", "map", string(instanceID))
 			guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 			if err == nil {
@@ -1069,7 +1069,7 @@ func (s *redisEmojiStore) Get(emojiID common.Snowflake) (*common.Emoji, bool) {
 	var emoji common.Emoji
 	ok, err := s.c.getJSON(key, &emoji)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			mapKey := s.c.k("emoji", "map", string(emojiID))
 			guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 			if err == nil {
@@ -1187,7 +1187,7 @@ func (s *redisStickerStore) Get(stickerID common.Snowflake) (*common.Sticker, bo
 	var sticker common.Sticker
 	ok, err := s.c.getJSON(key, &sticker)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			mapKey := s.c.k("sticker", "map", string(stickerID))
 			guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 			if err == nil {
@@ -1303,7 +1303,7 @@ func (s *redisPresenceStore) Get(guildID, userID common.Snowflake) (*common.Pres
 	var presence common.Presence
 	ok, err := s.c.getJSON(key, &presence)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			_ = s.c.client.SRem(s.c.ctx, s.c.k("presence", "guild", string(guildID)), string(userID)).Err()
 		}
 		return nil, false
@@ -1415,7 +1415,7 @@ func (s *redisMessageStore) Get(channelID, messageID common.Snowflake) (*common.
 	var msg common.Message
 	ok, err := s.c.getJSON(key, &msg)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			// Key expired — remove from sorted set index.
 			_ = s.c.client.ZRem(s.c.ctx, s.c.k("msg", "ch", string(channelID)), string(messageID)).Err()
 		}

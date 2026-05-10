@@ -554,3 +554,51 @@ func TestConcurrent_NoRace(t *testing.T) {
 
 	wg.Wait()
 }
+
+// TestBug6NetworkErrorDoesNotPruneIndex verifies that a Redis network error
+// during Get does not remove the entry from the index set. Only a true
+// cache-miss (redis.Nil) should trigger pruning.
+func TestBug6NetworkErrorDoesNotPruneIndex(t *testing.T) {
+	client := redis.NewClient(&redis.Options{Addr: redisAddr})
+	defer client.Close()
+
+	c := rediscache.NewRedisCache(client, cache.Options{})
+	defer c.Close()
+
+	// Seed a guild into the cache.
+	c.Guilds().Set(&common.Guild{ID: "g1", Name: "test"})
+
+	// Confirm it's in the index.
+	idx := client.SMembers(context.Background(), "discord:guild:index").Val()
+	found := false
+	for _, v := range idx {
+		if v == "g1" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("guild not found in index before test")
+	}
+
+	// Simulate a network error by closing the underlying connection pool.
+	// After this, Get returns an error — the index must NOT be pruned.
+	_ = client.Close()
+
+	// This Get will fail with a connection error.
+	c.Guilds().Get("g1")
+
+	// Re-open a fresh client to inspect the index.
+	client2 := redis.NewClient(&redis.Options{Addr: redisAddr})
+	defer client2.Close()
+
+	idx2 := client2.SMembers(context.Background(), "discord:guild:index").Val()
+	found2 := false
+	for _, v := range idx2 {
+		if v == "g1" {
+			found2 = true
+		}
+	}
+	if !found2 {
+		t.Error("index was pruned on network error (Bug 6) — only true cache-miss should prune")
+	}
+}
