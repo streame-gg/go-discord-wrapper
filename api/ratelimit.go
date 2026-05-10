@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"strings"
@@ -91,7 +92,8 @@ func (r *rateLimiter) purgeStaleBuckets(maxAge time.Duration) {
 
 // wait blocks until both the global rate limit and the per-route bucket allow
 // the request to proceed, then proactively decrements the remaining counter.
-func (r *rateLimiter) wait(method, path string) {
+// It returns ctx.Err() immediately if the context is cancelled while waiting.
+func (r *rateLimiter) wait(ctx context.Context, method, path string) error {
 	// 1. Global rate limit — loop in case it is extended while we sleep.
 	for {
 		r.globalMu.RLock()
@@ -102,7 +104,11 @@ func (r *rateLimiter) wait(method, path string) {
 		if wait <= 0 {
 			break
 		}
-		time.Sleep(wait)
+		select {
+		case <-time.After(wait):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 
 	// 2. Per-route bucket.
@@ -110,12 +116,12 @@ func (r *rateLimiter) wait(method, path string) {
 
 	bucketIDVal, ok := r.routeToBucket.Load(key)
 	if !ok {
-		return // No bucket known yet; let the request through.
+		return nil // No bucket known yet; let the request through.
 	}
 
 	bucketVal, ok := r.buckets.Load(bucketIDVal.(string))
 	if !ok {
-		return
+		return nil
 	}
 
 	b := bucketVal.(*rateLimitBucket)
@@ -127,7 +133,11 @@ func (r *rateLimiter) wait(method, path string) {
 		b.mu.Unlock()
 
 		if wait > 0 {
-			time.Sleep(wait)
+			select {
+			case <-time.After(wait):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
 
 		// Re-acquire and optimistically restore remaining so other goroutines
@@ -142,6 +152,7 @@ func (r *rateLimiter) wait(method, path string) {
 		b.remaining--
 	}
 	b.mu.Unlock()
+	return nil
 }
 
 // update reads Discord rate-limit headers from resp and updates internal state.

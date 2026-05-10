@@ -213,7 +213,9 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 		// Proactive rate limit check — blocks if the route's bucket is exhausted
 		// or the global rate limit is active.
 		if c.rateLimiter != nil && routePath != "" {
-			c.rateLimiter.wait(req.Method, routePath)
+			if err := c.rateLimiter.wait(req.Context(), req.Method, routePath); err != nil {
+				return nil, err
+			}
 		}
 
 		attemptReq, err := cloneRequest(req, bodyBytes)

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -103,7 +104,7 @@ func (s *ratelimitTestSuite) TestRateLimiter_UpdateAndWait_NoBlock() {
 	rl.update("GET", "/channels/111/messages", resp)
 
 	start := time.Now()
-	rl.wait("GET", "/channels/111/messages")
+	rl.wait(context.Background(), "GET", "/channels/111/messages")
 	elapsed := time.Since(start)
 
 	s.LessOrEqualf(elapsed, 50*time.Millisecond, "wait blocked for %v, expected no block when remaining > 0", elapsed)
@@ -122,7 +123,7 @@ func (s *ratelimitTestSuite) TestRateLimiter_UpdateAndWait_BlocksAtZeroRemaining
 	rl.update("POST", "/channels/111/messages", resp)
 
 	start := time.Now()
-	rl.wait("POST", "/channels/111/messages")
+	rl.wait(context.Background(), "POST", "/channels/111/messages")
 	elapsed := time.Since(start)
 
 	// Should have blocked for roughly the reset window.
@@ -141,7 +142,7 @@ func (s *ratelimitTestSuite) TestRateLimiter_SafetyMargin() {
 	rl.update("GET", "/guilds/999/members", resp)
 
 	start := time.Now()
-	rl.wait("GET", "/guilds/999/members")
+	rl.wait(context.Background(), "GET", "/guilds/999/members")
 	elapsed := time.Since(start)
 
 	// remaining(2) == safetyMargin(2), so we should block.
@@ -160,7 +161,7 @@ func (s *ratelimitTestSuite) TestRateLimiter_GlobalRateLimit() {
 
 	start := time.Now()
 	// wait() should block for the global rate limit even on a different route.
-	rl.wait("POST", "/guilds/222/channels")
+	rl.wait(context.Background(), "POST", "/guilds/222/channels")
 	elapsed := time.Since(start)
 
 	s.GreaterOrEqualf(elapsed, 80*time.Millisecond, "global rate limit did not block: elapsed=%v", elapsed)
@@ -179,7 +180,7 @@ func (s *ratelimitTestSuite) TestRateLimiter_GlobalDoesNotBlockAfterExpiry() {
 	time.Sleep(80 * time.Millisecond)
 
 	start := time.Now()
-	rl.wait("GET", "/channels/111")
+	rl.wait(context.Background(), "GET", "/channels/111")
 	elapsed := time.Since(start)
 
 	s.LessOrEqualf(elapsed, 30*time.Millisecond, "wait blocked after global limit expired: elapsed=%v", elapsed)
@@ -198,7 +199,7 @@ func (s *ratelimitTestSuite) TestRateLimiter_Route429UpdatesBucket() {
 	rl.update("DELETE", "/channels/111/messages/999", resp)
 
 	start := time.Now()
-	rl.wait("DELETE", "/channels/111/messages/999")
+	rl.wait(context.Background(), "DELETE", "/channels/111/messages/999")
 	elapsed := time.Since(start)
 
 	s.GreaterOrEqualf(elapsed, 80*time.Millisecond, "route 429 did not cause wait to block: elapsed=%v", elapsed)
@@ -209,7 +210,7 @@ func (s *ratelimitTestSuite) TestRateLimiter_UnknownRoutePasses() {
 	// No update called — wait should return immediately for an unknown route.
 
 	start := time.Now()
-	rl.wait("GET", "/applications/111/commands")
+	rl.wait(context.Background(), "GET", "/applications/111/commands")
 	elapsed := time.Since(start)
 
 	s.LessOrEqualf(elapsed, 20*time.Millisecond, "unknown route blocked unexpectedly: elapsed=%v", elapsed)
@@ -240,7 +241,7 @@ func (s *ratelimitTestSuite) TestRateLimiter_BucketSharedAcrossRoutes() {
 
 	// Requesting the pin route should also block (same bucket, remaining=0).
 	start := time.Now()
-	rl.wait("GET", "/channels/111/pins")
+	rl.wait(context.Background(), "GET", "/channels/111/pins")
 	elapsed := time.Since(start)
 
 	s.GreaterOrEqualf(elapsed, 80*time.Millisecond, "shared bucket did not block second route: elapsed=%v", elapsed)
@@ -301,7 +302,7 @@ func (s *ratelimitTestSuite) TestRateLimiter_PurgeStaleBuckets_WaitTouchesLastUs
 		"X-RateLimit-Reset-After": "1.000",
 	})
 	rl.update("GET", "/guilds/333/channels", resp)
-	rl.wait("GET", "/guilds/333/channels")
+	rl.wait(context.Background(), "GET", "/guilds/333/channels")
 
 	// Even with a zero maxAge, the bucket was just touched by wait() — it should
 	// be considered fresh enough that a non-zero window keeps it alive.

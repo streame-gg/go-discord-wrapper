@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -38,6 +39,7 @@ type Websocket struct {
 	lastHeartbeatSentAt  time.Time
 	awaitingHeartbeatAck bool
 	missedHeartbeatAcks  int
+	closeOnce            sync.Once
 }
 
 func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int, sessionID *string) (*Websocket, error) {
@@ -54,6 +56,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 	}
 
 	_ = c.SetWriteDeadline(time.Time{})
+	c.SetReadLimit(4 * 1024 * 1024) // 4 MiB — protects against rogue/compromised endpoint flooding RAM
 
 	c.SetPongHandler(func(string) error {
 		bot.Logger.Debug("Received pong from Discord")
@@ -86,75 +89,87 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 	bot.Logger.Info("Connected to Discord gateway", slog.Float64("heartbeatIntervalMs", hello.HeartbeatInterval))
 
 	go func() {
-		ticker := time.NewTicker(ws.HeartbeatInterval)
-		defer ticker.Stop()
-
 		timeoutThreshold := ws.HeartbeatInterval * 3
 		if timeoutThreshold < 10*time.Second {
 			timeoutThreshold = 10 * time.Second
 		}
-
 		const maxMissedHeartbeatAcks = 3
+
+		// Returns false if the goroutine should stop.
+		checkTimeout := func() bool {
+			ws.heartbeatMu.Lock()
+			if !ws.awaitingHeartbeatAck || time.Since(ws.lastHeartbeatSentAt) <= timeoutThreshold {
+				ws.heartbeatMu.Unlock()
+				return true
+			}
+			ws.missedHeartbeatAcks++
+			missedAcks := ws.missedHeartbeatAcks
+			ws.heartbeatMu.Unlock()
+
+			bot.Logger.Warn("Heartbeat ACK timeout", slog.Int("missed", missedAcks), slog.Int("max", maxMissedHeartbeatAcks))
+			if missedAcks >= maxMissedHeartbeatAcks {
+				bot.Logger.Warn("Heartbeat ACK timeout threshold reached, closing connection")
+				ws.close()
+				return false
+			}
+			return true
+		}
+
+		// Returns false if the goroutine should stop.
+		sendHeartbeat := func() bool {
+			var heartbeatData json.RawMessage
+			if seq := ws.LastEventNum.Load(); seq != nil {
+				data, _ := json.Marshal(*seq)
+				heartbeatData = data
+			} else {
+				heartbeatData = json.RawMessage("null")
+			}
+
+			if err := ws.writeJSONDeadline(common.Payload{Op: 1, D: heartbeatData}, 10*time.Second); err != nil {
+				bot.Logger.Error("Failed to send heartbeat", slog.Any("err", err))
+				if websocket.IsUnexpectedCloseError(err) {
+					bot.Logger.Warn("Heartbeat failed due to closed connection, stopping heartbeat loop")
+					return false
+				}
+				return true
+			}
+
+			ws.heartbeatMu.Lock()
+			now := time.Now()
+			ws.lastHeartbeatSentAt = now
+			ws.awaitingHeartbeatAck = true
+			if ws.LastHeartBeat == nil {
+				ws.LastHeartBeat = &now
+			}
+			ws.heartbeatMu.Unlock()
+			bot.Logger.Debug("Heartbeat sent")
+			return true
+		}
+
+		// Discord Gateway spec §4.2: first heartbeat must fire after heartbeat_interval * jitter (0–1).
+		jitter := time.Duration(rand.Float64() * float64(ws.HeartbeatInterval))
+		select {
+		case <-time.After(jitter):
+		case <-ws.Closed:
+			bot.Logger.Debug("Heartbeat stopped: websocket closed")
+			return
+		}
+
+		if !sendHeartbeat() {
+			return
+		}
+
+		ticker := time.NewTicker(ws.HeartbeatInterval)
+		defer ticker.Stop()
 
 		for {
 			select {
 			case <-ticker.C:
-				{
-					ws.heartbeatMu.Lock()
-					if ws.awaitingHeartbeatAck {
-						timeSinceLastSend := time.Since(ws.lastHeartbeatSentAt)
-						if timeSinceLastSend > timeoutThreshold {
-							ws.missedHeartbeatAcks++
-							missedAcks := ws.missedHeartbeatAcks
-							ws.heartbeatMu.Unlock()
-
-							bot.Logger.Warn("Heartbeat ACK timeout", slog.Int("missed", missedAcks), slog.Int("max", maxMissedHeartbeatAcks))
-
-							if missedAcks >= maxMissedHeartbeatAcks {
-								bot.Logger.Warn("Heartbeat ACK timeout threshold reached, closing connection")
-								ws.close()
-								return
-							}
-						} else {
-							ws.heartbeatMu.Unlock()
-						}
-					} else {
-						ws.heartbeatMu.Unlock()
-					}
-
-					var heartbeatData json.RawMessage
-					if seq := ws.LastEventNum.Load(); seq != nil {
-						data, _ := json.Marshal(*seq)
-						heartbeatData = data
-					} else {
-						heartbeatData = json.RawMessage("null")
-					}
-
-					heartbeatPayload := common.Payload{
-						Op: 1,
-						D:  heartbeatData,
-					}
-
-					if err := ws.writeJSONDeadline(heartbeatPayload, 10*time.Second); err != nil {
-						bot.Logger.Error("Failed to send heartbeat", slog.Any("err", err))
-
-						if websocket.IsUnexpectedCloseError(err) {
-							bot.Logger.Warn("Heartbeat failed due to closed connection, stopping heartbeat loop")
-							return
-						}
-						continue
-					}
-
-					ws.heartbeatMu.Lock()
-					now := time.Now()
-					ws.lastHeartbeatSentAt = now
-					ws.awaitingHeartbeatAck = true
-					if ws.LastHeartBeat == nil {
-						ws.LastHeartBeat = &now
-					}
-					ws.heartbeatMu.Unlock()
-
-					bot.Logger.Debug("Heartbeat sent")
+				if !checkTimeout() {
+					return
+				}
+				if !sendHeartbeat() {
+					return
 				}
 			case <-ws.Closed:
 				bot.Logger.Debug("Heartbeat stopped: websocket closed")
@@ -181,9 +196,9 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 				"token":   *bot.token,
 				"intents": *bot.Intents,
 				"properties": map[string]string{
-					"$os":      runtime.GOOS,
-					"$browser": "https://github.com/streame-gg/go-discord-wrapper@alpha",
-					"$device":  "https://github.com/streame-gg/go-discord-wrapper@alpha",
+					"os":      runtime.GOOS,
+					"browser": "https://github.com/streame-gg/go-discord-wrapper@alpha",
+					"device":  "https://github.com/streame-gg/go-discord-wrapper@alpha",
 				},
 			},
 		}
@@ -273,7 +288,12 @@ func (d *Client) reconnect(freshConnect bool) error {
 		}
 
 		if i > 0 {
-			backoff := time.Duration(i) * time.Second
+			const maxBackoff = 30 * time.Second
+			exp := time.Duration(1<<uint(i-1)) * time.Second // 1s, 2s, 4s, 8s, …
+			if exp > maxBackoff {
+				exp = maxBackoff
+			}
+			backoff := exp + time.Duration(rand.Int63n(int64(exp)+1)) // jitter: [exp, 2*exp]
 			if maxRetries < 0 {
 				d.Logger.Debug("Waiting before retry", slog.Duration("backoff", backoff), slog.Int("attempt", i+1))
 			} else {
@@ -445,11 +465,7 @@ func (ws *Websocket) writeJSONDeadline(v any, d time.Duration) error {
 func (d *Websocket) close() error {
 	if d != nil {
 		err := d.Connection.Close()
-		select {
-		case <-d.Closed:
-		default:
-			close(d.Closed)
-		}
+		d.closeOnce.Do(func() { close(d.Closed) })
 		return err
 	}
 	return nil
