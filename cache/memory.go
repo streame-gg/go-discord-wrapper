@@ -704,8 +704,21 @@ func (s *memMessageStore) Add(msg *common.Message) {
 	if s.opts.MaxPerChannel == 0 {
 		return
 	}
-	r := s.ring(msg.ChannelID)
+
+	// Hold the write lock for the entire lookup-or-create AND r.add() so that
+	// a concurrent DeleteChannel cannot remove the ring between ring() and add().
 	s.mu.Lock()
+	r := s.channels[msg.ChannelID]
+	if r == nil {
+		r = newChannelRing(s.opts.MaxPerChannel)
+		s.channels[msg.ChannelID] = r
+	}
+	// Verify the ring is still in the map (defensive: DeleteChannel could have
+	// run before we acquired the write lock above).
+	if s.channels[msg.ChannelID] == nil {
+		s.mu.Unlock()
+		return
+	}
 	prevLen := len(r.msgs)
 	delta := r.add(msg, s.trackBytes)
 	newLen := len(r.msgs)

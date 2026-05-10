@@ -568,6 +568,56 @@ func (s *memoryTestSuite) TestConcurrentAccess_NoRace() {
 	wg.Wait()
 }
 
+// TestBug3ConcurrentAddDeleteChannelNoCounterDrift verifies that concurrent
+// Add and DeleteChannel do not produce orphaned rings or counter drift.
+func TestBug3ConcurrentAddDeleteChannelNoCounterDrift(t *testing.T) {
+	c := cache.NewMemoryCache(cache.Options{
+		Messages: cache.MessageOptions{MaxPerChannel: 50},
+	})
+	defer c.Close()
+
+	const goroutines = 20
+	const ops = 500
+	chanID := common.Snowflake("ch1")
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines * 2)
+
+	for g := 0; g < goroutines; g++ {
+		g := g
+		go func() {
+			defer wg.Done()
+			for i := 0; i < ops; i++ {
+				c.Messages().Add(&common.Message{
+					ID:        common.Snowflake(fmt.Sprintf("g%d-m%d", g, i)),
+					ChannelID: chanID,
+					Content:   "x",
+				})
+			}
+		}()
+		go func() {
+			defer wg.Done()
+			for i := 0; i < ops; i++ {
+				c.Messages().DeleteChannel(chanID)
+			}
+		}()
+	}
+	wg.Wait()
+
+	// totalMsgs counter must equal the actual number of messages in all rings.
+	reported := c.Messages().Size()
+	// Get() returns all messages in the channel; use Channel() to count actual messages.
+	actual := len(c.Messages().Channel(chanID))
+	if reported < 0 {
+		t.Errorf("totalMsgs went negative: %d", reported)
+	}
+	// reported may be slightly stale (recomputed lazily), but actual counts from ring
+	// are authoritative. They should be in sync after no concurrent activity.
+	if reported != actual {
+		t.Errorf("counter drift: reported=%d actual=%d", reported, actual)
+	}
+}
+
 // TestBug1MaxPerChannelZeroDisablesCaching verifies that MaxPerChannel=0
 // disables message caching as documented, rather than defaulting to 100.
 func TestBug1MaxPerChannelZeroDisablesCaching(t *testing.T) {
