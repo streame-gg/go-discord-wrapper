@@ -326,3 +326,39 @@ func (s *ratelimitTestSuite) TestParseRetryAfter_Missing() {
 	got := parseRetryAfter(resp)
 	s.Equalf(time.Duration(0), got, "parseRetryAfter = %v, want 0", got)
 }
+
+// TestBug20OutOfOrderResponsesDoNotInflateRemaining verifies that an
+// out-of-order response with a higher remaining count does not overwrite the
+// current (more conservative) value within the same rate-limit window.
+func (s *ratelimitTestSuite) TestBug20OutOfOrderResponsesDoNotInflateRemaining() {
+	rl := newRateLimiter(0)
+	defer rl.close()
+
+	T := time.Now().Add(5 * time.Second)
+
+	// First response: remaining=4, reset=T (arrives first, authoritative).
+	rl.update("GET", "/channels/1/messages", makeResp(200, map[string]string{
+		"X-RateLimit-Bucket":      "bucket1",
+		"X-RateLimit-Limit":       "10",
+		"X-RateLimit-Remaining":   "4",
+		"X-RateLimit-Reset-After": "5",
+	}))
+
+	// Out-of-order response: remaining=5, same window — must NOT overwrite.
+	rl.update("GET", "/channels/1/messages", makeResp(200, map[string]string{
+		"X-RateLimit-Bucket":      "bucket1",
+		"X-RateLimit-Limit":       "10",
+		"X-RateLimit-Remaining":   "5",
+		"X-RateLimit-Reset-After": "5",
+	}))
+
+	val, ok := rl.buckets.Load("bucket1")
+	s.Require().True(ok)
+	b := val.(*rateLimitBucket)
+	b.mu.Lock()
+	got := b.remaining
+	b.mu.Unlock()
+
+	_ = T
+	s.Equalf(4, got, "remaining must stay at 4 after out-of-order higher-remaining response, got %d", got)
+}
