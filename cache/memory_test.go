@@ -567,3 +567,42 @@ func (s *memoryTestSuite) TestConcurrentAccess_NoRace() {
 
 	wg.Wait()
 }
+
+// TestBug2HitCountPreservedOnUpdate verifies that a Set (update) for an
+// existing key does not reset the hitCount accumulated via Get calls.
+// Without the fix, ClearByFrequency eviction is inverted: a frequently-read
+// entry that gets updated loses its hitCount and is evicted first.
+func TestBug2HitCountPreservedOnUpdate(t *testing.T) {
+	c := newCache(cache.Options{
+		Limits: cache.Limits{MaxGuilds: 2},
+		OnOverflow: cache.OverflowPolicy{
+			Target:  cache.CategoryGuilds,
+			ClearBy: cache.ClearByFrequency,
+		},
+	})
+	defer c.Close()
+
+	hotID := common.Snowflake("100")
+	coldID := common.Snowflake("200")
+
+	// Seed both guilds.
+	c.Guilds().Set(&common.Guild{ID: hotID, Name: "hot"})
+	c.Guilds().Set(&common.Guild{ID: coldID, Name: "cold"})
+
+	// Access hotGuild 100 times to build up its hitCount.
+	for i := 0; i < 100; i++ {
+		c.Guilds().Get(hotID)
+	}
+
+	// Update hotGuild (simulating a GUILD_UPDATE event). The fix must preserve hitCount.
+	c.Guilds().Set(&common.Guild{ID: hotID, Name: "hot-updated"})
+
+	// Trigger an overflow by adding a third guild (cap is 2); one of the two
+	// existing guilds must be evicted. ClearByFrequency evicts the lowest hitCount.
+	c.Guilds().Set(&common.Guild{ID: "300", Name: "trigger"})
+
+	_, hotStillCached := c.Guilds().Get(hotID)
+	if !hotStillCached {
+		t.Error("hot guild (hitCount=100 before update) was evicted — hitCount was reset on Set (Bug 2)")
+	}
+}

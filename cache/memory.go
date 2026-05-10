@@ -91,6 +91,10 @@ func (s *genericStore[K, V]) set(key K, value V) {
 
 	s.mu.Lock()
 	if old, ok := s.items[key]; ok {
+		// Preserve eviction-critical metadata so that hitCount and insertedAt
+		// are not reset on every update (GUILD_UPDATE, CHANNEL_UPDATE, etc.).
+		e.hitCount = old.hitCount
+		e.insertedAt = old.insertedAt
 		s.totalBytes.Add(-old.sizeBytes)
 	}
 	s.items[key] = e
