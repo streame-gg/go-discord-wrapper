@@ -329,6 +329,52 @@ func (s *shardingTestSuite) TestRequestAll_ContextCancellation() {
 	s.NotEmpty(results, "expected partial results before timeout")
 }
 
+// ── LocalCoordinator goroutine lifecycle ─────────────────────────────────────
+
+// TestBug27CloseWaitsForInFlightHandlers verifies that Close() blocks until all
+// handler goroutines started by Send/Broadcast have finished (Bug 27).
+func (s *shardingTestSuite) TestBug27CloseWaitsForInFlightHandlers() {
+	coord := sharding.NewLocalCoordinator(1)
+
+	started := make(chan struct{})
+	done := make(chan struct{})
+
+	s.Require().NoError(coord.Register(0, func(options.ShardMessage) {
+		close(started) // signal that handler has started
+		time.Sleep(100 * time.Millisecond)
+		close(done) // signal that handler is finishing
+	}))
+
+	_ = coord.Send(options.ShardMessage{Type: "TEST", From: 0, To: 0})
+
+	// Wait for handler to start.
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		s.FailNow("handler did not start in time")
+	}
+
+	// Close must block until the handler finishes.
+	closeDone := make(chan struct{})
+	go func() {
+		coord.Close()
+		close(closeDone)
+	}()
+
+	// Close should not return before the handler signals done.
+	select {
+	case <-closeDone:
+		// Check if done was already closed (handler finished before Close returned).
+		select {
+		case <-done:
+		default:
+			s.Fail("Close() returned before handler goroutine finished (Bug 27)")
+		}
+	case <-time.After(500 * time.Millisecond):
+		s.FailNow("Close() did not return within 500 ms after handler finished")
+	}
+}
+
 // ── ShardManager ─────────────────────────────────────────────────────────────
 
 // failCoord satisfies options.ShardCoordinator and errors on Close.
