@@ -14,8 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/joho/godotenv"
-
 	"github.com/streame-gg/go-discord-wrapper/api"
 	"github.com/streame-gg/go-discord-wrapper/connection"
 	"github.com/streame-gg/go-discord-wrapper/types/commands"
@@ -26,9 +24,7 @@ import (
 func main() {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
 
-	_ = godotenv.Load()
-
-	bot, clientErr := connection.NewClient(os.Getenv("TOKEN"), common.IntentGuilds|common.IntentGuildMessages)
+	bot, clientErr := connection.NewClient("EXAMPLE_TOKEN", common.IntentGuilds|common.IntentGuildMessages)
 	if clientErr != nil {
 		slog.Error("Failed to create client", slog.Any("err", clientErr))
 		os.Exit(1)
