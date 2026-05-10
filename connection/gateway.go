@@ -172,6 +172,9 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 		cacheAutoPopulate:   cacheStores,
 	}
 
+	if cfg.MaxConcurrentEvents == 0 {
+		cfg.MaxConcurrentEvents = 64
+	}
 	if cfg.MaxConcurrentEvents > 0 {
 		n := cfg.MaxConcurrentEvents
 		queueDepth := n * 4

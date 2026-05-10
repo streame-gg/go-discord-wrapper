@@ -2,11 +2,15 @@ package common
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Snowflake string
 
 func (s Snowflake) String() string {
+	if strings.Contains(string(s), "/") {
+		panic(fmt.Sprintf("go-discord-wrapper: Snowflake %q contains '/' — use ParseSnowflake to validate user-supplied IDs before embedding in paths", string(s)))
+	}
 	return string(s)
 }
 

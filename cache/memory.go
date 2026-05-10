@@ -188,6 +188,32 @@ func (s *genericStore[K, V]) evictToCount(target int) {
 	if n <= target {
 		return
 	}
+	toRemove := n - target
+
+	// Fast path: single-item eviction — linear scan, no allocations.
+	if toRemove == 1 {
+		var minKey K
+		var minScore float64
+		var minInserted int64
+		var minSize int64
+		first := true
+		for k, e := range s.items {
+			score := e.rank(s.cfg.clearBy)
+			ins := e.insertedAt.UnixNano()
+			if first || score < minScore || (score == minScore && ins < minInserted) {
+				minKey = k
+				minScore = score
+				minInserted = ins
+				minSize = e.sizeBytes
+				first = false
+			}
+		}
+		s.totalBytes.Add(-minSize)
+		delete(s.items, minKey)
+		return
+	}
+
+	// General path: sort then bulk-remove.
 	type pair struct {
 		key        K
 		score      float64
@@ -204,7 +230,7 @@ func (s *genericStore[K, V]) evictToCount(target int) {
 		}
 		return pairs[i].insertedAt < pairs[j].insertedAt // tie: oldest inserted first
 	})
-	for _, p := range pairs[:n-target] {
+	for _, p := range pairs[:toRemove] {
 		s.totalBytes.Add(-p.size)
 		delete(s.items, p.key)
 	}
@@ -255,31 +281,52 @@ type memGuildStore struct {
 	s *genericStore[common.Snowflake, *common.Guild]
 }
 
-func (g *memGuildStore) Set(guild *common.Guild)                       { g.s.set(guild.ID, guild) }
-func (g *memGuildStore) Get(id common.Snowflake) (*common.Guild, bool) { return g.s.get(id) }
-func (g *memGuildStore) Delete(id common.Snowflake)                    { g.s.delete(id) }
-func (g *memGuildStore) All() []*common.Guild                          { return g.s.all() }
-func (g *memGuildStore) Size() int                                     { return g.s.size() }
+func (g *memGuildStore) Set(guild *common.Guild) { g.s.set(guild.ID, guild) }
+func (g *memGuildStore) Get(id common.Snowflake) (*common.Guild, bool) {
+	v, ok := g.s.get(id)
+	if !ok {
+		return nil, false
+	}
+	cp := *v
+	return &cp, true
+}
+func (g *memGuildStore) Delete(id common.Snowflake) { g.s.delete(id) }
+func (g *memGuildStore) All() []*common.Guild       { return g.s.all() }
+func (g *memGuildStore) Size() int                  { return g.s.size() }
 
 type memChannelStore struct {
 	s *genericStore[common.Snowflake, *common.Channel]
 }
 
-func (c *memChannelStore) Set(ch *common.Channel)                          { c.s.set(ch.ID, ch) }
-func (c *memChannelStore) Get(id common.Snowflake) (*common.Channel, bool) { return c.s.get(id) }
-func (c *memChannelStore) Delete(id common.Snowflake)                      { c.s.delete(id) }
-func (c *memChannelStore) All() []*common.Channel                          { return c.s.all() }
-func (c *memChannelStore) Size() int                                       { return c.s.size() }
+func (c *memChannelStore) Set(ch *common.Channel) { c.s.set(ch.ID, ch) }
+func (c *memChannelStore) Get(id common.Snowflake) (*common.Channel, bool) {
+	v, ok := c.s.get(id)
+	if !ok {
+		return nil, false
+	}
+	cp := *v
+	return &cp, true
+}
+func (c *memChannelStore) Delete(id common.Snowflake) { c.s.delete(id) }
+func (c *memChannelStore) All() []*common.Channel     { return c.s.all() }
+func (c *memChannelStore) Size() int                  { return c.s.size() }
 
 type memUserStore struct {
 	s *genericStore[common.Snowflake, *common.User]
 }
 
-func (u *memUserStore) Set(user *common.User)                        { u.s.set(user.ID, user) }
-func (u *memUserStore) Get(id common.Snowflake) (*common.User, bool) { return u.s.get(id) }
-func (u *memUserStore) Delete(id common.Snowflake)                   { u.s.delete(id) }
-func (u *memUserStore) All() []*common.User                          { return u.s.all() }
-func (u *memUserStore) Size() int                                    { return u.s.size() }
+func (u *memUserStore) Set(user *common.User) { u.s.set(user.ID, user) }
+func (u *memUserStore) Get(id common.Snowflake) (*common.User, bool) {
+	v, ok := u.s.get(id)
+	if !ok {
+		return nil, false
+	}
+	cp := *v
+	return &cp, true
+}
+func (u *memUserStore) Delete(id common.Snowflake) { u.s.delete(id) }
+func (u *memUserStore) All() []*common.User        { return u.s.all() }
+func (u *memUserStore) Size() int                  { return u.s.size() }
 
 // ── Member store ──────────────────────────────────────────────────────────────
 
@@ -300,7 +347,12 @@ func (m *memMemberStore) Set(guildID common.Snowflake, member *common.GuildMembe
 }
 
 func (m *memMemberStore) Get(guildID, userID common.Snowflake) (*common.GuildMember, bool) {
-	return m.s.get(memberKey{guildID, userID})
+	v, ok := m.s.get(memberKey{guildID, userID})
+	if !ok {
+		return nil, false
+	}
+	cp := *v
+	return &cp, true
 }
 
 func (m *memMemberStore) Delete(guildID, userID common.Snowflake) {
@@ -353,7 +405,8 @@ func (r *memRoleStore) Get(roleID common.Snowflake) (*common.Role, bool) {
 	if !ok {
 		return nil, false
 	}
-	return v.Role, true
+	cp := *v.Role
+	return &cp, true
 }
 
 func (r *memRoleStore) GetByGuild(guildID common.Snowflake) []*common.Role {
@@ -673,7 +726,11 @@ func (s *memMessageStore) Get(channelID, messageID common.Snowflake) (*common.Me
 	s.mu.Lock()
 	msg, ok := r.get(messageID, s.opts.TTL)
 	s.mu.Unlock()
-	return msg, ok
+	if !ok {
+		return nil, false
+	}
+	cp := *msg
+	return &cp, true
 }
 
 func (s *memMessageStore) Update(msg *common.Message) {
@@ -1270,7 +1327,12 @@ func (v *memVoiceStateStore) Set(guildID common.Snowflake, vs *common.VoiceState
 }
 
 func (v *memVoiceStateStore) Get(guildID, userID common.Snowflake) (*common.VoiceState, bool) {
-	return v.s.get(memberKey{guildID, userID})
+	val, ok := v.s.get(memberKey{guildID, userID})
+	if !ok {
+		return nil, false
+	}
+	cp := *val
+	return &cp, true
 }
 
 func (v *memVoiceStateStore) Delete(guildID, userID common.Snowflake) {
@@ -1323,7 +1385,8 @@ func (ss *memSoundboardStore) Get(soundID common.Snowflake) (*common.SoundboardS
 	if !ok {
 		return nil, false
 	}
-	return v.Sound, true
+	cp := *v.Sound
+	return &cp, true
 }
 
 func (ss *memSoundboardStore) GetByGuild(guildID common.Snowflake) []*common.SoundboardSound {
@@ -1381,7 +1444,12 @@ func (se *memScheduledEventStore) Set(event *common.GuildScheduledEvent) {
 }
 
 func (se *memScheduledEventStore) Get(eventID common.Snowflake) (*common.GuildScheduledEvent, bool) {
-	return se.s.get(eventID)
+	v, ok := se.s.get(eventID)
+	if !ok {
+		return nil, false
+	}
+	cp := *v
+	return &cp, true
 }
 
 func (se *memScheduledEventStore) GetByGuild(guildID common.Snowflake) []*common.GuildScheduledEvent {
@@ -1423,7 +1491,12 @@ func (si *memStageInstanceStore) Set(instance *common.StageInstance) {
 }
 
 func (si *memStageInstanceStore) Get(instanceID common.Snowflake) (*common.StageInstance, bool) {
-	return si.s.get(instanceID)
+	v, ok := si.s.get(instanceID)
+	if !ok {
+		return nil, false
+	}
+	cp := *v
+	return &cp, true
 }
 
 func (si *memStageInstanceStore) GetByGuild(guildID common.Snowflake) []*common.StageInstance {
@@ -1474,7 +1547,8 @@ func (es *memEmojiStore) Get(emojiID common.Snowflake) (*common.Emoji, bool) {
 	if !ok {
 		return nil, false
 	}
-	return v.Emoji, true
+	cp := *v.Emoji
+	return &cp, true
 }
 
 func (es *memEmojiStore) GetByGuild(guildID common.Snowflake) []*common.Emoji {
@@ -1541,7 +1615,8 @@ func (ss *memStickerStore) Get(stickerID common.Snowflake) (*common.Sticker, boo
 	if !ok {
 		return nil, false
 	}
-	return v.Sticker, true
+	cp := *v.Sticker
+	return &cp, true
 }
 
 func (ss *memStickerStore) GetByGuild(guildID common.Snowflake) []*common.Sticker {
@@ -1602,7 +1677,12 @@ func (ps *memPresenceStore) Set(presence *common.Presence) {
 }
 
 func (ps *memPresenceStore) Get(guildID, userID common.Snowflake) (*common.Presence, bool) {
-	return ps.s.get(memberKey{guildID, userID})
+	v, ok := ps.s.get(memberKey{guildID, userID})
+	if !ok {
+		return nil, false
+	}
+	cp := *v
+	return &cp, true
 }
 
 func (ps *memPresenceStore) GetByGuild(guildID common.Snowflake) []*common.Presence {

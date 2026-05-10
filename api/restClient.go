@@ -172,11 +172,8 @@ func (c *RestClient) emitEvent(event RestEvent) {
 // validateAPIPath rejects any digit-only path segment that is not a valid Discord Snowflake
 // (15–20 decimal digits). This stops the most common URL-injection pattern where user-supplied
 // short numeric input (e.g. "123") is concatenated directly into a path without sanitisation.
-//
-// Limitation: injection using a full-length numeric prefix followed by a slash
-// (e.g. Snowflake("123456789012345/evil")) cannot be detected here because the slash
-// is already split by the time the path is evaluated. Use ParseSnowflake at call sites
-// for complete protection against that variant.
+// Slash-injection (e.g. Snowflake("123456789012345/evil")) is caught earlier by Snowflake.String(),
+// which panics when the value contains a '/'.
 func validateAPIPath(path string) error {
 	for i, seg := range strings.Split(strings.Trim(path, "/"), "/") {
 		if seg == "" {
