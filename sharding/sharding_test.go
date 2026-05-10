@@ -13,6 +13,9 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/connection"
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/sharding"
+	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -462,4 +465,63 @@ func (s *shardingTestSuite) TestRequestAll_IsolatesCorrelationIDs() {
 	for _, v := range resB {
 		s.Equalf("b", v, "resB contains %q, want 'b'", v)
 	}
+}
+
+// TestBug29RequestAllMalformedResponseDoesNotConsumeSlot verifies that when one
+// shard replies with a payload that cannot be unmarshalled into T, the loop does
+// NOT count that response as a consumed slot. Instead it keeps waiting until a
+// valid reply arrives or the context expires (Bug 29).
+//
+// With the old `for i := 0; i < total; i++` loop, the malformed message consumed
+// slot i and the function returned with only 1 result and nil error even though
+// shard 1 never sent a valid reply. The new `for len(results) < total` loop
+// correctly blocks until all valid responses arrive, returning a context error.
+func TestBug29RequestAllMalformedResponseDoesNotConsumeSlot(t *testing.T) {
+	const total = 2
+	coord := sharding.NewLocalCoordinator(total)
+
+	c0, err := connection.NewClient("Bot fake-token", common.IntentGuilds,
+		options.WithSharding(total, 0),
+		options.WithCoordinator(coord),
+	)
+	require.NoError(t, err)
+	defer c0.Shutdown()
+
+	c1, err := connection.NewClient("Bot fake-token", common.IntentGuilds,
+		options.WithSharding(total, 1),
+		options.WithCoordinator(coord),
+	)
+	require.NoError(t, err)
+	defer c1.Shutdown()
+
+	// Shard 0 replies with a valid int.
+	c0.OnShardMessage(func(msg options.ShardMessage) {
+		if msg.Type == "REQ" {
+			_ = c0.ReplyToShard(msg, "RESP", 42)
+		}
+	})
+
+	// Shard 1 replies with malformed JSON (a string, not an int).
+	c1.OnShardMessage(func(msg options.ShardMessage) {
+		if msg.Type == "REQ" {
+			_ = coord.Send(options.ShardMessage{
+				Type:          "RESP",
+				From:          1,
+				To:            msg.From,
+				CorrelationID: msg.CorrelationID,
+				Payload:       json.RawMessage(`"not-an-int"`),
+			})
+		}
+	})
+
+	// The malformed response must NOT consume a slot: the loop must keep
+	// waiting for a second valid response, and expire only when ctx is done.
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
+	results, err := sharding.RequestAll[int](ctx, c0, "REQ", nil, "RESP")
+
+	assert.Error(t, err, "expected context error: malformed response must not consume a slot (Bug 29)")
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Len(t, results, 1, "expected exactly 1 valid result (from shard 0)")
 }

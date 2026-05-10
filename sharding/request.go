@@ -86,14 +86,17 @@ func RequestAll[T any](
 		return nil, fmt.Errorf("sharding: broadcast failed: %w", err)
 	}
 
-	// Collect one response per shard.
+	// Collect one response per shard. Malformed responses do not consume a
+	// slot so the loop keeps waiting until total valid results arrive or the
+	// context expires.
 	results := make([]T, 0, total)
-	for i := 0; i < total; i++ {
+	for len(results) < total {
 		select {
 		case msg := <-ch:
 			var v T
 			if err := json.Unmarshal(msg.Payload, &v); err != nil {
-				// Skip malformed response rather than aborting the whole call.
+				// Skip malformed response; do NOT advance the counter so we
+				// still wait for a valid reply (or context cancellation).
 				continue
 			}
 			results = append(results, v)
