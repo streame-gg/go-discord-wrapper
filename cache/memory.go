@@ -112,6 +112,8 @@ func (s *genericStore[K, V]) set(key K, value V) {
 
 // setLocked is like set but assumes s.mu is already held by the caller.
 // Used by SetAll implementations to keep the delete→insert sequence atomic.
+// If the store has a non-zero maxItems cap, the caller must call evictToCount
+// after releasing the lock — setLocked does not enforce the cap itself.
 func (s *genericStore[K, V]) setLocked(key K, value V) {
 	now := time.Now()
 	var sz int64
@@ -735,12 +737,6 @@ func (s *memMessageStore) Add(msg *common.Message) {
 		r = newChannelRing(s.opts.MaxPerChannel)
 		s.channels[msg.ChannelID] = r
 	}
-	// Verify the ring is still in the map (defensive: DeleteChannel could have
-	// run before we acquired the write lock above).
-	if s.channels[msg.ChannelID] == nil {
-		s.mu.Unlock()
-		return
-	}
 	prevLen := len(r.msgs)
 	delta := r.add(msg, s.trackBytes)
 	newLen := len(r.msgs)
@@ -1360,27 +1356,51 @@ func (c *MemoryCache) evictGloballyByBytes(need int64, target OverflowCategory, 
 	if totalBytes == 0 {
 		return
 	}
-	for _, st := range stores {
-		if need <= 0 || st.size == 0 || st.bytes == 0 {
+
+	// Largest-Remainder Method adapted for bytes: converts proportional byte
+	// shares to integer entry counts without forcing a minimum of 1 per store
+	// (which would cause over-eviction when byteShare < avgSize for many stores).
+	type slotted struct {
+		idx       int
+		floor     int
+		remainder float64
+		avgSize   int64
+	}
+	slots := make([]slotted, 0, len(stores))
+	floorBytes := int64(0)
+	for i, st := range stores {
+		if st.bytes == 0 || st.size == 0 {
 			continue
 		}
-		// Distribute eviction proportionally by byte share, not entry count.
-		// byteShare is how many bytes we want to free from this store.
 		byteShare := need * st.bytes / totalBytes
 		if byteShare <= 0 {
 			continue
 		}
-		// Convert byte target to entry count via average entry size.
 		avgSize := st.bytes / int64(st.size)
 		if avgSize <= 0 {
 			avgSize = 1
 		}
-		share := int(byteShare / avgSize)
-		if share < 1 {
-			share = 1
+		real := float64(byteShare) / float64(avgSize)
+		f := int(real)
+		slots = append(slots, slotted{i, f, real - float64(f), avgSize})
+		floorBytes += int64(f) * avgSize
+	}
+	// Distribute remaining bytes to the stores with the largest fractional
+	// remainder (i.e., those closest to needing one extra eviction). Stop as
+	// soon as the floor allocation already covers `need`.
+	remainingNeed := need - floorBytes
+	sort.Slice(slots, func(a, b int) bool { return slots[a].remainder > slots[b].remainder })
+	for i := range slots {
+		if remainingNeed <= 0 || slots[i].remainder == 0 {
+			break
 		}
-		freed := st.evictN(share, by)
-		need -= freed
+		slots[i].floor++
+		remainingNeed -= slots[i].avgSize
+	}
+	for _, sl := range slots {
+		if sl.floor > 0 {
+			stores[sl.idx].evictN(sl.floor, by)
+		}
 	}
 }
 
@@ -1486,7 +1506,11 @@ func (ss *memSoundboardStore) SetAll(guildID common.Snowflake, sounds []*common.
 			ss.s.setLocked(s.SoundID, soundboardValue{GuildID: guildID, Sound: s})
 		}
 	}
+	n := len(ss.s.items)
 	ss.s.mu.Unlock()
+	if ss.s.cfg.maxItems > 0 && n > ss.s.cfg.maxItems {
+		ss.s.evictToCount(ss.s.cfg.maxItems)
+	}
 }
 
 func (ss *memSoundboardStore) Delete(soundID common.Snowflake) { ss.s.delete(soundID) }
@@ -1648,7 +1672,11 @@ func (es *memEmojiStore) SetAll(guildID common.Snowflake, emojis []*common.Emoji
 			es.s.setLocked(emoji.ID, emojiValue{GuildID: guildID, Emoji: emoji})
 		}
 	}
+	n := len(es.s.items)
 	es.s.mu.Unlock()
+	if es.s.cfg.maxItems > 0 && n > es.s.cfg.maxItems {
+		es.s.evictToCount(es.s.cfg.maxItems)
+	}
 }
 
 func (es *memEmojiStore) Delete(emojiID common.Snowflake) { es.s.delete(emojiID) }
@@ -1716,7 +1744,11 @@ func (ss *memStickerStore) SetAll(guildID common.Snowflake, stickers []*common.S
 			ss.s.setLocked(sticker.ID, stickerValue{GuildID: guildID, Sticker: sticker})
 		}
 	}
+	n := len(ss.s.items)
 	ss.s.mu.Unlock()
+	if ss.s.cfg.maxItems > 0 && n > ss.s.cfg.maxItems {
+		ss.s.evictToCount(ss.s.cfg.maxItems)
+	}
 }
 
 func (ss *memStickerStore) Delete(stickerID common.Snowflake) { ss.s.delete(stickerID) }

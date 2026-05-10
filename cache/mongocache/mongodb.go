@@ -1334,6 +1334,9 @@ func (s *mongoMessageStore) DeleteBulk(channelID common.Snowflake, ids []common.
 
 // Channel returns messages for channelID newest-first, excluding expired entries.
 func (s *mongoMessageStore) Channel(channelID common.Snowflake) []*common.Message {
+	if s.c.opts.Messages.MaxPerChannel == 0 {
+		return nil
+	}
 	filter := bson.M{"channel_id": string(channelID)}
 	if s.c.opts.Messages.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -1341,8 +1344,6 @@ func (s *mongoMessageStore) Channel(channelID common.Snowflake) []*common.Messag
 	cursor, err := s.col().Find(
 		s.c.ctx,
 		filter,
-		// Bug 33 fix: limit the result set to MaxPerChannel to avoid loading the
-		// entire channel history into memory on large channels.
 		options.Find().
 			SetSort(bson.D{{Key: "inserted_at", Value: -1}}).
 			SetLimit(int64(s.c.opts.Messages.MaxPerChannel)),

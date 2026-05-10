@@ -7,6 +7,46 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/common"
 )
 
+// TestBug4EvictNZeroIsNoOp verifies that evictN(0) on a genericStore removes
+// no entries. This is the primitive that the LRM-based evictGloballyByBytes
+// relies on: stores whose proportional allocation rounds to zero floor entries
+// and that don't receive an extra slot must not be touched (Bug 4).
+func TestBug4EvictNZeroIsNoOp(t *testing.T) {
+	s := newGenericStore[string, *common.Guild](storeCfg{trackBytes: true})
+	s.set("a", &common.Guild{ID: "a"})
+	before := s.size()
+	freed := s.evictN(0, ClearByLastUsed)
+	after := s.size()
+	_ = freed
+	if before != after {
+		t.Errorf("evictN(0) removed %d entries — must be a no-op (Bug 4)", before-after)
+	}
+}
+
+// TestBug10SetAllEnforcesMaxItemsAfterUnlock verifies that SetAll on stores
+// with a non-zero maxItems cap evicts excess entries after the bulk insert.
+func TestBug10SetAllEnforcesMaxItemsAfterUnlock(t *testing.T) {
+	// StickerStore uses MaxStickers which wires into storeCfg.maxItems.
+	// Wire a cap of 2 and call SetAll with 4 stickers.
+	ss := &memStickerStore{
+		s: newGenericStore[common.Snowflake, stickerValue](storeCfg{maxItems: 2, clearBy: ClearByLastUsed}),
+	}
+
+	guildID := common.Snowflake("g1")
+	stickers := []*common.Sticker{
+		{ID: "s1", Name: "a"},
+		{ID: "s2", Name: "b"},
+		{ID: "s3", Name: "c"},
+		{ID: "s4", Name: "d"},
+	}
+
+	ss.SetAll(guildID, stickers)
+
+	if n := ss.Size(); n > 2 {
+		t.Errorf("expected ≤ 2 stickers after SetAll with maxItems=2, got %d (Bug 10)", n)
+	}
+}
+
 // TestBug10SetAllIsAtomicNoEmptyWindowForReaders verifies that concurrent reads
 // during SetAll never observe a zero-entry state. Without Bug 10's fix, the lock
 // is released between the delete loop and the insert loop, leaving a window
