@@ -428,19 +428,14 @@ func (d *Client) Login(ctx context.Context) error {
 				d.Logger.Error("Error listening to websocket", slog.Any("err", err))
 				d.emitDisconnect(err)
 
-				d.wsMu.RLock()
-				wsNil := d.Websocket == nil
-				d.wsMu.RUnlock()
-				if wsNil {
-					d.Logger.Debug("Websocket is nil, stopping listener")
-					return
-				}
-
 				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 					d.Logger.Debug("Gateway connection closed normally, attempting resume")
 					if err := d.reconnect(false); err != nil {
-						d.Logger.Error("Failed to reconnect after normal close", slog.Any("err", err))
-						return
+						d.Logger.Warn("Resume failed after normal close, attempting fresh reconnect")
+						if err := d.reconnect(true); err != nil {
+							d.Logger.Error("Failed to reconnect after normal close", slog.Any("err", err))
+							return
+						}
 					}
 					continue
 				}

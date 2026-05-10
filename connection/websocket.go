@@ -111,9 +111,8 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 							bot.Logger.Warn("Heartbeat ACK timeout", slog.Int("missed", missedAcks), slog.Int("max", maxMissedHeartbeatAcks))
 
 							if missedAcks >= maxMissedHeartbeatAcks {
-								bot.Logger.Warn("Heartbeat ACK timeout threshold reached, reconnecting")
+								bot.Logger.Warn("Heartbeat ACK timeout threshold reached, closing connection")
 								ws.close()
-								_ = bot.reconnect(false)
 								return
 							}
 						} else {
