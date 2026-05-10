@@ -3,6 +3,7 @@ package connection
 import (
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"testing"
 	"time"
 
@@ -105,3 +106,46 @@ func TestBug17NonRecoverableCloseCodesExitListenerLoop(t *testing.T) {
 		})
 	}
 }
+
+// TestBug16NoHeartbeatLeakOnWriteFailure verifies that if the Identify/Resume
+// write fails, no goroutine is left running. The heartbeat goroutine must not
+// start until after a successful write.
+func TestBug16NoHeartbeatLeakOnWriteFailure(t *testing.T) {
+	// Server: sends HELLO then immediately closes the connection before IDENTIFY
+	// can be written, so the WriteJSON in NewWebsocket will fail.
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := wsUpgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		// Send HELLO
+		_ = conn.WriteJSON(map[string]interface{}{
+			"op": 10,
+			"d":  map[string]interface{}{"heartbeat_interval": 60000},
+		})
+		// Close immediately — the client's WriteJSON(IDENTIFY) will fail.
+		conn.Close()
+	}))
+	defer ts.Close()
+
+	wsURL := "ws" + ts.URL[len("http"):]
+
+	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	require.NoError(t, err)
+
+	before := runtime.NumGoroutine()
+
+	// NewWebsocket (called inside connectWebsocket) should fail cleanly.
+	_ = c.connectWebsocket(wsURL, false, nil, nil)
+
+	// Give any stray goroutines time to start (and then they shouldn't).
+	time.Sleep(200 * time.Millisecond)
+
+	after := runtime.NumGoroutine()
+
+	// Allow a small tolerance for background goroutines from the test runtime.
+	const tolerance = 3
+	assert.LessOrEqual(t, after, before+tolerance,
+		"goroutine count grew by %d after failed NewWebsocket — heartbeat leak suspected", after-before)
+}
+

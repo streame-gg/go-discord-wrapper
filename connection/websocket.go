@@ -88,6 +88,42 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 
 	bot.Logger.Info("Connected to Discord gateway", slog.Float64("heartbeatIntervalMs", hello.HeartbeatInterval))
 
+	if isReconnect && lastEventNum != nil && sessionID != nil {
+		if err := ws.writeJSON(map[string]interface{}{
+			"op": 6,
+			"d": map[string]interface{}{
+				"token":      *bot.token,
+				"session_id": *sessionID,
+				"seq":        *lastEventNum,
+			},
+		}); err != nil {
+			return nil, err
+		}
+	} else {
+		data := map[string]interface{}{
+			"op": 2,
+			"d": map[string]interface{}{
+				"token":   *bot.token,
+				"intents": *bot.Intents,
+				"properties": map[string]string{
+					"os":      runtime.GOOS,
+					"browser": "https://github.com/streame-gg/go-discord-wrapper@alpha",
+					"device":  "https://github.com/streame-gg/go-discord-wrapper@alpha",
+				},
+			},
+		}
+
+		if bot.Sharding != nil {
+			data["d"].(map[string]interface{})["shard"] = []int{bot.Sharding.ShardID, bot.Sharding.TotalShards}
+		}
+
+		if err := ws.writeJSON(data); err != nil {
+			return nil, err
+		}
+	}
+
+	// Heartbeat goroutine starts only after a successful Identify/Resume so that
+	// a write failure does not leave an orphaned goroutine waiting on ws.Closed.
 	go func() {
 		timeoutThreshold := ws.HeartbeatInterval * 3
 		if timeoutThreshold < 10*time.Second {
@@ -177,40 +213,6 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 			}
 		}
 	}()
-
-	if isReconnect && lastEventNum != nil && sessionID != nil {
-		if err := ws.writeJSON(map[string]interface{}{
-			"op": 6,
-			"d": map[string]interface{}{
-				"token":      *bot.token,
-				"session_id": *sessionID,
-				"seq":        *lastEventNum,
-			},
-		}); err != nil {
-			return nil, err
-		}
-	} else {
-		data := map[string]interface{}{
-			"op": 2,
-			"d": map[string]interface{}{
-				"token":   *bot.token,
-				"intents": *bot.Intents,
-				"properties": map[string]string{
-					"os":      runtime.GOOS,
-					"browser": "https://github.com/streame-gg/go-discord-wrapper@alpha",
-					"device":  "https://github.com/streame-gg/go-discord-wrapper@alpha",
-				},
-			},
-		}
-
-		if bot.Sharding != nil {
-			data["d"].(map[string]interface{})["shard"] = []int{bot.Sharding.ShardID, bot.Sharding.TotalShards}
-		}
-
-		if err := ws.writeJSON(data); err != nil {
-			return nil, err
-		}
-	}
 
 	return ws, nil
 }
