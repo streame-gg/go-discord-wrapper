@@ -62,14 +62,20 @@ func NewShardManager(
 // bot token (across all shards). Start enforces this automatically, so the
 // full startup time for N shards is at least (N-1)*5 seconds.
 //
-// Start blocks until all shards have sent their IDENTIFY and received READY,
-// or until a shard fails to connect (in which case an error is returned and
-// already-started shards keep running).
+// Start blocks until all shards have sent their IDENTIFY and received READY.
+// If any shard fails to connect, Start shuts down all already-started shards
+// before returning the error so no shards are left orphaned.
 func (m *ShardManager) Start() error {
 	for id := 0; id < m.total; id++ {
 		client := m.factory(id, m.total)
 
 		if err := client.Login(context.Background()); err != nil {
+			// Shut down all shards that started successfully before this failure.
+			for _, c := range m.clients[:id] {
+				if c != nil {
+					_ = c.Shutdown()
+				}
+			}
 			return fmt.Errorf("sharding: shard %d failed to connect: %w", id, err)
 		}
 
