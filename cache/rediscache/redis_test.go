@@ -602,3 +602,76 @@ func TestBug6NetworkErrorDoesNotPruneIndex(t *testing.T) {
 		t.Error("index was pruned on network error (Bug 6) — only true cache-miss should prune")
 	}
 }
+
+// TestBug7UpdateIsAtomicNoGhostEntry verifies that Update uses an atomic SetXX
+// so a key that expires between the old Exists check and the Set call does not
+// produce a ghost entry (message value without a sorted-set index entry).
+func TestBug7UpdateIsAtomicNoGhostEntry(t *testing.T) {
+	client := redis.NewClient(&redis.Options{Addr: redisAddr})
+	defer client.Close()
+
+	// Use a 50 ms TTL so expiry is easy to trigger in the test.
+	c := rediscache.NewRedisCache(client, cache.Options{
+		Messages: cache.MessageOptions{MaxPerChannel: 10, TTL: 50 * time.Millisecond},
+	})
+	defer c.Close()
+
+	msg := &common.Message{ID: "m1", ChannelID: "c1", Content: "original"}
+	c.Messages().Add(msg)
+
+	// Let the TTL expire so the key no longer exists.
+	time.Sleep(100 * time.Millisecond)
+
+	// Update after expiry — with the old code (Exists+Set) this would create
+	// a new key with no matching ZSet entry. With SetXX it's a no-op.
+	c.Messages().Update(&common.Message{ID: "m1", ChannelID: "c1", Content: "updated"})
+
+	// The key must not exist (SetXX must be a no-op after expiry).
+	exists := client.Exists(context.Background(), "discord:msg:c1:m1").Val()
+	if exists != 0 {
+		t.Error("Update created a ghost entry after TTL expiry — SetXX not used atomically (Bug 7)")
+	}
+}
+
+// TestBug8AddIsAtomicParallelAddsRespectMaxPerChannel verifies that concurrent
+// Add calls never leave more than MaxPerChannel entries in the sorted-set index.
+// Before the fix, non-atomic ZCard/ZPopMin could miss excess entries under load.
+func TestBug8AddIsAtomicParallelAddsRespectMaxPerChannel(t *testing.T) {
+	const max = 5
+	const goroutines = 50
+
+	client := redis.NewClient(&redis.Options{Addr: redisAddr})
+	defer client.Close()
+
+	c := rediscache.NewRedisCache(client, cache.Options{
+		Messages: cache.MessageOptions{MaxPerChannel: max},
+	})
+	defer c.Close()
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		i := i
+		go func() {
+			defer wg.Done()
+			c.Messages().Add(&common.Message{
+				ID:        common.Snowflake(fmt.Sprintf("m%d", i)),
+				ChannelID: "ch-atomic",
+				Content:   "payload",
+			})
+		}()
+	}
+	wg.Wait()
+
+	// The sorted-set cardinality must not exceed MaxPerChannel.
+	card := client.ZCard(context.Background(), "discord:msg:ch:ch-atomic").Val()
+	if card > int64(max) {
+		t.Errorf("ZCard=%d after parallel Adds — exceeds MaxPerChannel=%d (Bug 8)", card, max)
+	}
+
+	// The number of msg keys for this channel must equal the ZCard.
+	msgKeys := client.Keys(context.Background(), "discord:msg:ch-atomic:*").Val()
+	if int64(len(msgKeys)) != card {
+		t.Errorf("msg key count=%d does not match ZCard=%d — orphan keys (Bug 8)", len(msgKeys), card)
+	}
+}

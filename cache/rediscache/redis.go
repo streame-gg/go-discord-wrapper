@@ -1384,30 +1384,57 @@ func (s *redisPresenceStore) Size() int {
 
 // ── Message store ─────────────────────────────────────────────────────────────
 
+// msgAddScript atomically executes the four steps of Add (Bug 8):
+//  1. SET the message JSON with TTL
+//  2. ZADD to the per-channel sorted-set index
+//  3. ZCARD to count members
+//  4. ZPOPMIN + DEL to evict oldest entries when over capacity
+//
+// KEYS[1] = msg key, KEYS[2] = channel index key
+// ARGV[1] = JSON, ARGV[2] = TTL seconds (0 = no expiry), ARGV[3] = score,
+// ARGV[4] = message ID, ARGV[5] = max per channel, ARGV[6] = msg key prefix
+var msgAddScript = redis.NewScript(`
+local ttl = tonumber(ARGV[2])
+if ttl > 0 then
+  redis.call('SET', KEYS[1], ARGV[1], 'EX', ttl)
+else
+  redis.call('SET', KEYS[1], ARGV[1])
+end
+redis.call('ZADD', KEYS[2], ARGV[3], ARGV[4])
+local count = redis.call('ZCARD', KEYS[2])
+local max = tonumber(ARGV[5])
+if count > max then
+  local excess = redis.call('ZPOPMIN', KEYS[2], count - max)
+  for i = 1, #excess, 2 do
+    redis.call('DEL', ARGV[6] .. excess[i])
+  end
+end
+return 1
+`)
+
 type redisMessageStore struct{ c *RedisCache }
 
 func (s *redisMessageStore) Add(msg *common.Message) {
 	if s.c.opts.Messages.MaxPerChannel == 0 {
 		return
 	}
+	b, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
 	msgKey := s.c.k("msg", string(msg.ChannelID), string(msg.ID))
 	chKey := s.c.k("msg", "ch", string(msg.ChannelID))
-	_ = s.c.setJSON(msgKey, msg, s.c.opts.Messages.TTL)
+	// msg key prefix passed to Lua so it can DEL evicted message keys.
+	msgPrefix := s.c.k("msg", string(msg.ChannelID)) + ":"
 
+	ttlSecs := int64(s.c.opts.Messages.TTL.Seconds())
 	score := float64(time.Now().UnixNano())
-	_ = s.c.client.ZAdd(s.c.ctx, chKey, redis.Z{Score: score, Member: string(msg.ID)}).Err()
+	max := s.c.opts.Messages.MaxPerChannel
 
-	// Enforce MaxPerChannel: evict oldest entries when the ring is over capacity.
-	max := int64(s.c.opts.Messages.MaxPerChannel)
-	count, err := s.c.client.ZCard(s.c.ctx, chKey).Result()
-	if err == nil && count > max {
-		evicted, err := s.c.client.ZPopMin(s.c.ctx, chKey, count-max).Result()
-		if err == nil {
-			for _, z := range evicted {
-				_ = s.c.client.Del(s.c.ctx, s.c.k("msg", string(msg.ChannelID), z.Member.(string))).Err()
-			}
-		}
-	}
+	_ = msgAddScript.Run(s.c.ctx, s.c.client,
+		[]string{msgKey, chKey},
+		b, ttlSecs, score, string(msg.ID), max, msgPrefix,
+	).Err()
 }
 
 func (s *redisMessageStore) Get(channelID, messageID common.Snowflake) (*common.Message, bool) {
@@ -1426,12 +1453,13 @@ func (s *redisMessageStore) Get(channelID, messageID common.Snowflake) (*common.
 
 func (s *redisMessageStore) Update(msg *common.Message) {
 	key := s.c.k("msg", string(msg.ChannelID), string(msg.ID))
-	// Only update if the key still exists (not expired or already deleted).
-	exists, _ := s.c.client.Exists(s.c.ctx, key).Result()
-	if exists == 0 {
+	b, err := json.Marshal(msg)
+	if err != nil {
 		return
 	}
-	_ = s.c.setJSON(key, msg, s.c.opts.Messages.TTL)
+	// SetXX is atomic: writes only if the key already exists, eliminating the
+	// TOCTOU window between Exists and Set where the TTL could expire (Bug 7).
+	_ = s.c.client.SetXX(s.c.ctx, key, b, s.c.opts.Messages.TTL).Err()
 }
 
 func (s *redisMessageStore) Delete(channelID, messageID common.Snowflake) {
