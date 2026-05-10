@@ -379,6 +379,13 @@ func (d *Client) DeleteGuild(ctx context.Context, guildID common.Snowflake) erro
 func (d *Client) GetGuildChannels(ctx context.Context, guildID common.Snowflake) ([]*common.Channel, error) {
 	channels, err := d.RestClient.GetGuildChannels(ctx, guildID)
 	if err == nil {
+		if d.Cache != nil {
+			// Remove stale channels deleted since the last cache fill (Bug 25).
+			for _, oldID := range d.drainGuildChannelIDs(guildID) {
+				d.Cache.Channels().Delete(oldID)
+				d.Cache.Messages().DeleteChannel(oldID)
+			}
+		}
 		d.cacheChannels(channels)
 	}
 	return channels, err
@@ -399,6 +406,10 @@ func (d *Client) ModifyGuildChannelPositions(ctx context.Context, guildID common
 func (d *Client) GetGuildRoles(ctx context.Context, guildID common.Snowflake) ([]*common.Role, error) {
 	roles, err := d.RestClient.GetGuildRoles(ctx, guildID)
 	if err == nil {
+		if d.Cache != nil {
+			// Remove stale roles deleted since the last cache fill (Bug 25).
+			d.Cache.Roles().DeleteGuild(guildID)
+		}
 		d.cacheRoles(guildID, roles)
 	}
 	return roles, err
@@ -423,6 +434,10 @@ func (d *Client) CreateGuildRole(ctx context.Context, guildID common.Snowflake, 
 func (d *Client) ModifyGuildRolePositions(ctx context.Context, guildID common.Snowflake, entries []api.ModifyGuildRolePositionsEntry) ([]*common.Role, error) {
 	roles, err := d.RestClient.ModifyGuildRolePositions(ctx, guildID, entries)
 	if err == nil {
+		if d.Cache != nil {
+			// Remove stale roles deleted since the last cache fill (Bug 25).
+			d.Cache.Roles().DeleteGuild(guildID)
+		}
 		d.cacheRoles(guildID, roles)
 	}
 	return roles, err
