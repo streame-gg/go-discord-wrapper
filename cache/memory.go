@@ -1221,20 +1221,40 @@ func (c *MemoryCache) evictGloballyByCount(need int, target OverflowCategory, by
 	if total == 0 {
 		return
 	}
-	remaining := need
-	for _, st := range stores {
-		if remaining <= 0 || st.size == 0 {
+
+	// Largest-Remainder Method: distributes exactly `need` evictions across stores
+	// proportionally without over-evicting. The old "share < 1 → 1" guard forced
+	// at least one eviction per store even when the store's proportional share was
+	// less than 1, causing the total evicted to exceed `need` (Bug 9).
+	type slotted struct {
+		idx       int
+		floor     int
+		remainder float64
+	}
+	slots := make([]slotted, 0, len(stores))
+	floorSum := 0
+	for i, st := range stores {
+		if st.size == 0 {
 			continue
 		}
-		share := (st.size * need) / total
-		if share < 1 {
-			share = 1
+		real := float64(st.size*need) / float64(total)
+		f := int(real)
+		slots = append(slots, slotted{i, f, real - float64(f)})
+		floorSum += f
+	}
+	// Give one extra slot each to the stores with the largest fractional remainders
+	// until the total allocated equals need.
+	extra := need - floorSum
+	if extra > 0 {
+		sort.Slice(slots, func(a, b int) bool { return slots[a].remainder > slots[b].remainder })
+		for i := 0; i < extra && i < len(slots); i++ {
+			slots[i].floor++
 		}
-		if share > remaining {
-			share = remaining
+	}
+	for _, sl := range slots {
+		if sl.floor > 0 {
+			stores[sl.idx].evictN(sl.floor, by)
 		}
-		st.evictN(share, by)
-		remaining -= share
 	}
 }
 

@@ -568,6 +568,37 @@ func (s *memoryTestSuite) TestConcurrentAccess_NoRace() {
 	wg.Wait()
 }
 
+// TestBug9CountBasedEvictionDoesNotOverEvict verifies that evictGloballyByCount
+// evicts exactly `need` entries and does not forcibly evict from every targeted
+// store. With 1000 guilds and 1 user and need=1, the user (0.1% of entries)
+// must not be evicted — only the guild store should shed 1 entry.
+func TestBug9CountBasedEvictionDoesNotOverEvict(t *testing.T) {
+	// SweepInterval=5ms so the sweeper runs promptly when we exceed MaxEntries.
+	c := cache.NewMemoryCache(cache.Options{
+		SweepInterval: 5 * time.Millisecond,
+		Limits:        cache.Limits{MaxEntries: 1001},
+		OnOverflow: cache.OverflowPolicy{
+			Target:  cache.CategoryGuilds | cache.CategoryUsers,
+			ClearBy: cache.ClearByLastUsed,
+		},
+	})
+
+	// 1000 guilds + 1 user = 1001 entries (at cap, no eviction yet).
+	for i := 0; i < 1000; i++ {
+		c.Guilds().Set(guild(fmt.Sprintf("%d", i)))
+	}
+	c.Users().Set(user("1"))
+
+	// Adding one more guild pushes total to 1002 — sweeper must evict exactly 1.
+	c.Guilds().Set(guild("trigger"))
+	time.Sleep(50 * time.Millisecond) // wait for sweeper
+
+	_, userStillPresent := c.Users().Get(common.Snowflake("1"))
+	if !userStillPresent {
+		t.Error("lone user was evicted when need=1 — over-eviction from small store (Bug 9)")
+	}
+}
+
 // TestBug4ByteBasedEvictionDistribution verifies that evictGloballyByBytes
 // distributes eviction proportionally by byte share, not entry count.
 // Store B (large entries) should be hit harder than store A (small entries).
