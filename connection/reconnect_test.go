@@ -134,6 +134,39 @@ func TestBug18CorruptReadyPayloadDoesNotCloseReadyChan(t *testing.T) {
 	}
 }
 
+// TestBug19RequestGuildMembersRaceSafe verifies that RequestGuildMembers and
+// UpdatePresence are safe to call concurrently with a reconnect that swaps
+// d.Websocket under the hood (race detector must pass).
+func TestBug19RequestGuildMembersRaceSafe(t *testing.T) {
+	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	require.NoError(t, err)
+
+	// Seed with a non-nil Websocket so the nil-check path is exercised.
+	c.wsMu.Lock()
+	c.Websocket = &Websocket{Closed: make(chan struct{}), Ready: make(chan struct{})}
+	c.wsMu.Unlock()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < 200; i++ {
+			// Simulate reconnect swapping the Websocket pointer.
+			c.wsMu.Lock()
+			c.Websocket = nil
+			c.wsMu.Unlock()
+			c.wsMu.Lock()
+			c.Websocket = &Websocket{Closed: make(chan struct{}), Ready: make(chan struct{})}
+			c.wsMu.Unlock()
+		}
+	}()
+
+	for i := 0; i < 200; i++ {
+		_ = c.RequestGuildMembers("123", RequestGuildMembersParams{})
+		_ = c.UpdatePresence(UpdatePresenceParams{Status: "online"})
+	}
+	<-done
+}
+
 // TestBug16NoHeartbeatLeakOnWriteFailure verifies that if the Identify/Resume
 // write fails, no goroutine is left running. The heartbeat goroutine must not
 // start until after a successful write.

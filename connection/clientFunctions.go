@@ -582,7 +582,10 @@ type RequestGuildMembersParams struct {
 // Use FetchAllGuildMembers for a simpler REST-based alternative that does not
 // require subscribing to gateway events.
 func (d *Client) RequestGuildMembers(guildID common.Snowflake, params RequestGuildMembersParams) error {
-	if d.Websocket == nil || d.Websocket.Connection == nil {
+	d.wsMu.RLock()
+	ws := d.Websocket
+	d.wsMu.RUnlock()
+	if ws == nil || ws.Connection == nil {
 		return errors.New("not connected to gateway")
 	}
 	data := map[string]interface{}{
@@ -599,7 +602,7 @@ func (d *Client) RequestGuildMembers(guildID common.Snowflake, params RequestGui
 	if params.Nonce != nil {
 		data["nonce"] = *params.Nonce
 	}
-	return d.Websocket.writeJSON(map[string]interface{}{
+	return ws.writeJSON(map[string]interface{}{
 		"op": 8,
 		"d":  data,
 	})
@@ -622,7 +625,10 @@ type UpdatePresenceParams struct {
 // UpdatePresence sends an OP 3 Presence Update to the Discord gateway,
 // updating the bot's displayed status and activity.
 func (d *Client) UpdatePresence(params UpdatePresenceParams) error {
-	if d.Websocket == nil || d.Websocket.Connection == nil {
+	d.wsMu.RLock()
+	ws := d.Websocket
+	d.wsMu.RUnlock()
+	if ws == nil || ws.Connection == nil {
 		return errors.New("not connected to gateway")
 	}
 
@@ -637,7 +643,7 @@ func (d *Client) UpdatePresence(params UpdatePresenceParams) error {
 		"status":     string(params.Status),
 		"afk":        params.AFK,
 	}
-	return d.Websocket.writeJSON(map[string]interface{}{
+	return ws.writeJSON(map[string]interface{}{
 		"op": 3,
 		"d":  data,
 	})
