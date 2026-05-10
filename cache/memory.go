@@ -110,6 +110,34 @@ func (s *genericStore[K, V]) set(key K, value V) {
 	}
 }
 
+// setLocked is like set but assumes s.mu is already held by the caller.
+// Used by SetAll implementations to keep the delete→insert sequence atomic.
+func (s *genericStore[K, V]) setLocked(key K, value V) {
+	now := time.Now()
+	var sz int64
+	if s.cfg.trackBytes {
+		sz = estimateSize(value)
+	}
+	e := &memEntry[V]{
+		value:      value,
+		insertedAt: now,
+		accessedAt: now,
+		sizeBytes:  sz,
+	}
+	if s.cfg.ttl > 0 {
+		e.expiresAt = now.Add(s.cfg.ttl)
+	}
+	if old, ok := s.items[key]; ok {
+		e.hitCount = old.hitCount
+		e.insertedAt = old.insertedAt
+		s.totalBytes.Add(-old.sizeBytes)
+	}
+	s.items[key] = e
+	if s.cfg.trackBytes {
+		s.totalBytes.Add(sz)
+	}
+}
+
 func (s *genericStore[K, V]) get(key K) (V, bool) {
 	now := time.Now()
 	s.mu.Lock()
@@ -1450,12 +1478,12 @@ func (ss *memSoundboardStore) SetAll(guildID common.Snowflake, sounds []*common.
 			delete(ss.s.items, k)
 		}
 	}
-	ss.s.mu.Unlock()
 	for _, s := range sounds {
 		if s != nil {
-			ss.Set(guildID, s)
+			ss.s.setLocked(s.SoundID, soundboardValue{GuildID: guildID, Sound: s})
 		}
 	}
+	ss.s.mu.Unlock()
 }
 
 func (ss *memSoundboardStore) Delete(soundID common.Snowflake) { ss.s.delete(soundID) }
@@ -1612,12 +1640,12 @@ func (es *memEmojiStore) SetAll(guildID common.Snowflake, emojis []*common.Emoji
 			delete(es.s.items, k)
 		}
 	}
-	es.s.mu.Unlock()
 	for _, emoji := range emojis {
 		if emoji != nil && emoji.ID != "" {
-			es.Set(guildID, emoji)
+			es.s.setLocked(emoji.ID, emojiValue{GuildID: guildID, Emoji: emoji})
 		}
 	}
+	es.s.mu.Unlock()
 }
 
 func (es *memEmojiStore) Delete(emojiID common.Snowflake) { es.s.delete(emojiID) }
@@ -1680,12 +1708,12 @@ func (ss *memStickerStore) SetAll(guildID common.Snowflake, stickers []*common.S
 			delete(ss.s.items, k)
 		}
 	}
-	ss.s.mu.Unlock()
 	for _, sticker := range stickers {
 		if sticker != nil && sticker.ID != "" {
-			ss.Set(guildID, sticker)
+			ss.s.setLocked(sticker.ID, stickerValue{GuildID: guildID, Sticker: sticker})
 		}
 	}
+	ss.s.mu.Unlock()
 }
 
 func (ss *memStickerStore) Delete(stickerID common.Snowflake) { ss.s.delete(stickerID) }
