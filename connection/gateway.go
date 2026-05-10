@@ -46,8 +46,16 @@ type Client struct {
 	// wsMu protects concurrent reads and writes of the Websocket pointer.
 	wsMu sync.RWMutex
 
-	// dispatchWg tracks in-flight event handler goroutines for graceful shutdown.
+	// dispatchWg tracks in-flight user event handler goroutines for graceful shutdown.
 	dispatchWg sync.WaitGroup
+
+	// eventCh is non-nil when MaxConcurrentEvents > 0 (worker-pool mode).
+	// Events are enqueued here and drained by a fixed set of worker goroutines.
+	// When nil, each event gets its own goroutine (unlimited mode — the default).
+	eventCh chan dispatchJob
+
+	// workerWg tracks the fixed event-worker goroutines started by NewClient.
+	workerWg sync.WaitGroup
 
 	reconnectMu  sync.Mutex
 	reconnecting bool
@@ -164,6 +172,19 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 		cacheAutoPopulate:   cacheStores,
 	}
 
+	if cfg.MaxConcurrentEvents > 0 {
+		n := cfg.MaxConcurrentEvents
+		queueDepth := n * 4
+		if queueDepth < 256 {
+			queueDepth = 256
+		}
+		c.eventCh = make(chan dispatchJob, queueDepth)
+		for i := 0; i < n; i++ {
+			c.workerWg.Add(1)
+			go c.runEventWorker()
+		}
+	}
+
 	switch {
 	case cfg.Logger != nil:
 		c.Logger = cfg.Logger
@@ -181,6 +202,33 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 	}
 
 	return c, nil
+}
+
+// dispatchJob carries a single gateway event through the worker pool.
+type dispatchJob struct {
+	rawPayload json.RawMessage
+	event      events.Event
+}
+
+// processEvent runs internalEventHandler and dispatch for one gateway event.
+// It is called both by worker goroutines (pool mode) and directly spawned goroutines (unlimited mode).
+func (d *Client) processEvent(job dispatchJob) {
+	defer func() {
+		if r := recover(); r != nil {
+			d.Logger.Error("panic in event dispatch", slog.Any("recover", r))
+		}
+	}()
+	if canContinue := d.internalEventHandler(job.rawPayload, job.event.Event(), job.event); canContinue {
+		d.dispatch(job.event)
+	}
+}
+
+// runEventWorker drains d.eventCh until it is closed by Shutdown.
+func (d *Client) runEventWorker() {
+	defer d.workerWg.Done()
+	for job := range d.eventCh {
+		d.processEvent(job)
+	}
 }
 
 // ── Shard messaging ─────────────────────────────────────────────────────────
@@ -1341,7 +1389,18 @@ func (d *Client) Shutdown() error {
 			errs = append(errs, err)
 		}
 	}
+
+	// Worker-pool mode: close the event channel so workers drain it and exit,
+	// then wait for them. This must happen before dispatchWg.Wait() because
+	// workers call dispatch() which adds entries to dispatchWg.
+	if d.eventCh != nil {
+		close(d.eventCh)
+		d.workerWg.Wait()
+	}
+
+	// Wait for all user event handler goroutines (spawned by dispatch()).
 	d.dispatchWg.Wait()
+
 	if d.Cache != nil {
 		if err := d.Cache.Close(); err != nil {
 			errs = append(errs, err)

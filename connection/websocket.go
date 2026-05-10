@@ -431,16 +431,24 @@ func (d *Client) listenWebsocket() error {
 				continue
 			}
 
-			go func() {
-				defer func() {
-					if r := recover(); r != nil {
-						d.Logger.Error("panic in event dispatch", slog.Any("recover", r))
+			job := dispatchJob{rawPayload: payload.D, event: event}
+			if d.eventCh != nil {
+				// Worker-pool mode: enqueue the event; drop only if the queue overflows.
+				// Guard with shutdown flag to avoid sending on a closed channel during Shutdown().
+				if !d.shutdown.Load() {
+					select {
+					case d.eventCh <- job:
+					default:
+						d.Logger.Warn("Event queue full, dropping event",
+							slog.String("type", string(payload.T)),
+							slog.Int("queueCap", cap(d.eventCh)),
+						)
 					}
-				}()
-				if canContinue := d.internalEventHandler(payload.D, event.Event(), event); canContinue {
-					d.dispatch(event)
 				}
-			}()
+			} else {
+				// Unlimited mode (default): spawn one goroutine per event.
+				go d.processEvent(job)
+			}
 		}
 	}
 }

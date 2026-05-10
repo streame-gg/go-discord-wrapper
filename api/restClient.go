@@ -169,9 +169,45 @@ func (c *RestClient) emitEvent(event RestEvent) {
 	}
 }
 
+// validateAPIPath rejects any digit-only path segment that is not a valid Discord Snowflake
+// (15–20 decimal digits). This stops the most common URL-injection pattern where user-supplied
+// short numeric input (e.g. "123") is concatenated directly into a path without sanitisation.
+//
+// Limitation: injection using a full-length numeric prefix followed by a slash
+// (e.g. Snowflake("123456789012345/evil")) cannot be detected here because the slash
+// is already split by the time the path is evaluated. Use ParseSnowflake at call sites
+// for complete protection against that variant.
+func validateAPIPath(path string) error {
+	for i, seg := range strings.Split(strings.Trim(path, "/"), "/") {
+		if seg == "" {
+			return fmt.Errorf("go-discord-wrapper: path %q contains an empty segment at position %d", path, i)
+		}
+		if isAllDigits(seg) && !isSnowflakeID(seg) {
+			return fmt.Errorf("go-discord-wrapper: path segment %q is not a valid Discord Snowflake (must be 15–20 decimal digits)", seg)
+		}
+	}
+	return nil
+}
+
+// isAllDigits reports whether s is non-empty and consists only of ASCII decimal digits.
+func isAllDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 // generateRequest builds an authenticated HTTP request and embeds the relative
 // route path into the request context for the rate limiter to consume.
 func (c *RestClient) generateRequest(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
+	if err := validateAPIPath(path); err != nil {
+		return nil, err
+	}
 	// Store the relative path (e.g. "/channels/111/messages") so that the
 	// rate limiter can normalise it into a bucket key without re-parsing the URL.
 	ctx = context.WithValue(ctx, routePathKey{}, path)

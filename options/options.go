@@ -29,6 +29,12 @@ type Config struct {
 	// reconnect before giving up. Use -1 for infinite retries, 0 for the default (3).
 	MaxReconnectRetries int
 
+	// MaxConcurrentEvents caps the number of gateway events being processed
+	// concurrently. Events received while the pool is full are dropped with a
+	// warning log. 0 means use the default (64). Increase for bots that receive
+	// very dense event bursts (e.g. large-guild GUILD_MEMBERS_CHUNK storms).
+	MaxConcurrentEvents int
+
 	// LogLevel sets the minimum log level when no custom Logger is provided.
 	// If Logger is set, LogLevel is ignored.
 	LogLevel *slog.Level
@@ -198,6 +204,13 @@ func WithRateLimiting(r RateLimiterOptions) Option {
 // client gives up and stops. Use -1 for infinite retries. Defaults to 3.
 func WithMaxReconnectRetries(n int) Option {
 	return func(c *Config) { c.MaxReconnectRetries = n }
+}
+
+// WithMaxConcurrentEvents sets the maximum number of gateway events that may be
+// processed concurrently. Events arriving when the pool is full are dropped and
+// logged as warnings. The default is 64.
+func WithMaxConcurrentEvents(n int) Option {
+	return func(c *Config) { c.MaxConcurrentEvents = n }
 }
 
 // WithLogLevel sets the minimum slog level when no custom logger is provided via
