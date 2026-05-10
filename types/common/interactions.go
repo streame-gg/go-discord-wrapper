@@ -35,7 +35,6 @@ const (
 	InteractionCallbackTypeUpdateMessage                        InteractionCallbackType = 7
 	InteractionCallbackTypeApplicationCommandAutocompleteResult InteractionCallbackType = 8
 	InteractionCallbackTypeModal                                InteractionCallbackType = 9
-	InteractionCallbackTypePremiumRequired                      InteractionCallbackType = 10
 	InteractionCallbackTypeLaunchActivity                       InteractionCallbackType = 12
 )
 

@@ -14,6 +14,7 @@ type rateLimitBucket struct {
 	limit     int       // X-RateLimit-Limit
 	remaining int       // X-RateLimit-Remaining (locally tracked)
 	resetAt   time.Time // when this bucket's window resets
+	lastUsed  time.Time // updated on every wait/update; drives eviction
 }
 
 // rateLimiter implements proactive, header-driven rate limiting for the Discord API.
@@ -37,10 +38,55 @@ type rateLimiter struct {
 
 	// buckets maps a bucket hash string to its live state.
 	buckets sync.Map // map[string]*rateLimitBucket
+
+	// done is closed by close() to stop the background cleanup goroutine.
+	done chan struct{}
 }
 
 func newRateLimiter(safetyMargin int) *rateLimiter {
-	return &rateLimiter{safetyMargin: safetyMargin}
+	rl := &rateLimiter{
+		safetyMargin: safetyMargin,
+		done:         make(chan struct{}),
+	}
+	go rl.cleanupLoop()
+	return rl
+}
+
+// close stops the background cleanup goroutine. Call it when the owning
+// RestClient is no longer needed to prevent a goroutine leak.
+func (r *rateLimiter) close() {
+	close(r.done)
+}
+
+// cleanupLoop runs purgeStaleBuckets on a fixed cadence until close() is called.
+func (r *rateLimiter) cleanupLoop() {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			r.purgeStaleBuckets(10 * time.Minute)
+		case <-r.done:
+			return
+		}
+	}
+}
+
+// purgeStaleBuckets deletes any bucket that has not been touched within maxAge.
+// It is called automatically by the cleanup goroutine; it is also exported for
+// testing.
+func (r *rateLimiter) purgeStaleBuckets(maxAge time.Duration) {
+	cutoff := time.Now().Add(-maxAge)
+	r.buckets.Range(func(key, val any) bool {
+		b := val.(*rateLimitBucket)
+		b.mu.Lock()
+		stale := !b.lastUsed.IsZero() && b.lastUsed.Before(cutoff)
+		b.mu.Unlock()
+		if stale {
+			r.buckets.Delete(key)
+		}
+		return true
+	})
 }
 
 // wait blocks until both the global rate limit and the per-route bucket allow
@@ -74,6 +120,7 @@ func (r *rateLimiter) wait(method, path string) {
 
 	b := bucketVal.(*rateLimitBucket)
 	b.mu.Lock()
+	b.lastUsed = time.Now()
 
 	if b.remaining <= r.safetyMargin && !b.resetAt.IsZero() {
 		wait := time.Until(b.resetAt)
@@ -161,6 +208,7 @@ func (r *rateLimiter) update(method, path string, resp *http.Response) {
 	if !resetAt.IsZero() {
 		b.resetAt = resetAt
 	}
+	b.lastUsed = time.Now()
 	b.mu.Unlock()
 }
 

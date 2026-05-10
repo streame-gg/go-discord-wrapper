@@ -288,7 +288,7 @@ type memMemberStore struct {
 }
 
 func (m *memMemberStore) Set(guildID common.Snowflake, member *common.GuildMember) {
-	if member.User == nil {
+	if member == nil || member.User == nil {
 		return
 	}
 	m.s.set(memberKey{guildID, member.User.ID}, member)
@@ -1046,7 +1046,7 @@ func (c *MemoryCache) enforceGlobalLimits() {
 		total := c.guilds.s.size() + c.channels.s.size() +
 			c.users.s.size() + c.members.s.size() + c.roles.s.size() + c.messages.Size() +
 			c.voiceStates.s.size() + c.soundboard.s.size() + c.scheduledEvents.s.size() +
-			c.stageInstances.s.size() + c.emojis.s.size() + c.presences.s.size()
+			c.stageInstances.s.size() + c.emojis.s.size() + c.stickers.s.size() + c.presences.s.size()
 		if total > lim.MaxEntries {
 			c.evictGloballyByCount(total-lim.MaxEntries, pol.Target, pol.ClearBy)
 		}
@@ -1057,7 +1057,7 @@ func (c *MemoryCache) enforceGlobalLimits() {
 		totalBytes := c.guilds.s.bytes() + c.channels.s.bytes() +
 			c.users.s.bytes() + c.members.s.bytes() + c.roles.s.bytes() + c.messages.bytes() +
 			c.voiceStates.s.bytes() + c.soundboard.s.bytes() + c.scheduledEvents.s.bytes() +
-			c.stageInstances.s.bytes() + c.emojis.s.bytes() + c.presences.s.bytes()
+			c.stageInstances.s.bytes() + c.emojis.s.bytes() + c.stickers.s.bytes() + c.presences.s.bytes()
 		if totalBytes > maxBytes {
 			c.evictGloballyByBytes(totalBytes-maxBytes, pol.Target, pol.ClearBy)
 		}
@@ -1590,6 +1590,9 @@ type memPresenceStore struct {
 }
 
 func (ps *memPresenceStore) Set(presence *common.Presence) {
+	if presence == nil {
+		return
+	}
 	ps.s.set(memberKey{presence.GuildID, presence.User.ID}, presence)
 }
 

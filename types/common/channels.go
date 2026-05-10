@@ -72,6 +72,7 @@ type Channel struct {
 	DefaultThreadRateLimitPerUser *int                          `json:"default_thread_rate_limit_per_user,omitempty"`
 	DefaultSortOrder              *DefaultSortOrder             `json:"default_sort_order,omitempty"`
 	DefaultForumLayout            *ChannelForumLayoutType       `json:"default_forum_layout,omitempty"`
+	Status                        *string                       `json:"status,omitempty"`
 }
 
 type ChannelPermissionOverwritesType int

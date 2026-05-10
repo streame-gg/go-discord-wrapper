@@ -34,7 +34,8 @@ type Message struct {
 	InteractionMetadata  *MessageInteractionMetadata `json:"interaction_metadata,omitempty"`
 	MentionEveryone      bool                        `json:"mention_everyone"`
 	MentionChannels      *[]MessageChannelMention    `json:"mention_channels,omitempty"`
-	MentionRoles         []string                    `json:"mention_roles"`
+	MentionRoles         []Snowflake                 `json:"mention_roles"`
+	Mentions             []User                      `json:"mentions"`
 	MessageReference     *MessageMessageReference    `json:"message_reference,omitempty"`
 	MessageSnapshots     []MessageMessageSnapshot    `json:"message_snapshots,omitempty"`
 	Nonce                interface{}                 `json:"nonce,omitempty"`
@@ -195,8 +196,8 @@ type PartialMessage struct {
 	Timestamp       *time.Time           `json:"timestamp,omitempty"`
 	EditedTimestamp *time.Time           `json:"edited_timestamp,omitempty"`
 	Flags           MessageFlag          `json:"flags,omitempty"`
-	Mentions        *[]any               `json:"mentions"`
-	MentionRoles    []string             `json:"mention_roles"`
+	Mentions        []User               `json:"mentions"`
+	MentionRoles    []Snowflake          `json:"mention_roles"`
 	StickerItems    []MessageStickerItem `json:"sticker_items,omitempty"`
 	Components      []AnyComponent       `json:"-"`
 }

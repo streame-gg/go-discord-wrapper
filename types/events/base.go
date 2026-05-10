@@ -29,7 +29,6 @@ const (
 	EventGuildBanRemove                EventType = "GUILD_BAN_REMOVE"
 	EventGuildEmojisUpdate             EventType = "GUILD_EMOJIS_UPDATE"
 	EventGuildStickersUpdate           EventType = "GUILD_STICKERS_UPDATE"
-	EventGuildIntegrationsUpdate       EventType = "GUILD_INTEGRATIONS_UPDATE"
 	EventGuildMemberAdd                EventType = "GUILD_MEMBER_ADD"
 	EventGuildMemberRemove             EventType = "GUILD_MEMBER_REMOVE"
 	EventGuildMemberUpdate             EventType = "GUILD_MEMBER_UPDATE"

@@ -231,6 +231,16 @@ func (d *Client) reconnect(freshConnect bool) error {
 
 	d.Logger.Warn("Reconnecting to Discord gateway")
 
+	// On a fresh reconnect Discord re-sends GUILD_CREATE for every guild and
+	// rebuilds all voice states from scratch. Wipe the local map now so stale
+	// entries from users who left channels during the disconnection don't
+	// produce wrong OldState values on the next VOICE_STATE_UPDATE.
+	if freshConnect {
+		d.voiceStatesMu.Lock()
+		d.voiceStates = make(map[string]*common.VoiceState)
+		d.voiceStatesMu.Unlock()
+	}
+
 	var lastEventNum *int
 	var sessionID *string
 	var reconnectURL string
@@ -294,7 +304,11 @@ func (d *Client) reconnect(freshConnect bool) error {
 		}
 
 		d.Logger.Info("Successfully reconnected to gateway")
-		d.emitReconnect()
+		// For a session resume, emitReconnect is called by the RESUMED event
+		// handler to avoid firing the callback twice (once here and once there).
+		if freshConnect {
+			d.emitReconnect()
+		}
 		return nil
 	}
 

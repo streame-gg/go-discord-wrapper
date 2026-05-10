@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -151,6 +152,8 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 		UnavailableGuilds:   make(map[common.Snowflake]struct{}),
 		guildMemberCounts:   make(map[common.Snowflake]int),
 		voiceStates:         make(map[string]*common.VoiceState),
+		channelsByGuild:     make(map[common.Snowflake]map[common.Snowflake]struct{}),
+		guildByChannel:      make(map[common.Snowflake]common.Snowflake),
 		RestClient:          rc,
 		Sharding:            cfg.Sharding,
 		Coordinator:         cfg.Coordinator,
@@ -434,8 +437,12 @@ func (d *Client) Login(ctx context.Context) error {
 				}
 
 				if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-					d.Logger.Debug("Gateway connection closed normally")
-					return
+					d.Logger.Debug("Gateway connection closed normally, attempting resume")
+					if err := d.reconnect(false); err != nil {
+						d.Logger.Error("Failed to reconnect after normal close", slog.Any("err", err))
+						return
+					}
+					continue
 				}
 
 				// 4014: privileged intent not enabled — reconnecting will not help.
@@ -543,7 +550,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			d.Websocket.ReconnectURL = &readyEvent.ResumeGatewayURL
 			d.User = &readyEvent.User
 
-			if readyEvent.Shard != nil {
+			if readyEvent.Shard != nil && len(readyEvent.Shard) >= 2 {
 				d.Logger.Debug("Connected to shard", slog.Int("shard", readyEvent.Shard[0]+1), slog.Int("total", readyEvent.Shard[1]))
 			}
 
@@ -600,6 +607,9 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						vs := gatewayGuild.VoiceStates[i]
 						key := string(guildID) + ":" + string(vs.UserID)
 						vscopy := vs
+						if vscopy.GuildID == nil {
+							vscopy.GuildID = &guildID
+						}
 						d.voiceStates[key] = &vscopy
 					}
 					d.voiceStatesMu.Unlock()
@@ -638,13 +648,20 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					if hasGateway {
 						guildID := guildCreateEvent.Guild.GetID()
 						if d.cacheStoreEnabled(cache.CategoryChannels) {
+							gid := guildCreateEvent.Guild.GetID()
 							for i := range gatewayGuild.Channels {
 								ch := gatewayGuild.Channels[i]
-								d.Cache.Channels().Set(&ch)
+								if ch.GuildID == nil {
+									ch.GuildID = &gid
+								}
+								d.cacheChannel(&ch)
 							}
 							for i := range gatewayGuild.Threads {
 								ch := gatewayGuild.Threads[i]
-								d.Cache.Channels().Set(&ch)
+								if ch.GuildID == nil {
+									ch.GuildID = &gid
+								}
+								d.cacheChannel(&ch)
 							}
 						}
 
@@ -702,7 +719,6 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 								d.Cache.ScheduledEvents().Set(&ev)
 							}
 						}
-
 						if d.cacheStoreEnabled(cache.CategoryStageInstances) {
 							for i := range gatewayGuild.StageInstances {
 								instance := gatewayGuild.StageInstances[i]
@@ -715,10 +731,11 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 
 			if guildCreateEvent.Guild.IsAvailable() && d.IsGuildUnavailable(guildCreateEvent.Guild.GetID()) {
 				// Discord fires GUILD_CREATE with available=true to signal a guild is back online.
+				// Dispatch to user handlers so they can react to the guild becoming reachable again.
 				d.Logger.Debug("Guild is available again", slog.Any("guildId", guildCreateEvent.Guild.GetID()))
 				d.deleteUnavailableGuild(guildCreateEvent.Guild.GetID())
 
-				return false
+				return true
 			}
 		}
 	case events.EventGuildDelete:
@@ -748,47 +765,24 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			delete(d.guildMemberCounts, guildDeleteEvent.ID)
 			d.guildMu.Unlock()
 
-			if d.cacheStoreEnabled(cache.CategoryGuilds) {
-				d.Cache.Guilds().Delete(guildDeleteEvent.ID)
+			d.removeGuildFromCache(guildDeleteEvent.ID)
+
+			prefix := string(guildDeleteEvent.ID) + ":"
+			d.voiceStatesMu.Lock()
+			for key := range d.voiceStates {
+				if strings.HasPrefix(key, prefix) {
+					delete(d.voiceStates, key)
+				}
 			}
-			if d.cacheStoreEnabled(cache.CategoryMembers) {
-				d.Cache.Members().DeleteGuild(guildDeleteEvent.ID)
-			}
-			if d.cacheStoreEnabled(cache.CategoryRoles) {
-				d.Cache.Roles().DeleteGuild(guildDeleteEvent.ID)
-			}
-			if d.cacheStoreEnabled(cache.CategoryVoiceStates) {
-				d.Cache.VoiceStates().DeleteGuild(guildDeleteEvent.ID)
-			}
-			if d.cacheStoreEnabled(cache.CategoryPresences) {
-				d.Cache.Presences().DeleteGuild(guildDeleteEvent.ID)
-			}
-			if d.cacheStoreEnabled(cache.CategorySoundboard) {
-				d.Cache.Soundboard().DeleteGuild(guildDeleteEvent.ID)
-			}
-			if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
-				d.Cache.ScheduledEvents().DeleteGuild(guildDeleteEvent.ID)
-			}
-			if d.cacheStoreEnabled(cache.CategoryStageInstances) {
-				d.Cache.StageInstances().DeleteGuild(guildDeleteEvent.ID)
-			}
-			if d.cacheStoreEnabled(cache.CategoryEmojis) {
-				d.Cache.Emojis().DeleteGuild(guildDeleteEvent.ID)
-			}
-			if d.cacheStoreEnabled(cache.CategoryStickers) {
-				d.Cache.Stickers().DeleteGuild(guildDeleteEvent.ID)
-			}
+			d.voiceStatesMu.Unlock()
 		}
 	case events.EventVoiceStateUpdate:
 		{
 			if vse, ok := event.(*events.VoiceStateUpdateEvent); ok && vse.GuildID != nil {
 				key := string(*vse.GuildID) + ":" + string(vse.UserID)
-				d.voiceStatesMu.RLock()
-				oldState := d.voiceStates[key]
-				d.voiceStatesMu.RUnlock()
-				vse.OldState = oldState
 
 				d.voiceStatesMu.Lock()
+				vse.OldState = d.voiceStates[key]
 				if vse.ChannelID == nil {
 					delete(d.voiceStates, key)
 				} else {
@@ -900,10 +894,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			d.guildMu.Lock()
 			d.guildMemberCounts[ev.GuildID]++
 			d.guildMu.Unlock()
-			if d.cacheStoreEnabled(cache.CategoryMembers) {
-				m := ev.GuildMember
-				d.Cache.Members().Set(ev.GuildID, &m)
-			}
+			d.cacheMember(ev.GuildID, &ev.GuildMember)
 		}
 	case events.EventGuildMemberRemove:
 		{
@@ -1168,12 +1159,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal CHANNEL_DELETE event", slog.Any("err", err))
 					return false
 				}
-				if d.cacheStoreEnabled(cache.CategoryChannels) {
-					d.Cache.Channels().Delete(ev.ID)
-				}
-				if d.cacheStoreEnabled(cache.CategoryMessages) {
-					d.Cache.Messages().DeleteChannel(ev.ID)
-				}
+				d.removeChannelFromCache(ev.ID)
 			}
 		}
 	case events.EventThreadCreate:
@@ -1185,7 +1171,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				ch := ev.Channel
-				d.Cache.Channels().Set(&ch)
+				d.cacheChannel(&ch)
 			}
 		}
 	case events.EventThreadUpdate:
@@ -1197,7 +1183,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				ch := ev.Channel
-				d.Cache.Channels().Set(&ch)
+				d.cacheChannel(&ch)
 			}
 		}
 	case events.EventThreadDelete:
@@ -1208,12 +1194,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal THREAD_DELETE event", slog.Any("err", err))
 					return false
 				}
-				if d.cacheStoreEnabled(cache.CategoryChannels) {
-					d.Cache.Channels().Delete(ev.ID)
-				}
-				if d.cacheStoreEnabled(cache.CategoryMessages) {
-					d.Cache.Messages().DeleteChannel(ev.ID)
-				}
+				d.removeChannelFromCache(ev.ID)
 			}
 		}
 	case events.EventThreadListSync:
@@ -1226,7 +1207,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				for i := range ev.Threads {
 					ch := ev.Threads[i]
-					d.Cache.Channels().Set(&ch)
+					d.cacheChannel(&ch)
 				}
 			}
 		}
@@ -1291,6 +1272,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				for i := range ev.Members {
 					d.Cache.Members().Set(ev.GuildID, &ev.Members[i])
+					if d.cacheStoreEnabled(cache.CategoryUsers) && ev.Members[i].User != nil {
+						u := *ev.Members[i].User
+						d.Cache.Users().Set(&u)
+					}
 				}
 				d.Logger.Debug("Cached guild members chunk",
 					slog.Any("guildId", ev.GuildID),
@@ -1298,6 +1283,20 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					slog.Int("total", ev.ChunkCount),
 					slog.Int("members", len(ev.Members)),
 				)
+			}
+		}
+	case events.EventVoiceChannelStatusUpdate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryChannels) {
+				var ev events.VoiceChannelStatusUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal VOICE_CHANNEL_STATUS_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				if ch, ok := d.Cache.Channels().Get(ev.ChannelID); ok {
+					ch.Status = ev.Status
+					d.Cache.Channels().Set(ch)
+				}
 			}
 		}
 	default:
@@ -1350,6 +1349,9 @@ func (d *Client) Shutdown() error {
 		if err := d.Cache.Close(); err != nil {
 			errs = append(errs, err)
 		}
+	}
+	if d.RestClient != nil {
+		d.RestClient.Close()
 	}
 	return errors.Join(errs...)
 }

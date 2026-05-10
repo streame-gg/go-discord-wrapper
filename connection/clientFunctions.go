@@ -49,11 +49,12 @@ func (d *Client) BulkRegisterCommands(ctx context.Context, cmds []*commands.Appl
 
 // Reply sends an immediate message response to an interaction.
 // Pass withResponse=true to get the created message back.
-func (d *Client) Reply(ctx context.Context, i *interactions.Interaction, data *responses.InteractionResponseDataDefault, withResponse bool) (*responses.InteractionCallbackResponse, error) {
+// Pass optional files to include attachments; when present the request is sent as multipart/form-data.
+func (d *Client) Reply(ctx context.Context, i *interactions.Interaction, data *responses.InteractionResponseDataDefault, withResponse bool, files ...api.MessageFile) (*responses.InteractionCallbackResponse, error) {
 	return d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
 		Type: common.InteractionCallbackTypeChannelMessageWithSource,
 		Data: data,
-	}, withResponse)
+	}, withResponse, files...)
 }
 
 // DeferReply acknowledges the interaction, telling Discord the bot will respond later.
@@ -93,6 +94,14 @@ func (d *Client) ReplyWithModal(ctx context.Context, i *interactions.Interaction
 	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
 		Type: common.InteractionCallbackTypeModal,
 		Data: modal,
+	}, false)
+	return err
+}
+
+// LaunchActivity responds to an interaction by launching the app's associated Activity.
+func (d *Client) LaunchActivity(ctx context.Context, i *interactions.Interaction) error {
+	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
+		Type: common.InteractionCallbackTypeLaunchActivity,
 	}, false)
 	return err
 }
@@ -469,6 +478,11 @@ func (d *Client) GetGuildVanityURL(ctx context.Context, guildID common.Snowflake
 
 func (d *Client) GetGuildAuditLog(ctx context.Context, guildID common.Snowflake, params api.GetGuildAuditLogParams) (*api.AuditLog, error) {
 	return d.RestClient.GetGuildAuditLog(ctx, guildID, params)
+}
+
+// GetGuildRoleMemberCounts returns a map of role ID → member count for every role in the guild.
+func (d *Client) GetGuildRoleMemberCounts(ctx context.Context, guildID common.Snowflake) (map[string]int64, error) {
+	return d.RestClient.GetGuildRoleMemberCounts(ctx, guildID)
 }
 
 // ── Member methods ────────────────────────────────────────────────────────────

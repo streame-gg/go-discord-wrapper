@@ -12,14 +12,9 @@ type GuildStickersUpdateEvent struct {
 	Stickers []common.Sticker `json:"stickers"`
 }
 
-type GuildIntegrationsUpdateEvent struct {
-	GuildID common.Snowflake `json:"guild_id"`
-}
-
 func init() {
 	RegisterEvent(GuildEmojisUpdateEvent{})
 	RegisterEvent(GuildStickersUpdateEvent{})
-	RegisterEvent(GuildIntegrationsUpdateEvent{})
 }
 
 func (e GuildEmojisUpdateEvent) DesiredEventType() Event { return &GuildEmojisUpdateEvent{} }
@@ -27,8 +22,3 @@ func (e GuildEmojisUpdateEvent) Event() EventType        { return EventGuildEmoj
 
 func (e GuildStickersUpdateEvent) DesiredEventType() Event { return &GuildStickersUpdateEvent{} }
 func (e GuildStickersUpdateEvent) Event() EventType        { return EventGuildStickersUpdate }
-
-func (e GuildIntegrationsUpdateEvent) DesiredEventType() Event {
-	return &GuildIntegrationsUpdateEvent{}
-}
-func (e GuildIntegrationsUpdateEvent) Event() EventType { return EventGuildIntegrationsUpdate }

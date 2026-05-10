@@ -119,6 +119,14 @@ func (c *RestClient) buildURL() string {
 	return c.BaseURL + "/v" + c.Version.ToString()
 }
 
+// Close stops the background rate-limiter cleanup goroutine. Call it when the
+// RestClient is no longer needed to prevent a goroutine leak.
+func (c *RestClient) Close() {
+	if c.rateLimiter != nil {
+		c.rateLimiter.close()
+	}
+}
+
 // OnEvent registers a handler for REST lifecycle events (request, response, retry, etc.).
 func (c *RestClient) OnEvent(eventType RestEventType, handler RestEventHandler) {
 	if c.eventEmitter == nil {

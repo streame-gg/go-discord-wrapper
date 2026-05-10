@@ -246,6 +246,71 @@ func (s *ratelimitTestSuite) TestRateLimiter_BucketSharedAcrossRoutes() {
 	s.GreaterOrEqualf(elapsed, 80*time.Millisecond, "shared bucket did not block second route: elapsed=%v", elapsed)
 }
 
+// ---- purgeStaleBuckets ----
+
+func (s *ratelimitTestSuite) TestRateLimiter_PurgeStaleBuckets_RemovesOldEntries() {
+	rl := newRateLimiter(0)
+	defer rl.close()
+
+	resp := makeResp(http.StatusOK, map[string]string{
+		"X-RateLimit-Bucket":      "stale-bucket",
+		"X-RateLimit-Limit":       "5",
+		"X-RateLimit-Remaining":   "4",
+		"X-RateLimit-Reset-After": "1.000",
+	})
+	rl.update("GET", "/channels/111/messages", resp)
+
+	// Confirm the bucket exists.
+	_, loaded := rl.buckets.Load("stale-bucket")
+	s.True(loaded, "bucket should exist after update")
+
+	// Purge with a zero maxAge — everything is immediately stale.
+	rl.purgeStaleBuckets(0)
+
+	_, loaded = rl.buckets.Load("stale-bucket")
+	s.False(loaded, "bucket should be deleted after purge")
+}
+
+func (s *ratelimitTestSuite) TestRateLimiter_PurgeStaleBuckets_KeepsRecentEntries() {
+	rl := newRateLimiter(0)
+	defer rl.close()
+
+	resp := makeResp(http.StatusOK, map[string]string{
+		"X-RateLimit-Bucket":      "fresh-bucket",
+		"X-RateLimit-Limit":       "5",
+		"X-RateLimit-Remaining":   "4",
+		"X-RateLimit-Reset-After": "1.000",
+	})
+	rl.update("GET", "/channels/222/messages", resp)
+
+	// Purge with a 10-minute maxAge — the just-created bucket is fresh.
+	rl.purgeStaleBuckets(10 * time.Minute)
+
+	_, loaded := rl.buckets.Load("fresh-bucket")
+	s.True(loaded, "recently-used bucket should survive purge")
+}
+
+func (s *ratelimitTestSuite) TestRateLimiter_PurgeStaleBuckets_WaitTouchesLastUsed() {
+	rl := newRateLimiter(0)
+	defer rl.close()
+
+	resp := makeResp(http.StatusOK, map[string]string{
+		"X-RateLimit-Bucket":      "touched-bucket",
+		"X-RateLimit-Limit":       "10",
+		"X-RateLimit-Remaining":   "9",
+		"X-RateLimit-Reset-After": "1.000",
+	})
+	rl.update("GET", "/guilds/333/channels", resp)
+	rl.wait("GET", "/guilds/333/channels")
+
+	// Even with a zero maxAge, the bucket was just touched by wait() — it should
+	// be considered fresh enough that a non-zero window keeps it alive.
+	rl.purgeStaleBuckets(10 * time.Minute)
+
+	_, loaded := rl.buckets.Load("touched-bucket")
+	s.True(loaded, "bucket touched by wait() should survive a non-zero-age purge")
+}
+
 // ---- parseRetryAfter ----
 
 func (s *ratelimitTestSuite) TestParseRetryAfter_RetryAfterHeader() {

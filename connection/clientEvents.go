@@ -105,9 +105,6 @@ func (d *Client) OnGuildEmojisUpdate(h func(*Client, *events.GuildEmojisUpdateEv
 func (d *Client) OnGuildStickersUpdate(h func(*Client, *events.GuildStickersUpdateEvent)) {
 	d.OnEvent(events.EventGuildStickersUpdate, h)
 }
-func (d *Client) OnGuildIntegrationsUpdate(h func(*Client, *events.GuildIntegrationsUpdateEvent)) {
-	d.OnEvent(events.EventGuildIntegrationsUpdate, h)
-}
 func (d *Client) OnGuildMemberAdd(h func(*Client, *events.GuildMemberAddEvent)) {
 	d.OnEvent(events.EventGuildMemberAdd, h)
 }

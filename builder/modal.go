@@ -1,0 +1,45 @@
+package builder
+
+import "github.com/streame-gg/go-discord-wrapper/types/components"
+
+// ModalBuilder builds a Modal using a fluent API.
+//
+//	modal := builder.NewModal().
+//	    SetCustomID("my_modal").
+//	    SetTitle("User Info").
+//	    AddComponents(
+//	        builder.NewLabel().
+//	            SetLabel("Name").
+//	            SetComponent(builder.NewTextInput().SetCustomID("name").SetStyle(components.TextInputStyleShort).Build()).
+//	            Build(),
+//	    ).
+//	    Build()
+type ModalBuilder struct {
+	modal components.Modal
+}
+
+func NewModal() *ModalBuilder {
+	comps := []components.LabelComponent{}
+	return &ModalBuilder{modal: components.Modal{Components: &comps}}
+}
+
+func (b *ModalBuilder) SetCustomID(id string) *ModalBuilder {
+	b.modal.CustomID = id
+	return b
+}
+
+func (b *ModalBuilder) SetTitle(title string) *ModalBuilder {
+	b.modal.Title = title
+	return b
+}
+
+func (b *ModalBuilder) AddComponents(c ...*components.LabelComponent) *ModalBuilder {
+	for _, comp := range c {
+		*b.modal.Components = append(*b.modal.Components, *comp)
+	}
+	return b
+}
+
+func (b *ModalBuilder) Build() *components.Modal {
+	return &b.modal
+}

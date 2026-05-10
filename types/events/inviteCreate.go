@@ -15,7 +15,7 @@ type InviteCreateEvent struct {
 	MaxAge            *int                         `json:"max_age,omitempty"`
 	MaxUses           *int                         `json:"max_uses,omitempty"`
 	TargetUserType    *common.InviteTargetUserType `json:"target_user_type,omitempty"`
-	TargetUser        *common.User                 `json:"target_user_,omitempty"`
+	TargetUser        *common.User                 `json:"target_user,omitempty"`
 	TargetApplication *common.Application          `json:"target_application,omitempty"`
 	Temporary         bool                         `json:"temporary"`
 	Uses              int                          `json:"uses,omitempty"`

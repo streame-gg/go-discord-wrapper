@@ -114,6 +114,13 @@ func (d *Client) removeGuildFromCache(guildID common.Snowflake) {
 	d.Cache.Guilds().Delete(guildID)
 	d.Cache.Members().DeleteGuild(guildID)
 	d.Cache.Roles().DeleteGuild(guildID)
+	d.Cache.VoiceStates().DeleteGuild(guildID)
+	d.Cache.Presences().DeleteGuild(guildID)
+	d.Cache.Soundboard().DeleteGuild(guildID)
+	d.Cache.ScheduledEvents().DeleteGuild(guildID)
+	d.Cache.StageInstances().DeleteGuild(guildID)
+	d.Cache.Emojis().DeleteGuild(guildID)
+	d.Cache.Stickers().DeleteGuild(guildID)
 
 	for _, channelID := range d.drainGuildChannelIDs(guildID) {
 		d.Cache.Channels().Delete(channelID)

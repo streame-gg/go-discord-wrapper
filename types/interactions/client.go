@@ -12,12 +12,13 @@ import (
 // Client is the subset of *connection.Client needed by Interaction methods.
 // Pass the client received in your event handler — *connection.Client satisfies this interface.
 type Client interface {
-	Reply(ctx context.Context, i *Interaction, data *responses.InteractionResponseDataDefault, withResponse bool) (*responses.InteractionCallbackResponse, error)
+	Reply(ctx context.Context, i *Interaction, data *responses.InteractionResponseDataDefault, withResponse bool, files ...api.MessageFile) (*responses.InteractionCallbackResponse, error)
 	DeferReply(ctx context.Context, i *Interaction, ephemeral bool) error
 	DeferUpdateMessage(ctx context.Context, i *Interaction) error
 	UpdateMessage(ctx context.Context, i *Interaction, data *responses.InteractionResponseDataDefault) error
 	ReplyWithModal(ctx context.Context, i *Interaction, modal *components.Modal) error
 	ReplyAutocomplete(ctx context.Context, i *Interaction, choices []responses.AutocompleteChoice) error
+	LaunchActivity(ctx context.Context, i *Interaction) error
 	GetOriginalResponse(ctx context.Context, i *Interaction) (*common.Message, error)
 	EditReply(ctx context.Context, i *Interaction, params api.EditMessageParams) (*common.Message, error)
 	DeleteReply(ctx context.Context, i *Interaction) error
@@ -28,8 +29,9 @@ type Client interface {
 }
 
 // Reply sends an immediate message response to the interaction.
-func (i *Interaction) Reply(ctx context.Context, client Client, data *responses.InteractionResponseDataDefault, withResponse bool) (*responses.InteractionCallbackResponse, error) {
-	return client.Reply(ctx, i, data, withResponse)
+// Pass optional files to include attachments; when present the request is sent as multipart/form-data.
+func (i *Interaction) Reply(ctx context.Context, client Client, data *responses.InteractionResponseDataDefault, withResponse bool, files ...api.MessageFile) (*responses.InteractionCallbackResponse, error) {
+	return client.Reply(ctx, i, data, withResponse, files...)
 }
 
 // DeferReply acknowledges the interaction without an immediate visible response.
@@ -57,6 +59,11 @@ func (i *Interaction) Modal(ctx context.Context, client Client, modal *component
 // Autocomplete sends autocomplete choices back to Discord.
 func (i *Interaction) Autocomplete(ctx context.Context, client Client, choices []responses.AutocompleteChoice) error {
 	return client.ReplyAutocomplete(ctx, i, choices)
+}
+
+// LaunchActivity responds by launching the app's associated Activity.
+func (i *Interaction) LaunchActivity(ctx context.Context, client Client) error {
+	return client.LaunchActivity(ctx, i)
 }
 
 // GetOriginalResponse fetches the original response message for this interaction.
