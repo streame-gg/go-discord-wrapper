@@ -127,11 +127,6 @@ func (s *genericStore[K, V]) get(key K) (V, bool) {
 	}
 	e.accessedAt = now
 	e.hitCount++
-	// Slide the TTL forward on each access so frequently-used entries do not
-	// expire while they are still active.
-	if s.cfg.ttl > 0 {
-		e.expiresAt = now.Add(s.cfg.ttl)
-	}
 	return e.value, true
 }
 

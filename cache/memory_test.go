@@ -568,6 +568,32 @@ func (s *memoryTestSuite) TestConcurrentAccess_NoRace() {
 	wg.Wait()
 }
 
+// TestBug5FixedTTLDoesNotExtendOnGet verifies that accessing an entry does not
+// push its expiry further into the future (no sliding TTL). With a 50 ms TTL,
+// an entry accessed at t=40 ms must still expire by ~50 ms, not at ~90 ms.
+func TestBug5FixedTTLDoesNotExtendOnGet(t *testing.T) {
+	const ttl = 50 * time.Millisecond
+	c := cache.NewMemoryCache(cache.Options{TTL: ttl})
+
+	c.Guilds().Set(guild("1"))
+
+	// Access the entry just before it would expire to ensure it is still live.
+	time.Sleep(30 * time.Millisecond)
+	_, ok := c.Guilds().Get("1")
+	if !ok {
+		t.Skip("entry expired before test could access it — adjust timing")
+	}
+
+	// With sliding TTL the access above would push expiry to ~80 ms from start.
+	// With fixed TTL, the entry expires at ~50 ms regardless.
+	time.Sleep(30 * time.Millisecond) // total ~60 ms from insertion
+
+	_, ok = c.Guilds().Get("1")
+	if ok {
+		t.Error("entry still alive at 60 ms with 50 ms TTL — sliding TTL not removed (Bug 5)")
+	}
+}
+
 // TestBug9CountBasedEvictionDoesNotOverEvict verifies that evictGloballyByCount
 // evicts exactly `need` entries and does not forcibly evict from every targeted
 // store. With 1000 guilds and 1 user and need=1, the user (0.1% of entries)
