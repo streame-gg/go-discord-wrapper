@@ -106,6 +106,13 @@ func (d *Client) removeChannelFromCache(channelID common.Snowflake) {
 	d.untrackChannel(channelID)
 	d.Cache.Channels().Delete(channelID)
 	d.Cache.Messages().DeleteChannel(channelID)
+
+	// If channelID is a parent channel, evict all threads it hosted too.
+	for _, threadID := range d.drainParentThreadIDs(channelID) {
+		d.untrackChannel(threadID)
+		d.Cache.Channels().Delete(threadID)
+		d.Cache.Messages().DeleteChannel(threadID)
+	}
 }
 
 func (d *Client) removeGuildFromCache(guildID common.Snowflake) {
@@ -244,5 +251,56 @@ func (d *Client) drainGuildChannelIDs(guildID common.Snowflake) []common.Snowfla
 	}
 	delete(d.channelsByGuild, guildID)
 
+	return ids
+}
+
+// trackThread records a thread's ID under its parent channel in threadsByParent.
+// Safe for concurrent use; acquires threadIndexMu internally.
+func (d *Client) trackThread(thread *common.Channel) {
+	if thread == nil || thread.ParentID == nil {
+		return
+	}
+	d.threadIndexMu.Lock()
+	defer d.threadIndexMu.Unlock()
+	parentID := *thread.ParentID
+	set := d.threadsByParent[parentID]
+	if set == nil {
+		set = make(map[common.Snowflake]struct{})
+		d.threadsByParent[parentID] = set
+	}
+	set[thread.ID] = struct{}{}
+}
+
+// untrackThread removes a thread from threadsByParent.
+// Safe for concurrent use; acquires threadIndexMu internally.
+func (d *Client) untrackThread(threadID, parentID common.Snowflake) {
+	d.threadIndexMu.Lock()
+	defer d.threadIndexMu.Unlock()
+	set := d.threadsByParent[parentID]
+	if set == nil {
+		return
+	}
+	delete(set, threadID)
+	if len(set) == 0 {
+		delete(d.threadsByParent, parentID)
+	}
+}
+
+// drainParentThreadIDs atomically removes and returns all thread IDs associated
+// with parentID from the threadsByParent index.
+// Safe for concurrent use; acquires threadIndexMu internally.
+func (d *Client) drainParentThreadIDs(parentID common.Snowflake) []common.Snowflake {
+	d.threadIndexMu.Lock()
+	defer d.threadIndexMu.Unlock()
+	set := d.threadsByParent[parentID]
+	if len(set) == 0 {
+		delete(d.threadsByParent, parentID)
+		return nil
+	}
+	ids := make([]common.Snowflake, 0, len(set))
+	for threadID := range set {
+		ids = append(ids, threadID)
+	}
+	delete(d.threadsByParent, parentID)
 	return ids
 }

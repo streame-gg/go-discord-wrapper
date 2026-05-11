@@ -104,6 +104,12 @@ type Client struct {
 	// guildByChannel is the reverse mapping: channel ID → guild ID.
 	guildByChannel map[common.Snowflake]common.Snowflake
 
+	// threadIndexMu protects threadsByParent.
+	threadIndexMu sync.RWMutex
+	// threadsByParent maps parent channel ID → set of thread IDs.
+	// Used to evict stale threads on THREAD_LIST_SYNC (Bug 43).
+	threadsByParent map[common.Snowflake]map[common.Snowflake]struct{}
+
 	// guildMemberCounts tracks the member_count for every available guild on
 	// this shard, updated from GUILD_CREATE / GUILD_DELETE gateway events.
 	guildMemberCounts map[common.Snowflake]int
@@ -174,6 +180,7 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 		voiceStates:         make(map[string]*common.VoiceState),
 		channelsByGuild:     make(map[common.Snowflake]map[common.Snowflake]struct{}),
 		guildByChannel:      make(map[common.Snowflake]common.Snowflake),
+		threadsByParent:     make(map[common.Snowflake]map[common.Snowflake]struct{}),
 		RestClient:          rc,
 		Sharding:            cfg.Sharding,
 		Coordinator:         cfg.Coordinator,
@@ -1335,6 +1342,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				ch := ev.Channel
 				d.cacheChannel(&ch)
+				d.trackThread(&ch)
 			}
 		}
 	case events.EventThreadUpdate:
@@ -1357,6 +1365,9 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal THREAD_DELETE event", slog.Any("err", err))
 					return false
 				}
+				if ev.ParentID != nil {
+					d.untrackThread(ev.ID, *ev.ParentID)
+				}
 				d.removeChannelFromCache(ev.ID)
 			}
 		}
@@ -1368,9 +1379,41 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal THREAD_LIST_SYNC event", slog.Any("err", err))
 					return false
 				}
+
+				// Build a set of incoming thread IDs for O(1) lookup.
+				incoming := make(map[common.Snowflake]struct{}, len(ev.Threads))
+				for i := range ev.Threads {
+					incoming[ev.Threads[i].ID] = struct{}{}
+				}
+
+				// Determine which parent channels are in scope for this sync.
+				// If ChannelIDs is absent, all threads in the guild are synced.
+				var parents []common.Snowflake
+				if len(ev.ChannelIDs) > 0 {
+					parents = ev.ChannelIDs
+				} else {
+					d.channelIndexMu.RLock()
+					for parentID := range d.channelsByGuild[ev.GuildID] {
+						parents = append(parents, parentID)
+					}
+					d.channelIndexMu.RUnlock()
+				}
+
+				// Evict threads that were cached for a synced parent but are
+				// absent from Discord's authoritative list.
+				for _, parentID := range parents {
+					for _, threadID := range d.drainParentThreadIDs(parentID) {
+						if _, ok := incoming[threadID]; !ok {
+							d.removeChannelFromCache(threadID)
+						}
+					}
+				}
+
+				// Cache and index the authoritative thread list.
 				for i := range ev.Threads {
 					ch := ev.Threads[i]
 					d.cacheChannel(&ch)
+					d.trackThread(&ch)
 				}
 			}
 		}
