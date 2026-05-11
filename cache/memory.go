@@ -707,23 +707,6 @@ func newMemMessageStore(opts MessageOptions, trackBytes bool, maxTotal int, clea
 	}
 }
 
-func (s *memMessageStore) ring(channelID common.Snowflake) *channelRing {
-	s.mu.RLock()
-	r := s.channels[channelID]
-	s.mu.RUnlock()
-	if r != nil {
-		return r
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if r = s.channels[channelID]; r != nil {
-		return r
-	}
-	r = newChannelRing(s.opts.MaxPerChannel)
-	s.channels[channelID] = r
-	return r
-}
-
 func (s *memMessageStore) Add(msg *common.Message) {
 	if s.opts.MaxPerChannel == 0 {
 		return

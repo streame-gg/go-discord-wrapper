@@ -40,6 +40,7 @@ type Websocket struct {
 	awaitingHeartbeatAck bool
 	missedHeartbeatAcks  int
 	closeOnce            sync.Once
+	readyOnce            sync.Once
 }
 
 func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int, sessionID *string) (*Websocket, error) {
@@ -251,6 +252,9 @@ func (d *Client) reconnect(freshConnect bool) error {
 	// rebuilds all voice states from scratch. Wipe the local map now so stale
 	// entries from users who left channels during the disconnection don't
 	// produce wrong OldState values on the next VOICE_STATE_UPDATE.
+	// On a session resume (!freshConnect) Discord does NOT re-send voice states,
+	// so the existing map is intentionally kept as-is; it may be stale for users
+	// who joined or left voice channels while the bot was disconnected.
 	if freshConnect {
 		d.voiceStatesMu.Lock()
 		d.voiceStates = make(map[string]*common.VoiceState)
@@ -291,7 +295,11 @@ func (d *Client) reconnect(freshConnect bool) error {
 
 		if i > 0 {
 			const maxBackoff = 30 * time.Second
-			exp := time.Duration(1<<uint(i-1)) * time.Second // 1s, 2s, 4s, 8s, …
+			shiftBy := uint(i - 1)
+			if shiftBy > 30 {
+				shiftBy = 30 // cap shift: 2^30 s ≈ 34 years, well above maxBackoff
+			}
+			exp := time.Duration(1<<shiftBy) * time.Second // 1s, 2s, 4s, 8s, …
 			if exp > maxBackoff {
 				exp = maxBackoff
 			}
@@ -449,21 +457,40 @@ func (d *Client) listenWebsocket() error {
 			if canDispatch {
 				job := dispatchJob{event: event}
 				if d.eventCh != nil {
-					// Worker-pool mode: enqueue the event; drop only if the queue overflows.
-					// Guard with shutdown flag to avoid sending on a closed channel during Shutdown().
-					if !d.shutdown.Load() {
-						select {
-						case d.eventCh <- job:
-						default:
-							d.Logger.Warn("Event queue full, dropping event",
-								slog.String("type", string(payload.T)),
-								slog.Int("queueCap", cap(d.eventCh)),
-							)
-						}
+					// Worker-pool mode: enqueue or drop if queue is full.
+					// shutdownCh case prevents sending on a closed channel after Shutdown.
+					select {
+					case d.eventCh <- job:
+					case <-d.shutdownCh:
+						return nil
+					default:
+						d.Logger.Warn("Event queue full, dropping event",
+							slog.String("type", string(payload.T)),
+							slog.Int("queueCap", cap(d.eventCh)),
+						)
 					}
 				} else {
 					// Unlimited mode (default): spawn one goroutine per event.
-					go d.processEvent(job)
+					// Track via eventWg so Shutdown can drain before returning.
+					// Do not register new event work once shutdown has begun.
+					select {
+					case <-d.shutdownCh:
+						return nil
+					default:
+					}
+
+					d.eventWg.Add(1)
+					go func() {
+						defer d.eventWg.Done()
+
+						select {
+						case <-d.shutdownCh:
+							return
+						default:
+						}
+
+						d.processEvent(job)
+					}()
 				}
 			}
 		}

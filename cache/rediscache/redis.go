@@ -79,9 +79,10 @@ type RedisCache struct {
 // keys never expire. opts.Messages.MaxPerChannel caps the per-channel message
 // ring (default 100). Overflow and eviction options are ignored.
 func NewRedisCache(client *redis.Client, opts cache.Options) *RedisCache {
-	if opts.Messages.MaxPerChannel <= 0 {
+	if opts.Messages.MaxPerChannel < 0 {
 		opts.Messages.MaxPerChannel = 100
 	}
+	// MaxPerChannel == 0 means disabled (no messages cached) — leave as-is.
 	if opts.Messages.TTL == 0 {
 		opts.Messages.TTL = opts.TTL
 	}
@@ -715,6 +716,52 @@ func (s *redisVoiceStateStore) Size() int {
 	return total
 }
 
+// setAllScript atomically replaces all guild-scoped items (emoji, sticker,
+// soundboard) with a new set. It reads the current guild index inside the
+// Lua transaction so no reader ever sees a partially-populated state.
+//
+// KEYS[1]    = guild index key  (Redis SET of item IDs)
+// ARGV[1]    = item key prefix  (e.g. "discord:emoji:")
+// ARGV[2]    = map  key prefix  (e.g. "discord:emoji:map:")
+// ARGV[3]    = TTL in milliseconds as string; "0" = no expiry
+// ARGV[4]    = guild ID string
+// ARGV[5..N] = alternating item-id, item-json pairs for the new set
+var setAllScript = redis.NewScript(`
+local idx  = KEYS[1]
+local iPfx = ARGV[1]
+local mPfx = ARGV[2]
+local ttl  = tonumber(ARGV[3])
+local gid  = ARGV[4]
+
+local old = redis.call('SMEMBERS', idx)
+if #old > 0 then
+  local toDel = {}
+  for _, id in ipairs(old) do
+    toDel[#toDel+1] = iPfx .. id
+    toDel[#toDel+1] = mPfx .. id
+  end
+  redis.call('DEL', unpack(toDel))
+end
+redis.call('DEL', idx)
+
+local i = 5
+local n = #ARGV
+while i < n do
+  local id  = ARGV[i]
+  local jsn = ARGV[i+1]
+  if ttl > 0 then
+    redis.call('SET', iPfx .. id, jsn, 'PX', ttl)
+    redis.call('SET', mPfx .. id, gid, 'PX', ttl)
+  else
+    redis.call('SET', iPfx .. id, jsn)
+    redis.call('SET', mPfx .. id, gid)
+  end
+  redis.call('SADD', idx, id)
+  i = i + 2
+end
+return 1
+`)
+
 // ── Soundboard store ───────────────────────────────────────────────────────────
 
 type redisSoundboardStore struct{ c *RedisCache }
@@ -782,12 +829,22 @@ func (s *redisSoundboardStore) GetByGuild(guildID common.Snowflake) []*common.So
 }
 
 func (s *redisSoundboardStore) SetAll(guildID common.Snowflake, sounds []*common.SoundboardSound) {
-	s.DeleteGuild(guildID)
+	idx := s.c.k("soundboard", "guild", string(guildID))
+	iPfx := s.c.k("soundboard") + ":"
+	mPfx := s.c.k("soundboard", "map") + ":"
+	ttl := s.c.opts.TTL.Milliseconds()
+	args := []interface{}{iPfx, mPfx, ttl, string(guildID)}
 	for _, sound := range sounds {
-		if sound != nil {
-			s.Set(guildID, sound)
+		if sound == nil {
+			continue
 		}
+		b, err := json.Marshal(sound)
+		if err != nil {
+			continue
+		}
+		args = append(args, string(sound.SoundID), string(b))
 	}
+	_ = setAllScript.Run(s.c.ctx, s.c.client, []string{idx}, args...).Err()
 }
 
 func (s *redisSoundboardStore) Delete(soundID common.Snowflake) {
@@ -1118,12 +1175,22 @@ func (s *redisEmojiStore) GetByGuild(guildID common.Snowflake) []*common.Emoji {
 }
 
 func (s *redisEmojiStore) SetAll(guildID common.Snowflake, emojis []*common.Emoji) {
-	s.DeleteGuild(guildID)
+	idx := s.c.k("emoji", "guild", string(guildID))
+	iPfx := s.c.k("emoji") + ":"
+	mPfx := s.c.k("emoji", "map") + ":"
+	ttl := s.c.opts.TTL.Milliseconds()
+	args := []interface{}{iPfx, mPfx, ttl, string(guildID)}
 	for _, emoji := range emojis {
-		if emoji != nil && emoji.ID != "" {
-			s.Set(guildID, emoji)
+		if emoji == nil || emoji.ID == "" {
+			continue
 		}
+		b, err := json.Marshal(emoji)
+		if err != nil {
+			continue
+		}
+		args = append(args, string(emoji.ID), string(b))
 	}
+	_ = setAllScript.Run(s.c.ctx, s.c.client, []string{idx}, args...).Err()
 }
 
 func (s *redisEmojiStore) Delete(emojiID common.Snowflake) {
@@ -1236,12 +1303,22 @@ func (s *redisStickerStore) GetByGuild(guildID common.Snowflake) []*common.Stick
 }
 
 func (s *redisStickerStore) SetAll(guildID common.Snowflake, stickers []*common.Sticker) {
-	s.DeleteGuild(guildID)
+	idx := s.c.k("sticker", "guild", string(guildID))
+	iPfx := s.c.k("sticker") + ":"
+	mPfx := s.c.k("sticker", "map") + ":"
+	ttl := s.c.opts.TTL.Milliseconds()
+	args := []interface{}{iPfx, mPfx, ttl, string(guildID)}
 	for _, sticker := range stickers {
-		if sticker != nil && sticker.ID != "" {
-			s.Set(guildID, sticker)
+		if sticker == nil || sticker.ID == "" {
+			continue
 		}
+		b, err := json.Marshal(sticker)
+		if err != nil {
+			continue
+		}
+		args = append(args, string(sticker.ID), string(b))
 	}
+	_ = setAllScript.Run(s.c.ctx, s.c.client, []string{idx}, args...).Err()
 }
 
 func (s *redisStickerStore) Delete(stickerID common.Snowflake) {
@@ -1391,12 +1468,20 @@ func (s *redisPresenceStore) Size() int {
 //  4. ZPOPMIN + DEL to evict oldest entries when over capacity
 //
 // KEYS[1] = msg key, KEYS[2] = channel index key
+<<<<<<< fix/cache-and-gateway-bugs
 // ARGV[1] = JSON, ARGV[2] = TTL seconds (0 = no expiry), ARGV[3] = score,
+=======
+// ARGV[1] = JSON, ARGV[2] = TTL milliseconds (0 = no expiry), ARGV[3] = score,
+>>>>>>> master
 // ARGV[4] = message ID, ARGV[5] = max per channel, ARGV[6] = msg key prefix
 var msgAddScript = redis.NewScript(`
 local ttl = tonumber(ARGV[2])
 if ttl > 0 then
+<<<<<<< fix/cache-and-gateway-bugs
   redis.call('SET', KEYS[1], ARGV[1], 'EX', ttl)
+=======
+  redis.call('SET', KEYS[1], ARGV[1], 'PX', ttl)
+>>>>>>> master
 else
   redis.call('SET', KEYS[1], ARGV[1])
 end
@@ -1427,13 +1512,21 @@ func (s *redisMessageStore) Add(msg *common.Message) {
 	// msg key prefix passed to Lua so it can DEL evicted message keys.
 	msgPrefix := s.c.k("msg", string(msg.ChannelID)) + ":"
 
+<<<<<<< fix/cache-and-gateway-bugs
 	ttlSecs := int64(s.c.opts.Messages.TTL.Seconds())
+=======
+	ttlMs := s.c.opts.Messages.TTL.Milliseconds()
+>>>>>>> master
 	score := float64(time.Now().UnixNano())
 	max := s.c.opts.Messages.MaxPerChannel
 
 	_ = msgAddScript.Run(s.c.ctx, s.c.client,
 		[]string{msgKey, chKey},
+<<<<<<< fix/cache-and-gateway-bugs
 		b, ttlSecs, score, string(msg.ID), max, msgPrefix,
+=======
+		b, ttlMs, score, string(msg.ID), max, msgPrefix,
+>>>>>>> master
 	).Err()
 }
 

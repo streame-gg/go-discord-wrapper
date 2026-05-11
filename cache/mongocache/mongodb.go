@@ -144,9 +144,10 @@ type MongoDBCache struct {
 // documents never expire. opts.Messages.MaxPerChannel caps the per-channel
 // message ring (default 100).
 func NewMongoDBCache(db *mongo.Database, opts cache.Options) *MongoDBCache {
-	if opts.Messages.MaxPerChannel <= 0 {
+	if opts.Messages.MaxPerChannel < 0 {
 		opts.Messages.MaxPerChannel = 100
 	}
+	// MaxPerChannel == 0 means disabled (no messages cached) — leave as-is.
 	if opts.Messages.TTL == 0 {
 		opts.Messages.TTL = opts.TTL
 	}
@@ -269,6 +270,35 @@ func (c *MongoDBCache) Close() error {
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
+
+// setAllTx atomically replaces all guild-scoped documents in col with docs
+// using a MongoDB transaction (requires Replica Set or sharded cluster).
+// Falls back to a non-transactional delete+insert if the transaction cannot be
+// started or committed (e.g. standalone deployment).
+func setAllTx(ctx context.Context, col *mongo.Collection, guildID string, docs []interface{}) {
+	session, err := col.Database().Client().StartSession()
+	if err == nil {
+		defer session.EndSession(ctx)
+		_, err = session.WithTransaction(ctx, func(ctx context.Context) (any, error) {
+			if _, err := col.DeleteMany(ctx, bson.M{"guild_id": guildID}); err != nil {
+				return nil, err
+			}
+			if len(docs) > 0 {
+				if _, err := col.InsertMany(ctx, docs); err != nil {
+					return nil, err
+				}
+			}
+			return nil, nil
+		})
+	}
+	if err != nil {
+		// Standalone deployment or transaction failure — best-effort non-atomic.
+		_, _ = col.DeleteMany(ctx, bson.M{"guild_id": guildID})
+		if len(docs) > 0 {
+			_, _ = col.InsertMany(ctx, docs)
+		}
+	}
+}
 
 func upsertByID(ctx context.Context, col *mongo.Collection, doc any) error {
 	id := extractID(doc)
@@ -803,12 +833,23 @@ func (s *mongoSoundboardStore) GetByGuild(guildID common.Snowflake) []*common.So
 }
 
 func (s *mongoSoundboardStore) SetAll(guildID common.Snowflake, sounds []*common.SoundboardSound) {
-	s.DeleteGuild(guildID)
+	var docs []interface{}
 	for _, sound := range sounds {
-		if sound != nil {
-			s.Set(guildID, sound)
+		if sound == nil {
+			continue
 		}
+		b, err := json.Marshal(sound)
+		if err != nil {
+			continue
+		}
+		docs = append(docs, guildEntityDoc{
+			ID:        string(sound.SoundID),
+			GuildID:   string(guildID),
+			JSON:      string(b),
+			ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+		})
 	}
+	setAllTx(s.c.ctx, s.col(), string(guildID), docs)
 }
 
 func (s *mongoSoundboardStore) Delete(soundID common.Snowflake) {
@@ -1035,12 +1076,23 @@ func (s *mongoEmojiStore) GetByGuild(guildID common.Snowflake) []*common.Emoji {
 }
 
 func (s *mongoEmojiStore) SetAll(guildID common.Snowflake, emojis []*common.Emoji) {
-	s.DeleteGuild(guildID)
+	var docs []interface{}
 	for _, emoji := range emojis {
-		if emoji != nil && emoji.ID != "" {
-			s.Set(guildID, emoji)
+		if emoji == nil || emoji.ID == "" {
+			continue
 		}
+		b, err := json.Marshal(emoji)
+		if err != nil {
+			continue
+		}
+		docs = append(docs, guildEntityDoc{
+			ID:        string(emoji.ID),
+			GuildID:   string(guildID),
+			JSON:      string(b),
+			ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+		})
 	}
+	setAllTx(s.c.ctx, s.col(), string(guildID), docs)
 }
 
 func (s *mongoEmojiStore) Delete(emojiID common.Snowflake) {
@@ -1117,12 +1169,23 @@ func (s *mongoStickerStore) GetByGuild(guildID common.Snowflake) []*common.Stick
 }
 
 func (s *mongoStickerStore) SetAll(guildID common.Snowflake, stickers []*common.Sticker) {
-	s.DeleteGuild(guildID)
+	var docs []interface{}
 	for _, sticker := range stickers {
-		if sticker != nil && sticker.ID != "" {
-			s.Set(guildID, sticker)
+		if sticker == nil || sticker.ID == "" {
+			continue
 		}
+		b, err := json.Marshal(sticker)
+		if err != nil {
+			continue
+		}
+		docs = append(docs, guildEntityDoc{
+			ID:        string(sticker.ID),
+			GuildID:   string(guildID),
+			JSON:      string(b),
+			ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
+		})
 	}
+	setAllTx(s.c.ctx, s.col(), string(guildID), docs)
 }
 
 func (s *mongoStickerStore) Delete(stickerID common.Snowflake) {
@@ -1367,7 +1430,13 @@ func (s *mongoMessageStore) Channel(channelID common.Snowflake) []*common.Messag
 }
 
 func (s *mongoMessageStore) DeleteChannel(channelID common.Snowflake) {
+<<<<<<< fix/cache-and-gateway-bugs
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"channel_id": string(channelID)})
+=======
+	if s.c.db != nil {
+		_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"channel_id": string(channelID)})
+	}
+>>>>>>> master
 	// Remove the per-channel mutex so short-lived channels (DMs, threads) do not
 	// accumulate entries in msgChannelMu indefinitely (Bug 21).
 	s.c.msgChannelMu.Delete(string(channelID))
