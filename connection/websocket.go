@@ -292,7 +292,11 @@ func (d *Client) reconnect(freshConnect bool) error {
 
 		if i > 0 {
 			const maxBackoff = 30 * time.Second
-			exp := time.Duration(1<<uint(i-1)) * time.Second // 1s, 2s, 4s, 8s, …
+			shiftBy := uint(i - 1)
+			if shiftBy > 30 {
+				shiftBy = 30 // cap shift: 2^30 s ≈ 34 years, well above maxBackoff
+			}
+			exp := time.Duration(1<<shiftBy) * time.Second // 1s, 2s, 4s, 8s, …
 			if exp > maxBackoff {
 				exp = maxBackoff
 			}

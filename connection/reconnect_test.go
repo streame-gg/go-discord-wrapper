@@ -289,6 +289,28 @@ func TestBug26ConcurrentCloseIsIdempotent(t *testing.T) {
 	}
 }
 
+// TestBug47ReconnectBackoffNoOverflow verifies that the reconnect back-off never
+// goes negative for iteration counts that would overflow 1<<uint(i-1) (Bug 47).
+func TestBug47ReconnectBackoffNoOverflow(t *testing.T) {
+	const maxBackoff = 30 * time.Second
+	for _, i := range []int{64, 100, 1000} {
+		shiftBy := uint(i - 1)
+		if shiftBy > 30 {
+			shiftBy = 30
+		}
+		exp := time.Duration(1<<shiftBy) * time.Second
+		if exp > maxBackoff {
+			exp = maxBackoff
+		}
+		if exp <= 0 {
+			t.Errorf("i=%d: backoff is non-positive: %v (Bug 47)", i, exp)
+		}
+		if exp > maxBackoff {
+			t.Errorf("i=%d: backoff %v exceeds maxBackoff %v (Bug 47)", i, exp, maxBackoff)
+		}
+	}
+}
+
 // TestBug41DoubleReadyDoesNotPanic verifies that receiving a READY event twice
 // on the same Websocket does not panic from a double-close of the Ready channel.
 func TestBug41DoubleReadyDoesNotPanic(t *testing.T) {
