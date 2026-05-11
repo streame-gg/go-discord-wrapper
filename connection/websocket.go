@@ -472,9 +472,23 @@ func (d *Client) listenWebsocket() error {
 				} else {
 					// Unlimited mode (default): spawn one goroutine per event.
 					// Track via eventWg so Shutdown can drain before returning.
+					// Do not register new event work once shutdown has begun.
+					select {
+					case <-d.shutdownCh:
+						return nil
+					default:
+					}
+
 					d.eventWg.Add(1)
 					go func() {
 						defer d.eventWg.Done()
+
+						select {
+						case <-d.shutdownCh:
+							return
+						default:
+						}
+
 						d.processEvent(job)
 					}()
 				}
