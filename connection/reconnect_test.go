@@ -323,11 +323,11 @@ func TestBug41DoubleReadyDoesNotPanic(t *testing.T) {
 	}
 
 	readyPayload := []byte(`{
-		"user": {"id":"1","username":"bot","discriminator":"0000","global_name":"bot"},
-		"session_id": "sess1",
-		"resume_gateway_url": "wss://fake",
-		"guilds": []
-	}`)
+                "user": {"id":"1","username":"bot","discriminator":"0000","global_name":"bot"},
+                "session_id": "sess1",
+                "resume_gateway_url": "wss://fake",
+                "guilds": []
+        }`)
 
 	// First READY — must close the channel.
 	result := c.internalEventHandler(readyPayload, "READY", nil)
@@ -343,4 +343,3 @@ func TestBug41DoubleReadyDoesNotPanic(t *testing.T) {
 		c.internalEventHandler(readyPayload, "READY", nil)
 	}, "second READY payload must not panic (Bug 41)")
 }
-

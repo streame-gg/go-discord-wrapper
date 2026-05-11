@@ -383,11 +383,11 @@ func (s *shardingTestSuite) TestBug27CloseWaitsForInFlightHandlers() {
 // failCoord satisfies options.ShardCoordinator and errors on Close.
 type failCoord struct{}
 
-func (f *failCoord) TotalShards() int                                     { return 0 }
-func (f *failCoord) Register(_ int, _ func(options.ShardMessage)) error   { return nil }
-func (f *failCoord) Send(_ options.ShardMessage) error                    { return nil }
-func (f *failCoord) Broadcast(_ options.ShardMessage) error               { return nil }
-func (f *failCoord) Close() error                                         { return errors.New("coord close failed") }
+func (f *failCoord) TotalShards() int                                   { return 0 }
+func (f *failCoord) Register(_ int, _ func(options.ShardMessage)) error { return nil }
+func (f *failCoord) Send(_ options.ShardMessage) error                  { return nil }
+func (f *failCoord) Broadcast(_ options.ShardMessage) error             { return nil }
+func (f *failCoord) Close() error                                       { return errors.New("coord close failed") }
 
 // TestBug24StartRollsBackOnFailure verifies that when a shard fails to start,
 // Start() shuts down all previously started shards before returning (Bug 24).
