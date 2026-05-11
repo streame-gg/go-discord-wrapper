@@ -252,6 +252,9 @@ func (d *Client) reconnect(freshConnect bool) error {
 	// rebuilds all voice states from scratch. Wipe the local map now so stale
 	// entries from users who left channels during the disconnection don't
 	// produce wrong OldState values on the next VOICE_STATE_UPDATE.
+	// On a session resume (!freshConnect) Discord does NOT re-send voice states,
+	// so the existing map is intentionally kept as-is; it may be stale for users
+	// who joined or left voice channels while the bot was disconnected.
 	if freshConnect {
 		d.voiceStatesMu.Lock()
 		d.voiceStates = make(map[string]*common.VoiceState)
