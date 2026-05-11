@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -359,8 +360,10 @@ func TestStickerStore_CRUDAndSetAll(t *testing.T) {
 
 // ── MessageStore ──────────────────────────────────────────────────────────────
 
+var defaultMsgOpts = cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 100}}
+
 func TestMessageStore_AddGet(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	c.Messages().Add(message("m1", "c1"))
 	got, ok := c.Messages().Get("c1", "m1")
@@ -370,7 +373,7 @@ func TestMessageStore_AddGet(t *testing.T) {
 }
 
 func TestMessageStore_Update(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	msg := message("m1", "c1")
 	c.Messages().Add(msg)
@@ -386,7 +389,7 @@ func TestMessageStore_Update(t *testing.T) {
 }
 
 func TestMessageStore_Update_PreservesInsertedAt(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	c.Messages().Add(message("m1", "c1"))
 
@@ -410,7 +413,7 @@ func TestMessageStore_Update_PreservesInsertedAt(t *testing.T) {
 }
 
 func TestMessageStore_Delete(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	c.Messages().Add(message("m1", "c1"))
 	c.Messages().Delete("c1", "m1")
@@ -420,7 +423,7 @@ func TestMessageStore_Delete(t *testing.T) {
 }
 
 func TestMessageStore_DeleteBulk(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	for i := 1; i <= 5; i++ {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
@@ -440,7 +443,7 @@ func TestMessageStore_DeleteBulk(t *testing.T) {
 }
 
 func TestMessageStore_Channel_NewestFirst(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	for i := 1; i <= 5; i++ {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
@@ -458,7 +461,7 @@ func TestMessageStore_Channel_NewestFirst(t *testing.T) {
 }
 
 func TestMessageStore_DeleteChannel(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	c.Messages().Add(message("m1", "c1"))
 	c.Messages().Add(message("m2", "c2"))
@@ -517,7 +520,7 @@ func TestMessageStore_TTL(t *testing.T) {
 }
 
 func TestMessageStore_SizeAccuracy(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	for i := 1; i <= 4; i++ {
 		c.Messages().Add(message(fmt.Sprintf("c1m%d", i), "c1"))
@@ -581,6 +584,61 @@ func TestConcurrent_NoRace(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+// TestBug50SetAllIsAtomic verifies that concurrent readers always observe a
+// complete guild emoji set — never a partial or empty state (Bug 50).
+func TestBug50SetAllIsAtomic(t *testing.T) {
+	c := newCache(t, cache.Options{})
+
+	const guildID = common.Snowflake("g1")
+	const workers = 50
+
+	initial := []*common.Emoji{
+		{ID: "e1", Name: "emoji1"},
+		{ID: "e2", Name: "emoji2"},
+		{ID: "e3", Name: "emoji3"},
+	}
+	c.Emojis().SetAll(guildID, initial)
+
+	var partial atomic.Bool
+
+	var wg sync.WaitGroup
+	stop := make(chan struct{})
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+				}
+				got := c.Emojis().GetByGuild(guildID)
+				if len(got) != 0 && len(got) != len(initial) && len(got) != 5 {
+					partial.Store(true)
+				}
+			}
+		}()
+	}
+
+	newSet := []*common.Emoji{
+		{ID: "n1", Name: "new1"}, {ID: "n2", Name: "new2"},
+		{ID: "n3", Name: "new3"}, {ID: "n4", Name: "new4"},
+		{ID: "n5", Name: "new5"},
+	}
+	for i := 0; i < 10; i++ {
+		c.Emojis().SetAll(guildID, newSet)
+		c.Emojis().SetAll(guildID, initial)
+	}
+	close(stop)
+	wg.Wait()
+
+	if partial.Load() {
+		t.Error("reader observed a partial emoji set during concurrent SetAll (Bug 50)")
+	}
 }
 
 // TestBug36MaxPerChannelZeroDisables verifies that MaxPerChannel=0 disables
