@@ -686,7 +686,7 @@ func (d *Client) GetGuildWidgetImage(ctx context.Context, guildID common.Snowfla
 
 // ModifyGuildMFALevel sets the required MFA level for moderators in a guild.
 // Requires guild ownership. level: 0 = none, 1 = elevated.
-func (d *Client) ModifyGuildMFALevel(ctx context.Context, guildID common.Snowflake, level int) (int, error) {
+func (d *Client) ModifyGuildMFALevel(ctx context.Context, guildID common.Snowflake, level common.GuildMFALevel) (int, error) {
 	return d.RestClient.ModifyGuildMFALevel(ctx, guildID, level)
 }
 

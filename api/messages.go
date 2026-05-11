@@ -109,8 +109,30 @@ type CreateMessageParams struct {
 	EnforceNonce bool                  `json:"enforce_nonce,omitempty"`
 	// Files are binary attachments sent via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
-	Files []MessageFile `json:"-"`
+	Files             []MessageFile      `json:"-"`
+	Poll              common.PollRequest `json:"poll_request,omitempty"`
+	SharedClientTheme SharedClientTheme  `json:"shared_client_theme,omitempty"`
 }
+
+// SharedClientTheme https://docs.discord.com/developers/resources/message#shared-client-theme-object
+type SharedClientTheme struct {
+	Colors        []string  `json:"colors"`
+	GradientAngle int       `json:"gradient_angle"`
+	BaseMix       int       `json:"base_mix"`
+	BaseTheme     BaseTheme `json:"base_theme,omitempty"`
+}
+
+// BaseTheme https://docs.discord.com/developers/resources/message#base-theme-types
+// BaseThemeUnset is equal to BaseThemeDark.
+type BaseTheme int
+
+const (
+	BaseThemeUnset BaseTheme = iota
+	BaseThemeDark
+	BaseThemeLight
+	BaseThemeDarker
+	BaseThemeMidnight
+)
 
 func (p CreateMessageParams) MarshalJSON() ([]byte, error) {
 	type Alias CreateMessageParams
