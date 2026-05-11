@@ -193,10 +193,7 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 		maxReconnectRetries: cfg.MaxReconnectRetries,
 		cacheAutoPopulate:   cacheStores,
 		shardDispatchSem:    make(chan struct{}, 16),
-<<<<<<< fix/cache-and-gateway-bugs
-=======
 		shutdownCh:          make(chan struct{}),
->>>>>>> master
 	}
 
 	if cfg.MaxConcurrentEvents == 0 {

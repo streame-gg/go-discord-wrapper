@@ -1468,11 +1468,7 @@ func (s *redisPresenceStore) Size() int {
 //  4. ZPOPMIN + DEL to evict oldest entries when over capacity
 //
 // KEYS[1] = msg key, KEYS[2] = channel index key
-<<<<<<< fix/cache-and-gateway-bugs
-// ARGV[1] = JSON, ARGV[2] = TTL seconds (0 = no expiry), ARGV[3] = score,
-=======
 // ARGV[1] = JSON, ARGV[2] = TTL milliseconds (0 = no expiry), ARGV[3] = score,
->>>>>>> master
 // ARGV[4] = message ID, ARGV[5] = max per channel, ARGV[6] = msg key prefix
 var msgAddScript = redis.NewScript(`
 local ttl = tonumber(ARGV[2])
@@ -1512,21 +1508,13 @@ func (s *redisMessageStore) Add(msg *common.Message) {
 	// msg key prefix passed to Lua so it can DEL evicted message keys.
 	msgPrefix := s.c.k("msg", string(msg.ChannelID)) + ":"
 
-<<<<<<< fix/cache-and-gateway-bugs
-	ttlSecs := int64(s.c.opts.Messages.TTL.Seconds())
-=======
 	ttlMs := s.c.opts.Messages.TTL.Milliseconds()
->>>>>>> master
 	score := float64(time.Now().UnixNano())
 	max := s.c.opts.Messages.MaxPerChannel
 
 	_ = msgAddScript.Run(s.c.ctx, s.c.client,
 		[]string{msgKey, chKey},
-<<<<<<< fix/cache-and-gateway-bugs
-		b, ttlSecs, score, string(msg.ID), max, msgPrefix,
-=======
 		b, ttlMs, score, string(msg.ID), max, msgPrefix,
->>>>>>> master
 	).Err()
 }
 

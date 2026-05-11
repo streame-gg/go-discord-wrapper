@@ -355,8 +355,8 @@ func TestMessageStore_Update(t *testing.T) {
 	c.Messages().Update(&updated)
 
 	got, _ := c.Messages().Get("c1", "m1")
-	if got.Content != "edited" {
-		t.Fatalf("expected updated content, got %q", got.Content)
+	if got == nil || got.Content != "edited" {
+		t.Fatalf("expected updated content, got %+v", got)
 	}
 }
 
@@ -678,8 +678,6 @@ func TestBug8AddIsAtomicParallelAddsRespectMaxPerChannel(t *testing.T) {
 		t.Errorf("msg key count=%d does not match ZCard=%d — orphan keys (Bug 8)", len(msgKeys), card)
 	}
 }
-<<<<<<< fix/cache-and-gateway-bugs
-=======
 
 // TestBug36MaxPerChannelZeroDisables verifies that MaxPerChannel=0 disables
 // message caching in the Redis backend (Bug 36).
@@ -757,4 +755,3 @@ func TestBug50SetAllIsAtomic(t *testing.T) {
 		t.Error("reader observed a partial emoji set during concurrent SetAll (Bug 50)")
 	}
 }
->>>>>>> master

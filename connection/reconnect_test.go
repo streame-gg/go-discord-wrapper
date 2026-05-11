@@ -289,8 +289,6 @@ func TestBug26ConcurrentCloseIsIdempotent(t *testing.T) {
 	}
 }
 
-<<<<<<< fix/cache-and-gateway-bugs
-=======
 // TestBug47ReconnectBackoffNoOverflow verifies that the reconnect back-off never
 // goes negative for iteration counts that would overflow 1<<uint(i-1) (Bug 47).
 func TestBug47ReconnectBackoffNoOverflow(t *testing.T) {
@@ -345,4 +343,3 @@ func TestBug41DoubleReadyDoesNotPanic(t *testing.T) {
 		c.internalEventHandler(readyPayload, "READY", nil)
 	}, "second READY payload must not panic (Bug 41)")
 }
->>>>>>> master

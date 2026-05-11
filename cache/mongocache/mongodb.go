@@ -1430,13 +1430,9 @@ func (s *mongoMessageStore) Channel(channelID common.Snowflake) []*common.Messag
 }
 
 func (s *mongoMessageStore) DeleteChannel(channelID common.Snowflake) {
-<<<<<<< fix/cache-and-gateway-bugs
-	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"channel_id": string(channelID)})
-=======
 	if s.c.db != nil {
 		_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"channel_id": string(channelID)})
 	}
->>>>>>> master
 	// Remove the per-channel mutex so short-lived channels (DMs, threads) do not
 	// accumulate entries in msgChannelMu indefinitely (Bug 21).
 	s.c.msgChannelMu.Delete(string(channelID))
