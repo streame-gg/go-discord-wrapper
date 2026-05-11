@@ -63,6 +63,15 @@ type Client struct {
 	// shutdown is set to true by Shutdown() and prevents reconnect attempts.
 	shutdown atomic.Bool
 
+	// shutdownCh is closed by Shutdown() to signal concurrent goroutines (e.g. eventCh
+	// senders) that shutdown is in progress.  Initialized in NewClient.
+	shutdownCh   chan struct{}
+	shutdownOnce sync.Once
+
+	// eventWg tracks unlimited-mode goroutines (one per event) so Shutdown can
+	// drain them before waiting on handler goroutines tracked by dispatchWg.
+	eventWg sync.WaitGroup
+
 	// maxReconnectRetries mirrors options.Config.MaxReconnectRetries.
 	maxReconnectRetries int
 
@@ -172,6 +181,7 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 		maxReconnectRetries: cfg.MaxReconnectRetries,
 		cacheAutoPopulate:   cacheStores,
 		shardDispatchSem:    make(chan struct{}, 16),
+		shutdownCh:          make(chan struct{}),
 	}
 
 	if cfg.MaxConcurrentEvents == 0 {
@@ -227,11 +237,26 @@ func (d *Client) processEvent(job dispatchJob) {
 	d.dispatch(job.event)
 }
 
-// runEventWorker drains d.eventCh until it is closed by Shutdown.
+// runEventWorker processes events from d.eventCh until shutdownCh is closed.
+// It drains any buffered events before returning so in-flight work completes.
+// eventCh is never closed; workers exit via shutdownCh to avoid close-vs-send
+// data races (Bug 48).
 func (d *Client) runEventWorker() {
 	defer d.workerWg.Done()
-	for job := range d.eventCh {
-		d.processEvent(job)
+	for {
+		select {
+		case job := <-d.eventCh:
+			d.processEvent(job)
+		case <-d.shutdownCh:
+			for {
+				select {
+				case job := <-d.eventCh:
+					d.processEvent(job)
+				default:
+					return
+				}
+			}
+		}
 	}
 }
 
@@ -1473,37 +1498,45 @@ func (d *Client) Close() error {
 
 // Shutdown gracefully closes the gateway connection and the entity cache.
 // It waits for all in-flight event handlers to finish before returning.
+// Shutdown is idempotent: concurrent or repeated calls are safe.
 func (d *Client) Shutdown() error {
-	d.shutdown.Store(true)
 	var errs []error
-	d.wsMu.RLock()
-	ws := d.Websocket
-	d.wsMu.RUnlock()
-	if ws != nil {
-		if err := ws.close(); err != nil {
-			errs = append(errs, err)
+	d.shutdownOnce.Do(func() {
+		d.shutdown.Store(true)
+		close(d.shutdownCh) // unblocks any eventCh senders still in listenWebsocket
+
+		d.wsMu.RLock()
+		ws := d.Websocket
+		d.wsMu.RUnlock()
+		if ws != nil {
+			if err := ws.close(); err != nil {
+				errs = append(errs, err)
+			}
 		}
-	}
 
-	// Worker-pool mode: close the event channel so workers drain it and exit,
-	// then wait for them. This must happen before dispatchWg.Wait() because
-	// workers call dispatch() which adds entries to dispatchWg.
-	if d.eventCh != nil {
-		close(d.eventCh)
-		d.workerWg.Wait()
-	}
-
-	// Wait for all user event handler goroutines (spawned by dispatch()).
-	d.dispatchWg.Wait()
-
-	if d.Cache != nil {
-		if err := d.Cache.Close(); err != nil {
-			errs = append(errs, err)
+		// Worker-pool mode: shutdownCh (already closed above) signals workers to
+		// drain their queue and exit.  Wait for them before dispatchWg.Wait()
+		// because workers call dispatch() which adds to dispatchWg.
+		if d.eventCh != nil {
+			d.workerWg.Wait()
 		}
-	}
-	if d.RestClient != nil {
-		d.RestClient.Close()
-	}
+
+		// Unlimited mode: wait for per-event goroutines to finish before waiting
+		// on handler goroutines they may have spawned via dispatch().
+		d.eventWg.Wait()
+
+		// Wait for all user event handler goroutines (spawned by dispatch()).
+		d.dispatchWg.Wait()
+
+		if d.Cache != nil {
+			if err := d.Cache.Close(); err != nil {
+				errs = append(errs, err)
+			}
+		}
+		if d.RestClient != nil {
+			d.RestClient.Close()
+		}
+	})
 	return errors.Join(errs...)
 }
 
