@@ -280,9 +280,13 @@ func setAllTx(ctx context.Context, col *mongo.Collection, guildID string, docs [
 	if err == nil {
 		defer session.EndSession(ctx)
 		_, err = session.WithTransaction(ctx, func(ctx context.Context) (any, error) {
-			_, _ = col.DeleteMany(ctx, bson.M{"guild_id": guildID})
+			if _, err := col.DeleteMany(ctx, bson.M{"guild_id": guildID}); err != nil {
+				return nil, err
+			}
 			if len(docs) > 0 {
-				_, _ = col.InsertMany(ctx, docs)
+				if _, err := col.InsertMany(ctx, docs); err != nil {
+					return nil, err
+				}
 			}
 			return nil, nil
 		})
