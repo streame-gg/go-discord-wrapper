@@ -1473,7 +1473,7 @@ func (s *redisPresenceStore) Size() int {
 var msgAddScript = redis.NewScript(`
 local ttl = tonumber(ARGV[2])
 if ttl > 0 then
-  redis.call('SET', KEYS[1], ARGV[1], 'EX', ttl)
+  redis.call('SET', KEYS[1], ARGV[1], 'PX', ttl)
 else
   redis.call('SET', KEYS[1], ARGV[1])
 end
