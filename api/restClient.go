@@ -145,17 +145,38 @@ func redactWebhookToken(req *http.Request) *http.Request {
 	if req == nil || req.URL == nil {
 		return req
 	}
+
 	parts := strings.Split(strings.Trim(req.URL.Path, "/"), "/")
-	if len(parts) < 3 || parts[0] != "webhooks" {
+	if len(parts) == 0 {
 		return req
 	}
+
+	tokenIndex := -1
+	for i, part := range parts {
+		// Match paths like:
+		//   /webhooks/{webhook_id}/{webhook_token}
+		//   /api/v10/webhooks/{webhook_id}/{webhook_token}
+		//   /v10/webhooks/{webhook_id}/{webhook_token}
+		if part == "webhooks" && i+2 < len(parts) {
+			tokenIndex = i + 2
+			break
+		}
+	}
+
+	if tokenIndex == -1 {
+		return req
+	}
+
 	clone := req.Clone(req.Context())
 	urlCopy := *req.URL
+
 	redacted := make([]string, len(parts))
 	copy(redacted, parts)
-	redacted[2] = "[REDACTED]"
+	redacted[tokenIndex] = "[REDACTED]"
+
 	urlCopy.Path = "/" + strings.Join(redacted, "/")
 	clone.URL = &urlCopy
+
 	return clone
 }
 
