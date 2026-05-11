@@ -79,9 +79,10 @@ type RedisCache struct {
 // keys never expire. opts.Messages.MaxPerChannel caps the per-channel message
 // ring (default 100). Overflow and eviction options are ignored.
 func NewRedisCache(client *redis.Client, opts cache.Options) *RedisCache {
-	if opts.Messages.MaxPerChannel <= 0 {
+	if opts.Messages.MaxPerChannel < 0 {
 		opts.Messages.MaxPerChannel = 100
 	}
+	// MaxPerChannel == 0 means disabled (no messages cached) — leave as-is.
 	if opts.Messages.TTL == 0 {
 		opts.Messages.TTL = opts.TTL
 	}

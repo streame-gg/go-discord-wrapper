@@ -675,3 +675,22 @@ func TestBug8AddIsAtomicParallelAddsRespectMaxPerChannel(t *testing.T) {
 		t.Errorf("msg key count=%d does not match ZCard=%d — orphan keys (Bug 8)", len(msgKeys), card)
 	}
 }
+
+// TestBug36MaxPerChannelZeroDisables verifies that MaxPerChannel=0 disables
+// message caching in the Redis backend (Bug 36).
+func TestBug36MaxPerChannelZeroDisables(t *testing.T) {
+	c := newCache(t, cache.Options{
+		Messages: cache.MessageOptions{MaxPerChannel: 0},
+	})
+
+	c.Messages().Add(message("m1", "ch1"))
+	c.Messages().Add(message("m2", "ch1"))
+
+	ch := c.Messages().Channel("ch1")
+	if len(ch) != 0 {
+		t.Errorf("MaxPerChannel=0 should disable caching, got %d messages (Bug 36)", len(ch))
+	}
+	if sz := c.Messages().Size(); sz != 0 {
+		t.Errorf("Size should be 0 when disabled, got %d (Bug 36)", sz)
+	}
+}
