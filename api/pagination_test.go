@@ -105,7 +105,7 @@ func TestFetchAllGuildMembersOnePage(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	members, err := client.FetchAllGuildMembers(context.Background(), "guild1")
+	members, err := client.FetchAllGuildMembers(context.Background(), "1234567890123456789")
 
 	require.NoError(t, err)
 	assert.Len(t, members, 5)
@@ -150,7 +150,7 @@ func TestFetchAllGuildMembersMultiplePages(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	members, err := client.FetchAllGuildMembers(context.Background(), "guild1")
+	members, err := client.FetchAllGuildMembers(context.Background(), "1234567890123456789")
 
 	require.NoError(t, err)
 	assert.Len(t, members, 1005)
@@ -169,7 +169,7 @@ func TestFetchAllMessagesMultiplePages(t *testing.T) {
 	for i := range page1 {
 		page1[i] = &common.Message{
 			ID:        common.Snowflake(intToSnowflake(100 - i)),
-			ChannelID: "chan1",
+			ChannelID: "1234567890123456789",
 			Author:    &common.User{},
 		}
 	}
@@ -180,7 +180,7 @@ func TestFetchAllMessagesMultiplePages(t *testing.T) {
 	for i := range page2 {
 		page2[i] = &common.Message{
 			ID:        common.Snowflake(intToSnowflake(-(i + 1))),
-			ChannelID: "chan1",
+			ChannelID: "1234567890123456789",
 			Author:    &common.User{},
 		}
 	}
@@ -205,7 +205,7 @@ func TestFetchAllMessagesMultiplePages(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	msgs, err := client.FetchAllMessages(context.Background(), "chan1")
+	msgs, err := client.FetchAllMessages(context.Background(), "1234567890123456789")
 
 	require.NoError(t, err)
 	assert.Len(t, msgs, 110)
@@ -234,7 +234,7 @@ func TestFetchAllGuildBansOnePage(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	result, err := client.FetchAllGuildBans(context.Background(), "guild1")
+	result, err := client.FetchAllGuildBans(context.Background(), "1234567890123456789")
 
 	require.NoError(t, err)
 	assert.Len(t, result, 7)
@@ -270,7 +270,7 @@ func TestFetchAllAuditLogEntriesOnePage(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	entries, err := client.FetchAllAuditLogEntries(context.Background(), "guild1", GetGuildAuditLogParams{})
+	entries, err := client.FetchAllAuditLogEntries(context.Background(), "1234567890123456789", GetGuildAuditLogParams{})
 
 	require.NoError(t, err)
 	assert.Len(t, entries, 5)
@@ -307,7 +307,7 @@ func TestFetchAllAuditLogEntriesMultiplePages(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	entries, err := client.FetchAllAuditLogEntries(context.Background(), "guild1", GetGuildAuditLogParams{})
+	entries, err := client.FetchAllAuditLogEntries(context.Background(), "1234567890123456789", GetGuildAuditLogParams{})
 
 	require.NoError(t, err)
 	assert.Len(t, entries, 103)
@@ -338,7 +338,7 @@ func TestFetchAllEntitlementsOnePage(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	result, err := client.FetchAllEntitlements(context.Background(), "app1", ListEntitlementsParams{})
+	result, err := client.FetchAllEntitlements(context.Background(), "1234567890123456789", ListEntitlementsParams{})
 
 	require.NoError(t, err)
 	assert.Len(t, result, 3)
@@ -372,7 +372,7 @@ func TestFetchAllEntitlementsMultiplePages(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	result, err := client.FetchAllEntitlements(context.Background(), "app1", ListEntitlementsParams{})
+	result, err := client.FetchAllEntitlements(context.Background(), "1234567890123456789", ListEntitlementsParams{})
 
 	require.NoError(t, err)
 	assert.Len(t, result, 102)
@@ -405,7 +405,7 @@ func TestFetchAllScheduledEventUsersOnePage(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	result, err := client.FetchAllScheduledEventUsers(context.Background(), "guild1", "event1", false)
+	result, err := client.FetchAllScheduledEventUsers(context.Background(), "1234567890123456789", "1234567890123456789", false)
 
 	require.NoError(t, err)
 	assert.Len(t, result, 3)
@@ -439,7 +439,7 @@ func TestFetchAllScheduledEventUsersMultiplePages(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	result, err := client.FetchAllScheduledEventUsers(context.Background(), "guild1", "event1", false)
+	result, err := client.FetchAllScheduledEventUsers(context.Background(), "1234567890123456789", "1234567890123456789", false)
 
 	require.NoError(t, err)
 	assert.Len(t, result, 102)
