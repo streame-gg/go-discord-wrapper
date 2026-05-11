@@ -1434,9 +1434,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				for i := range ev.Members {
-					d.Cache.Members().Set(ev.GuildID, &ev.Members[i])
-					if d.cacheStoreEnabled(cache.CategoryUsers) && ev.Members[i].User != nil {
-						u := *ev.Members[i].User
+					m := ev.Members[i]
+					d.Cache.Members().Set(ev.GuildID, &m)
+					if d.cacheStoreEnabled(cache.CategoryUsers) && m.User != nil {
+						u := *m.User
 						d.Cache.Users().Set(&u)
 					}
 				}

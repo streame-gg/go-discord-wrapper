@@ -15,7 +15,8 @@ func (d *Client) cacheChannel(channel *common.Channel) {
 
 	recipients := *channel.Recipients
 	for i := range recipients {
-		d.cacheUser(&recipients[i])
+		u := recipients[i]
+		d.cacheUser(&u)
 	}
 }
 
@@ -32,7 +33,8 @@ func (d *Client) cacheGuild(guild *common.Guild) {
 
 	d.Cache.Guilds().Set(guild)
 	for i := range guild.Roles {
-		d.Cache.Roles().Set(guild.ID, &guild.Roles[i])
+		role := guild.Roles[i]
+		d.Cache.Roles().Set(guild.ID, &role)
 	}
 }
 
