@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 
 	"github.com/streame-gg/go-discord-wrapper/types/common"
 )
@@ -30,7 +31,7 @@ type CreateGuildFromTemplateParams struct {
 
 // GetTemplate returns the guild template for the given template code.
 func (c *RestClient) GetTemplate(ctx context.Context, templateCode string) (*common.GuildTemplate, error) {
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/templates/"+templateCode, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/templates/"+url.PathEscape(templateCode), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,7 @@ func (c *RestClient) CreateGuildFromTemplate(ctx context.Context, templateCode s
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/templates/"+templateCode, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/templates/"+url.PathEscape(templateCode), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +113,7 @@ func (c *RestClient) SyncGuildTemplate(ctx context.Context, guildID common.Snowf
 		return nil, err
 	}
 
-	path := "/guilds/" + guildID.String() + "/templates/" + templateCode
+	path := "/guilds/" + guildID.String() + "/templates/" + url.PathEscape(templateCode)
 	req, err := c.generateRequest(ctx, http.MethodPut, path, nil)
 	if err != nil {
 		return nil, err
@@ -137,7 +138,7 @@ func (c *RestClient) ModifyGuildTemplate(ctx context.Context, guildID common.Sno
 		return nil, err
 	}
 
-	path := "/guilds/" + guildID.String() + "/templates/" + templateCode
+	path := "/guilds/" + guildID.String() + "/templates/" + url.PathEscape(templateCode)
 	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -157,7 +158,7 @@ func (c *RestClient) DeleteGuildTemplate(ctx context.Context, guildID common.Sno
 		return nil, err
 	}
 
-	path := "/guilds/" + guildID.String() + "/templates/" + templateCode
+	path := "/guilds/" + guildID.String() + "/templates/" + url.PathEscape(templateCode)
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return nil, err

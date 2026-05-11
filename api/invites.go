@@ -38,7 +38,7 @@ func (p GetInviteParams) toQuery() string {
 
 // GetInvite returns the invite object for the given invite code.
 func (c *RestClient) GetInvite(ctx context.Context, code string, params GetInviteParams) (*Invite, error) {
-	path := "/invites/" + code + params.toQuery()
+	path := "/invites/" + url.PathEscape(code) + params.toQuery()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func (c *RestClient) GetInvite(ctx context.Context, code string, params GetInvit
 
 // DeleteInvite deletes an invite by its code. Requires MANAGE_CHANNELS or MANAGE_GUILD.
 func (c *RestClient) DeleteInvite(ctx context.Context, code string) (*Invite, error) {
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/invites/"+code, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/invites/"+url.PathEscape(code), nil)
 	if err != nil {
 		return nil, err
 	}

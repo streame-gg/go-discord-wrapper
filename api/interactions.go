@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 
 	"github.com/streame-gg/go-discord-wrapper/types/common"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
@@ -23,7 +24,7 @@ func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionI
 		return nil, err
 	}
 
-	path := "/interactions/" + interactionID.String() + "/" + token + "/callback"
+	path := "/interactions/" + interactionID.String() + "/" + url.PathEscape(token) + "/callback"
 	if withResponse {
 		path += "?with_response=true"
 	}
@@ -65,7 +66,7 @@ func (c *RestClient) GetOriginalInteractionResponse(ctx context.Context, webhook
 		return nil, err
 	}
 
-	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/@original"
+	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/@original"
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
@@ -91,7 +92,7 @@ func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, webhoo
 		return nil, err
 	}
 
-	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/@original"
+	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/@original"
 
 	var req *http.Request
 	if len(params.Files) > 0 {
@@ -125,7 +126,7 @@ func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, webh
 		return err
 	}
 
-	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/@original"
+	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/@original"
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
@@ -147,7 +148,7 @@ func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID common.Sno
 		return nil, err
 	}
 
-	path := "/webhooks/" + appID.String() + "/" + token
+	path := "/webhooks/" + appID.String() + "/" + url.PathEscape(token)
 
 	var req *http.Request
 	if len(params.Files) > 0 {
@@ -185,7 +186,7 @@ func (c *RestClient) GetFollowupMessage(ctx context.Context, appID common.Snowfl
 		return nil, err
 	}
 
-	path := "/webhooks/" + appID.String() + "/" + token + "/messages/" + messageID.String()
+	path := "/webhooks/" + appID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
@@ -210,12 +211,16 @@ func (c *RestClient) EditFollowupMessage(ctx context.Context, appID common.Snowf
 		return nil, err
 	}
 
+	if err := messageID.Validate(); err != nil {
+		return nil, err
+	}
+
 	jsonBody, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	path := "/webhooks/" + appID.String() + "/" + token + "/messages/" + messageID.String()
+	path := "/webhooks/" + appID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
 
 	var req *http.Request
 	if len(params.Files) > 0 {
@@ -253,7 +258,7 @@ func (c *RestClient) DeleteFollowupMessage(ctx context.Context, appID common.Sno
 		return err
 	}
 
-	path := "/webhooks/" + appID.String() + "/" + token + "/messages/" + messageID.String()
+	path := "/webhooks/" + appID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err

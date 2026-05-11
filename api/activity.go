@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"github.com/streame-gg/go-discord-wrapper/types/common"
 )
@@ -12,7 +13,7 @@ func (c *RestClient) GetActivityInstance(ctx context.Context, appID common.Snowf
 		return nil, err
 	}
 
-	path := "/applications/" + appID.String() + "/activity-instances/" + instanceID
+	path := "/applications/" + appID.String() + "/activity-instances/" + url.PathEscape(instanceID)
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err

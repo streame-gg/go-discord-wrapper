@@ -154,7 +154,7 @@ func (c *RestClient) GetWebhookWithToken(ctx context.Context, webhookID common.S
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/webhooks/"+webhookID.String()+"/"+token, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/webhooks/"+webhookID.String()+"/"+url.PathEscape(token), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func (c *RestClient) ModifyWebhookWithToken(ctx context.Context, webhookID commo
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/webhooks/"+webhookID.String()+"/"+token, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/webhooks/"+webhookID.String()+"/"+url.PathEscape(token), bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +236,7 @@ func (c *RestClient) DeleteWebhookWithToken(ctx context.Context, webhookID commo
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/webhooks/"+webhookID.String()+"/"+token, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/webhooks/"+webhookID.String()+"/"+url.PathEscape(token), nil)
 	if err != nil {
 		return err
 	}
@@ -252,7 +252,7 @@ func (c *RestClient) ExecuteWebhook(ctx context.Context, webhookID common.Snowfl
 		return nil, err
 	}
 
-	path := "/webhooks/" + webhookID.String() + "/" + token + query.toQuery()
+	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + query.toQuery()
 
 	jsonBody, err := json.Marshal(params)
 	if err != nil {
@@ -301,7 +301,7 @@ func (c *RestClient) GetWebhookMessage(ctx context.Context, webhookID common.Sno
 		return nil, err
 	}
 
-	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/" + messageID.String()
+	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
@@ -330,7 +330,7 @@ func (c *RestClient) EditWebhookMessage(ctx context.Context, webhookID common.Sn
 		return nil, err
 	}
 
-	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/" + messageID.String()
+	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
 	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
@@ -354,7 +354,7 @@ func (c *RestClient) DeleteWebhookMessage(ctx context.Context, webhookID common.
 		return err
 	}
 
-	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/" + messageID.String()
+	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
@@ -374,7 +374,7 @@ func (c *RestClient) ExecuteSlackWebhook(ctx context.Context, webhookID common.S
 	if wait {
 		q = "?wait=true"
 	}
-	path := "/webhooks/" + webhookID.String() + "/" + token + "/slack" + q
+	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/slack" + q
 	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
 	if err != nil {
 		return err
@@ -398,7 +398,7 @@ func (c *RestClient) ExecuteGitHubWebhook(ctx context.Context, webhookID common.
 	if wait {
 		q = "?wait=true"
 	}
-	path := "/webhooks/" + webhookID.String() + "/" + token + "/github" + q
+	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/github" + q
 	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
 	if err != nil {
 		return err
