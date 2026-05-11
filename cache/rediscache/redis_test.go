@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/suite"
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
@@ -19,11 +20,18 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/common"
 )
 
-// ── container setup ───────────────────────────────────────────────────────────
+type RedisCacheTestSuite struct {
+	suite.Suite
 
-var redisAddr string
+	container tc.Container
+	redisAddr string
+}
 
-func TestMain(m *testing.M) {
+func TestRedisCacheTestSuite(t *testing.T) {
+	suite.Run(t, new(RedisCacheTestSuite))
+}
+
+func (s *RedisCacheTestSuite) SetupSuite() {
 	ctx := context.Background()
 
 	container, err := tc.GenericContainer(ctx, tc.GenericContainerRequest{
@@ -38,7 +46,6 @@ func TestMain(m *testing.M) {
 		log.Printf("skipping Redis integration tests: could not start container: %v", err)
 		os.Exit(0)
 	}
-	defer container.Terminate(ctx) //nolint:errcheck
 
 	host, err := container.Host(ctx)
 	if err != nil {
@@ -48,21 +55,25 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("container.MappedPort: %v", err)
 	}
-	redisAddr = fmt.Sprintf("%s:%s", host, port.Port())
 
-	os.Exit(m.Run())
+	s.container = container
+	s.redisAddr = fmt.Sprintf("%s:%s", host, port.Port())
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+func (s *RedisCacheTestSuite) TearDownSuite() {
+	if s.container == nil {
+		return
+	}
+	ctx := context.Background()
+	_ = s.container.Terminate(ctx)
+}
 
-// newCache creates a RedisCache scoped to this test's name so parallel tests
-// never collide. The underlying client is closed in t.Cleanup.
-func newCache(t *testing.T, opts cache.Options) *rediscache.RedisCache {
-	t.Helper()
-	client := redis.NewClient(&redis.Options{Addr: redisAddr})
-	t.Cleanup(func() { client.Close() })
-	c := rediscache.NewRedisCache(client, opts).WithKeyPrefix("test:" + t.Name())
-	t.Cleanup(func() { c.Close() })
+func (s *RedisCacheTestSuite) newCache(opts cache.Options) *rediscache.RedisCache {
+	s.T().Helper()
+	client := redis.NewClient(&redis.Options{Addr: s.redisAddr})
+	s.T().Cleanup(func() { _ = client.Close() })
+	c := rediscache.NewRedisCache(client, opts).WithKeyPrefix("test:" + s.T().Name())
+	s.T().Cleanup(func() { _ = c.Close() })
 	return c
 }
 
@@ -94,160 +105,147 @@ func message(id, channelID string) *common.Message {
 	}
 }
 
-// ── GuildStore ────────────────────────────────────────────────────────────────
+// Guild Store
 
-func TestGuildStore_SetGetDelete(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestGuildStore_SetGetDelete() {
+	c := s.newCache(cache.Options{})
 
 	c.Guilds().Set(guild("1"))
 
 	got, ok := c.Guilds().Get("1")
-	if !ok || got.ID != "1" {
-		t.Fatalf("expected guild 1, ok=%v", ok)
-	}
-	if got.Name != "guild-1" {
-		t.Fatalf("expected name 'guild-1', got %q", got.Name)
-	}
+	s.Require().True(ok, "expected guild to exist after set")
+	s.Require().Equal(common.Snowflake("1"), got.ID)
+	s.Require().Equal("guild-1", got.Name)
 
 	c.Guilds().Delete("1")
-	if _, ok := c.Guilds().Get("1"); ok {
-		t.Fatal("expected guild to be deleted")
-	}
+
+	_, ok = c.Guilds().Get("1")
+	s.Require().False(ok, "expected guild to not exist after delete")
 }
 
-func TestGuildStore_All(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestGuildStore_All() {
+	c := s.newCache(cache.Options{})
 
 	for i := 1; i <= 5; i++ {
 		c.Guilds().Set(guild(fmt.Sprintf("%d", i)))
 	}
 	all := c.Guilds().All()
-	if len(all) != 5 {
-		t.Fatalf("expected 5 guilds, got %d", len(all))
-	}
+	s.Require().Len(all, 5, "expected 5 guilds after 5 sets")
 }
 
-func TestGuildStore_Size(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestGuildStore_Size() {
+	c := s.newCache(cache.Options{})
 
 	for i := 1; i <= 3; i++ {
 		c.Guilds().Set(guild(fmt.Sprintf("%d", i)))
 	}
-	if s := c.Guilds().Size(); s != 3 {
-		t.Fatalf("expected size 3, got %d", s)
-	}
+	s.Require().Equal(3, c.Guilds().Size(), "expected size 3")
 	c.Guilds().Delete("2")
-	if s := c.Guilds().Size(); s != 2 {
-		t.Fatalf("expected size 2 after delete, got %d", s)
-	}
+	s.Require().Equal(2, c.Guilds().Size(), "expected size 2 after delete")
 }
 
-func TestGuildStore_TTL(t *testing.T) {
-	c := newCache(t, cache.Options{TTL: 150 * time.Millisecond})
+func (s *RedisCacheTestSuite) TestGuildStore_TTL() {
+	c := s.newCache(cache.Options{TTL: 150 * time.Millisecond})
 
 	c.Guilds().Set(guild("1"))
-	if _, ok := c.Guilds().Get("1"); !ok {
-		t.Fatal("expected guild before TTL")
-	}
+	_, ok := c.Guilds().Get("1")
+	s.Require().True(ok, "expected guild to exist after set")
 
 	time.Sleep(300 * time.Millisecond)
 
-	if _, ok := c.Guilds().Get("1"); ok {
-		t.Fatal("expected guild expired after TTL")
-	}
+	_, ok = c.Guilds().Get("1")
+	s.Require().False(ok, "expected guild to not exist after TTL")
 }
 
-func TestGuildStore_Overwrite(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestGuildStore_Overwrite() {
+	c := s.newCache(cache.Options{})
 
 	c.Guilds().Set(&common.Guild{ID: "1", Name: "old"})
 	c.Guilds().Set(&common.Guild{ID: "1", Name: "new"})
 
 	got, ok := c.Guilds().Get("1")
-	if !ok || got.Name != "new" {
-		t.Fatalf("expected overwritten name 'new', got %q (ok=%v)", got.Name, ok)
-	}
-	if c.Guilds().Size() != 1 {
-		t.Fatalf("expected size 1 after overwrite, got %d", c.Guilds().Size())
-	}
+	s.Require().True(ok, "expected guild to exist after set")
+	s.Require().Equal("new", got.Name, "expected new guild to have the new name")
+	s.Require().Equal(1, c.Guilds().Size(), "expected overwrite, therefore no increase")
 }
 
-// ── ChannelStore ──────────────────────────────────────────────────────────────
+// Channel Store
 
-func TestChannelStore_CRUD(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestChannelStore_CRUD() {
+	c := s.newCache(cache.Options{})
 
 	c.Channels().Set(channel("10"))
-	if _, ok := c.Channels().Get("10"); !ok {
-		t.Fatal("expected channel 10")
-	}
+
+	_, ok := c.Channels().Get("10")
+	s.Require().True(ok, "expected channel 10")
+
 	c.Channels().Delete("10")
-	if _, ok := c.Channels().Get("10"); ok {
-		t.Fatal("expected channel deleted")
-	}
+
+	_, ok = c.Channels().Get("10")
+	s.Require().False(ok, "expected channel deleted")
 }
 
-func TestChannelStore_All(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestChannelStore_All() {
+	c := s.newCache(cache.Options{})
 
 	for i := 1; i <= 4; i++ {
 		c.Channels().Set(channel(fmt.Sprintf("%d", i)))
 	}
-	if len(c.Channels().All()) != 4 {
-		t.Fatalf("expected 4 channels, got %d", len(c.Channels().All()))
-	}
+	s.Require().Len(c.Channels().All(), 4, "expected 4 channels")
 }
 
 // ── UserStore ─────────────────────────────────────────────────────────────────
 
-func TestUserStore_CRUD(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestUserStore_CRUD() {
+	c := s.newCache(cache.Options{})
 
 	c.Users().Set(user("42"))
+
 	got, ok := c.Users().Get("42")
-	if !ok || got.Username != "user-42" {
-		t.Fatalf("expected user-42, ok=%v", ok)
-	}
+	s.Require().True(ok, "expected user 42 to exist")
+	s.Require().Equal("user-42", got.Username)
+
 	c.Users().Delete("42")
-	if _, ok := c.Users().Get("42"); ok {
-		t.Fatal("expected user deleted")
-	}
+
+	_, ok = c.Users().Get("42")
+	s.Require().False(ok, "expected user deleted")
 }
 
-func TestUserStore_All(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestUserStore_All() {
+	c := s.newCache(cache.Options{})
 
 	c.Users().Set(user("1"))
 	c.Users().Set(user("2"))
-	if len(c.Users().All()) != 2 {
-		t.Fatalf("expected 2 users, got %d", len(c.Users().All()))
-	}
+	s.Require().Len(c.Users().All(), 2, "expected 2 users")
 }
 
 // ── MemberStore ───────────────────────────────────────────────────────────────
 
-func TestMemberStore_SetGet(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestMemberStore_SetGet() {
+	c := s.newCache(cache.Options{})
 
 	c.Members().Set("guild1", member("99"))
+
 	got, ok := c.Members().Get("guild1", "99")
-	if !ok || got.User.ID != "99" {
-		t.Fatalf("expected member 99 in guild1, ok=%v", ok)
-	}
+	s.Require().True(ok, "expected member 99 in guild1")
+	s.Require().NotNil(got)
+	s.Require().NotNil(got.User)
+	s.Require().Equal(common.Snowflake("99"), got.User.ID)
 }
 
-func TestMemberStore_Delete(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestMemberStore_Delete() {
+	c := s.newCache(cache.Options{})
 
 	c.Members().Set("guild1", member("5"))
+
 	c.Members().Delete("guild1", "5")
-	if _, ok := c.Members().Get("guild1", "5"); ok {
-		t.Fatal("expected member deleted")
-	}
+
+	_, ok := c.Members().Get("guild1", "5")
+	s.Require().False(ok, "expected member deleted")
 }
 
-func TestMemberStore_DeleteGuild(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestMemberStore_DeleteGuild() {
+	c := s.newCache(cache.Options{})
 
 	for i := 1; i <= 5; i++ {
 		c.Members().Set("guild1", member(fmt.Sprintf("%d", i)))
@@ -256,16 +254,12 @@ func TestMemberStore_DeleteGuild(t *testing.T) {
 
 	c.Members().DeleteGuild("guild1")
 
-	if members := c.Members().AllInGuild("guild1"); len(members) != 0 {
-		t.Fatalf("expected 0 members in guild1, got %d", len(members))
-	}
-	if members := c.Members().AllInGuild("guild2"); len(members) != 1 {
-		t.Fatalf("expected 1 member in guild2, got %d", len(members))
-	}
+	s.Require().Len(c.Members().AllInGuild("guild1"), 0, "expected 0 members in guild1")
+	s.Require().Len(c.Members().AllInGuild("guild2"), 1, "expected 1 member in guild2")
 }
 
-func TestMemberStore_AllInGuild(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestMemberStore_AllInGuild() {
+	c := s.newCache(cache.Options{})
 
 	for i := 1; i <= 3; i++ {
 		c.Members().Set("g1", member(fmt.Sprintf("%d", i)))
@@ -273,79 +267,76 @@ func TestMemberStore_AllInGuild(t *testing.T) {
 	c.Members().Set("g2", member("99"))
 
 	all := c.Members().AllInGuild("g1")
-	if len(all) != 3 {
-		t.Fatalf("expected 3 members in g1, got %d", len(all))
-	}
+	s.Require().Len(all, 3, "expected 3 members in g1")
 }
 
-func TestMemberStore_NilUser(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestMemberStore_NilUser() {
+	c := s.newCache(cache.Options{})
 
 	c.Members().Set("g1", &common.GuildMember{})
-	if c.Members().Size() != 0 {
-		t.Fatal("expected size 0 when member.User is nil")
-	}
+
+	s.Require().Equal(0, c.Members().Size(), "expected size 0 when member.User is nil")
 }
 
-func TestMemberStore_TTL(t *testing.T) {
-	c := newCache(t, cache.Options{TTL: 150 * time.Millisecond})
+func (s *RedisCacheTestSuite) TestMemberStore_TTL() {
+	c := s.newCache(cache.Options{TTL: 150 * time.Millisecond})
 
 	c.Members().Set("g1", member("1"))
-	if _, ok := c.Members().Get("g1", "1"); !ok {
-		t.Fatal("expected member before TTL")
-	}
+
+	_, ok := c.Members().Get("g1", "1")
+	s.Require().True(ok, "expected member before TTL")
+
 	time.Sleep(300 * time.Millisecond)
-	if _, ok := c.Members().Get("g1", "1"); ok {
-		t.Fatal("expected member expired after TTL")
-	}
+
+	_, ok = c.Members().Get("g1", "1")
+	s.Require().False(ok, "expected member expired after TTL")
 }
 
 // ── StickerStore ──────────────────────────────────────────────────────────────
 
-func TestStickerStore_CRUDAndSetAll(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestStickerStore_CRUDAndSetAll() {
+	c := s.newCache(cache.Options{})
 
 	c.Stickers().Set("guild1", sticker("s1"))
+
 	got, ok := c.Stickers().Get("s1")
-	if !ok || got.ID != "s1" {
-		t.Fatalf("expected sticker s1, ok=%v", ok)
-	}
+	s.Require().True(ok, "expected sticker s1")
+	s.Require().NotNil(got)
+	s.Require().Equal(common.Snowflake("s1"), got.ID)
 
 	c.Stickers().SetAll("guild1", []*common.Sticker{sticker("s2"), sticker("s3")})
-	if _, ok := c.Stickers().Get("s1"); ok {
-		t.Fatal("expected old guild stickers replaced by SetAll")
-	}
-	if stickers := c.Stickers().GetByGuild("guild1"); len(stickers) != 2 {
-		t.Fatalf("expected 2 stickers in guild1, got %d", len(stickers))
-	}
+
+	_, ok = c.Stickers().Get("s1")
+	s.Require().False(ok, "expected old guild stickers replaced by SetAll")
+
+	stickers := c.Stickers().GetByGuild("guild1")
+	s.Require().Len(stickers, 2, "expected 2 stickers in guild1")
 
 	c.Stickers().Delete("s2")
-	if _, ok := c.Stickers().Get("s2"); ok {
-		t.Fatal("expected sticker s2 deleted")
-	}
+	_, ok = c.Stickers().Get("s2")
+	s.Require().False(ok, "expected sticker s2 deleted")
 
 	c.Stickers().DeleteGuild("guild1")
-	if stickers := c.Stickers().GetByGuild("guild1"); len(stickers) != 0 {
-		t.Fatalf("expected guild stickers deleted, got %d", len(stickers))
-	}
+	s.Require().Len(c.Stickers().GetByGuild("guild1"), 0, "expected guild stickers deleted")
 }
 
 // ── MessageStore ──────────────────────────────────────────────────────────────
 
 var defaultMsgOpts = cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 100}}
 
-func TestMessageStore_AddGet(t *testing.T) {
-	c := newCache(t, defaultMsgOpts)
+func (s *RedisCacheTestSuite) TestMessageStore_AddGet() {
+	c := s.newCache(defaultMsgOpts)
 
 	c.Messages().Add(message("m1", "c1"))
+
 	got, ok := c.Messages().Get("c1", "m1")
-	if !ok || got.ID != "m1" {
-		t.Fatalf("expected msg m1, ok=%v", ok)
-	}
+	s.Require().True(ok, "expected msg m1")
+	s.Require().NotNil(got)
+	s.Require().Equal(common.Snowflake("m1"), got.ID)
 }
 
-func TestMessageStore_Update(t *testing.T) {
-	c := newCache(t, defaultMsgOpts)
+func (s *RedisCacheTestSuite) TestMessageStore_Update() {
+	c := s.newCache(defaultMsgOpts)
 
 	msg := message("m1", "c1")
 	c.Messages().Add(msg)
@@ -354,34 +345,34 @@ func TestMessageStore_Update(t *testing.T) {
 	updated.Content = "edited"
 	c.Messages().Update(&updated)
 
-	got, _ := c.Messages().Get("c1", "m1")
-	if got.Content != "edited" {
-		t.Fatalf("expected updated content, got %q", got.Content)
-	}
+	got, ok := c.Messages().Get("c1", "m1")
+	s.Require().True(ok, "expected message to exist after update")
+	s.Require().NotNil(got)
+	s.Require().Equal("edited", got.Content)
 }
 
-func TestMessageStore_Update_NonExistent(t *testing.T) {
-	c := newCache(t, defaultMsgOpts)
+func (s *RedisCacheTestSuite) TestMessageStore_Update_NonExistent() {
+	c := s.newCache(defaultMsgOpts)
 
 	// Updating a non-existent message must not create it.
 	c.Messages().Update(message("ghost", "c1"))
-	if _, ok := c.Messages().Get("c1", "ghost"); ok {
-		t.Fatal("Update should not create a new entry")
-	}
+
+	_, ok := c.Messages().Get("c1", "ghost")
+	s.Require().False(ok, "Update should not create a new entry")
 }
 
-func TestMessageStore_Delete(t *testing.T) {
-	c := newCache(t, defaultMsgOpts)
+func (s *RedisCacheTestSuite) TestMessageStore_Delete() {
+	c := s.newCache(defaultMsgOpts)
 
 	c.Messages().Add(message("m1", "c1"))
 	c.Messages().Delete("c1", "m1")
-	if _, ok := c.Messages().Get("c1", "m1"); ok {
-		t.Fatal("expected message deleted")
-	}
+
+	_, ok := c.Messages().Get("c1", "m1")
+	s.Require().False(ok, "expected message deleted")
 }
 
-func TestMessageStore_DeleteBulk(t *testing.T) {
-	c := newCache(t, defaultMsgOpts)
+func (s *RedisCacheTestSuite) TestMessageStore_DeleteBulk() {
+	c := s.newCache(defaultMsgOpts)
 
 	for i := 1; i <= 5; i++ {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
@@ -389,51 +380,42 @@ func TestMessageStore_DeleteBulk(t *testing.T) {
 	c.Messages().DeleteBulk("c1", []common.Snowflake{"m1", "m3", "m5"})
 
 	for _, id := range []common.Snowflake{"m1", "m3", "m5"} {
-		if _, ok := c.Messages().Get("c1", id); ok {
-			t.Fatalf("expected message %s deleted", id)
-		}
+		_, ok := c.Messages().Get("c1", id)
+		s.Require().False(ok, "expected message %s deleted", id)
 	}
 	for _, id := range []common.Snowflake{"m2", "m4"} {
-		if _, ok := c.Messages().Get("c1", id); !ok {
-			t.Fatalf("expected message %s present", id)
-		}
+		_, ok := c.Messages().Get("c1", id)
+		s.Require().True(ok, "expected message %s present", id)
 	}
 }
 
-func TestMessageStore_Channel_NewestFirst(t *testing.T) {
-	c := newCache(t, defaultMsgOpts)
+func (s *RedisCacheTestSuite) TestMessageStore_Channel_NewestFirst() {
+	c := s.newCache(defaultMsgOpts)
 
 	for i := 1; i <= 5; i++ {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
 	}
 	msgs := c.Messages().Channel("c1")
-	if len(msgs) != 5 {
-		t.Fatalf("expected 5 messages, got %d", len(msgs))
-	}
+	s.Require().Len(msgs, 5, "expected 5 messages")
+
 	// The most recently added message must be first.
-	if msgs[0].ID != "m5" {
-		t.Fatalf("expected newest first (m5), got %s", msgs[0].ID)
-	}
+	s.Require().Equal(common.Snowflake("m5"), msgs[0].ID, "expected newest first")
 }
 
-func TestMessageStore_DeleteChannel(t *testing.T) {
-	c := newCache(t, defaultMsgOpts)
+func (s *RedisCacheTestSuite) TestMessageStore_DeleteChannel() {
+	c := s.newCache(defaultMsgOpts)
 
 	c.Messages().Add(message("m1", "c1"))
 	c.Messages().Add(message("m2", "c2"))
 
 	c.Messages().DeleteChannel("c1")
 
-	if msgs := c.Messages().Channel("c1"); len(msgs) != 0 {
-		t.Fatalf("expected c1 messages deleted, got %d", len(msgs))
-	}
-	if msgs := c.Messages().Channel("c2"); len(msgs) != 1 {
-		t.Fatal("c2 should be unaffected")
-	}
+	s.Require().Len(c.Messages().Channel("c1"), 0, "expected c1 messages deleted")
+	s.Require().Len(c.Messages().Channel("c2"), 1, "c2 should be unaffected")
 }
 
-func TestMessageStore_RingCap(t *testing.T) {
-	c := newCache(t, cache.Options{
+func (s *RedisCacheTestSuite) TestMessageStore_RingCap() {
+	c := s.newCache(cache.Options{
 		Messages: cache.MessageOptions{MaxPerChannel: 3},
 	})
 
@@ -442,19 +424,17 @@ func TestMessageStore_RingCap(t *testing.T) {
 	}
 
 	msgs := c.Messages().Channel("c1")
-	if len(msgs) != 3 {
-		t.Fatalf("expected ring cap of 3, got %d", len(msgs))
-	}
+	s.Require().Len(msgs, 3, "expected ring cap of 3")
+
 	// Oldest messages (m1, m2) must have been evicted.
 	for _, m := range msgs {
-		if m.ID == "m1" || m.ID == "m2" {
-			t.Fatalf("message %s should have been evicted", m.ID)
-		}
+		s.Require().NotEqual(common.Snowflake("m1"), m.ID, "m1 should have been evicted")
+		s.Require().NotEqual(common.Snowflake("m2"), m.ID, "m2 should have been evicted")
 	}
 }
 
-func TestMessageStore_TTL(t *testing.T) {
-	c := newCache(t, cache.Options{
+func (s *RedisCacheTestSuite) TestMessageStore_TTL() {
+	c := s.newCache(cache.Options{
 		Messages: cache.MessageOptions{
 			MaxPerChannel: 10,
 			TTL:           150 * time.Millisecond,
@@ -462,19 +442,17 @@ func TestMessageStore_TTL(t *testing.T) {
 	})
 
 	c.Messages().Add(message("m1", "c1"))
-	if _, ok := c.Messages().Get("c1", "m1"); !ok {
-		t.Fatal("expected message before TTL")
-	}
+	_, ok := c.Messages().Get("c1", "m1")
+	s.Require().True(ok, "expected message before TTL")
 
 	time.Sleep(300 * time.Millisecond)
 
-	if _, ok := c.Messages().Get("c1", "m1"); ok {
-		t.Fatal("expected message expired after TTL")
-	}
+	_, ok = c.Messages().Get("c1", "m1")
+	s.Require().False(ok, "expected message expired after TTL")
 }
 
-func TestMessageStore_SizeAccuracy(t *testing.T) {
-	c := newCache(t, defaultMsgOpts)
+func (s *RedisCacheTestSuite) TestMessageStore_SizeAccuracy() {
+	c := s.newCache(defaultMsgOpts)
 
 	for i := 1; i <= 4; i++ {
 		c.Messages().Add(message(fmt.Sprintf("c1m%d", i), "c1"))
@@ -482,51 +460,49 @@ func TestMessageStore_SizeAccuracy(t *testing.T) {
 	for i := 1; i <= 3; i++ {
 		c.Messages().Add(message(fmt.Sprintf("c2m%d", i), "c2"))
 	}
-	if s := c.Messages().Size(); s != 7 {
-		t.Fatalf("expected size 7, got %d", s)
-	}
+
+	s.Require().Equal(7, c.Messages().Size(), "expected size 7")
+
 	c.Messages().DeleteChannel("c1")
-	if s := c.Messages().Size(); s != 3 {
-		t.Fatalf("expected size 3 after DeleteChannel, got %d", s)
-	}
+
+	s.Require().Equal(3, c.Messages().Size(), "expected size 3 after DeleteChannel")
 }
 
 // ── Key prefix isolation ──────────────────────────────────────────────────────
 
-func TestKeyPrefix_Isolation(t *testing.T) {
-	client := redis.NewClient(&redis.Options{Addr: redisAddr})
-	t.Cleanup(func() { client.Close() })
+func (s *RedisCacheTestSuite) TestKeyPrefix_Isolation() {
+	client := redis.NewClient(&redis.Options{Addr: s.redisAddr})
+	s.T().Cleanup(func() { _ = client.Close() })
 
 	c1 := rediscache.NewRedisCache(client, cache.Options{}).WithKeyPrefix("bot-a")
 	c2 := rediscache.NewRedisCache(client, cache.Options{}).WithKeyPrefix("bot-b")
-	t.Cleanup(func() { c1.Close(); c2.Close() })
+	s.T().Cleanup(func() { _ = c1.Close(); _ = c2.Close() })
 
 	c1.Guilds().Set(guild("42"))
 
-	if _, ok := c2.Guilds().Get("42"); ok {
-		t.Fatal("bot-b should not see bot-a's guild")
-	}
-	if _, ok := c1.Guilds().Get("42"); !ok {
-		t.Fatal("bot-a should see its own guild")
-	}
+	_, ok := c2.Guilds().Get("42")
+	s.Require().False(ok, "bot-b should not see bot-a's guild")
+
+	_, ok = c1.Guilds().Get("42")
+	s.Require().True(ok, "bot-a should see its own guild")
 }
 
 // ── Close ─────────────────────────────────────────────────────────────────────
 
-func TestClose_Idempotent(t *testing.T) {
-	c := newCache(t, cache.Options{})
-	if err := c.Close(); err != nil {
-		t.Fatalf("first Close: %v", err)
-	}
-	if err := c.Close(); err != nil {
-		t.Fatalf("second Close: %v", err)
-	}
+func (s *RedisCacheTestSuite) TestClose_Idempotent() {
+	c := s.newCache(cache.Options{})
+
+	err := c.Close()
+	s.Require().NoError(err, "first Close should succeed")
+
+	err = c.Close()
+	s.Require().NoError(err, "second Close should be idempotent")
 }
 
 // ── Concurrent access (race detector) ────────────────────────────────────────
 
-func TestConcurrent_NoRace(t *testing.T) {
-	c := newCache(t, cache.Options{
+func (s *RedisCacheTestSuite) TestConcurrent_NoRace() {
+	c := s.newCache(cache.Options{
 		Messages: cache.MessageOptions{MaxPerChannel: 10},
 	})
 
@@ -561,8 +537,8 @@ func TestConcurrent_NoRace(t *testing.T) {
 // TestBug6NetworkErrorDoesNotPruneIndex verifies that a Redis network error
 // during Get does not remove the entry from the index set. Only a true
 // cache-miss (redis.Nil) should trigger pruning.
-func TestBug6NetworkErrorDoesNotPruneIndex(t *testing.T) {
-	client := redis.NewClient(&redis.Options{Addr: redisAddr})
+func (s *RedisCacheTestSuite) TestBug6NetworkErrorDoesNotPruneIndex() {
+	client := redis.NewClient(&redis.Options{Addr: s.redisAddr})
 	defer client.Close()
 
 	c := rediscache.NewRedisCache(client, cache.Options{})
@@ -579,9 +555,7 @@ func TestBug6NetworkErrorDoesNotPruneIndex(t *testing.T) {
 			found = true
 		}
 	}
-	if !found {
-		t.Fatal("guild not found in index before test")
-	}
+	s.Require().True(found, "guild not found in index before test")
 
 	// Simulate a network error by closing the underlying connection pool.
 	// After this, Get returns an error — the index must NOT be pruned.
@@ -591,7 +565,7 @@ func TestBug6NetworkErrorDoesNotPruneIndex(t *testing.T) {
 	c.Guilds().Get("g1")
 
 	// Re-open a fresh client to inspect the index.
-	client2 := redis.NewClient(&redis.Options{Addr: redisAddr})
+	client2 := redis.NewClient(&redis.Options{Addr: s.redisAddr})
 	defer client2.Close()
 
 	idx2 := client2.SMembers(context.Background(), "discord:guild:index").Val()
@@ -601,16 +575,14 @@ func TestBug6NetworkErrorDoesNotPruneIndex(t *testing.T) {
 			found2 = true
 		}
 	}
-	if !found2 {
-		t.Error("index was pruned on network error (Bug 6) — only true cache-miss should prune")
-	}
+	s.Require().True(found2, "index was pruned on network error (Bug 6) — only true cache-miss should prune")
 }
 
 // TestBug7UpdateIsAtomicNoGhostEntry verifies that Update uses an atomic SetXX
 // so a key that expires between the old Exists check and the Set call does not
 // produce a ghost entry (message value without a sorted-set index entry).
-func TestBug7UpdateIsAtomicNoGhostEntry(t *testing.T) {
-	client := redis.NewClient(&redis.Options{Addr: redisAddr})
+func (s *RedisCacheTestSuite) TestBug7UpdateIsAtomicNoGhostEntry() {
+	client := redis.NewClient(&redis.Options{Addr: s.redisAddr})
 	defer client.Close()
 
 	// Use a 50 ms TTL so expiry is easy to trigger in the test.
@@ -631,23 +603,21 @@ func TestBug7UpdateIsAtomicNoGhostEntry(t *testing.T) {
 
 	// The key must not exist (SetXX must be a no-op after expiry).
 	exists := client.Exists(context.Background(), "discord:msg:c1:m1").Val()
-	if exists != 0 {
-		t.Error("Update created a ghost entry after TTL expiry — SetXX not used atomically (Bug 7)")
-	}
+	s.Require().Equal(int64(0), exists, "Update created a ghost entry after TTL expiry — SetXX not used atomically (Bug 7)")
 }
 
 // TestBug8AddIsAtomicParallelAddsRespectMaxPerChannel verifies that concurrent
 // Add calls never leave more than MaxPerChannel entries in the sorted-set index.
 // Before the fix, non-atomic ZCard/ZPopMin could miss excess entries under load.
-func TestBug8AddIsAtomicParallelAddsRespectMaxPerChannel(t *testing.T) {
-	const max = 5
+func (s *RedisCacheTestSuite) TestBug8AddIsAtomicParallelAddsRespectMaxPerChannel() {
+	const maxAmount = 5
 	const goroutines = 50
 
-	client := redis.NewClient(&redis.Options{Addr: redisAddr})
+	client := redis.NewClient(&redis.Options{Addr: s.redisAddr})
 	defer client.Close()
 
 	c := rediscache.NewRedisCache(client, cache.Options{
-		Messages: cache.MessageOptions{MaxPerChannel: max},
+		Messages: cache.MessageOptions{MaxPerChannel: maxAmount},
 	})
 	defer c.Close()
 
@@ -668,40 +638,31 @@ func TestBug8AddIsAtomicParallelAddsRespectMaxPerChannel(t *testing.T) {
 
 	// The sorted-set cardinality must not exceed MaxPerChannel.
 	card := client.ZCard(context.Background(), "discord:msg:ch:ch-atomic").Val()
-	if card > int64(max) {
-		t.Errorf("ZCard=%d after parallel Adds — exceeds MaxPerChannel=%d (Bug 8)", card, max)
-	}
+	s.Require().LessOrEqual(card, int64(maxAmount), "ZCard should not exceed MaxPerChannel (Bug 8)")
 
 	// The number of msg keys for this channel must equal the ZCard.
 	msgKeys := client.Keys(context.Background(), "discord:msg:ch-atomic:*").Val()
-	if int64(len(msgKeys)) != card {
-		t.Errorf("msg key count=%d does not match ZCard=%d — orphan keys (Bug 8)", len(msgKeys), card)
-	}
+	s.Require().Equal(int64(len(msgKeys)), card, "msg key count must match ZCard — orphan keys (Bug 8)")
 }
 
 // TestBug36MaxPerChannelZeroDisables verifies that MaxPerChannel=0 disables
 // message caching in the Redis backend (Bug 36).
-func TestBug36MaxPerChannelZeroDisables(t *testing.T) {
-	c := newCache(t, cache.Options{
+func (s *RedisCacheTestSuite) TestBug36MaxPerChannelZeroDisables() {
+	c := s.newCache(cache.Options{
 		Messages: cache.MessageOptions{MaxPerChannel: 0},
 	})
 
 	c.Messages().Add(message("m1", "ch1"))
 	c.Messages().Add(message("m2", "ch1"))
 
-	ch := c.Messages().Channel("ch1")
-	if len(ch) != 0 {
-		t.Errorf("MaxPerChannel=0 should disable caching, got %d messages (Bug 36)", len(ch))
-	}
-	if sz := c.Messages().Size(); sz != 0 {
-		t.Errorf("Size should be 0 when disabled, got %d (Bug 36)", sz)
-	}
+	s.Require().Len(c.Messages().Channel("ch1"), 0, "MaxPerChannel=0 should disable caching (Bug 36)")
+	s.Require().Equal(0, c.Messages().Size(), "Size should be 0 when disabled (Bug 36)")
 }
 
 // TestBug50SetAllIsAtomic verifies that readers always see either the complete
 // old set or the complete new set — never a partial or empty guild (Bug 50).
-func TestBug50SetAllIsAtomic(t *testing.T) {
-	c := newCache(t, cache.Options{})
+func (s *RedisCacheTestSuite) TestBug50SetAllIsAtomic() {
+	c := s.newCache(cache.Options{})
 
 	const guildID = common.Snowflake("g1")
 	const workers = 100
@@ -751,7 +712,5 @@ func TestBug50SetAllIsAtomic(t *testing.T) {
 	close(stop)
 	wg.Wait()
 
-	if partial.Load() {
-		t.Error("reader observed a partial emoji set during concurrent SetAll (Bug 50)")
-	}
+	s.Require().False(partial.Load(), "reader observed a partial emoji set during concurrent SetAll (Bug 50)")
 }
