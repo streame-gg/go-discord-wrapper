@@ -66,6 +66,10 @@ type CreateTestEntitlementParams struct {
 // ── Entitlement endpoints ─────────────────────────────────────────────────────
 
 func (c *RestClient) ListEntitlements(ctx context.Context, appID common.Snowflake, params ListEntitlementsParams) ([]*common.Entitlement, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/applications/" + appID.String() + "/entitlements" + params.toQuery()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -81,6 +85,14 @@ func (c *RestClient) ListEntitlements(ctx context.Context, appID common.Snowflak
 }
 
 func (c *RestClient) GetEntitlement(ctx context.Context, appID, entitlementID common.Snowflake) (*common.Entitlement, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := entitlementID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/applications/" + appID.String() + "/entitlements/" + entitlementID.String()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -96,6 +108,10 @@ func (c *RestClient) GetEntitlement(ctx context.Context, appID, entitlementID co
 }
 
 func (c *RestClient) CreateTestEntitlement(ctx context.Context, appID common.Snowflake, params CreateTestEntitlementParams) (*common.Entitlement, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -115,6 +131,14 @@ func (c *RestClient) CreateTestEntitlement(ctx context.Context, appID common.Sno
 }
 
 func (c *RestClient) ConsumeEntitlement(ctx context.Context, appID, entitlementID common.Snowflake) error {
+	if err := appID.Validate(); err != nil {
+		return err
+	}
+
+	if err := entitlementID.Validate(); err != nil {
+		return err
+	}
+
 	path := "/applications/" + appID.String() + "/entitlements/" + entitlementID.String() + "/consume"
 	req, err := c.generateRequest(ctx, http.MethodPost, path, nil)
 	if err != nil {
@@ -126,6 +150,14 @@ func (c *RestClient) ConsumeEntitlement(ctx context.Context, appID, entitlementI
 }
 
 func (c *RestClient) DeleteTestEntitlement(ctx context.Context, appID, entitlementID common.Snowflake) error {
+	if err := appID.Validate(); err != nil {
+		return err
+	}
+
+	if err := entitlementID.Validate(); err != nil {
+		return err
+	}
+
 	path := "/applications/" + appID.String() + "/entitlements/" + entitlementID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {

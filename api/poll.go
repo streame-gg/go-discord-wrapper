@@ -33,6 +33,14 @@ func (p GetPollAnswerVotersParams) toQuery() string {
 // ── Poll endpoints ────────────────────────────────────────────────────────────
 
 func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, messageID common.Snowflake, answerID int, params GetPollAnswerVotersParams) ([]*common.User, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := messageID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/channels/" + channelID.String() + "/polls/" + messageID.String() + "/answers/" + strconv.Itoa(answerID) + params.toQuery()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {

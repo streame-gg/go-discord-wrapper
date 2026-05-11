@@ -10,8 +10,12 @@ import (
 )
 
 // GetChannel fetches a channel by ID.
-func (c *RestClient) GetChannel(ctx context.Context, id common.Snowflake) (*common.Channel, error) {
-	req, err := c.generateRequest(ctx, "GET", "/channels/"+id.String(), nil)
+func (c *RestClient) GetChannel(ctx context.Context, channelID common.Snowflake) (*common.Channel, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
+	req, err := c.generateRequest(ctx, "GET", "/channels/"+channelID.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +72,10 @@ type CreateChannelInviteParams struct {
 
 // ModifyChannel updates settings for a channel. Returns the updated channel.
 func (c *RestClient) ModifyChannel(ctx context.Context, channelID common.Snowflake, params ModifyChannelParams) (*common.Channel, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -89,6 +97,10 @@ func (c *RestClient) ModifyChannel(ctx context.Context, channelID common.Snowfla
 // DeleteChannel deletes a channel by ID. For guild channels requires MANAGE_CHANNELS.
 // Returns the deleted channel object.
 func (c *RestClient) DeleteChannel(ctx context.Context, channelID common.Snowflake) (*common.Channel, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodDelete, "/channels/"+channelID.String(), nil)
 	if err != nil {
 		return nil, err
@@ -104,6 +116,10 @@ func (c *RestClient) DeleteChannel(ctx context.Context, channelID common.Snowfla
 
 // GetChannelInvites returns all invites for a channel. Requires MANAGE_CHANNELS.
 func (c *RestClient) GetChannelInvites(ctx context.Context, channelID common.Snowflake) ([]*Invite, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/channels/"+channelID.String()+"/invites", nil)
 	if err != nil {
 		return nil, err
@@ -119,6 +135,10 @@ func (c *RestClient) GetChannelInvites(ctx context.Context, channelID common.Sno
 
 // CreateChannelInvite creates a new invite for a channel. Requires CREATE_INSTANT_INVITE.
 func (c *RestClient) CreateChannelInvite(ctx context.Context, channelID common.Snowflake, params CreateChannelInviteParams) (*Invite, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -140,6 +160,14 @@ func (c *RestClient) CreateChannelInvite(ctx context.Context, channelID common.S
 // EditChannelPermissions creates or updates a permission overwrite for a user or role in a channel.
 // Requires MANAGE_ROLES. Use params.Type to specify whether overwriteID is a role or member.
 func (c *RestClient) EditChannelPermissions(ctx context.Context, channelID, overwriteID common.Snowflake, params EditChannelPermissionsParams) error {
+	if err := channelID.Validate(); err != nil {
+		return err
+	}
+
+	if err := overwriteID.Validate(); err != nil {
+		return err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return err
@@ -158,6 +186,14 @@ func (c *RestClient) EditChannelPermissions(ctx context.Context, channelID, over
 // DeleteChannelPermission removes a permission overwrite for a user or role from a channel.
 // Requires MANAGE_ROLES.
 func (c *RestClient) DeleteChannelPermission(ctx context.Context, channelID, overwriteID common.Snowflake) error {
+	if err := channelID.Validate(); err != nil {
+		return err
+	}
+
+	if err := overwriteID.Validate(); err != nil {
+		return err
+	}
+
 	path := "/channels/" + channelID.String() + "/permissions/" + overwriteID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -170,6 +206,10 @@ func (c *RestClient) DeleteChannelPermission(ctx context.Context, channelID, ove
 
 // TriggerTypingIndicator posts a typing indicator to the channel for ~10 seconds.
 func (c *RestClient) TriggerTypingIndicator(ctx context.Context, channelID common.Snowflake) error {
+	if err := channelID.Validate(); err != nil {
+		return err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/typing", nil)
 	if err != nil {
 		return err
@@ -195,6 +235,10 @@ type AddGroupDMRecipientParams struct {
 
 // SetVoiceChannelStatus sets the status message of a voice channel.
 func (c *RestClient) SetVoiceChannelStatus(ctx context.Context, channelID common.Snowflake, status *string) error {
+	if err := channelID.Validate(); err != nil {
+		return err
+	}
+
 	body, err := json.Marshal(map[string]interface{}{"status": status})
 	if err != nil {
 		return err
@@ -211,6 +255,14 @@ func (c *RestClient) SetVoiceChannelStatus(ctx context.Context, channelID common
 
 // FollowAnnouncementChannel follows an announcement channel, publishing messages to webhookChannelID.
 func (c *RestClient) FollowAnnouncementChannel(ctx context.Context, channelID, webhookChannelID common.Snowflake) (*FollowedChannel, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := webhookChannelID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(map[string]string{"webhook_channel_id": webhookChannelID.String()})
 	if err != nil {
 		return nil, err
@@ -231,6 +283,14 @@ func (c *RestClient) FollowAnnouncementChannel(ctx context.Context, channelID, w
 
 // AddGroupDMRecipient adds a user to a Group DM using their OAuth2 access token.
 func (c *RestClient) AddGroupDMRecipient(ctx context.Context, channelID, userID common.Snowflake, params AddGroupDMRecipientParams) error {
+	if err := channelID.Validate(); err != nil {
+		return err
+	}
+
+	if err := userID.Validate(); err != nil {
+		return err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return err
@@ -248,6 +308,14 @@ func (c *RestClient) AddGroupDMRecipient(ctx context.Context, channelID, userID 
 
 // RemoveGroupDMRecipient removes a user from a Group DM.
 func (c *RestClient) RemoveGroupDMRecipient(ctx context.Context, channelID, userID common.Snowflake) error {
+	if err := channelID.Validate(); err != nil {
+		return err
+	}
+
+	if err := userID.Validate(); err != nil {
+		return err
+	}
+
 	path := "/channels/" + channelID.String() + "/recipients/" + userID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {

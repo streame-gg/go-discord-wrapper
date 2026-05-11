@@ -65,6 +65,10 @@ func (c *RestClient) CreateGuildFromTemplate(ctx context.Context, templateCode s
 
 // GetGuildTemplates returns the templates for a guild. Requires MANAGE_GUILD.
 func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID common.Snowflake) ([]*common.GuildTemplate, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/templates", nil)
 	if err != nil {
 		return nil, err
@@ -80,6 +84,10 @@ func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID common.Snowf
 
 // CreateGuildTemplate creates a template for a guild. Requires MANAGE_GUILD.
 func (c *RestClient) CreateGuildTemplate(ctx context.Context, guildID common.Snowflake, params CreateGuildTemplateParams) (*common.GuildTemplate, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -100,6 +108,10 @@ func (c *RestClient) CreateGuildTemplate(ctx context.Context, guildID common.Sno
 
 // SyncGuildTemplate syncs the template to the guild's current state. Requires MANAGE_GUILD.
 func (c *RestClient) SyncGuildTemplate(ctx context.Context, guildID common.Snowflake, templateCode string) (*common.GuildTemplate, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/guilds/" + guildID.String() + "/templates/" + templateCode
 	req, err := c.generateRequest(ctx, http.MethodPut, path, nil)
 	if err != nil {
@@ -116,6 +128,10 @@ func (c *RestClient) SyncGuildTemplate(ctx context.Context, guildID common.Snowf
 
 // ModifyGuildTemplate modifies a guild template. Requires MANAGE_GUILD.
 func (c *RestClient) ModifyGuildTemplate(ctx context.Context, guildID common.Snowflake, templateCode string, params ModifyGuildTemplateParams) (*common.GuildTemplate, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -137,6 +153,10 @@ func (c *RestClient) ModifyGuildTemplate(ctx context.Context, guildID common.Sno
 
 // DeleteGuildTemplate deletes a guild template. Requires MANAGE_GUILD.
 func (c *RestClient) DeleteGuildTemplate(ctx context.Context, guildID common.Snowflake, templateCode string) (*common.GuildTemplate, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/guilds/" + guildID.String() + "/templates/" + templateCode
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {

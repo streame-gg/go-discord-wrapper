@@ -8,6 +8,10 @@ import (
 )
 
 func (c *RestClient) ListSKUs(ctx context.Context, appID common.Snowflake) ([]*common.SKU, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/applications/"+appID.String()+"/skus", nil)
 	if err != nil {
 		return nil, err

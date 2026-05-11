@@ -552,7 +552,7 @@ func (d *Client) RemoveGuildMemberRole(ctx context.Context, guildID, userID, rol
 
 // RemoveGuildMember removes a member from a guild. Requires KICK_MEMBERS.
 func (d *Client) RemoveGuildMember(ctx context.Context, guildID, userID common.Snowflake) error {
-	if err := d.RestClient.RemoveGuildMember(ctx, guildID, userID); err != nil {
+	if err := d.RestClient.KickGuildMember(ctx, guildID, userID); err != nil {
 		return err
 	}
 	d.removeGuildMemberFromCache(guildID, userID)

@@ -8,6 +8,10 @@ import (
 )
 
 func (c *RestClient) GetActivityInstance(ctx context.Context, appID common.Snowflake, instanceID string) (*common.ActivityInstance, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/applications/" + appID.String() + "/activity-instances/" + instanceID
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {

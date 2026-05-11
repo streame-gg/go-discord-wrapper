@@ -41,6 +41,10 @@ func (p ListSKUSubscriptionsParams) toQuery() string {
 // ── Subscription endpoints ────────────────────────────────────────────────────
 
 func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID common.Snowflake, params ListSKUSubscriptionsParams) ([]*common.Subscription, error) {
+	if err := skuID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/skus/" + skuID.String() + "/subscriptions" + params.toQuery()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -56,6 +60,14 @@ func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID common.Snow
 }
 
 func (c *RestClient) GetSKUSubscription(ctx context.Context, skuID, subscriptionID common.Snowflake) (*common.Subscription, error) {
+	if err := skuID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := subscriptionID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/skus/" + skuID.String() + "/subscriptions/" + subscriptionID.String()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {

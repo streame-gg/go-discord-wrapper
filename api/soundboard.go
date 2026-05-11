@@ -50,6 +50,10 @@ func (c *RestClient) ListDefaultSoundboardSounds(ctx context.Context) ([]*common
 
 // ListGuildSoundboardSounds returns all soundboard sounds for a guild.
 func (c *RestClient) ListGuildSoundboardSounds(ctx context.Context, guildID common.Snowflake) ([]*common.SoundboardSound, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/soundboard-sounds", nil)
 	if err != nil {
 		return nil, err
@@ -67,6 +71,14 @@ func (c *RestClient) ListGuildSoundboardSounds(ctx context.Context, guildID comm
 
 // GetGuildSoundboardSound returns a single soundboard sound for a guild.
 func (c *RestClient) GetGuildSoundboardSound(ctx context.Context, guildID, soundID common.Snowflake) (*common.SoundboardSound, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := soundID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/guilds/" + guildID.String() + "/soundboard-sounds/" + soundID.String()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -83,6 +95,10 @@ func (c *RestClient) GetGuildSoundboardSound(ctx context.Context, guildID, sound
 
 // CreateGuildSoundboardSound creates a new soundboard sound in a guild. Requires MANAGE_GUILD_EXPRESSIONS.
 func (c *RestClient) CreateGuildSoundboardSound(ctx context.Context, guildID common.Snowflake, params CreateGuildSoundboardSoundParams) (*common.SoundboardSound, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -103,6 +119,14 @@ func (c *RestClient) CreateGuildSoundboardSound(ctx context.Context, guildID com
 
 // ModifyGuildSoundboardSound edits a soundboard sound. Requires MANAGE_GUILD_EXPRESSIONS.
 func (c *RestClient) ModifyGuildSoundboardSound(ctx context.Context, guildID, soundID common.Snowflake, params ModifyGuildSoundboardSoundParams) (*common.SoundboardSound, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := soundID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -124,6 +148,14 @@ func (c *RestClient) ModifyGuildSoundboardSound(ctx context.Context, guildID, so
 
 // DeleteGuildSoundboardSound deletes a soundboard sound. Requires MANAGE_GUILD_EXPRESSIONS.
 func (c *RestClient) DeleteGuildSoundboardSound(ctx context.Context, guildID, soundID common.Snowflake) error {
+	if err := guildID.Validate(); err != nil {
+		return err
+	}
+
+	if err := soundID.Validate(); err != nil {
+		return err
+	}
+
 	path := "/guilds/" + guildID.String() + "/soundboard-sounds/" + soundID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -136,6 +168,10 @@ func (c *RestClient) DeleteGuildSoundboardSound(ctx context.Context, guildID, so
 
 // SendSoundboardSound sends a soundboard sound to a voice channel the user is connected to.
 func (c *RestClient) SendSoundboardSound(ctx context.Context, channelID common.Snowflake, params SendSoundboardSoundParams) error {
+	if err := channelID.Validate(); err != nil {
+		return err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return err
