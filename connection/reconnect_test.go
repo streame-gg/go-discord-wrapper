@@ -289,3 +289,36 @@ func TestBug26ConcurrentCloseIsIdempotent(t *testing.T) {
 	}
 }
 
+// TestBug41DoubleReadyDoesNotPanic verifies that receiving a READY event twice
+// on the same Websocket does not panic from a double-close of the Ready channel.
+func TestBug41DoubleReadyDoesNotPanic(t *testing.T) {
+	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	require.NoError(t, err)
+
+	c.Websocket = &Websocket{
+		Ready:  make(chan struct{}),
+		Closed: make(chan struct{}),
+	}
+
+	readyPayload := []byte(`{
+		"user": {"id":"1","username":"bot","discriminator":"0000","global_name":"bot"},
+		"session_id": "sess1",
+		"resume_gateway_url": "wss://fake",
+		"guilds": []
+	}`)
+
+	// First READY — must close the channel.
+	result := c.internalEventHandler(readyPayload, "READY", nil)
+	assert.True(t, result)
+	select {
+	case <-c.Websocket.Ready:
+	default:
+		t.Fatal("Ready channel not closed after first READY")
+	}
+
+	// Second READY — must not panic.
+	assert.NotPanics(t, func() {
+		c.internalEventHandler(readyPayload, "READY", nil)
+	}, "second READY payload must not panic (Bug 41)")
+}
+

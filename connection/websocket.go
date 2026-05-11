@@ -40,6 +40,7 @@ type Websocket struct {
 	awaitingHeartbeatAck bool
 	missedHeartbeatAcks  int
 	closeOnce            sync.Once
+	readyOnce            sync.Once
 }
 
 func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int, sessionID *string) (*Websocket, error) {

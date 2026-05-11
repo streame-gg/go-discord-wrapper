@@ -665,7 +665,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 			}
 
-			close(d.Websocket.Ready)
+			d.Websocket.readyOnce.Do(func() { close(d.Websocket.Ready) })
 
 			return true
 		}
