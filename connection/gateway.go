@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -38,6 +37,11 @@ type Client struct {
 	Intents *common.Intent
 
 	Websocket *Websocket
+
+	// httpClient is the shared HTTP client used for REST calls inside the
+	// gateway package (e.g. GET /gateway/bot). Reusing it avoids allocating a
+	// new transport and connection pool on every call (Bug 40).
+	httpClient *http.Client
 
 	discordEventEmitter *util.EventEmitter[events.EventType, EventHandler]
 
@@ -181,6 +185,7 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 		channelsByGuild:     make(map[common.Snowflake]map[common.Snowflake]struct{}),
 		guildByChannel:      make(map[common.Snowflake]common.Snowflake),
 		threadsByParent:     make(map[common.Snowflake]map[common.Snowflake]struct{}),
+		httpClient:          &http.Client{Timeout: 10 * time.Second},
 		RestClient:          rc,
 		Sharding:            cfg.Sharding,
 		Coordinator:         cfg.Coordinator,
@@ -456,38 +461,51 @@ func (d *Client) dispatchShardMessage(msg options.ShardMessage) {
 
 // ── Gateway connection ───────────────────────────────────────────────────────
 
-func (d *Client) initializeGatewayConnection() (*common.BotRegisterResponse, error) {
-	httpClient := &http.Client{Timeout: 10 * time.Second}
-	do, err := httpClient.Do(&http.Request{
-		Method: "GET",
-		URL: &url.URL{
-			Scheme: "https",
-			Host:   "discord.com",
-			Path:   common.APIBaseString(*d.APIVersion) + "gateway/bot",
-		},
-		Header: http.Header{
-			"Authorization": []string{"Bot " + *d.token},
-		},
-	})
+func (d *Client) initializeGatewayConnection(ctx context.Context) (*common.BotRegisterResponse, error) {
+	const userAgent = "DiscordBot (https://github.com/streame-gg/go-discord-wrapper, alpha)"
 
-	if err != nil {
-		return nil, err
+	for {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://discord.com"+common.APIBaseString(*d.APIVersion)+"gateway/bot", nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", "Bot "+*d.token)
+		req.Header.Set("User-Agent", userAgent)
+
+		resp, err := d.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			_ = resp.Body.Close()
+			retryAfter := 1 * time.Second
+			if ra := resp.Header.Get("Retry-After"); ra != "" {
+				if secs, parseErr := time.ParseDuration(ra + "s"); parseErr == nil {
+					retryAfter = secs
+				}
+			}
+			d.Logger.Warn("Gateway /gateway/bot rate-limited", slog.Duration("retryAfter", retryAfter))
+			select {
+			case <-time.After(retryAfter):
+				continue
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
+
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, errors.New("failed to register bot gateway connection, status code: " + resp.Status)
+		}
+
+		var result common.BotRegisterResponse
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			return nil, err
+		}
+		return &result, nil
 	}
-
-	defer func() {
-		_ = do.Body.Close()
-	}()
-
-	if do.StatusCode != http.StatusOK {
-		return nil, errors.New("failed to register bot gateway connection, status code: " + do.Status)
-	}
-
-	var resp common.BotRegisterResponse
-	if err := json.NewDecoder(do.Body).Decode(&resp); err != nil {
-		return nil, err
-	}
-
-	return &resp, nil
 }
 
 func (d *Client) Login(ctx context.Context) error {
@@ -495,7 +513,7 @@ func (d *Client) Login(ctx context.Context) error {
 		ctx = context.Background()
 	}
 
-	gatewayResp, err := d.initializeGatewayConnection()
+	gatewayResp, err := d.initializeGatewayConnection(ctx)
 	if err != nil {
 		return err
 	}
