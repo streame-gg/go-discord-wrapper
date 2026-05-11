@@ -27,6 +27,10 @@ type ModifyGuildEmojiParams struct {
 
 // ListGuildEmojis returns all emojis for a guild.
 func (c *RestClient) ListGuildEmojis(ctx context.Context, guildID common.Snowflake) ([]*common.Emoji, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/emojis", nil)
 	if err != nil {
 		return nil, err
@@ -42,6 +46,14 @@ func (c *RestClient) ListGuildEmojis(ctx context.Context, guildID common.Snowfla
 
 // GetGuildEmoji returns a specific emoji from a guild.
 func (c *RestClient) GetGuildEmoji(ctx context.Context, guildID, emojiID common.Snowflake) (*common.Emoji, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := emojiID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/guilds/" + guildID.String() + "/emojis/" + emojiID.String()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -59,6 +71,10 @@ func (c *RestClient) GetGuildEmoji(ctx context.Context, guildID, emojiID common.
 // CreateGuildEmoji creates a new emoji in a guild.
 // Image must be a base64-encoded data URI, max 256 KB.
 func (c *RestClient) CreateGuildEmoji(ctx context.Context, guildID common.Snowflake, params CreateGuildEmojiParams) (*common.Emoji, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -79,6 +95,14 @@ func (c *RestClient) CreateGuildEmoji(ctx context.Context, guildID common.Snowfl
 
 // ModifyGuildEmoji updates the name or allowed roles for a guild emoji.
 func (c *RestClient) ModifyGuildEmoji(ctx context.Context, guildID, emojiID common.Snowflake, params ModifyGuildEmojiParams) (*common.Emoji, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := emojiID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -100,6 +124,14 @@ func (c *RestClient) ModifyGuildEmoji(ctx context.Context, guildID, emojiID comm
 
 // DeleteGuildEmoji deletes the given guild emoji.
 func (c *RestClient) DeleteGuildEmoji(ctx context.Context, guildID, emojiID common.Snowflake) error {
+	if err := guildID.Validate(); err != nil {
+		return err
+	}
+
+	if err := emojiID.Validate(); err != nil {
+		return err
+	}
+
 	path := "/guilds/" + guildID.String() + "/emojis/" + emojiID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -125,6 +157,10 @@ type ModifyEmojiParams struct {
 
 // ListApplicationEmojis returns all emojis for an application.
 func (c *RestClient) ListApplicationEmojis(ctx context.Context, appID common.Snowflake) ([]*common.Emoji, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/applications/"+appID.String()+"/emojis", nil)
 	if err != nil {
 		return nil, err
@@ -142,6 +178,14 @@ func (c *RestClient) ListApplicationEmojis(ctx context.Context, appID common.Sno
 
 // GetApplicationEmoji returns a specific application emoji.
 func (c *RestClient) GetApplicationEmoji(ctx context.Context, appID, emojiID common.Snowflake) (*common.Emoji, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := emojiID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/applications/" + appID.String() + "/emojis/" + emojiID.String()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -158,6 +202,10 @@ func (c *RestClient) GetApplicationEmoji(ctx context.Context, appID, emojiID com
 
 // CreateApplicationEmoji creates a new emoji for an application.
 func (c *RestClient) CreateApplicationEmoji(ctx context.Context, appID common.Snowflake, params CreateEmojiParams) (*common.Emoji, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -178,6 +226,14 @@ func (c *RestClient) CreateApplicationEmoji(ctx context.Context, appID common.Sn
 
 // ModifyApplicationEmoji updates an application emoji.
 func (c *RestClient) ModifyApplicationEmoji(ctx context.Context, appID, emojiID common.Snowflake, params ModifyEmojiParams) (*common.Emoji, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := emojiID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -199,6 +255,14 @@ func (c *RestClient) ModifyApplicationEmoji(ctx context.Context, appID, emojiID 
 
 // DeleteApplicationEmoji deletes an application emoji.
 func (c *RestClient) DeleteApplicationEmoji(ctx context.Context, appID, emojiID common.Snowflake) error {
+	if err := appID.Validate(); err != nil {
+		return err
+	}
+
+	if err := emojiID.Validate(); err != nil {
+		return err
+	}
+
 	path := "/applications/" + appID.String() + "/emojis/" + emojiID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {

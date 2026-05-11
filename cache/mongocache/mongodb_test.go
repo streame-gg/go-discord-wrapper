@@ -37,8 +37,7 @@ func TestMain(m *testing.M) {
 		Started: true,
 	})
 	if err != nil {
-		log.Printf("skipping MongoDB integration tests: could not start container: %v", err)
-		os.Exit(0)
+		log.Fatalf("failed to start MongoDB container: %v", err)
 	}
 	defer container.Terminate(ctx) //nolint:errcheck
 

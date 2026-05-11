@@ -11,6 +11,10 @@ import (
 // needed. It uses the after-cursor pattern (max 1000 per request) and stops when
 // a page returns fewer members than the page size.
 func (c *RestClient) FetchAllGuildMembers(ctx context.Context, guildID common.Snowflake) ([]*common.GuildMember, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	const pageSize = 1000
 
 	var all []*common.GuildMember
@@ -37,6 +41,10 @@ func (c *RestClient) FetchAllGuildMembers(ctx context.Context, guildID common.Sn
 // FetchAllMessages fetches all messages in a channel, walking backwards from the
 // most recent message (max 100 per request) until the beginning of the channel.
 func (c *RestClient) FetchAllMessages(ctx context.Context, channelID common.Snowflake) ([]*common.Message, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
 	const pageSize = 100
 
 	var all []*common.Message
@@ -64,6 +72,10 @@ func (c *RestClient) FetchAllMessages(ctx context.Context, channelID common.Snow
 // FetchAllGuildBans fetches every ban in a guild across as many pages as needed
 // (max 1000 per request).
 func (c *RestClient) FetchAllGuildBans(ctx context.Context, guildID common.Snowflake) ([]*Ban, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	const pageSize = 1000
 
 	var all []*Ban
@@ -90,6 +102,10 @@ func (c *RestClient) FetchAllGuildBans(ctx context.Context, guildID common.Snowf
 // backwards in time (max 100 per request). The optional filter is forwarded to
 // every request so callers can scope by user or action type.
 func (c *RestClient) FetchAllAuditLogEntries(ctx context.Context, guildID common.Snowflake, filter GetGuildAuditLogParams) ([]common.AuditLogEntry, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	const pageSize = 100
 
 	filter.Limit = util.PointerOf(pageSize)
@@ -118,6 +134,10 @@ func (c *RestClient) FetchAllAuditLogEntries(ctx context.Context, guildID common
 // forward (max 100 per request). The filter is forwarded as-is so callers can
 // scope by user, guild, or SKU.
 func (c *RestClient) FetchAllEntitlements(ctx context.Context, appID common.Snowflake, filter ListEntitlementsParams) ([]*common.Entitlement, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
 	const pageSize = 100
 
 	filter.Limit = util.PointerOf(pageSize)
@@ -145,6 +165,14 @@ func (c *RestClient) FetchAllEntitlements(ctx context.Context, appID common.Snow
 // paginating forward (max 100 per request). Set withMember=true to include the
 // full GuildMember object alongside each user.
 func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, eventID common.Snowflake, withMember bool) ([]*GuildScheduledEventUser, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := eventID.Validate(); err != nil {
+		return nil, err
+	}
+
 	const pageSize = 100
 
 	var all []*GuildScheduledEventUser

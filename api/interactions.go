@@ -14,6 +14,10 @@ import (
 // Set withResponse=true to receive the created message back; returns nil otherwise.
 // Pass optional files to send attachments; when present the request is encoded as multipart/form-data.
 func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionID common.Snowflake, token string, response responses.InteractionResponse, withResponse bool, files ...MessageFile) (*responses.InteractionCallbackResponse, error) {
+	if err := interactionID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(response)
 	if err != nil {
 		return nil, err
@@ -56,8 +60,12 @@ func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionI
 }
 
 // GetOriginalInteractionResponse fetches the initial response message for an interaction.
-func (c *RestClient) GetOriginalInteractionResponse(ctx context.Context, appID common.Snowflake, token string) (*common.Message, error) {
-	path := "/webhooks/" + appID.String() + "/" + token + "/messages/@original"
+func (c *RestClient) GetOriginalInteractionResponse(ctx context.Context, webhookID common.Snowflake, token string) (*common.Message, error) {
+	if err := webhookID.Validate(); err != nil {
+		return nil, err
+	}
+
+	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/@original"
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
@@ -73,13 +81,17 @@ func (c *RestClient) GetOriginalInteractionResponse(ctx context.Context, appID c
 
 // EditOriginalInteractionResponse edits the initial response message for an interaction.
 // When params.Files is non-empty the request is sent as multipart/form-data.
-func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, appID common.Snowflake, token string, params EditMessageParams) (*common.Message, error) {
+func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, webhookID common.Snowflake, token string, params EditMessageParams) (*common.Message, error) {
+	if err := webhookID.Validate(); err != nil {
+		return nil, err
+	}
+
 	jsonBody, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	path := "/webhooks/" + appID.String() + "/" + token + "/messages/@original"
+	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/@original"
 
 	var req *http.Request
 	if len(params.Files) > 0 {
@@ -108,8 +120,12 @@ func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, appID 
 }
 
 // DeleteOriginalInteractionResponse deletes the initial response message for an interaction.
-func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, appID common.Snowflake, token string) error {
-	path := "/webhooks/" + appID.String() + "/" + token + "/messages/@original"
+func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, webhookID common.Snowflake, token string) error {
+	if err := webhookID.Validate(); err != nil {
+		return err
+	}
+
+	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/@original"
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
@@ -122,6 +138,10 @@ func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, appI
 // CreateFollowupMessage sends a follow-up message to an interaction (usable up to 15 minutes after the initial response).
 // When params.Files is non-empty the request is sent as multipart/form-data.
 func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID common.Snowflake, token string, params CreateMessageParams) (*common.Message, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
 	jsonBody, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -157,6 +177,14 @@ func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID common.Sno
 
 // GetFollowupMessage fetches a follow-up message sent for an interaction.
 func (c *RestClient) GetFollowupMessage(ctx context.Context, appID common.Snowflake, token string, messageID common.Snowflake) (*common.Message, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := messageID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/webhooks/" + appID.String() + "/" + token + "/messages/" + messageID.String()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -174,6 +202,14 @@ func (c *RestClient) GetFollowupMessage(ctx context.Context, appID common.Snowfl
 // EditFollowupMessage edits a follow-up message sent for an interaction.
 // When params.Files is non-empty the request is sent as multipart/form-data.
 func (c *RestClient) EditFollowupMessage(ctx context.Context, appID common.Snowflake, token string, messageID common.Snowflake, params EditMessageParams) (*common.Message, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := messageID.Validate(); err != nil {
+		return nil, err
+	}
+
 	jsonBody, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -209,6 +245,14 @@ func (c *RestClient) EditFollowupMessage(ctx context.Context, appID common.Snowf
 
 // DeleteFollowupMessage deletes a follow-up message sent for an interaction.
 func (c *RestClient) DeleteFollowupMessage(ctx context.Context, appID common.Snowflake, token string, messageID common.Snowflake) error {
+	if err := appID.Validate(); err != nil {
+		return err
+	}
+
+	if err := messageID.Validate(); err != nil {
+		return err
+	}
+
 	path := "/webhooks/" + appID.String() + "/" + token + "/messages/" + messageID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {

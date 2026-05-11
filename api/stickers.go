@@ -45,6 +45,10 @@ type CreateGuildStickerParams struct {
 
 // GetSticker returns the sticker object for the given sticker ID.
 func (c *RestClient) GetSticker(ctx context.Context, stickerID common.Snowflake) (*common.Sticker, error) {
+	if err := stickerID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/stickers/"+stickerID.String(), nil)
 	if err != nil {
 		return nil, err
@@ -77,6 +81,10 @@ func (c *RestClient) ListStickerPacks(ctx context.Context) ([]*StickerPack, erro
 
 // ListGuildStickers returns all stickers for the given guild.
 func (c *RestClient) ListGuildStickers(ctx context.Context, guildID common.Snowflake) ([]*common.Sticker, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/stickers", nil)
 	if err != nil {
 		return nil, err
@@ -92,6 +100,14 @@ func (c *RestClient) ListGuildStickers(ctx context.Context, guildID common.Snowf
 
 // GetGuildSticker returns a specific sticker from a guild.
 func (c *RestClient) GetGuildSticker(ctx context.Context, guildID, stickerID common.Snowflake) (*common.Sticker, error) {
+	if err := stickerID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/guilds/" + guildID.String() + "/stickers/" + stickerID.String()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -108,6 +124,14 @@ func (c *RestClient) GetGuildSticker(ctx context.Context, guildID, stickerID com
 
 // ModifyGuildSticker updates the name, description, or tags of a guild sticker.
 func (c *RestClient) ModifyGuildSticker(ctx context.Context, guildID, stickerID common.Snowflake, params ModifyGuildStickerParams) (*common.Sticker, error) {
+	if err := stickerID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -129,6 +153,14 @@ func (c *RestClient) ModifyGuildSticker(ctx context.Context, guildID, stickerID 
 
 // DeleteGuildSticker deletes a sticker from a guild.
 func (c *RestClient) DeleteGuildSticker(ctx context.Context, guildID, stickerID common.Snowflake) error {
+	if err := stickerID.Validate(); err != nil {
+		return err
+	}
+
+	if err := guildID.Validate(); err != nil {
+		return err
+	}
+
 	path := "/guilds/" + guildID.String() + "/stickers/" + stickerID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -141,6 +173,10 @@ func (c *RestClient) DeleteGuildSticker(ctx context.Context, guildID, stickerID 
 
 // GetStickerPack returns the sticker pack object for the given pack ID.
 func (c *RestClient) GetStickerPack(ctx context.Context, packID common.Snowflake) (*StickerPack, error) {
+	if err := packID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/sticker-packs/"+packID.String(), nil)
 	if err != nil {
 		return nil, err
@@ -163,6 +199,10 @@ var validStickerContentTypes = map[string]bool{
 
 // CreateGuildSticker uploads a new sticker to a guild using multipart form encoding.
 func (c *RestClient) CreateGuildSticker(ctx context.Context, guildID common.Snowflake, params CreateGuildStickerParams) (*common.Sticker, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	if !validStickerContentTypes[params.ContentType] {
 		return nil, fmt.Errorf("invalid sticker content type %q: must be image/png, image/apng, image/gif, or application/json", params.ContentType)
 	}

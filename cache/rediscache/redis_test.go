@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -43,8 +42,7 @@ func (s *RedisCacheTestSuite) SetupSuite() {
 		Started: true,
 	})
 	if err != nil {
-		log.Printf("skipping Redis integration tests: could not start container: %v", err)
-		os.Exit(0)
+		log.Fatalf("failed to start MongoDB container: %v", err)
 	}
 
 	host, err := container.Host(ctx)

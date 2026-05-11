@@ -138,24 +138,54 @@ func (c *RestClient) OnEvent(eventType RestEventType, handler RestEventHandler) 
 	c.eventEmitter.On(eventType, handler)
 }
 
-// redactWebhookToken returns a clone of req with the webhook token replaced by
+// redactRequestSecrets returns a clone of req with the webhook token replaced by
 // "[REDACTED]" so that lifecycle hook payloads never expose credentials.
 // Paths of the form /webhooks/{id}/{token}/... are detected by structure.
-func redactWebhookToken(req *http.Request) *http.Request {
+func redactRequestSecrets(req *http.Request) *http.Request {
 	if req == nil || req.URL == nil {
 		return req
 	}
+
 	parts := strings.Split(strings.Trim(req.URL.Path, "/"), "/")
-	if len(parts) < 3 || parts[0] != "webhooks" {
+	if len(parts) == 0 {
 		return req
 	}
+
+	tokenIndex := -1
+
+	for i, part := range parts {
+		switch part {
+		case "webhooks":
+			// /webhooks/{webhook_id}/{webhook_token}
+			if i+2 < len(parts) {
+				tokenIndex = i + 2
+			}
+		case "interactions":
+			// /interactions/{interaction_id}/{interaction_token}/callback
+			if i+3 < len(parts) && parts[i+3] == "callback" {
+				tokenIndex = i + 2
+			}
+		}
+
+		if tokenIndex != -1 {
+			break
+		}
+	}
+
+	if tokenIndex == -1 {
+		return req
+	}
+
 	clone := req.Clone(req.Context())
 	urlCopy := *req.URL
+
 	redacted := make([]string, len(parts))
 	copy(redacted, parts)
-	redacted[2] = "[REDACTED]"
+	redacted[tokenIndex] = "[REDACTED]"
+
 	urlCopy.Path = "/" + strings.Join(redacted, "/")
 	clone.URL = &urlCopy
+
 	return clone
 }
 
@@ -260,7 +290,7 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 			return nil, err
 		}
 
-		safeReq := redactWebhookToken(attemptReq)
+		safeReq := redactRequestSecrets(attemptReq)
 		c.emitEvent(RestEvent{Type: RestEventRequest, Request: safeReq, Attempt: attempt})
 
 		resp, reqErr := c.httpClient.Do(attemptReq)

@@ -552,7 +552,7 @@ func (d *Client) RemoveGuildMemberRole(ctx context.Context, guildID, userID, rol
 
 // RemoveGuildMember removes a member from a guild. Requires KICK_MEMBERS.
 func (d *Client) RemoveGuildMember(ctx context.Context, guildID, userID common.Snowflake) error {
-	if err := d.RestClient.RemoveGuildMember(ctx, guildID, userID); err != nil {
+	if err := d.RestClient.KickGuildMember(ctx, guildID, userID); err != nil {
 		return err
 	}
 	d.removeGuildMemberFromCache(guildID, userID)
@@ -686,7 +686,7 @@ func (d *Client) GetGuildWidgetImage(ctx context.Context, guildID common.Snowfla
 
 // ModifyGuildMFALevel sets the required MFA level for moderators in a guild.
 // Requires guild ownership. level: 0 = none, 1 = elevated.
-func (d *Client) ModifyGuildMFALevel(ctx context.Context, guildID common.Snowflake, level int) (int, error) {
+func (d *Client) ModifyGuildMFALevel(ctx context.Context, guildID common.Snowflake, level common.GuildMFALevel) (int, error) {
 	return d.RestClient.ModifyGuildMFALevel(ctx, guildID, level)
 }
 

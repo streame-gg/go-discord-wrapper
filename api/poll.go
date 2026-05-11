@@ -32,7 +32,26 @@ func (p GetPollAnswerVotersParams) toQuery() string {
 
 // ── Poll endpoints ────────────────────────────────────────────────────────────
 
+// CreatePoll creates a poll in a channel. Basically a wrapper for CreateMessage.
+func (c *RestClient) CreatePoll(ctx context.Context, channelID common.Snowflake, poll common.PollRequest) (*common.Message, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
+	return c.CreateMessage(ctx, channelID, CreateMessageParams{
+		Poll: poll,
+	})
+}
+
 func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, messageID common.Snowflake, answerID int, params GetPollAnswerVotersParams) ([]*common.User, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := messageID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/channels/" + channelID.String() + "/polls/" + messageID.String() + "/answers/" + strconv.Itoa(answerID) + params.toQuery()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {

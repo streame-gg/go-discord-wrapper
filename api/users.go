@@ -77,6 +77,10 @@ func (c *RestClient) GetCurrentUser(ctx context.Context) (*common.User, error) {
 
 // GetUser returns the user object for the given user ID.
 func (c *RestClient) GetUser(ctx context.Context, userID common.Snowflake) (*common.User, error) {
+	if err := userID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/users/"+userID.String(), nil)
 	if err != nil {
 		return nil, err
@@ -128,6 +132,10 @@ func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrent
 
 // GetCurrentUserGuildMember returns the guild member object for the current user in the given guild.
 func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID common.Snowflake) (*common.GuildMember, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/users/@me/guilds/" + guildID.String() + "/member"
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -144,6 +152,10 @@ func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID comm
 
 // LeaveGuild makes the current user leave the given guild.
 func (c *RestClient) LeaveGuild(ctx context.Context, guildID common.Snowflake) error {
+	if err := guildID.Validate(); err != nil {
+		return err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodDelete, "/users/@me/guilds/"+guildID.String(), nil)
 	if err != nil {
 		return err
@@ -155,6 +167,10 @@ func (c *RestClient) LeaveGuild(ctx context.Context, guildID common.Snowflake) e
 
 // CreateDM opens a DM channel with the given user and returns it.
 func (c *RestClient) CreateDM(ctx context.Context, recipientID common.Snowflake) (*common.Channel, error) {
+	if err := recipientID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(map[string]string{"recipient_id": recipientID.String()})
 	if err != nil {
 		return nil, err
@@ -172,8 +188,6 @@ func (c *RestClient) CreateDM(ctx context.Context, recipientID common.Snowflake)
 
 	return &channel, nil
 }
-
-// ── Additional user endpoints ─────────────────────────────────────────────────
 
 // UserConnection represents an external account linked to a Discord user.
 type UserConnection struct {
@@ -228,6 +242,10 @@ func (c *RestClient) GetCurrentUserConnections(ctx context.Context) ([]*UserConn
 // GetCurrentUserApplicationRoleConnection returns the application role connection for the current user.
 // Requires an OAuth2 bearer token with the role_connections.write scope; bot tokens will receive a 401.
 func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context, appID common.Snowflake) (*ApplicationRoleConnection, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/users/@me/applications/" + appID.String() + "/role-connection"
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -245,6 +263,10 @@ func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context
 // UpdateCurrentUserApplicationRoleConnection updates the application role connection for the current user.
 // Requires an OAuth2 bearer token with the role_connections.write scope; bot tokens will receive a 401.
 func (c *RestClient) UpdateCurrentUserApplicationRoleConnection(ctx context.Context, appID common.Snowflake, params UpdateRoleConnectionParams) (*ApplicationRoleConnection, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err

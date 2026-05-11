@@ -154,6 +154,10 @@ const (
 
 type GuildMFALevel int
 
+func (g GuildMFALevel) ToInt() int {
+	return int(g)
+}
+
 const (
 	GuildMFALevelNone     GuildMFALevel = 0
 	GuildMFALevelElevated GuildMFALevel = 1

@@ -28,6 +28,10 @@ type ModifyStageInstanceParams struct {
 
 // CreateStageInstance creates a new stage instance in a stage voice channel.
 func (c *RestClient) CreateStageInstance(ctx context.Context, params CreateStageInstanceParams) (*common.StageInstance, error) {
+	if err := params.ChannelID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -63,6 +67,10 @@ func (c *RestClient) GetStageInstance(ctx context.Context, channelID common.Snow
 
 // ModifyStageInstance updates fields on an existing stage instance.
 func (c *RestClient) ModifyStageInstance(ctx context.Context, channelID common.Snowflake, params ModifyStageInstanceParams) (*common.StageInstance, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -83,6 +91,10 @@ func (c *RestClient) ModifyStageInstance(ctx context.Context, channelID common.S
 
 // DeleteStageInstance deletes the stage instance for the given stage channel.
 func (c *RestClient) DeleteStageInstance(ctx context.Context, channelID common.Snowflake) error {
+	if err := channelID.Validate(); err != nil {
+		return err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodDelete, "/stage-instances/"+channelID.String(), nil)
 	if err != nil {
 		return err

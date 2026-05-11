@@ -42,6 +42,10 @@ func (c *RestClient) ListVoiceRegions(ctx context.Context) ([]*common.VoiceRegio
 
 // ListGuildVoiceRegions returns voice regions available for a guild, including VIP regions if applicable.
 func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID common.Snowflake) ([]*common.VoiceRegion, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/regions", nil)
 	if err != nil {
 		return nil, err
@@ -57,6 +61,10 @@ func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID common.S
 
 // ModifyCurrentUserVoiceState updates the bot's voice state in a guild stage channel.
 func (c *RestClient) ModifyCurrentUserVoiceState(ctx context.Context, guildID common.Snowflake, params ModifyCurrentUserVoiceStateParams) error {
+	if err := guildID.Validate(); err != nil {
+		return err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return err
@@ -73,6 +81,14 @@ func (c *RestClient) ModifyCurrentUserVoiceState(ctx context.Context, guildID co
 
 // ModifyUserVoiceState updates another user's voice state in a guild stage channel. Requires MUTE_MEMBERS.
 func (c *RestClient) ModifyUserVoiceState(ctx context.Context, guildID, userID common.Snowflake, params ModifyUserVoiceStateParams) error {
+	if err := guildID.Validate(); err != nil {
+		return err
+	}
+
+	if err := userID.Validate(); err != nil {
+		return err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return err
@@ -90,6 +106,10 @@ func (c *RestClient) ModifyUserVoiceState(ctx context.Context, guildID, userID c
 
 // GetCurrentUserVoiceState returns the current user's voice state in a guild.
 func (c *RestClient) GetCurrentUserVoiceState(ctx context.Context, guildID common.Snowflake) (*common.VoiceState, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/voice-states/@me", nil)
 	if err != nil {
 		return nil, err
@@ -105,6 +125,14 @@ func (c *RestClient) GetCurrentUserVoiceState(ctx context.Context, guildID commo
 
 // GetUserVoiceState returns a specific user's voice state in a guild.
 func (c *RestClient) GetUserVoiceState(ctx context.Context, guildID, userID common.Snowflake) (*common.VoiceState, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := userID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/guilds/" + guildID.String() + "/voice-states/" + userID.String()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {

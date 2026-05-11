@@ -2,28 +2,24 @@ package common
 
 import (
 	"fmt"
-	"strings"
 )
 
 type Snowflake string
 
 func (s Snowflake) String() string {
-	if strings.Contains(string(s), "/") {
-		panic(fmt.Sprintf("go-discord-wrapper: Snowflake %q contains '/' — use ParseSnowflake to validate user-supplied IDs before embedding in paths", string(s)))
-	}
 	return string(s)
 }
 
-// OrEmpty returns the string value of the Snowflake pointer, or "" if the pointer is nil.
-func (s *Snowflake) OrEmpty() string {
-	if s == nil {
-		return ""
+// ValidatedString automatically returns whether the Snowflake is valid, and if so returns it as a string.
+func (s Snowflake) ValidatedString() (string, error) {
+	if err := s.Validate(); err != nil {
+		return "", err
 	}
-	return string(*s)
+	return string(s), nil
 }
 
 // Validate returns an error if s is not a valid Discord Snowflake (15–20 decimal digits).
-// Use this to sanitise user-supplied IDs before embedding them in API paths.
+// Use this to sanitize user-supplied IDs before embedding them in API paths.
 func (s Snowflake) Validate() error {
 	str := string(s)
 	if len(str) < 15 || len(str) > 20 {

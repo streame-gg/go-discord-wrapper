@@ -247,6 +247,10 @@ type Invite struct {
 // GetGuild returns the guild object for the given guild ID.
 // Set withCounts to true to include approximate member and presence counts.
 func (c *RestClient) GetGuild(ctx context.Context, guildID common.Snowflake, withCounts bool) (*common.Guild, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/guilds/" + guildID.String()
 	if withCounts {
 		path += "?with_counts=true"
@@ -267,6 +271,10 @@ func (c *RestClient) GetGuild(ctx context.Context, guildID common.Snowflake, wit
 
 // GetGuildPreview returns the preview object for a public guild.
 func (c *RestClient) GetGuildPreview(ctx context.Context, guildID common.Snowflake) (*common.Guild, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/preview", nil)
 	if err != nil {
 		return nil, err
@@ -282,6 +290,10 @@ func (c *RestClient) GetGuildPreview(ctx context.Context, guildID common.Snowfla
 
 // ModifyGuild updates settings for a guild. Requires MANAGE_GUILD.
 func (c *RestClient) ModifyGuild(ctx context.Context, guildID common.Snowflake, params ModifyGuildParams) (*common.Guild, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -302,6 +314,10 @@ func (c *RestClient) ModifyGuild(ctx context.Context, guildID common.Snowflake, 
 
 // DeleteGuild permanently deletes a guild. The current user must be the owner.
 func (c *RestClient) DeleteGuild(ctx context.Context, guildID common.Snowflake) error {
+	if err := guildID.Validate(); err != nil {
+		return err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodDelete, "/guilds/"+guildID.String(), nil)
 	if err != nil {
 		return err
@@ -315,6 +331,10 @@ func (c *RestClient) DeleteGuild(ctx context.Context, guildID common.Snowflake) 
 
 // GetGuildChannels returns all channels in a guild.
 func (c *RestClient) GetGuildChannels(ctx context.Context, guildID common.Snowflake) ([]*common.Channel, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/channels", nil)
 	if err != nil {
 		return nil, err
@@ -330,6 +350,10 @@ func (c *RestClient) GetGuildChannels(ctx context.Context, guildID common.Snowfl
 
 // CreateGuildChannel creates a new channel in a guild. Requires MANAGE_CHANNELS.
 func (c *RestClient) CreateGuildChannel(ctx context.Context, guildID common.Snowflake, params CreateGuildChannelParams) (*common.Channel, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -350,6 +374,10 @@ func (c *RestClient) CreateGuildChannel(ctx context.Context, guildID common.Snow
 
 // ModifyGuildChannelPositions bulk-updates channel positions. Requires MANAGE_CHANNELS.
 func (c *RestClient) ModifyGuildChannelPositions(ctx context.Context, guildID common.Snowflake, entries []ModifyGuildChannelPositionsEntry) error {
+	if err := guildID.Validate(); err != nil {
+		return err
+	}
+
 	body, err := json.Marshal(entries)
 	if err != nil {
 		return err
@@ -384,6 +412,10 @@ func (c *RestClient) GetGuildRoles(ctx context.Context, guildID common.Snowflake
 // GetGuildRoleMemberCounts returns the role.
 // https://docs.discord.com/developers/resources/guild#get-guild-role-member-counts
 func (c *RestClient) GetGuildRoleMemberCounts(ctx context.Context, guildID common.Snowflake) (map[string]int64, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/roles/member-counts", nil)
 	if err != nil {
 		return nil, err
@@ -399,6 +431,14 @@ func (c *RestClient) GetGuildRoleMemberCounts(ctx context.Context, guildID commo
 
 // GetGuildRole returns a single role in a guild.
 func (c *RestClient) GetGuildRole(ctx context.Context, guildID, roleID common.Snowflake) (*common.Role, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := roleID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/guilds/" + guildID.String() + "/roles/" + roleID.String()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -415,6 +455,10 @@ func (c *RestClient) GetGuildRole(ctx context.Context, guildID, roleID common.Sn
 
 // CreateGuildRole creates a new role in a guild. Requires MANAGE_ROLES.
 func (c *RestClient) CreateGuildRole(ctx context.Context, guildID common.Snowflake, params CreateGuildRoleParams) (*common.Role, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -435,6 +479,10 @@ func (c *RestClient) CreateGuildRole(ctx context.Context, guildID common.Snowfla
 
 // ModifyGuildRolePositions bulk-updates the positions of roles. Requires MANAGE_ROLES.
 func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID common.Snowflake, entries []ModifyGuildRolePositionsEntry) ([]*common.Role, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(entries)
 	if err != nil {
 		return nil, err
@@ -455,6 +503,14 @@ func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID commo
 
 // ModifyGuildRole updates a role's settings. Requires MANAGE_ROLES.
 func (c *RestClient) ModifyGuildRole(ctx context.Context, guildID, roleID common.Snowflake, params ModifyGuildRoleParams) (*common.Role, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := roleID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -476,6 +532,14 @@ func (c *RestClient) ModifyGuildRole(ctx context.Context, guildID, roleID common
 
 // DeleteGuildRole deletes a role from a guild. Requires MANAGE_ROLES.
 func (c *RestClient) DeleteGuildRole(ctx context.Context, guildID, roleID common.Snowflake) error {
+	if err := guildID.Validate(); err != nil {
+		return err
+	}
+
+	if err := roleID.Validate(); err != nil {
+		return err
+	}
+
 	path := "/guilds/" + guildID.String() + "/roles/" + roleID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -486,10 +550,12 @@ func (c *RestClient) DeleteGuildRole(ctx context.Context, guildID, roleID common
 	return err
 }
 
-// ── Ban endpoints ─────────────────────────────────────────────────────────────
-
 // GetGuildBans returns a paginated list of bans in a guild. Requires BAN_MEMBERS.
 func (c *RestClient) GetGuildBans(ctx context.Context, guildID common.Snowflake, params GetGuildBansParams) ([]*Ban, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/guilds/" + guildID.String() + "/bans" + params.toQuery()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -506,6 +572,14 @@ func (c *RestClient) GetGuildBans(ctx context.Context, guildID common.Snowflake,
 
 // GetGuildBan returns the ban record for a specific user. Requires BAN_MEMBERS.
 func (c *RestClient) GetGuildBan(ctx context.Context, guildID, userID common.Snowflake) (*Ban, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := userID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/guilds/" + guildID.String() + "/bans/" + userID.String()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -522,6 +596,14 @@ func (c *RestClient) GetGuildBan(ctx context.Context, guildID, userID common.Sno
 
 // CreateGuildBan bans a user from a guild. Requires BAN_MEMBERS.
 func (c *RestClient) CreateGuildBan(ctx context.Context, guildID, userID common.Snowflake, params CreateGuildBanParams) error {
+	if err := guildID.Validate(); err != nil {
+		return err
+	}
+
+	if err := userID.Validate(); err != nil {
+		return err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return err
@@ -539,6 +621,14 @@ func (c *RestClient) CreateGuildBan(ctx context.Context, guildID, userID common.
 
 // RemoveGuildBan lifts a ban from a user. Requires BAN_MEMBERS.
 func (c *RestClient) RemoveGuildBan(ctx context.Context, guildID, userID common.Snowflake) error {
+	if err := guildID.Validate(); err != nil {
+		return err
+	}
+
+	if err := userID.Validate(); err != nil {
+		return err
+	}
+
 	path := "/guilds/" + guildID.String() + "/bans/" + userID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -549,10 +639,12 @@ func (c *RestClient) RemoveGuildBan(ctx context.Context, guildID, userID common.
 	return err
 }
 
-// ── Prune endpoints ───────────────────────────────────────────────────────────
-
 // GetGuildPruneCount returns the number of members that would be pruned with the given criteria.
 func (c *RestClient) GetGuildPruneCount(ctx context.Context, guildID common.Snowflake, params GetGuildPruneCountParams) (*GuildPruneCountResult, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/guilds/" + guildID.String() + "/prune" + params.toQuery()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -569,6 +661,10 @@ func (c *RestClient) GetGuildPruneCount(ctx context.Context, guildID common.Snow
 
 // BeginGuildPrune kicks inactive members. Requires KICK_MEMBERS.
 func (c *RestClient) BeginGuildPrune(ctx context.Context, guildID common.Snowflake, params BeginGuildPruneParams) (*GuildPruneCountResult, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -591,6 +687,10 @@ func (c *RestClient) BeginGuildPrune(ctx context.Context, guildID common.Snowfla
 
 // GetGuildInvites returns all active invites for a guild. Requires MANAGE_GUILD.
 func (c *RestClient) GetGuildInvites(ctx context.Context, guildID common.Snowflake) ([]*Invite, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/invites", nil)
 	if err != nil {
 		return nil, err
@@ -606,6 +706,10 @@ func (c *RestClient) GetGuildInvites(ctx context.Context, guildID common.Snowfla
 
 // GetGuildVanityURL returns the vanity invite code and use count for a guild. Requires MANAGE_GUILD.
 func (c *RestClient) GetGuildVanityURL(ctx context.Context, guildID common.Snowflake) (*GuildVanityURL, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/vanity-url", nil)
 	if err != nil {
 		return nil, err
@@ -621,6 +725,10 @@ func (c *RestClient) GetGuildVanityURL(ctx context.Context, guildID common.Snowf
 
 // GetGuildAuditLog returns audit log entries for a guild. Requires VIEW_AUDIT_LOG.
 func (c *RestClient) GetGuildAuditLog(ctx context.Context, guildID common.Snowflake, params GetGuildAuditLogParams) (*AuditLog, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/guilds/" + guildID.String() + "/audit-logs" + params.toQuery()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -639,6 +747,10 @@ func (c *RestClient) GetGuildAuditLog(ctx context.Context, guildID common.Snowfl
 
 // GetGuildWidgetSettings returns the widget settings for a guild. Requires MANAGE_GUILD.
 func (c *RestClient) GetGuildWidgetSettings(ctx context.Context, guildID common.Snowflake) (*common.GuildWidgetSettings, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/widget", nil)
 	if err != nil {
 		return nil, err
@@ -654,6 +766,10 @@ func (c *RestClient) GetGuildWidgetSettings(ctx context.Context, guildID common.
 
 // ModifyGuildWidgetSettings updates the widget settings for a guild. Requires MANAGE_GUILD.
 func (c *RestClient) ModifyGuildWidgetSettings(ctx context.Context, guildID common.Snowflake, params ModifyGuildWidgetParams) (*common.GuildWidgetSettings, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -675,6 +791,10 @@ func (c *RestClient) ModifyGuildWidgetSettings(ctx context.Context, guildID comm
 // GetGuildWidgetImage returns the PNG widget image for a guild as raw bytes.
 // style is an optional widget style ("shield", "banner1"–"banner4"); pass "" for the default.
 func (c *RestClient) GetGuildWidgetImage(ctx context.Context, guildID common.Snowflake, style string) ([]byte, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/guilds/" + guildID.String() + "/widget.png"
 	if style != "" {
 		path += "?style=" + style
@@ -698,6 +818,10 @@ func (c *RestClient) GetGuildWidgetImage(ctx context.Context, guildID common.Sno
 
 // GetGuildWidget returns the public JSON widget for a guild (no authentication required).
 func (c *RestClient) GetGuildWidget(ctx context.Context, guildID common.Snowflake) (*common.GuildWidget, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/widget.json", nil)
 	if err != nil {
 		return nil, err
@@ -715,6 +839,10 @@ func (c *RestClient) GetGuildWidget(ctx context.Context, guildID common.Snowflak
 
 // GetGuildWelcomeScreen returns the welcome screen for a community guild.
 func (c *RestClient) GetGuildWelcomeScreen(ctx context.Context, guildID common.Snowflake) (*common.GuildWelcomeScreen, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/welcome-screen", nil)
 	if err != nil {
 		return nil, err
@@ -730,6 +858,10 @@ func (c *RestClient) GetGuildWelcomeScreen(ctx context.Context, guildID common.S
 
 // ModifyGuildWelcomeScreen updates the welcome screen for a community guild. Requires MANAGE_GUILD.
 func (c *RestClient) ModifyGuildWelcomeScreen(ctx context.Context, guildID common.Snowflake, params ModifyGuildWelcomeScreenParams) (*common.GuildWelcomeScreen, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -752,6 +884,10 @@ func (c *RestClient) ModifyGuildWelcomeScreen(ctx context.Context, guildID commo
 
 // GetGuildOnboarding returns the onboarding configuration for a guild.
 func (c *RestClient) GetGuildOnboarding(ctx context.Context, guildID common.Snowflake) (*common.GuildOnboarding, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/onboarding", nil)
 	if err != nil {
 		return nil, err
@@ -767,6 +903,10 @@ func (c *RestClient) GetGuildOnboarding(ctx context.Context, guildID common.Snow
 
 // ModifyGuildOnboarding updates the onboarding configuration for a guild. Requires MANAGE_GUILD and MANAGE_ROLES.
 func (c *RestClient) ModifyGuildOnboarding(ctx context.Context, guildID common.Snowflake, params ModifyGuildOnboardingParams) (*common.GuildOnboarding, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -845,6 +985,14 @@ func (c *RestClient) CreateGuild(ctx context.Context, params CreateGuildParams) 
 
 // AddGuildMember adds a user to a guild using their OAuth2 access token.
 func (c *RestClient) AddGuildMember(ctx context.Context, guildID, userID common.Snowflake, params AddGuildMemberParams) (*common.GuildMember, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := userID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -866,6 +1014,10 @@ func (c *RestClient) AddGuildMember(ctx context.Context, guildID, userID common.
 
 // BulkBanGuildMembers bans up to 200 members from a guild at once. Requires BAN_MEMBERS and MANAGE_GUILD.
 func (c *RestClient) BulkBanGuildMembers(ctx context.Context, guildID common.Snowflake, params BulkBanParams) (*BulkBanResult, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -886,6 +1038,10 @@ func (c *RestClient) BulkBanGuildMembers(ctx context.Context, guildID common.Sno
 
 // GetGuildIntegrations returns all integrations for a guild. Requires MANAGE_GUILD.
 func (c *RestClient) GetGuildIntegrations(ctx context.Context, guildID common.Snowflake) ([]*common.Integration, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/integrations", nil)
 	if err != nil {
 		return nil, err
@@ -901,8 +1057,12 @@ func (c *RestClient) GetGuildIntegrations(ctx context.Context, guildID common.Sn
 
 // ModifyGuildMFALevel sets the required MFA level for moderators in a guild.
 // Requires guild ownership. level: 0 = none, 1 = elevated.
-func (c *RestClient) ModifyGuildMFALevel(ctx context.Context, guildID common.Snowflake, level int) (int, error) {
-	body, err := json.Marshal(map[string]int{"level": level})
+func (c *RestClient) ModifyGuildMFALevel(ctx context.Context, guildID common.Snowflake, level common.GuildMFALevel) (int, error) {
+	if err := guildID.Validate(); err != nil {
+		return 0, err
+	}
+
+	body, err := json.Marshal(map[string]int{"level": level.ToInt()})
 	if err != nil {
 		return 0, err
 	}
@@ -922,6 +1082,14 @@ func (c *RestClient) ModifyGuildMFALevel(ctx context.Context, guildID common.Sno
 
 // DeleteGuildIntegration deletes an integration from a guild. Requires MANAGE_GUILD.
 func (c *RestClient) DeleteGuildIntegration(ctx context.Context, guildID, integrationID common.Snowflake) error {
+	if err := guildID.Validate(); err != nil {
+		return err
+	}
+
+	if err := integrationID.Validate(); err != nil {
+		return err
+	}
+
 	path := "/guilds/" + guildID.String() + "/integrations/" + integrationID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {

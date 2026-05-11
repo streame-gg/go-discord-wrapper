@@ -69,6 +69,10 @@ func (p ExecuteWebhookQueryParams) toQuery() string {
 
 // CreateWebhook creates a new webhook for a channel. Requires MANAGE_WEBHOOKS.
 func (c *RestClient) CreateWebhook(ctx context.Context, channelID common.Snowflake, params CreateWebhookParams) (*common.Webhook, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -89,6 +93,10 @@ func (c *RestClient) CreateWebhook(ctx context.Context, channelID common.Snowfla
 
 // GetChannelWebhooks returns all webhooks for a channel.
 func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID common.Snowflake) ([]*common.Webhook, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/channels/"+channelID.String()+"/webhooks", nil)
 	if err != nil {
 		return nil, err
@@ -104,6 +112,10 @@ func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID common.Sn
 
 // GetGuildWebhooks returns all webhooks in a guild.
 func (c *RestClient) GetGuildWebhooks(ctx context.Context, guildID common.Snowflake) ([]*common.Webhook, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/webhooks", nil)
 	if err != nil {
 		return nil, err
@@ -119,6 +131,10 @@ func (c *RestClient) GetGuildWebhooks(ctx context.Context, guildID common.Snowfl
 
 // GetWebhook returns the webhook object for the given ID.
 func (c *RestClient) GetWebhook(ctx context.Context, webhookID common.Snowflake) (*common.Webhook, error) {
+	if err := webhookID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/webhooks/"+webhookID.String(), nil)
 	if err != nil {
 		return nil, err
@@ -134,6 +150,10 @@ func (c *RestClient) GetWebhook(ctx context.Context, webhookID common.Snowflake)
 
 // GetWebhookWithToken returns a webhook without requiring authentication, using its token.
 func (c *RestClient) GetWebhookWithToken(ctx context.Context, webhookID common.Snowflake, token string) (*common.Webhook, error) {
+	if err := webhookID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/webhooks/"+webhookID.String()+"/"+token, nil)
 	if err != nil {
 		return nil, err
@@ -149,6 +169,10 @@ func (c *RestClient) GetWebhookWithToken(ctx context.Context, webhookID common.S
 
 // ModifyWebhook updates a webhook's name, avatar, or channel.
 func (c *RestClient) ModifyWebhook(ctx context.Context, webhookID common.Snowflake, params ModifyWebhookParams) (*common.Webhook, error) {
+	if err := webhookID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -169,6 +193,10 @@ func (c *RestClient) ModifyWebhook(ctx context.Context, webhookID common.Snowfla
 
 // ModifyWebhookWithToken updates a webhook using its token (no bot authentication required).
 func (c *RestClient) ModifyWebhookWithToken(ctx context.Context, webhookID common.Snowflake, token string, params ModifyWebhookParams) (*common.Webhook, error) {
+	if err := webhookID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -189,6 +217,10 @@ func (c *RestClient) ModifyWebhookWithToken(ctx context.Context, webhookID commo
 
 // DeleteWebhook deletes a webhook permanently.
 func (c *RestClient) DeleteWebhook(ctx context.Context, webhookID common.Snowflake) error {
+	if err := webhookID.Validate(); err != nil {
+		return err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodDelete, "/webhooks/"+webhookID.String(), nil)
 	if err != nil {
 		return err
@@ -200,6 +232,10 @@ func (c *RestClient) DeleteWebhook(ctx context.Context, webhookID common.Snowfla
 
 // DeleteWebhookWithToken deletes a webhook using its token (no bot authentication required).
 func (c *RestClient) DeleteWebhookWithToken(ctx context.Context, webhookID common.Snowflake, token string) error {
+	if err := webhookID.Validate(); err != nil {
+		return err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodDelete, "/webhooks/"+webhookID.String()+"/"+token, nil)
 	if err != nil {
 		return err
@@ -212,6 +248,10 @@ func (c *RestClient) DeleteWebhookWithToken(ctx context.Context, webhookID commo
 // ExecuteWebhook sends a message via a webhook. Returns the created message when query.Wait is true.
 // When params.Files is non-empty the request is sent as multipart/form-data.
 func (c *RestClient) ExecuteWebhook(ctx context.Context, webhookID common.Snowflake, token string, params ExecuteWebhookParams, query ExecuteWebhookQueryParams) (*common.Message, error) {
+	if err := webhookID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/webhooks/" + webhookID.String() + "/" + token + query.toQuery()
 
 	jsonBody, err := json.Marshal(params)
@@ -253,6 +293,14 @@ func (c *RestClient) ExecuteWebhook(ctx context.Context, webhookID common.Snowfl
 
 // GetWebhookMessage returns a previously sent webhook message.
 func (c *RestClient) GetWebhookMessage(ctx context.Context, webhookID common.Snowflake, token string, messageID common.Snowflake) (*common.Message, error) {
+	if err := webhookID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := messageID.Validate(); err != nil {
+		return nil, err
+	}
+
 	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/" + messageID.String()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
@@ -269,6 +317,14 @@ func (c *RestClient) GetWebhookMessage(ctx context.Context, webhookID common.Sno
 
 // EditWebhookMessage edits a previously sent webhook message.
 func (c *RestClient) EditWebhookMessage(ctx context.Context, webhookID common.Snowflake, token string, messageID common.Snowflake, params EditMessageParams) (*common.Message, error) {
+	if err := webhookID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := messageID.Validate(); err != nil {
+		return nil, err
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -290,6 +346,14 @@ func (c *RestClient) EditWebhookMessage(ctx context.Context, webhookID common.Sn
 
 // DeleteWebhookMessage deletes a previously sent webhook message.
 func (c *RestClient) DeleteWebhookMessage(ctx context.Context, webhookID common.Snowflake, token string, messageID common.Snowflake) error {
+	if err := webhookID.Validate(); err != nil {
+		return err
+	}
+
+	if err := messageID.Validate(); err != nil {
+		return err
+	}
+
 	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/" + messageID.String()
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
@@ -302,6 +366,10 @@ func (c *RestClient) DeleteWebhookMessage(ctx context.Context, webhookID common.
 
 // ExecuteSlackWebhook sends a Slack-compatible payload via a webhook.
 func (c *RestClient) ExecuteSlackWebhook(ctx context.Context, webhookID common.Snowflake, token string, wait bool, body json.RawMessage) error {
+	if err := webhookID.Validate(); err != nil {
+		return err
+	}
+
 	q := ""
 	if wait {
 		q = "?wait=true"
@@ -322,6 +390,10 @@ func (c *RestClient) ExecuteSlackWebhook(ctx context.Context, webhookID common.S
 
 // ExecuteGitHubWebhook sends a GitHub-compatible payload via a webhook.
 func (c *RestClient) ExecuteGitHubWebhook(ctx context.Context, webhookID common.Snowflake, token string, wait bool, body json.RawMessage) error {
+	if err := webhookID.Validate(); err != nil {
+		return err
+	}
+
 	q := ""
 	if wait {
 		q = "?wait=true"
