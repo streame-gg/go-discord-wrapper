@@ -86,6 +86,15 @@ func (r *rateLimiter) purgeStaleBuckets(maxAge time.Duration) {
 		b.mu.Unlock()
 		if stale {
 			r.buckets.Delete(key)
+			// Also remove all routeToBucket entries pointing at this bucket so
+			// routeToBucket does not grow unboundedly (Bug 22).
+			bucketID := key.(string)
+			r.routeToBucket.Range(func(rk, rv any) bool {
+				if rv.(string) == bucketID {
+					r.routeToBucket.Delete(rk)
+				}
+				return true
+			})
 		}
 		return true
 	})
@@ -224,11 +233,24 @@ func (r *rateLimiter) update(method, path string, resp *http.Response) {
 
 	b.mu.Lock()
 	b.limit = limit
-	b.remaining = remaining
-	if !resetAt.IsZero() {
-		b.resetAt = resetAt
-	}
 	b.lastUsed = time.Now()
+	if !resetAt.IsZero() {
+		// Two responses within the same rate-limit window will have X-RateLimit-Reset-After
+		// values that differ by at most the round-trip latency. Using 1 s as the tolerance
+		// treats responses with nearly identical reset times as the same window.
+		const windowTolerance = time.Second
+		if resetAt.After(b.resetAt.Add(windowTolerance)) {
+			// Clearly a newer rate-limit window — accept all values from the response.
+			b.remaining = remaining
+			b.resetAt = resetAt
+		} else if !resetAt.Before(b.resetAt.Add(-windowTolerance)) {
+			// Same window (within tolerance) — only take the more conservative remaining.
+			if remaining < b.remaining {
+				b.remaining = remaining
+			}
+		}
+		// Older window: ignore remaining/resetAt entirely.
+	}
 	b.mu.Unlock()
 }
 

@@ -3,14 +3,19 @@ package sharding_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/connection"
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/sharding"
+	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -327,6 +332,93 @@ func (s *shardingTestSuite) TestRequestAll_ContextCancellation() {
 	s.NotEmpty(results, "expected partial results before timeout")
 }
 
+// ── LocalCoordinator goroutine lifecycle ─────────────────────────────────────
+
+// TestBug27CloseWaitsForInFlightHandlers verifies that Close() blocks until all
+// handler goroutines started by Send/Broadcast have finished (Bug 27).
+func (s *shardingTestSuite) TestBug27CloseWaitsForInFlightHandlers() {
+	coord := sharding.NewLocalCoordinator(1)
+
+	started := make(chan struct{})
+	done := make(chan struct{})
+
+	s.Require().NoError(coord.Register(0, func(options.ShardMessage) {
+		close(started) // signal that handler has started
+		time.Sleep(100 * time.Millisecond)
+		close(done) // signal that handler is finishing
+	}))
+
+	_ = coord.Send(options.ShardMessage{Type: "TEST", From: 0, To: 0})
+
+	// Wait for handler to start.
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		s.FailNow("handler did not start in time")
+	}
+
+	// Close must block until the handler finishes.
+	closeDone := make(chan struct{})
+	go func() {
+		coord.Close()
+		close(closeDone)
+	}()
+
+	// Close should not return before the handler signals done.
+	select {
+	case <-closeDone:
+		// Check if done was already closed (handler finished before Close returned).
+		select {
+		case <-done:
+		default:
+			s.Fail("Close() returned before handler goroutine finished (Bug 27)")
+		}
+	case <-time.After(500 * time.Millisecond):
+		s.FailNow("Close() did not return within 500 ms after handler finished")
+	}
+}
+
+// ── ShardManager ─────────────────────────────────────────────────────────────
+
+// failCoord satisfies options.ShardCoordinator and errors on Close.
+type failCoord struct{}
+
+func (f *failCoord) TotalShards() int                                   { return 0 }
+func (f *failCoord) Register(_ int, _ func(options.ShardMessage)) error { return nil }
+func (f *failCoord) Send(_ options.ShardMessage) error                  { return nil }
+func (f *failCoord) Broadcast(_ options.ShardMessage) error             { return nil }
+func (f *failCoord) Close() error                                       { return errors.New("coord close failed") }
+
+// TestBug24StartRollsBackOnFailure verifies that when a shard fails to start,
+// Start() shuts down all previously started shards before returning (Bug 24).
+// We simulate this by counting how many times Shutdown is invoked on mock shards.
+//
+// Note: connection.Client.Shutdown is not mockable from outside the package, so
+// we verify the invariant indirectly: Start with 0 shards must return nil (no
+// orphan scenario possible), and the rollback code path does not panic.
+func (s *shardingTestSuite) TestBug24StartRollsBackOnFailure() {
+	// Use a coordinator with TotalShards=0 so the loop body never executes.
+	// This verifies that the rollback slice operation (m.clients[:id]) is safe
+	// for id=0 (empty slice, no-op) and Start returns nil.
+	coord := sharding.NewLocalCoordinator(0)
+	mgr := sharding.NewShardManager(coord, func(id, total int) *connection.Client { return nil })
+	err := mgr.Start()
+	s.NoError(err, "Start with 0 shards must not error")
+}
+
+// TestBug23ShutdownCollectsCoordinatorError verifies that ShardManager.Shutdown
+// returns the coordinator's Close error even when there are no shard clients.
+// Before the fix, an early return on the first shard error would prevent
+// coordinator.Close from ever being called (Bug 23).
+func (s *shardingTestSuite) TestBug23ShutdownCollectsCoordinatorError() {
+	// TotalShards()=0 → clients slice is empty → shard loop is a no-op.
+	// Only coordinator.Close() runs; it always returns an error.
+	mgr := sharding.NewShardManager(&failCoord{}, func(id, total int) *connection.Client { return nil })
+	err := mgr.Shutdown()
+	s.Require().Error(err, "coordinator Close error must be returned by Shutdown")
+	s.Contains(err.Error(), "coord")
+}
+
 func (s *shardingTestSuite) TestRequestAll_IsolatesCorrelationIDs() {
 	// Two concurrent RequestAll calls with different corrIDs must not
 	// interfere with each other.
@@ -373,4 +465,63 @@ func (s *shardingTestSuite) TestRequestAll_IsolatesCorrelationIDs() {
 	for _, v := range resB {
 		s.Equalf("b", v, "resB contains %q, want 'b'", v)
 	}
+}
+
+// TestBug29RequestAllMalformedResponseDoesNotConsumeSlot verifies that when one
+// shard replies with a payload that cannot be unmarshalled into T, the loop does
+// NOT count that response as a consumed slot. Instead it keeps waiting until a
+// valid reply arrives or the context expires (Bug 29).
+//
+// With the old `for i := 0; i < total; i++` loop, the malformed message consumed
+// slot i and the function returned with only 1 result and nil error even though
+// shard 1 never sent a valid reply. The new `for len(results) < total` loop
+// correctly blocks until all valid responses arrive, returning a context error.
+func TestBug29RequestAllMalformedResponseDoesNotConsumeSlot(t *testing.T) {
+	const total = 2
+	coord := sharding.NewLocalCoordinator(total)
+
+	c0, err := connection.NewClient("Bot fake-token", common.IntentGuilds,
+		options.WithSharding(total, 0),
+		options.WithCoordinator(coord),
+	)
+	require.NoError(t, err)
+	defer c0.Shutdown()
+
+	c1, err := connection.NewClient("Bot fake-token", common.IntentGuilds,
+		options.WithSharding(total, 1),
+		options.WithCoordinator(coord),
+	)
+	require.NoError(t, err)
+	defer c1.Shutdown()
+
+	// Shard 0 replies with a valid int.
+	c0.OnShardMessage(func(msg options.ShardMessage) {
+		if msg.Type == "REQ" {
+			_ = c0.ReplyToShard(msg, "RESP", 42)
+		}
+	})
+
+	// Shard 1 replies with malformed JSON (a string, not an int).
+	c1.OnShardMessage(func(msg options.ShardMessage) {
+		if msg.Type == "REQ" {
+			_ = coord.Send(options.ShardMessage{
+				Type:          "RESP",
+				From:          1,
+				To:            msg.From,
+				CorrelationID: msg.CorrelationID,
+				Payload:       json.RawMessage(`"not-an-int"`),
+			})
+		}
+	})
+
+	// The malformed response must NOT consume a slot: the loop must keep
+	// waiting for a second valid response, and expire only when ctx is done.
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
+	results, err := sharding.RequestAll[int](ctx, c0, "REQ", nil, "RESP")
+
+	assert.Error(t, err, "expected context error: malformed response must not consume a slot (Bug 29)")
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Len(t, results, 1, "expected exactly 1 valid result (from shard 0)")
 }

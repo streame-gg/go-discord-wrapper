@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -39,6 +38,11 @@ type Client struct {
 
 	Websocket *Websocket
 
+	// httpClient is the shared HTTP client used for REST calls inside the
+	// gateway package (e.g. GET /gateway/bot). Reusing it avoids allocating a
+	// new transport and connection pool on every call (Bug 40).
+	httpClient *http.Client
+
 	discordEventEmitter *util.EventEmitter[events.EventType, EventHandler]
 
 	mu sync.RWMutex
@@ -62,6 +66,15 @@ type Client struct {
 
 	// shutdown is set to true by Shutdown() and prevents reconnect attempts.
 	shutdown atomic.Bool
+
+	// shutdownCh is closed by Shutdown() to signal concurrent goroutines (e.g. eventCh
+	// senders) that shutdown is in progress.  Initialized in NewClient.
+	shutdownCh   chan struct{}
+	shutdownOnce sync.Once
+
+	// eventWg tracks unlimited-mode goroutines (one per event) so Shutdown can
+	// drain them before waiting on handler goroutines tracked by dispatchWg.
+	eventWg sync.WaitGroup
 
 	// maxReconnectRetries mirrors options.Config.MaxReconnectRetries.
 	maxReconnectRetries int
@@ -95,6 +108,12 @@ type Client struct {
 	// guildByChannel is the reverse mapping: channel ID → guild ID.
 	guildByChannel map[common.Snowflake]common.Snowflake
 
+	// threadIndexMu protects threadsByParent.
+	threadIndexMu sync.RWMutex
+	// threadsByParent maps parent channel ID → set of thread IDs.
+	// Used to evict stale threads on THREAD_LIST_SYNC (Bug 43).
+	threadsByParent map[common.Snowflake]map[common.Snowflake]struct{}
+
 	// guildMemberCounts tracks the member_count for every available guild on
 	// this shard, updated from GUILD_CREATE / GUILD_DELETE gateway events.
 	guildMemberCounts map[common.Snowflake]int
@@ -113,8 +132,9 @@ type Client struct {
 	clientEventsMu sync.RWMutex
 
 	// shardHandlers are persistent handlers registered via OnShardMessage.
-	shardHandlers   []func(options.ShardMessage)
-	shardHandlersMu sync.RWMutex
+	shardHandlers    []func(options.ShardMessage)
+	shardHandlersMu  sync.RWMutex
+	shardDispatchSem chan struct{} // limits concurrent shard-message handler goroutines (Bug 35)
 
 	// pendingShardReqs maps "responseType:corrID" to a buffered channel that
 	// RequestAll uses to collect responses without holding a permanent handler.
@@ -164,12 +184,16 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 		voiceStates:         make(map[string]*common.VoiceState),
 		channelsByGuild:     make(map[common.Snowflake]map[common.Snowflake]struct{}),
 		guildByChannel:      make(map[common.Snowflake]common.Snowflake),
+		threadsByParent:     make(map[common.Snowflake]map[common.Snowflake]struct{}),
+		httpClient:          &http.Client{Timeout: 10 * time.Second},
 		RestClient:          rc,
 		Sharding:            cfg.Sharding,
 		Coordinator:         cfg.Coordinator,
 		Cache:               cfg.Cache,
 		maxReconnectRetries: cfg.MaxReconnectRetries,
 		cacheAutoPopulate:   cacheStores,
+		shardDispatchSem:    make(chan struct{}, 16),
+		shutdownCh:          make(chan struct{}),
 	}
 
 	if cfg.MaxConcurrentEvents == 0 {
@@ -225,11 +249,26 @@ func (d *Client) processEvent(job dispatchJob) {
 	d.dispatch(job.event)
 }
 
-// runEventWorker drains d.eventCh until it is closed by Shutdown.
+// runEventWorker processes events from d.eventCh until shutdownCh is closed.
+// It drains any buffered events before returning so in-flight work completes.
+// eventCh is never closed; workers exit via shutdownCh to avoid close-vs-send
+// data races (Bug 48).
 func (d *Client) runEventWorker() {
 	defer d.workerWg.Done()
-	for job := range d.eventCh {
-		d.processEvent(job)
+	for {
+		select {
+		case job := <-d.eventCh:
+			d.processEvent(job)
+		case <-d.shutdownCh:
+			for {
+				select {
+				case job := <-d.eventCh:
+					d.processEvent(job)
+				default:
+					return
+				}
+			}
+		}
 	}
 }
 
@@ -405,44 +444,68 @@ func (d *Client) dispatchShardMessage(msg options.ShardMessage) {
 
 	for _, h := range handlers {
 		h := h
-		go h(msg)
+		select {
+		case d.shardDispatchSem <- struct{}{}:
+			// Acquired a slot: run handler in its own goroutine.
+			go func() {
+				defer func() { <-d.shardDispatchSem }()
+				h(msg)
+			}()
+		default:
+			// All 16 slots taken: execute synchronously to apply back-pressure
+			// rather than spawning an unbounded number of goroutines (Bug 35).
+			h(msg)
+		}
 	}
 }
 
 // ── Gateway connection ───────────────────────────────────────────────────────
 
-func (d *Client) initializeGatewayConnection() (*common.BotRegisterResponse, error) {
-	httpClient := &http.Client{Timeout: 10 * time.Second}
-	do, err := httpClient.Do(&http.Request{
-		Method: "GET",
-		URL: &url.URL{
-			Scheme: "https",
-			Host:   "discord.com",
-			Path:   common.APIBaseString(*d.APIVersion) + "gateway/bot",
-		},
-		Header: http.Header{
-			"Authorization": []string{"Bot " + *d.token},
-		},
-	})
+func (d *Client) initializeGatewayConnection(ctx context.Context) (*common.BotRegisterResponse, error) {
+	const userAgent = "DiscordBot (https://github.com/streame-gg/go-discord-wrapper, alpha)"
 
-	if err != nil {
-		return nil, err
+	for {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://discord.com"+common.APIBaseString(*d.APIVersion)+"gateway/bot", nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", "Bot "+*d.token)
+		req.Header.Set("User-Agent", userAgent)
+
+		resp, err := d.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			_ = resp.Body.Close()
+			retryAfter := 1 * time.Second
+			if ra := resp.Header.Get("Retry-After"); ra != "" {
+				if secs, parseErr := time.ParseDuration(ra + "s"); parseErr == nil {
+					retryAfter = secs
+				}
+			}
+			d.Logger.Warn("Gateway /gateway/bot rate-limited", slog.Duration("retryAfter", retryAfter))
+			select {
+			case <-time.After(retryAfter):
+				continue
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
+
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, errors.New("failed to register bot gateway connection, status code: " + resp.Status)
+		}
+
+		var result common.BotRegisterResponse
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			return nil, err
+		}
+		return &result, nil
 	}
-
-	defer func() {
-		_ = do.Body.Close()
-	}()
-
-	if do.StatusCode != http.StatusOK {
-		return nil, errors.New("failed to register bot gateway connection, status code: " + do.Status)
-	}
-
-	var resp common.BotRegisterResponse
-	if err := json.NewDecoder(do.Body).Decode(&resp); err != nil {
-		return nil, err
-	}
-
-	return &resp, nil
 }
 
 func (d *Client) Login(ctx context.Context) error {
@@ -450,7 +513,7 @@ func (d *Client) Login(ctx context.Context) error {
 		ctx = context.Background()
 	}
 
-	gatewayResp, err := d.initializeGatewayConnection()
+	gatewayResp, err := d.initializeGatewayConnection(ctx)
 	if err != nil {
 		return err
 	}
@@ -492,9 +555,9 @@ func (d *Client) Login(ctx context.Context) error {
 					continue
 				}
 
-				// 4014: privileged intent not enabled — reconnecting will not help.
-				if websocket.IsCloseError(err, 4014) {
-					d.Logger.Error("A privileged intent is not enabled in the Discord developer portal; cannot reconnect")
+				// Non-recoverable close codes — reconnecting will not help.
+				if websocket.IsCloseError(err, 4004, 4010, 4011, 4012, 4013, 4014) {
+					d.Logger.Error("Gateway connection closed with a non-recoverable code; cannot reconnect", slog.Any("err", err))
 					return
 				}
 
@@ -591,6 +654,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			var readyEvent events.ReadyEvent
 			if err := json.Unmarshal(msg, &readyEvent); err != nil {
 				d.Logger.Error("Failed to unmarshal READY event", slog.Any("err", err))
+				return false
 			}
 
 			d.Websocket.SessionID = &readyEvent.SessionID
@@ -626,7 +690,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 			}
 
-			close(d.Websocket.Ready)
+			d.Websocket.readyOnce.Do(func() { close(d.Websocket.Ready) })
 
 			return true
 		}
@@ -739,6 +803,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 									ch.GuildID = &gid
 								}
 								d.cacheChannel(&ch)
+								d.trackThread(&ch)
 							}
 						}
 
@@ -1296,6 +1361,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				ch := ev.Channel
 				d.cacheChannel(&ch)
+				d.trackThread(&ch)
 			}
 		}
 	case events.EventThreadUpdate:
@@ -1308,6 +1374,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				ch := ev.Channel
 				d.cacheChannel(&ch)
+				d.trackThread(&ch)
 			}
 		}
 	case events.EventThreadDelete:
@@ -1317,6 +1384,9 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				if err := json.Unmarshal(msg, &ev); err != nil {
 					d.Logger.Error("Failed to unmarshal THREAD_DELETE event", slog.Any("err", err))
 					return false
+				}
+				if ev.ParentID != nil {
+					d.untrackThread(ev.ID, *ev.ParentID)
 				}
 				d.removeChannelFromCache(ev.ID)
 			}
@@ -1329,9 +1399,41 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal THREAD_LIST_SYNC event", slog.Any("err", err))
 					return false
 				}
+
+				// Build a set of incoming thread IDs for O(1) lookup.
+				incoming := make(map[common.Snowflake]struct{}, len(ev.Threads))
+				for i := range ev.Threads {
+					incoming[ev.Threads[i].ID] = struct{}{}
+				}
+
+				// Determine which parent channels are in scope for this sync.
+				// If ChannelIDs is absent, all threads in the guild are synced.
+				var parents []common.Snowflake
+				if len(ev.ChannelIDs) > 0 {
+					parents = ev.ChannelIDs
+				} else {
+					d.channelIndexMu.RLock()
+					for parentID := range d.channelsByGuild[ev.GuildID] {
+						parents = append(parents, parentID)
+					}
+					d.channelIndexMu.RUnlock()
+				}
+
+				// Evict threads that were cached for a synced parent but are
+				// absent from Discord's authoritative list.
+				for _, parentID := range parents {
+					for _, threadID := range d.drainParentThreadIDs(parentID) {
+						if _, ok := incoming[threadID]; !ok {
+							d.removeChannelFromCache(threadID)
+						}
+					}
+				}
+
+				// Cache and index the authoritative thread list.
 				for i := range ev.Threads {
 					ch := ev.Threads[i]
 					d.cacheChannel(&ch)
+					d.trackThread(&ch)
 				}
 			}
 		}
@@ -1395,9 +1497,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				for i := range ev.Members {
-					d.Cache.Members().Set(ev.GuildID, &ev.Members[i])
-					if d.cacheStoreEnabled(cache.CategoryUsers) && ev.Members[i].User != nil {
-						u := *ev.Members[i].User
+					m := ev.Members[i]
+					d.Cache.Members().Set(ev.GuildID, &m)
+					if d.cacheStoreEnabled(cache.CategoryUsers) && m.User != nil {
+						u := *m.User
 						d.Cache.Users().Set(&u)
 					}
 				}
@@ -1459,37 +1562,45 @@ func (d *Client) Close() error {
 
 // Shutdown gracefully closes the gateway connection and the entity cache.
 // It waits for all in-flight event handlers to finish before returning.
+// Shutdown is idempotent: concurrent or repeated calls are safe.
 func (d *Client) Shutdown() error {
-	d.shutdown.Store(true)
 	var errs []error
-	d.wsMu.RLock()
-	ws := d.Websocket
-	d.wsMu.RUnlock()
-	if ws != nil {
-		if err := ws.close(); err != nil {
-			errs = append(errs, err)
+	d.shutdownOnce.Do(func() {
+		d.shutdown.Store(true)
+		close(d.shutdownCh) // unblocks any eventCh senders still in listenWebsocket
+
+		d.wsMu.RLock()
+		ws := d.Websocket
+		d.wsMu.RUnlock()
+		if ws != nil {
+			if err := ws.close(); err != nil {
+				errs = append(errs, err)
+			}
 		}
-	}
 
-	// Worker-pool mode: close the event channel so workers drain it and exit,
-	// then wait for them. This must happen before dispatchWg.Wait() because
-	// workers call dispatch() which adds entries to dispatchWg.
-	if d.eventCh != nil {
-		close(d.eventCh)
-		d.workerWg.Wait()
-	}
-
-	// Wait for all user event handler goroutines (spawned by dispatch()).
-	d.dispatchWg.Wait()
-
-	if d.Cache != nil {
-		if err := d.Cache.Close(); err != nil {
-			errs = append(errs, err)
+		// Worker-pool mode: shutdownCh (already closed above) signals workers to
+		// drain their queue and exit.  Wait for them before dispatchWg.Wait()
+		// because workers call dispatch() which adds to dispatchWg.
+		if d.eventCh != nil {
+			d.workerWg.Wait()
 		}
-	}
-	if d.RestClient != nil {
-		d.RestClient.Close()
-	}
+
+		// Unlimited mode: wait for per-event goroutines to finish before waiting
+		// on handler goroutines they may have spawned via dispatch().
+		d.eventWg.Wait()
+
+		// Wait for all user event handler goroutines (spawned by dispatch()).
+		d.dispatchWg.Wait()
+
+		if d.Cache != nil {
+			if err := d.Cache.Close(); err != nil {
+				errs = append(errs, err)
+			}
+		}
+		if d.RestClient != nil {
+			d.RestClient.Close()
+		}
+	})
 	return errors.Join(errs...)
 }
 

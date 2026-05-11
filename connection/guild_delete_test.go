@@ -17,7 +17,9 @@ import (
 // with all stores enabled, suitable for gateway event handler tests.
 func newClientWithCache(t *testing.T) *Client {
 	t.Helper()
-	mc := cache.NewMemoryCache(cache.Options{})
+	mc := cache.NewMemoryCache(cache.Options{
+		Messages: cache.MessageOptions{MaxPerChannel: 100},
+	})
 	c, err := NewClient("test-token", common.IntentGuilds,
 		options.WithCache(mc),
 	)

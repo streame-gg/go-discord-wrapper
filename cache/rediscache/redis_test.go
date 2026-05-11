@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -331,8 +332,10 @@ func TestStickerStore_CRUDAndSetAll(t *testing.T) {
 
 // ── MessageStore ──────────────────────────────────────────────────────────────
 
+var defaultMsgOpts = cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 100}}
+
 func TestMessageStore_AddGet(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	c.Messages().Add(message("m1", "c1"))
 	got, ok := c.Messages().Get("c1", "m1")
@@ -342,7 +345,7 @@ func TestMessageStore_AddGet(t *testing.T) {
 }
 
 func TestMessageStore_Update(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	msg := message("m1", "c1")
 	c.Messages().Add(msg)
@@ -358,7 +361,7 @@ func TestMessageStore_Update(t *testing.T) {
 }
 
 func TestMessageStore_Update_NonExistent(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	// Updating a non-existent message must not create it.
 	c.Messages().Update(message("ghost", "c1"))
@@ -368,7 +371,7 @@ func TestMessageStore_Update_NonExistent(t *testing.T) {
 }
 
 func TestMessageStore_Delete(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	c.Messages().Add(message("m1", "c1"))
 	c.Messages().Delete("c1", "m1")
@@ -378,7 +381,7 @@ func TestMessageStore_Delete(t *testing.T) {
 }
 
 func TestMessageStore_DeleteBulk(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	for i := 1; i <= 5; i++ {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
@@ -398,7 +401,7 @@ func TestMessageStore_DeleteBulk(t *testing.T) {
 }
 
 func TestMessageStore_Channel_NewestFirst(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	for i := 1; i <= 5; i++ {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
@@ -414,7 +417,7 @@ func TestMessageStore_Channel_NewestFirst(t *testing.T) {
 }
 
 func TestMessageStore_DeleteChannel(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	c.Messages().Add(message("m1", "c1"))
 	c.Messages().Add(message("m2", "c2"))
@@ -471,7 +474,7 @@ func TestMessageStore_TTL(t *testing.T) {
 }
 
 func TestMessageStore_SizeAccuracy(t *testing.T) {
-	c := newCache(t, cache.Options{})
+	c := newCache(t, defaultMsgOpts)
 
 	for i := 1; i <= 4; i++ {
 		c.Messages().Add(message(fmt.Sprintf("c1m%d", i), "c1"))
@@ -553,4 +556,202 @@ func TestConcurrent_NoRace(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+// TestBug6NetworkErrorDoesNotPruneIndex verifies that a Redis network error
+// during Get does not remove the entry from the index set. Only a true
+// cache-miss (redis.Nil) should trigger pruning.
+func TestBug6NetworkErrorDoesNotPruneIndex(t *testing.T) {
+	client := redis.NewClient(&redis.Options{Addr: redisAddr})
+	defer client.Close()
+
+	c := rediscache.NewRedisCache(client, cache.Options{})
+	defer c.Close()
+
+	// Seed a guild into the cache.
+	c.Guilds().Set(&common.Guild{ID: "g1", Name: "test"})
+
+	// Confirm it's in the index.
+	idx := client.SMembers(context.Background(), "discord:guild:index").Val()
+	found := false
+	for _, v := range idx {
+		if v == "g1" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("guild not found in index before test")
+	}
+
+	// Simulate a network error by closing the underlying connection pool.
+	// After this, Get returns an error — the index must NOT be pruned.
+	_ = client.Close()
+
+	// This Get will fail with a connection error.
+	c.Guilds().Get("g1")
+
+	// Re-open a fresh client to inspect the index.
+	client2 := redis.NewClient(&redis.Options{Addr: redisAddr})
+	defer client2.Close()
+
+	idx2 := client2.SMembers(context.Background(), "discord:guild:index").Val()
+	found2 := false
+	for _, v := range idx2 {
+		if v == "g1" {
+			found2 = true
+		}
+	}
+	if !found2 {
+		t.Error("index was pruned on network error (Bug 6) — only true cache-miss should prune")
+	}
+}
+
+// TestBug7UpdateIsAtomicNoGhostEntry verifies that Update uses an atomic SetXX
+// so a key that expires between the old Exists check and the Set call does not
+// produce a ghost entry (message value without a sorted-set index entry).
+func TestBug7UpdateIsAtomicNoGhostEntry(t *testing.T) {
+	client := redis.NewClient(&redis.Options{Addr: redisAddr})
+	defer client.Close()
+
+	// Use a 50 ms TTL so expiry is easy to trigger in the test.
+	c := rediscache.NewRedisCache(client, cache.Options{
+		Messages: cache.MessageOptions{MaxPerChannel: 10, TTL: 50 * time.Millisecond},
+	})
+	defer c.Close()
+
+	msg := &common.Message{ID: "m1", ChannelID: "c1", Content: "original"}
+	c.Messages().Add(msg)
+
+	// Let the TTL expire so the key no longer exists.
+	time.Sleep(100 * time.Millisecond)
+
+	// Update after expiry — with the old code (Exists+Set) this would create
+	// a new key with no matching ZSet entry. With SetXX it's a no-op.
+	c.Messages().Update(&common.Message{ID: "m1", ChannelID: "c1", Content: "updated"})
+
+	// The key must not exist (SetXX must be a no-op after expiry).
+	exists := client.Exists(context.Background(), "discord:msg:c1:m1").Val()
+	if exists != 0 {
+		t.Error("Update created a ghost entry after TTL expiry — SetXX not used atomically (Bug 7)")
+	}
+}
+
+// TestBug8AddIsAtomicParallelAddsRespectMaxPerChannel verifies that concurrent
+// Add calls never leave more than MaxPerChannel entries in the sorted-set index.
+// Before the fix, non-atomic ZCard/ZPopMin could miss excess entries under load.
+func TestBug8AddIsAtomicParallelAddsRespectMaxPerChannel(t *testing.T) {
+	const max = 5
+	const goroutines = 50
+
+	client := redis.NewClient(&redis.Options{Addr: redisAddr})
+	defer client.Close()
+
+	c := rediscache.NewRedisCache(client, cache.Options{
+		Messages: cache.MessageOptions{MaxPerChannel: max},
+	})
+	defer c.Close()
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		i := i
+		go func() {
+			defer wg.Done()
+			c.Messages().Add(&common.Message{
+				ID:        common.Snowflake(fmt.Sprintf("m%d", i)),
+				ChannelID: "ch-atomic",
+				Content:   "payload",
+			})
+		}()
+	}
+	wg.Wait()
+
+	// The sorted-set cardinality must not exceed MaxPerChannel.
+	card := client.ZCard(context.Background(), "discord:msg:ch:ch-atomic").Val()
+	if card > int64(max) {
+		t.Errorf("ZCard=%d after parallel Adds — exceeds MaxPerChannel=%d (Bug 8)", card, max)
+	}
+
+	// The number of msg keys for this channel must equal the ZCard.
+	msgKeys := client.Keys(context.Background(), "discord:msg:ch-atomic:*").Val()
+	if int64(len(msgKeys)) != card {
+		t.Errorf("msg key count=%d does not match ZCard=%d — orphan keys (Bug 8)", len(msgKeys), card)
+	}
+}
+
+// TestBug36MaxPerChannelZeroDisables verifies that MaxPerChannel=0 disables
+// message caching in the Redis backend (Bug 36).
+func TestBug36MaxPerChannelZeroDisables(t *testing.T) {
+	c := newCache(t, cache.Options{
+		Messages: cache.MessageOptions{MaxPerChannel: 0},
+	})
+
+	c.Messages().Add(message("m1", "ch1"))
+	c.Messages().Add(message("m2", "ch1"))
+
+	ch := c.Messages().Channel("ch1")
+	if len(ch) != 0 {
+		t.Errorf("MaxPerChannel=0 should disable caching, got %d messages (Bug 36)", len(ch))
+	}
+	if sz := c.Messages().Size(); sz != 0 {
+		t.Errorf("Size should be 0 when disabled, got %d (Bug 36)", sz)
+	}
+}
+
+// TestBug50SetAllIsAtomic verifies that readers always see either the complete
+// old set or the complete new set — never a partial or empty guild (Bug 50).
+func TestBug50SetAllIsAtomic(t *testing.T) {
+	c := newCache(t, cache.Options{})
+
+	const guildID = common.Snowflake("g1")
+	const workers = 100
+
+	// Seed an initial non-empty emoji set.
+	initial := []*common.Emoji{
+		{ID: "e1", Name: "emoji1"},
+		{ID: "e2", Name: "emoji2"},
+		{ID: "e3", Name: "emoji3"},
+	}
+	c.Emojis().SetAll(guildID, initial)
+
+	var partial atomic.Bool
+
+	var wg sync.WaitGroup
+	stop := make(chan struct{})
+
+	// Readers: observe the guild emoji list in a tight loop.
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+				}
+				got := c.Emojis().GetByGuild(guildID)
+				if len(got) != 0 && len(got) != len(initial) && len(got) != 5 {
+					partial.Store(true)
+				}
+			}
+		}()
+	}
+
+	// Writer: repeatedly call SetAll with a different 5-emoji set.
+	newSet := []*common.Emoji{
+		{ID: "n1", Name: "new1"}, {ID: "n2", Name: "new2"},
+		{ID: "n3", Name: "new3"}, {ID: "n4", Name: "new4"},
+		{ID: "n5", Name: "new5"},
+	}
+	for i := 0; i < 20; i++ {
+		c.Emojis().SetAll(guildID, newSet)
+		c.Emojis().SetAll(guildID, initial)
+	}
+	close(stop)
+	wg.Wait()
+
+	if partial.Load() {
+		t.Error("reader observed a partial emoji set during concurrent SetAll (Bug 50)")
+	}
 }

@@ -79,9 +79,10 @@ type RedisCache struct {
 // keys never expire. opts.Messages.MaxPerChannel caps the per-channel message
 // ring (default 100). Overflow and eviction options are ignored.
 func NewRedisCache(client *redis.Client, opts cache.Options) *RedisCache {
-	if opts.Messages.MaxPerChannel <= 0 {
+	if opts.Messages.MaxPerChannel < 0 {
 		opts.Messages.MaxPerChannel = 100
 	}
+	// MaxPerChannel == 0 means disabled (no messages cached) — leave as-is.
 	if opts.Messages.TTL == 0 {
 		opts.Messages.TTL = opts.TTL
 	}
@@ -188,7 +189,7 @@ func (s *redisGuildStore) Get(id common.Snowflake) (*common.Guild, bool) {
 	var g common.Guild
 	ok, err := s.c.getJSON(key, &g)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			// Key expired in Redis but index still holds the ID — prune it.
 			_ = s.c.client.SRem(s.c.ctx, s.c.k("guild", "index"), string(id)).Err()
 		}
@@ -255,7 +256,7 @@ func (s *redisChannelStore) Get(id common.Snowflake) (*common.Channel, bool) {
 	var ch common.Channel
 	ok, err := s.c.getJSON(key, &ch)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			_ = s.c.client.SRem(s.c.ctx, s.c.k("channel", "index"), string(id)).Err()
 		}
 		return nil, false
@@ -321,7 +322,7 @@ func (s *redisUserStore) Get(id common.Snowflake) (*common.User, bool) {
 	var u common.User
 	ok, err := s.c.getJSON(key, &u)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			_ = s.c.client.SRem(s.c.ctx, s.c.k("user", "index"), string(id)).Err()
 		}
 		return nil, false
@@ -390,7 +391,7 @@ func (s *redisMemberStore) Get(guildID, userID common.Snowflake) (*common.GuildM
 	var m common.GuildMember
 	ok, err := s.c.getJSON(key, &m)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			_ = s.c.client.SRem(s.c.ctx, s.c.k("member", "guild", string(guildID)), string(userID)).Err()
 		}
 		return nil, false
@@ -489,7 +490,7 @@ func (s *redisRoleStore) Get(roleID common.Snowflake) (*common.Role, bool) {
 	var role common.Role
 	ok, err := s.c.getJSON(key, &role)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			mapKey := s.c.k("role", "map", string(roleID))
 			guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 			if err == nil {
@@ -636,7 +637,7 @@ func (s *redisVoiceStateStore) Get(guildID, userID common.Snowflake) (*common.Vo
 	var state common.VoiceState
 	ok, err := s.c.getJSON(key, &state)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			_ = s.c.client.SRem(s.c.ctx, s.c.k("voice_state", "guild", string(guildID)), string(userID)).Err()
 		}
 		return nil, false
@@ -715,6 +716,52 @@ func (s *redisVoiceStateStore) Size() int {
 	return total
 }
 
+// setAllScript atomically replaces all guild-scoped items (emoji, sticker,
+// soundboard) with a new set. It reads the current guild index inside the
+// Lua transaction so no reader ever sees a partially-populated state.
+//
+// KEYS[1]    = guild index key  (Redis SET of item IDs)
+// ARGV[1]    = item key prefix  (e.g. "discord:emoji:")
+// ARGV[2]    = map  key prefix  (e.g. "discord:emoji:map:")
+// ARGV[3]    = TTL in milliseconds as string; "0" = no expiry
+// ARGV[4]    = guild ID string
+// ARGV[5..N] = alternating item-id, item-json pairs for the new set
+var setAllScript = redis.NewScript(`
+local idx  = KEYS[1]
+local iPfx = ARGV[1]
+local mPfx = ARGV[2]
+local ttl  = tonumber(ARGV[3])
+local gid  = ARGV[4]
+
+local old = redis.call('SMEMBERS', idx)
+if #old > 0 then
+  local toDel = {}
+  for _, id in ipairs(old) do
+    toDel[#toDel+1] = iPfx .. id
+    toDel[#toDel+1] = mPfx .. id
+  end
+  redis.call('DEL', unpack(toDel))
+end
+redis.call('DEL', idx)
+
+local i = 5
+local n = #ARGV
+while i < n do
+  local id  = ARGV[i]
+  local jsn = ARGV[i+1]
+  if ttl > 0 then
+    redis.call('SET', iPfx .. id, jsn, 'PX', ttl)
+    redis.call('SET', mPfx .. id, gid, 'PX', ttl)
+  else
+    redis.call('SET', iPfx .. id, jsn)
+    redis.call('SET', mPfx .. id, gid)
+  end
+  redis.call('SADD', idx, id)
+  i = i + 2
+end
+return 1
+`)
+
 // ── Soundboard store ───────────────────────────────────────────────────────────
 
 type redisSoundboardStore struct{ c *RedisCache }
@@ -733,7 +780,7 @@ func (s *redisSoundboardStore) Get(soundID common.Snowflake) (*common.Soundboard
 	var sound common.SoundboardSound
 	ok, err := s.c.getJSON(key, &sound)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			mapKey := s.c.k("soundboard", "map", string(soundID))
 			guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 			if err == nil {
@@ -782,12 +829,22 @@ func (s *redisSoundboardStore) GetByGuild(guildID common.Snowflake) []*common.So
 }
 
 func (s *redisSoundboardStore) SetAll(guildID common.Snowflake, sounds []*common.SoundboardSound) {
-	s.DeleteGuild(guildID)
+	idx := s.c.k("soundboard", "guild", string(guildID))
+	iPfx := s.c.k("soundboard") + ":"
+	mPfx := s.c.k("soundboard", "map") + ":"
+	ttl := s.c.opts.TTL.Milliseconds()
+	args := []interface{}{iPfx, mPfx, ttl, string(guildID)}
 	for _, sound := range sounds {
-		if sound != nil {
-			s.Set(guildID, sound)
+		if sound == nil {
+			continue
 		}
+		b, err := json.Marshal(sound)
+		if err != nil {
+			continue
+		}
+		args = append(args, string(sound.SoundID), string(b))
 	}
+	_ = setAllScript.Run(s.c.ctx, s.c.client, []string{idx}, args...).Err()
 }
 
 func (s *redisSoundboardStore) Delete(soundID common.Snowflake) {
@@ -851,7 +908,7 @@ func (s *redisScheduledEventStore) Get(eventID common.Snowflake) (*common.GuildS
 	var event common.GuildScheduledEvent
 	ok, err := s.c.getJSON(key, &event)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			mapKey := s.c.k("scheduled_event", "map", string(eventID))
 			guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 			if err == nil {
@@ -960,7 +1017,7 @@ func (s *redisStageInstanceStore) Get(instanceID common.Snowflake) (*common.Stag
 	var instance common.StageInstance
 	ok, err := s.c.getJSON(key, &instance)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			mapKey := s.c.k("stage_instance", "map", string(instanceID))
 			guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 			if err == nil {
@@ -1069,7 +1126,7 @@ func (s *redisEmojiStore) Get(emojiID common.Snowflake) (*common.Emoji, bool) {
 	var emoji common.Emoji
 	ok, err := s.c.getJSON(key, &emoji)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			mapKey := s.c.k("emoji", "map", string(emojiID))
 			guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 			if err == nil {
@@ -1118,12 +1175,22 @@ func (s *redisEmojiStore) GetByGuild(guildID common.Snowflake) []*common.Emoji {
 }
 
 func (s *redisEmojiStore) SetAll(guildID common.Snowflake, emojis []*common.Emoji) {
-	s.DeleteGuild(guildID)
+	idx := s.c.k("emoji", "guild", string(guildID))
+	iPfx := s.c.k("emoji") + ":"
+	mPfx := s.c.k("emoji", "map") + ":"
+	ttl := s.c.opts.TTL.Milliseconds()
+	args := []interface{}{iPfx, mPfx, ttl, string(guildID)}
 	for _, emoji := range emojis {
-		if emoji != nil && emoji.ID != "" {
-			s.Set(guildID, emoji)
+		if emoji == nil || emoji.ID == "" {
+			continue
 		}
+		b, err := json.Marshal(emoji)
+		if err != nil {
+			continue
+		}
+		args = append(args, string(emoji.ID), string(b))
 	}
+	_ = setAllScript.Run(s.c.ctx, s.c.client, []string{idx}, args...).Err()
 }
 
 func (s *redisEmojiStore) Delete(emojiID common.Snowflake) {
@@ -1187,7 +1254,7 @@ func (s *redisStickerStore) Get(stickerID common.Snowflake) (*common.Sticker, bo
 	var sticker common.Sticker
 	ok, err := s.c.getJSON(key, &sticker)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			mapKey := s.c.k("sticker", "map", string(stickerID))
 			guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 			if err == nil {
@@ -1236,12 +1303,22 @@ func (s *redisStickerStore) GetByGuild(guildID common.Snowflake) []*common.Stick
 }
 
 func (s *redisStickerStore) SetAll(guildID common.Snowflake, stickers []*common.Sticker) {
-	s.DeleteGuild(guildID)
+	idx := s.c.k("sticker", "guild", string(guildID))
+	iPfx := s.c.k("sticker") + ":"
+	mPfx := s.c.k("sticker", "map") + ":"
+	ttl := s.c.opts.TTL.Milliseconds()
+	args := []interface{}{iPfx, mPfx, ttl, string(guildID)}
 	for _, sticker := range stickers {
-		if sticker != nil && sticker.ID != "" {
-			s.Set(guildID, sticker)
+		if sticker == nil || sticker.ID == "" {
+			continue
 		}
+		b, err := json.Marshal(sticker)
+		if err != nil {
+			continue
+		}
+		args = append(args, string(sticker.ID), string(b))
 	}
+	_ = setAllScript.Run(s.c.ctx, s.c.client, []string{idx}, args...).Err()
 }
 
 func (s *redisStickerStore) Delete(stickerID common.Snowflake) {
@@ -1303,7 +1380,7 @@ func (s *redisPresenceStore) Get(guildID, userID common.Snowflake) (*common.Pres
 	var presence common.Presence
 	ok, err := s.c.getJSON(key, &presence)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			_ = s.c.client.SRem(s.c.ctx, s.c.k("presence", "guild", string(guildID)), string(userID)).Err()
 		}
 		return nil, false
@@ -1384,30 +1461,57 @@ func (s *redisPresenceStore) Size() int {
 
 // ── Message store ─────────────────────────────────────────────────────────────
 
+// msgAddScript atomically executes the four steps of Add (Bug 8):
+//  1. SET the message JSON with TTL
+//  2. ZADD to the per-channel sorted-set index
+//  3. ZCARD to count members
+//  4. ZPOPMIN + DEL to evict oldest entries when over capacity
+//
+// KEYS[1] = msg key, KEYS[2] = channel index key
+// ARGV[1] = JSON, ARGV[2] = TTL milliseconds (0 = no expiry), ARGV[3] = score,
+// ARGV[4] = message ID, ARGV[5] = max per channel, ARGV[6] = msg key prefix
+var msgAddScript = redis.NewScript(`
+local ttl = tonumber(ARGV[2])
+if ttl > 0 then
+  redis.call('SET', KEYS[1], ARGV[1], 'PX', ttl)
+else
+  redis.call('SET', KEYS[1], ARGV[1])
+end
+redis.call('ZADD', KEYS[2], ARGV[3], ARGV[4])
+local count = redis.call('ZCARD', KEYS[2])
+local max = tonumber(ARGV[5])
+if count > max then
+  local excess = redis.call('ZPOPMIN', KEYS[2], count - max)
+  for i = 1, #excess, 2 do
+    redis.call('DEL', ARGV[6] .. excess[i])
+  end
+end
+return 1
+`)
+
 type redisMessageStore struct{ c *RedisCache }
 
 func (s *redisMessageStore) Add(msg *common.Message) {
 	if s.c.opts.Messages.MaxPerChannel == 0 {
 		return
 	}
+	b, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
 	msgKey := s.c.k("msg", string(msg.ChannelID), string(msg.ID))
 	chKey := s.c.k("msg", "ch", string(msg.ChannelID))
-	_ = s.c.setJSON(msgKey, msg, s.c.opts.Messages.TTL)
+	// msg key prefix passed to Lua so it can DEL evicted message keys.
+	msgPrefix := s.c.k("msg", string(msg.ChannelID)) + ":"
 
+	ttlMs := s.c.opts.Messages.TTL.Milliseconds()
 	score := float64(time.Now().UnixNano())
-	_ = s.c.client.ZAdd(s.c.ctx, chKey, redis.Z{Score: score, Member: string(msg.ID)}).Err()
+	max := s.c.opts.Messages.MaxPerChannel
 
-	// Enforce MaxPerChannel: evict oldest entries when the ring is over capacity.
-	max := int64(s.c.opts.Messages.MaxPerChannel)
-	count, err := s.c.client.ZCard(s.c.ctx, chKey).Result()
-	if err == nil && count > max {
-		evicted, err := s.c.client.ZPopMin(s.c.ctx, chKey, count-max).Result()
-		if err == nil {
-			for _, z := range evicted {
-				_ = s.c.client.Del(s.c.ctx, s.c.k("msg", string(msg.ChannelID), z.Member.(string))).Err()
-			}
-		}
-	}
+	_ = msgAddScript.Run(s.c.ctx, s.c.client,
+		[]string{msgKey, chKey},
+		b, ttlMs, score, string(msg.ID), max, msgPrefix,
+	).Err()
 }
 
 func (s *redisMessageStore) Get(channelID, messageID common.Snowflake) (*common.Message, bool) {
@@ -1415,7 +1519,7 @@ func (s *redisMessageStore) Get(channelID, messageID common.Snowflake) (*common.
 	var msg common.Message
 	ok, err := s.c.getJSON(key, &msg)
 	if err != nil || !ok {
-		if !ok {
+		if !ok && err == nil {
 			// Key expired — remove from sorted set index.
 			_ = s.c.client.ZRem(s.c.ctx, s.c.k("msg", "ch", string(channelID)), string(messageID)).Err()
 		}
@@ -1426,12 +1530,13 @@ func (s *redisMessageStore) Get(channelID, messageID common.Snowflake) (*common.
 
 func (s *redisMessageStore) Update(msg *common.Message) {
 	key := s.c.k("msg", string(msg.ChannelID), string(msg.ID))
-	// Only update if the key still exists (not expired or already deleted).
-	exists, _ := s.c.client.Exists(s.c.ctx, key).Result()
-	if exists == 0 {
+	b, err := json.Marshal(msg)
+	if err != nil {
 		return
 	}
-	_ = s.c.setJSON(key, msg, s.c.opts.Messages.TTL)
+	// SetXX is atomic: writes only if the key already exists, eliminating the
+	// TOCTOU window between Exists and Set where the TTL could expire (Bug 7).
+	_ = s.c.client.SetXX(s.c.ctx, key, b, s.c.opts.Messages.TTL).Err()
 }
 
 func (s *redisMessageStore) Delete(channelID, messageID common.Snowflake) {

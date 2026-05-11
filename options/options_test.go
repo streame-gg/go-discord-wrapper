@@ -130,3 +130,21 @@ func TestValidate(t *testing.T) {
 		})
 	}
 }
+
+// TestBug31MaxReconnectRetriesBelowMinus1IsRejected verifies that
+// MaxReconnectRetries < -1 fails Validate (Bug 31).
+// -1 means infinite retries; any value below -1 is meaningless and should be
+// rejected so users get a clear error instead of silent infinite retries.
+func TestBug31MaxReconnectRetriesBelowMinus1IsRejected(t *testing.T) {
+	err := Config{MaxReconnectRetries: -2}.Validate()
+	assert.Error(t, err, "MaxReconnectRetries=-2 must fail Validate (Bug 31)")
+
+	err = Config{MaxReconnectRetries: -1}.Validate()
+	assert.NoError(t, err, "MaxReconnectRetries=-1 (infinite) must be valid")
+
+	err = Config{MaxReconnectRetries: 0}.Validate()
+	assert.NoError(t, err, "MaxReconnectRetries=0 (default 3) must be valid")
+
+	err = Config{MaxReconnectRetries: 10}.Validate()
+	assert.NoError(t, err, "MaxReconnectRetries=10 must be valid")
+}

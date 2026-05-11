@@ -35,6 +35,7 @@ type LocalCoordinator struct {
 
 	mu       sync.RWMutex
 	handlers map[int]func(options.ShardMessage)
+	wg       sync.WaitGroup // tracks in-flight handler goroutines (Bug 27)
 }
 
 // NewLocalCoordinator creates a coordinator for totalShards in-process shards.
@@ -62,11 +63,17 @@ func (c *LocalCoordinator) Register(shardID int, handler func(options.ShardMessa
 func (c *LocalCoordinator) Send(msg options.ShardMessage) error {
 	c.mu.RLock()
 	h, ok := c.handlers[msg.To]
+	if ok {
+		c.wg.Add(1) // increment while holding RLock so Close cannot race wg.Wait
+	}
 	c.mu.RUnlock()
 	if !ok {
 		return fmt.Errorf("sharding: shard %d is not registered", msg.To)
 	}
-	go h(msg)
+	go func() {
+		defer c.wg.Done()
+		h(msg)
+	}()
 	return nil
 }
 
@@ -80,11 +87,15 @@ func (c *LocalCoordinator) Broadcast(msg options.ShardMessage) error {
 	for _, h := range c.handlers {
 		hs = append(hs, h)
 	}
+	c.wg.Add(len(hs)) // increment while holding RLock so Close cannot race wg.Wait
 	c.mu.RUnlock()
 
 	for _, h := range hs {
 		h := h
-		go h(msg)
+		go func() {
+			defer c.wg.Done()
+			h(msg)
+		}()
 	}
 	return nil
 }
@@ -92,10 +103,12 @@ func (c *LocalCoordinator) Broadcast(msg options.ShardMessage) error {
 // TotalShards returns the number of shards this coordinator was created with.
 func (c *LocalCoordinator) TotalShards() int { return c.total }
 
-// Close removes all registered handlers and prevents further message delivery.
+// Close removes all registered handlers, waits for in-flight handler goroutines
+// to finish, and prevents further message delivery (Bug 27).
 func (c *LocalCoordinator) Close() error {
 	c.mu.Lock()
 	c.handlers = nil
 	c.mu.Unlock()
+	c.wg.Wait()
 	return nil
 }

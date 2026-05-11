@@ -91,19 +91,52 @@ func (s *genericStore[K, V]) set(key K, value V) {
 
 	s.mu.Lock()
 	if old, ok := s.items[key]; ok {
+		// Preserve eviction-critical metadata so that hitCount and insertedAt
+		// are not reset on every update (GUILD_UPDATE, CHANNEL_UPDATE, etc.).
+		e.hitCount = old.hitCount
+		e.insertedAt = old.insertedAt
 		s.totalBytes.Add(-old.sizeBytes)
 	}
 	s.items[key] = e
 	n := len(s.items)
-	s.mu.Unlock()
-
 	if s.cfg.trackBytes {
 		s.totalBytes.Add(sz)
 	}
+	s.mu.Unlock()
 
 	// Enforce per-category cap immediately (soft: may briefly exceed by 1).
 	if s.cfg.maxItems > 0 && n > s.cfg.maxItems {
 		s.evictToCount(s.cfg.maxItems)
+	}
+}
+
+// setLocked is like set but assumes s.mu is already held by the caller.
+// Used by SetAll implementations to keep the delete→insert sequence atomic.
+// If the store has a non-zero maxItems cap, the caller must call evictToCount
+// after releasing the lock — setLocked does not enforce the cap itself.
+func (s *genericStore[K, V]) setLocked(key K, value V) {
+	now := time.Now()
+	var sz int64
+	if s.cfg.trackBytes {
+		sz = estimateSize(value)
+	}
+	e := &memEntry[V]{
+		value:      value,
+		insertedAt: now,
+		accessedAt: now,
+		sizeBytes:  sz,
+	}
+	if s.cfg.ttl > 0 {
+		e.expiresAt = now.Add(s.cfg.ttl)
+	}
+	if old, ok := s.items[key]; ok {
+		e.hitCount = old.hitCount
+		e.insertedAt = old.insertedAt
+		s.totalBytes.Add(-old.sizeBytes)
+	}
+	s.items[key] = e
+	if s.cfg.trackBytes {
+		s.totalBytes.Add(sz)
 	}
 }
 
@@ -124,11 +157,6 @@ func (s *genericStore[K, V]) get(key K) (V, bool) {
 	}
 	e.accessedAt = now
 	e.hitCount++
-	// Slide the TTL forward on each access so frequently-used entries do not
-	// expire while they are still active.
-	if s.cfg.ttl > 0 {
-		e.expiresAt = now.Add(s.cfg.ttl)
-	}
 	return e.value, true
 }
 
@@ -679,29 +707,19 @@ func newMemMessageStore(opts MessageOptions, trackBytes bool, maxTotal int, clea
 	}
 }
 
-func (s *memMessageStore) ring(channelID common.Snowflake) *channelRing {
-	s.mu.RLock()
-	r := s.channels[channelID]
-	s.mu.RUnlock()
-	if r != nil {
-		return r
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if r = s.channels[channelID]; r != nil {
-		return r
-	}
-	r = newChannelRing(s.opts.MaxPerChannel)
-	s.channels[channelID] = r
-	return r
-}
-
 func (s *memMessageStore) Add(msg *common.Message) {
 	if s.opts.MaxPerChannel == 0 {
 		return
 	}
-	r := s.ring(msg.ChannelID)
+
+	// Hold the write lock for the entire lookup-or-create AND r.add() so that
+	// a concurrent DeleteChannel cannot remove the ring between ring() and add().
 	s.mu.Lock()
+	r := s.channels[msg.ChannelID]
+	if r == nil {
+		r = newChannelRing(s.opts.MaxPerChannel)
+		s.channels[msg.ChannelID] = r
+	}
 	prevLen := len(r.msgs)
 	delta := r.add(msg, s.trackBytes)
 	newLen := len(r.msgs)
@@ -811,8 +829,7 @@ func (s *memMessageStore) sweep(now time.Time, behavior EvictBehavior, unusedWin
 	for id, r := range s.channels {
 		freed, empty := r.sweep(now, s.opts.TTL, behavior, unusedWindow)
 		s.totalBytes.Add(-freed)
-		if empty && behavior == EvictUnused {
-			s.totalMsgs.Add(-int64(len(r.msgs))) // already 0, but keep counter in sync
+		if empty {
 			delete(s.channels, id)
 		}
 	}
@@ -973,11 +990,11 @@ func NewMemoryCache(opts Options) *MemoryCache {
 		opts.SweepInterval = 30 * time.Second
 	}
 	if opts.Messages.MaxPerChannel < 0 {
-		opts.Messages.MaxPerChannel = 0
-	}
-	if opts.Messages.MaxPerChannel == 0 {
+		// Negative means "use default".
 		opts.Messages.MaxPerChannel = 100
 	}
+	// == 0 means "disabled" (caller set it explicitly) — leave as-is.
+	// > 0 means "user value" — leave as-is.
 	if opts.Messages.TTL == 0 {
 		opts.Messages.TTL = opts.TTL
 	}
@@ -1205,20 +1222,40 @@ func (c *MemoryCache) evictGloballyByCount(need int, target OverflowCategory, by
 	if total == 0 {
 		return
 	}
-	remaining := need
-	for _, st := range stores {
-		if remaining <= 0 || st.size == 0 {
+
+	// Largest-Remainder Method: distributes exactly `need` evictions across stores
+	// proportionally without over-evicting. The old "share < 1 → 1" guard forced
+	// at least one eviction per store even when the store's proportional share was
+	// less than 1, causing the total evicted to exceed `need` (Bug 9).
+	type slotted struct {
+		idx       int
+		floor     int
+		remainder float64
+	}
+	slots := make([]slotted, 0, len(stores))
+	floorSum := 0
+	for i, st := range stores {
+		if st.size == 0 {
 			continue
 		}
-		share := (st.size * need) / total
-		if share < 1 {
-			share = 1
+		real := float64(st.size*need) / float64(total)
+		f := int(real)
+		slots = append(slots, slotted{i, f, real - float64(f)})
+		floorSum += f
+	}
+	// Give one extra slot each to the stores with the largest fractional remainders
+	// until the total allocated equals need.
+	extra := need - floorSum
+	if extra > 0 {
+		sort.Slice(slots, func(a, b int) bool { return slots[a].remainder > slots[b].remainder })
+		for i := 0; i < extra && i < len(slots); i++ {
+			slots[i].floor++
 		}
-		if share > remaining {
-			share = remaining
+	}
+	for _, sl := range slots {
+		if sl.floor > 0 {
+			stores[sl.idx].evictN(sl.floor, by)
 		}
-		st.evictN(share, by)
-		remaining -= share
 	}
 }
 
@@ -1302,17 +1339,51 @@ func (c *MemoryCache) evictGloballyByBytes(need int64, target OverflowCategory, 
 	if totalBytes == 0 {
 		return
 	}
-	for _, st := range stores {
-		if need <= 0 || st.size == 0 {
+
+	// Largest-Remainder Method adapted for bytes: converts proportional byte
+	// shares to integer entry counts without forcing a minimum of 1 per store
+	// (which would cause over-eviction when byteShare < avgSize for many stores).
+	type slotted struct {
+		idx       int
+		floor     int
+		remainder float64
+		avgSize   int64
+	}
+	slots := make([]slotted, 0, len(stores))
+	floorBytes := int64(0)
+	for i, st := range stores {
+		if st.bytes == 0 || st.size == 0 {
 			continue
 		}
-		// Evict a proportional share of entries from this store.
-		share := int(float64(st.size) * float64(need) / float64(totalBytes))
-		if share < 1 {
-			share = 1
+		byteShare := need * st.bytes / totalBytes
+		if byteShare <= 0 {
+			continue
 		}
-		freed := st.evictN(share, by)
-		need -= freed
+		avgSize := st.bytes / int64(st.size)
+		if avgSize <= 0 {
+			avgSize = 1
+		}
+		real := float64(byteShare) / float64(avgSize)
+		f := int(real)
+		slots = append(slots, slotted{i, f, real - float64(f), avgSize})
+		floorBytes += int64(f) * avgSize
+	}
+	// Distribute remaining bytes to the stores with the largest fractional
+	// remainder (i.e., those closest to needing one extra eviction). Stop as
+	// soon as the floor allocation already covers `need`.
+	remainingNeed := need - floorBytes
+	sort.Slice(slots, func(a, b int) bool { return slots[a].remainder > slots[b].remainder })
+	for i := range slots {
+		if remainingNeed <= 0 || slots[i].remainder == 0 {
+			break
+		}
+		slots[i].floor++
+		remainingNeed -= slots[i].avgSize
+	}
+	for _, sl := range slots {
+		if sl.floor > 0 {
+			stores[sl.idx].evictN(sl.floor, by)
+		}
 	}
 }
 
@@ -1377,6 +1448,9 @@ type memSoundboardStore struct {
 }
 
 func (ss *memSoundboardStore) Set(guildID common.Snowflake, sound *common.SoundboardSound) {
+	if sound == nil {
+		return
+	}
 	ss.s.set(sound.SoundID, soundboardValue{GuildID: guildID, Sound: sound})
 }
 
@@ -1410,11 +1484,15 @@ func (ss *memSoundboardStore) SetAll(guildID common.Snowflake, sounds []*common.
 			delete(ss.s.items, k)
 		}
 	}
-	ss.s.mu.Unlock()
 	for _, s := range sounds {
 		if s != nil {
-			ss.Set(guildID, s)
+			ss.s.setLocked(s.SoundID, soundboardValue{GuildID: guildID, Sound: s})
 		}
+	}
+	n := len(ss.s.items)
+	ss.s.mu.Unlock()
+	if ss.s.cfg.maxItems > 0 && n > ss.s.cfg.maxItems {
+		ss.s.evictToCount(ss.s.cfg.maxItems)
 	}
 }
 
@@ -1572,11 +1650,15 @@ func (es *memEmojiStore) SetAll(guildID common.Snowflake, emojis []*common.Emoji
 			delete(es.s.items, k)
 		}
 	}
-	es.s.mu.Unlock()
 	for _, emoji := range emojis {
 		if emoji != nil && emoji.ID != "" {
-			es.Set(guildID, emoji)
+			es.s.setLocked(emoji.ID, emojiValue{GuildID: guildID, Emoji: emoji})
 		}
+	}
+	n := len(es.s.items)
+	es.s.mu.Unlock()
+	if es.s.cfg.maxItems > 0 && n > es.s.cfg.maxItems {
+		es.s.evictToCount(es.s.cfg.maxItems)
 	}
 }
 
@@ -1640,11 +1722,15 @@ func (ss *memStickerStore) SetAll(guildID common.Snowflake, stickers []*common.S
 			delete(ss.s.items, k)
 		}
 	}
-	ss.s.mu.Unlock()
 	for _, sticker := range stickers {
 		if sticker != nil && sticker.ID != "" {
-			ss.Set(guildID, sticker)
+			ss.s.setLocked(sticker.ID, stickerValue{GuildID: guildID, Sticker: sticker})
 		}
+	}
+	n := len(ss.s.items)
+	ss.s.mu.Unlock()
+	if ss.s.cfg.maxItems > 0 && n > ss.s.cfg.maxItems {
+		ss.s.evictToCount(ss.s.cfg.maxItems)
 	}
 }
 

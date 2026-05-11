@@ -379,6 +379,13 @@ func (d *Client) DeleteGuild(ctx context.Context, guildID common.Snowflake) erro
 func (d *Client) GetGuildChannels(ctx context.Context, guildID common.Snowflake) ([]*common.Channel, error) {
 	channels, err := d.RestClient.GetGuildChannels(ctx, guildID)
 	if err == nil {
+		if d.Cache != nil {
+			// Remove stale channels deleted since the last cache fill (Bug 25).
+			for _, oldID := range d.drainGuildChannelIDs(guildID) {
+				d.Cache.Channels().Delete(oldID)
+				d.Cache.Messages().DeleteChannel(oldID)
+			}
+		}
 		d.cacheChannels(channels)
 	}
 	return channels, err
@@ -399,6 +406,10 @@ func (d *Client) ModifyGuildChannelPositions(ctx context.Context, guildID common
 func (d *Client) GetGuildRoles(ctx context.Context, guildID common.Snowflake) ([]*common.Role, error) {
 	roles, err := d.RestClient.GetGuildRoles(ctx, guildID)
 	if err == nil {
+		if d.Cache != nil {
+			// Remove stale roles deleted since the last cache fill (Bug 25).
+			d.Cache.Roles().DeleteGuild(guildID)
+		}
 		d.cacheRoles(guildID, roles)
 	}
 	return roles, err
@@ -423,6 +434,10 @@ func (d *Client) CreateGuildRole(ctx context.Context, guildID common.Snowflake, 
 func (d *Client) ModifyGuildRolePositions(ctx context.Context, guildID common.Snowflake, entries []api.ModifyGuildRolePositionsEntry) ([]*common.Role, error) {
 	roles, err := d.RestClient.ModifyGuildRolePositions(ctx, guildID, entries)
 	if err == nil {
+		if d.Cache != nil {
+			// Remove stale roles deleted since the last cache fill (Bug 25).
+			d.Cache.Roles().DeleteGuild(guildID)
+		}
 		d.cacheRoles(guildID, roles)
 	}
 	return roles, err
@@ -582,7 +597,10 @@ type RequestGuildMembersParams struct {
 // Use FetchAllGuildMembers for a simpler REST-based alternative that does not
 // require subscribing to gateway events.
 func (d *Client) RequestGuildMembers(guildID common.Snowflake, params RequestGuildMembersParams) error {
-	if d.Websocket == nil || d.Websocket.Connection == nil {
+	d.wsMu.RLock()
+	ws := d.Websocket
+	d.wsMu.RUnlock()
+	if ws == nil || ws.Connection == nil {
 		return errors.New("not connected to gateway")
 	}
 	data := map[string]interface{}{
@@ -599,7 +617,7 @@ func (d *Client) RequestGuildMembers(guildID common.Snowflake, params RequestGui
 	if params.Nonce != nil {
 		data["nonce"] = *params.Nonce
 	}
-	return d.Websocket.writeJSON(map[string]interface{}{
+	return ws.writeJSON(map[string]interface{}{
 		"op": 8,
 		"d":  data,
 	})
@@ -622,7 +640,10 @@ type UpdatePresenceParams struct {
 // UpdatePresence sends an OP 3 Presence Update to the Discord gateway,
 // updating the bot's displayed status and activity.
 func (d *Client) UpdatePresence(params UpdatePresenceParams) error {
-	if d.Websocket == nil || d.Websocket.Connection == nil {
+	d.wsMu.RLock()
+	ws := d.Websocket
+	d.wsMu.RUnlock()
+	if ws == nil || ws.Connection == nil {
 		return errors.New("not connected to gateway")
 	}
 
@@ -637,7 +658,7 @@ func (d *Client) UpdatePresence(params UpdatePresenceParams) error {
 		"status":     string(params.Status),
 		"afk":        params.AFK,
 	}
-	return d.Websocket.writeJSON(map[string]interface{}{
+	return ws.writeJSON(map[string]interface{}{
 		"op": 3,
 		"d":  data,
 	})
