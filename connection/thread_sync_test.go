@@ -143,3 +143,62 @@ func TestBug43ThreadIndexUpdatesOnCreateAndDelete(t *testing.T) {
 	c.threadIndexMu.RUnlock()
 	assert.False(t, stillTracked, "thread must be removed from index after THREAD_DELETE (Bug 43)")
 }
+
+// TestBug52ThreadUpdateTracksIndex verifies that THREAD_UPDATE adds the thread
+// to the threadsByParent index so that a subsequent THREAD_LIST_SYNC can evict
+// it if it is no longer active (Bug 52).
+func TestBug52ThreadUpdateTracksIndex(t *testing.T) {
+	c := newClientWithCache(t)
+
+	guildID := common.Snowflake("6000")
+	parentID := common.Snowflake("6001")
+	threadID := common.Snowflake("6002")
+
+	updatePayload := map[string]any{
+		"id": string(threadID), "guild_id": string(guildID),
+		"parent_id": string(parentID), "type": common.ChannelTypePublicThread,
+	}
+	raw, err := json.Marshal(updatePayload)
+	require.NoError(t, err)
+	c.internalEventHandler(json.RawMessage(raw), events.EventThreadUpdate, nil)
+
+	c.threadIndexMu.RLock()
+	_, tracked := c.threadsByParent[parentID][threadID]
+	c.threadIndexMu.RUnlock()
+	assert.True(t, tracked, "THREAD_UPDATE must add thread to threadsByParent index (Bug 52)")
+}
+
+// TestBug52GuildCreateThreadsTracksIndex verifies that threads arriving in
+// GUILD_CREATE.threads are added to the threadsByParent index so that a later
+// THREAD_LIST_SYNC can evict stale ones (Bug 52).
+func TestBug52GuildCreateThreadsTracksIndex(t *testing.T) {
+	c := newClientWithCache(t)
+
+	guildID := common.Snowflake("7000")
+	parentID := common.Snowflake("7001")
+	threadID := common.Snowflake("7002")
+
+	// Minimal GUILD_CREATE payload with a thread in the threads array.
+	guildPayload := map[string]any{
+		"id":          string(guildID),
+		"name":        "test",
+		"unavailable": false,
+		"channels":    []any{},
+		"members":     []any{},
+		"roles":       []any{},
+		"threads": []any{
+			map[string]any{
+				"id": string(threadID), "guild_id": string(guildID),
+				"parent_id": string(parentID), "type": int(common.ChannelTypePublicThread),
+			},
+		},
+	}
+	raw, err := json.Marshal(guildPayload)
+	require.NoError(t, err)
+	c.internalEventHandler(json.RawMessage(raw), events.EventGuildCreate, nil)
+
+	c.threadIndexMu.RLock()
+	_, tracked := c.threadsByParent[parentID][threadID]
+	c.threadIndexMu.RUnlock()
+	assert.True(t, tracked, "GUILD_CREATE threads must be added to threadsByParent index (Bug 52)")
+}

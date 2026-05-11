@@ -803,6 +803,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 									ch.GuildID = &gid
 								}
 								d.cacheChannel(&ch)
+								d.trackThread(&ch)
 							}
 						}
 
@@ -1373,6 +1374,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				ch := ev.Channel
 				d.cacheChannel(&ch)
+				d.trackThread(&ch)
 			}
 		}
 	case events.EventThreadDelete:
