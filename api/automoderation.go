@@ -46,7 +46,10 @@ func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID common
 	}
 
 	var rules []*common.AutoModerationRule
-	if _, err := c.do(req, []int{http.StatusOK}, &rules); err != nil {
+	if err := c.do(req, SuccessReturn[[]*common.AutoModerationRule]{
+		status: http.StatusOK,
+		Out:    &rules,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -70,10 +73,12 @@ func (c *RestClient) GetAutoModerationRule(ctx context.Context, guildID, ruleID 
 	}
 
 	var rule common.AutoModerationRule
-	if _, err := c.do(req, []int{http.StatusOK}, &rule); err != nil {
+	if err := c.do(req, SuccessReturn[common.AutoModerationRule]{
+		status: http.StatusOK,
+		Out:    &rule,
+	}); err != nil {
 		return nil, err
 	}
-
 	return &rule, nil
 }
 
@@ -94,7 +99,10 @@ func (c *RestClient) CreateAutoModerationRule(ctx context.Context, guildID commo
 	}
 
 	var rule common.AutoModerationRule
-	if _, err := c.do(req, []int{http.StatusOK}, &rule); err != nil {
+	if err := c.do(req, SuccessReturn[common.AutoModerationRule]{
+		status: http.StatusOK,
+		Out:    &rule,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -123,7 +131,10 @@ func (c *RestClient) ModifyAutoModerationRule(ctx context.Context, guildID, rule
 	}
 
 	var rule common.AutoModerationRule
-	if _, err := c.do(req, []int{http.StatusOK}, &rule); err != nil {
+	if err := c.do(req, SuccessReturn[common.AutoModerationRule]{
+		status: http.StatusOK,
+		Out:    &rule,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -146,6 +157,8 @@ func (c *RestClient) DeleteAutoModerationRule(ctx context.Context, guildID, rule
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.AutoModerationRule]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }

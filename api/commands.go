@@ -27,10 +27,12 @@ func (c *RestClient) RegisterCommand(ctx context.Context, appID common.Snowflake
 	}
 
 	var registered commands.ApplicationCommand
-	if _, err := c.do(req, []int{http.StatusCreated}, &registered); err != nil {
+	if err := c.do(req, SuccessReturn[commands.ApplicationCommand]{
+		status: http.StatusCreated,
+		Out:    &registered,
+	}); err != nil {
 		return nil, err
 	}
-
 	return &registered, nil
 }
 
@@ -52,7 +54,10 @@ func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID common.Snow
 	}
 
 	var registered []*commands.ApplicationCommand
-	if _, err := c.do(req, []int{http.StatusOK}, &registered); err != nil {
+	if err := c.do(req, SuccessReturn[[]*commands.ApplicationCommand]{
+		status: http.StatusOK,
+		Out:    &registered,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -79,7 +84,10 @@ func (c *RestClient) GetGlobalApplicationCommands(ctx context.Context, appID com
 	}
 
 	var cmds []*commands.ApplicationCommand
-	if _, err := c.do(req, []int{http.StatusOK}, &cmds); err != nil {
+	if err := c.do(req, SuccessReturn[[]*commands.ApplicationCommand]{
+		status: http.StatusOK,
+		Out:    &cmds,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -103,7 +111,10 @@ func (c *RestClient) GetGlobalApplicationCommand(ctx context.Context, appID, cmd
 	}
 
 	var cmd commands.ApplicationCommand
-	if _, err := c.do(req, []int{http.StatusOK}, &cmd); err != nil {
+	if err := c.do(req, SuccessReturn[commands.ApplicationCommand]{
+		status: http.StatusOK,
+		Out:    &cmd,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -132,7 +143,10 @@ func (c *RestClient) EditGlobalApplicationCommand(ctx context.Context, appID, cm
 	}
 
 	var cmd commands.ApplicationCommand
-	if _, err := c.do(req, []int{http.StatusOK}, &cmd); err != nil {
+	if err := c.do(req, SuccessReturn[commands.ApplicationCommand]{
+		status: http.StatusOK,
+		Out:    &cmd,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -155,8 +169,10 @@ func (c *RestClient) DeleteGlobalApplicationCommand(ctx context.Context, appID, 
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // ── Guild command management ──────────────────────────────────────────────────
@@ -182,7 +198,10 @@ func (c *RestClient) GetGuildApplicationCommands(ctx context.Context, appID, gui
 	}
 
 	var cmds []*commands.ApplicationCommand
-	if _, err := c.do(req, []int{http.StatusOK}, &cmds); err != nil {
+	if err := c.do(req, SuccessReturn[[]*commands.ApplicationCommand]{
+		status: http.StatusOK,
+		Out:    &cmds,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -211,7 +230,10 @@ func (c *RestClient) CreateGuildApplicationCommand(ctx context.Context, appID, g
 	}
 
 	var registered commands.ApplicationCommand
-	if _, err := c.do(req, []int{http.StatusCreated}, &registered); err != nil {
+	if err := c.do(req, SuccessReturn[commands.ApplicationCommand]{
+		status: http.StatusOK,
+		Out:    &registered,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -239,7 +261,10 @@ func (c *RestClient) GetGuildApplicationCommand(ctx context.Context, appID, guil
 	}
 
 	var cmd commands.ApplicationCommand
-	if _, err := c.do(req, []int{http.StatusOK}, &cmd); err != nil {
+	if err := c.do(req, SuccessReturn[commands.ApplicationCommand]{
+		status: http.StatusOK,
+		Out:    &cmd,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -272,7 +297,10 @@ func (c *RestClient) EditGuildApplicationCommand(ctx context.Context, appID, gui
 	}
 
 	var cmd commands.ApplicationCommand
-	if _, err := c.do(req, []int{http.StatusOK}, &cmd); err != nil {
+	if err := c.do(req, SuccessReturn[commands.ApplicationCommand]{
+		status: http.StatusOK,
+		Out:    &cmd,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -299,8 +327,10 @@ func (c *RestClient) DeleteGuildApplicationCommand(ctx context.Context, appID, g
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // BulkOverwriteGuildApplicationCommands overwrites all guild-specific commands for the given guild.
@@ -326,7 +356,10 @@ func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, 
 	}
 
 	var registered []*commands.ApplicationCommand
-	if _, err := c.do(req, []int{http.StatusOK}, &registered); err != nil {
+	if err := c.do(req, SuccessReturn[[]*commands.ApplicationCommand]{
+		status: http.StatusOK,
+		Out:    &registered,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -352,7 +385,10 @@ func (c *RestClient) GetGuildApplicationCommandPermissions(ctx context.Context, 
 	}
 
 	var perms []*common.GuildApplicationCommandPermissions
-	if _, err := c.do(req, []int{http.StatusOK}, &perms); err != nil {
+	if err := c.do(req, SuccessReturn[[]*common.GuildApplicationCommandPermissions]{
+		status: http.StatusOK,
+		Out:    &perms,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -380,7 +416,10 @@ func (c *RestClient) GetApplicationCommandPermissions(ctx context.Context, appID
 	}
 
 	var perms common.GuildApplicationCommandPermissions
-	if _, err := c.do(req, []int{http.StatusOK}, &perms); err != nil {
+	if err := c.do(req, SuccessReturn[common.GuildApplicationCommandPermissions]{
+		status: http.StatusOK,
+		Out:    &perms,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -414,7 +453,10 @@ func (c *RestClient) EditApplicationCommandPermissions(ctx context.Context, appI
 	}
 
 	var perms common.GuildApplicationCommandPermissions
-	if _, err := c.do(req, []int{http.StatusOK}, &perms); err != nil {
+	if err := c.do(req, SuccessReturn[common.GuildApplicationCommandPermissions]{
+		status: http.StatusOK,
+		Out:    &perms,
+	}); err != nil {
 		return nil, err
 	}
 

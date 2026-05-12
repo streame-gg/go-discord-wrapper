@@ -102,7 +102,7 @@ func main() {
 				case errors.Is(err, api.ErrUnknownMember):
 					msg = "That member isn't in this server."
 				default:
-					msg = "Something went wrong: " + err.Error()
+					msg = "APISuccessReturn went wrong: " + err.Error()
 				}
 				_, _ = send(api.CreateMessageParams{Content: msg})
 				return

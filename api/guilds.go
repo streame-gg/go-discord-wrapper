@@ -323,8 +323,10 @@ func (c *RestClient) DeleteGuild(ctx context.Context, guildID common.Snowflake) 
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // ── Guild channel endpoints ───────────────────────────────────────────────────
@@ -388,8 +390,10 @@ func (c *RestClient) ModifyGuildChannelPositions(ctx context.Context, guildID co
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // ── Guild role endpoints ──────────────────────────────────────────────────────
@@ -546,8 +550,10 @@ func (c *RestClient) DeleteGuildRole(ctx context.Context, guildID, roleID common
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // GetGuildBans returns a paginated list of bans in a guild. Requires BAN_MEMBERS.
@@ -615,8 +621,10 @@ func (c *RestClient) CreateGuildBan(ctx context.Context, guildID, userID common.
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // RemoveGuildBan lifts a ban from a user. Requires BAN_MEMBERS.
@@ -635,8 +643,10 @@ func (c *RestClient) RemoveGuildBan(ctx context.Context, guildID, userID common.
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // GetGuildPruneCount returns the number of members that would be pruned with the given criteria.
@@ -1096,6 +1106,8 @@ func (c *RestClient) DeleteGuildIntegration(ctx context.Context, guildID, integr
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }

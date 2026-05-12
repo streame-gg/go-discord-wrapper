@@ -226,8 +226,10 @@ func (c *RestClient) DeleteWebhook(ctx context.Context, webhookID common.Snowfla
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // DeleteWebhookWithToken deletes a webhook using its token (no bot authentication required).
@@ -241,8 +243,10 @@ func (c *RestClient) DeleteWebhookWithToken(ctx context.Context, webhookID commo
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // ExecuteWebhook sends a message via a webhook. Returns the created message when query.Wait is true.
@@ -360,8 +364,10 @@ func (c *RestClient) DeleteWebhookMessage(ctx context.Context, webhookID common.
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // ExecuteSlackWebhook sends a Slack-compatible payload via a webhook.

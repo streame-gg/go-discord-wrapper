@@ -199,8 +199,10 @@ func (c *RestClient) DeleteGuildScheduledEvent(ctx context.Context, guildID, eve
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // GetGuildScheduledEventUsers returns users subscribed to a scheduled event.

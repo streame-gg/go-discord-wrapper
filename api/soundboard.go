@@ -162,8 +162,10 @@ func (c *RestClient) DeleteGuildSoundboardSound(ctx context.Context, guildID, so
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // SendSoundboardSound sends a soundboard sound to a voice channel the user is connected to.
@@ -183,6 +185,8 @@ func (c *RestClient) SendSoundboardSound(ctx context.Context, channelID common.S
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }

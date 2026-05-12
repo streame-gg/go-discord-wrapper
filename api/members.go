@@ -200,8 +200,10 @@ func (c *RestClient) AddGuildMemberRole(ctx context.Context, guildID, userID, ro
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // RemoveGuildMemberRole removes a role from a guild member. Requires MANAGE_ROLES.
@@ -224,8 +226,10 @@ func (c *RestClient) RemoveGuildMemberRole(ctx context.Context, guildID, userID,
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // KickGuildMember kicks a member from a guild. Requires KICK_MEMBERS.
@@ -244,6 +248,8 @@ func (c *RestClient) KickGuildMember(ctx context.Context, guildID, userID common
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }

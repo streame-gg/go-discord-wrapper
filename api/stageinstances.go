@@ -100,6 +100,8 @@ func (c *RestClient) DeleteStageInstance(ctx context.Context, channelID common.S
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }

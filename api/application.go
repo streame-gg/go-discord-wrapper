@@ -32,7 +32,10 @@ func (c *RestClient) GetCurrentApplication(ctx context.Context) (*common.Applica
 	}
 
 	var app common.Application
-	if _, err := c.do(req, []int{http.StatusOK}, &app); err != nil {
+	if err := c.do(req, SuccessReturn[common.Application]{
+		status: http.StatusOK,
+		Out:    &app,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -52,7 +55,10 @@ func (c *RestClient) ModifyCurrentApplication(ctx context.Context, params Modify
 	}
 
 	var app common.Application
-	if _, err := c.do(req, []int{http.StatusOK}, &app); err != nil {
+	if err := c.do(req, SuccessReturn[common.Application]{
+		status: http.StatusOK,
+		Out:    &app,
+	}); err != nil {
 		return nil, err
 	}
 

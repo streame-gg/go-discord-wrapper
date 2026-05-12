@@ -132,8 +132,10 @@ func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, webh
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // CreateFollowupMessage sends a follow-up message to an interaction (usable up to 15 minutes after the initial response).
@@ -264,6 +266,8 @@ func (c *RestClient) DeleteFollowupMessage(ctx context.Context, appID common.Sno
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }

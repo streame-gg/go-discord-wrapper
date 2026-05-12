@@ -182,8 +182,10 @@ func (c *RestClient) JoinThread(ctx context.Context, channelID common.Snowflake)
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // LeaveThread removes the current user from a thread.
@@ -197,8 +199,10 @@ func (c *RestClient) LeaveThread(ctx context.Context, channelID common.Snowflake
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // AddThreadMember adds another user to a thread.
@@ -213,8 +217,10 @@ func (c *RestClient) AddThreadMember(ctx context.Context, channelID, userID comm
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // RemoveThreadMember removes a user from a thread.
@@ -229,8 +235,10 @@ func (c *RestClient) RemoveThreadMember(ctx context.Context, channelID, userID c
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // GetThreadMember returns the thread member object for the given user.

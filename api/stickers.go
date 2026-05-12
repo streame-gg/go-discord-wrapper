@@ -167,8 +167,10 @@ func (c *RestClient) DeleteGuildSticker(ctx context.Context, guildID, stickerID 
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // GetStickerPack returns the sticker pack object for the given pack ID.

@@ -138,8 +138,10 @@ func (c *RestClient) DeleteGuildEmoji(ctx context.Context, guildID, emojiID comm
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // ── Application emoji endpoints ───────────────────────────────────────────────
@@ -269,6 +271,8 @@ func (c *RestClient) DeleteApplicationEmoji(ctx context.Context, appID, emojiID 
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }

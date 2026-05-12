@@ -75,8 +75,10 @@ func (c *RestClient) ModifyCurrentUserVoiceState(ctx context.Context, guildID co
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // ModifyUserVoiceState updates another user's voice state in a guild stage channel. Requires MUTE_MEMBERS.
@@ -100,8 +102,10 @@ func (c *RestClient) ModifyUserVoiceState(ctx context.Context, guildID, userID c
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // GetCurrentUserVoiceState returns the current user's voice state in a guild.

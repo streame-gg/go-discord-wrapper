@@ -161,8 +161,10 @@ func (c *RestClient) LeaveGuild(ctx context.Context, guildID common.Snowflake) e
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // CreateDM opens a DM channel with the given user and returns it.

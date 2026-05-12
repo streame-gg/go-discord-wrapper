@@ -20,7 +20,11 @@ func (c *RestClient) GetActivityInstance(ctx context.Context, appID common.Snowf
 	}
 
 	var result common.ActivityInstance
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
+
+	if err := c.do(req, SuccessReturn[common.ActivityInstance]{
+		status: http.StatusOK,
+		Out:    &result,
+	}); err != nil {
 		return nil, err
 	}
 

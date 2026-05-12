@@ -21,7 +21,10 @@ func (c *RestClient) GetChannel(ctx context.Context, channelID common.Snowflake)
 	}
 
 	var channel common.Channel
-	if _, err := c.do(req, []int{http.StatusOK}, &channel); err != nil {
+	if err := c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusOK,
+		Out:    &channel,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -87,7 +90,10 @@ func (c *RestClient) ModifyChannel(ctx context.Context, channelID common.Snowfla
 	}
 
 	var channel common.Channel
-	if _, err := c.do(req, []int{http.StatusOK}, &channel); err != nil {
+	if err := c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusOK,
+		Out:    &channel,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -107,7 +113,10 @@ func (c *RestClient) DeleteChannel(ctx context.Context, channelID common.Snowfla
 	}
 
 	var channel common.Channel
-	if _, err := c.do(req, []int{http.StatusOK}, &channel); err != nil {
+	if err := c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusOK,
+		Out:    &channel,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -126,7 +135,10 @@ func (c *RestClient) GetChannelInvites(ctx context.Context, channelID common.Sno
 	}
 
 	var invites []*Invite
-	if _, err := c.do(req, []int{http.StatusOK}, &invites); err != nil {
+	if err := c.do(req, SuccessReturn[[]*Invite]{
+		status: http.StatusOK,
+		Out:    &invites,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -150,7 +162,10 @@ func (c *RestClient) CreateChannelInvite(ctx context.Context, channelID common.S
 	}
 
 	var invite Invite
-	if _, err := c.do(req, []int{http.StatusOK}, &invite); err != nil {
+	if err := c.do(req, SuccessReturn[Invite]{
+		status: http.StatusOK,
+		Out:    &invite,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -179,8 +194,10 @@ func (c *RestClient) EditChannelPermissions(ctx context.Context, channelID, over
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // DeleteChannelPermission removes a permission overwrite for a user or role from a channel.
@@ -200,8 +217,10 @@ func (c *RestClient) DeleteChannelPermission(ctx context.Context, channelID, ove
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // TriggerTypingIndicator posts a typing indicator to the channel for ~10 seconds.
@@ -215,8 +234,10 @@ func (c *RestClient) TriggerTypingIndicator(ctx context.Context, channelID commo
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // ── Additional channel endpoints ──────────────────────────────────────────────
@@ -249,8 +270,10 @@ func (c *RestClient) SetVoiceChannelStatus(ctx context.Context, channelID common
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // FollowAnnouncementChannel follows an announcement channel, publishing messages to webhookChannelID.
@@ -274,7 +297,10 @@ func (c *RestClient) FollowAnnouncementChannel(ctx context.Context, channelID, w
 	}
 
 	var result FollowedChannel
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
+	if err := c.do(req, SuccessReturn[FollowedChannel]{
+		status: http.StatusOK,
+		Out:    &result,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -302,8 +328,10 @@ func (c *RestClient) AddGroupDMRecipient(ctx context.Context, channelID, userID 
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // RemoveGroupDMRecipient removes a user from a Group DM.
@@ -322,6 +350,8 @@ func (c *RestClient) RemoveGroupDMRecipient(ctx context.Context, channelID, user
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }

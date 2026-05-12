@@ -145,8 +145,10 @@ func (c *RestClient) ConsumeEntitlement(ctx context.Context, appID, entitlementI
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 func (c *RestClient) DeleteTestEntitlement(ctx context.Context, appID, entitlementID common.Snowflake) error {
@@ -164,6 +166,8 @@ func (c *RestClient) DeleteTestEntitlement(ctx context.Context, appID, entitleme
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }

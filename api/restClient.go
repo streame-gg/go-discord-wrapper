@@ -267,14 +267,37 @@ func (c *RestClient) generateRequest(ctx context.Context, method, path string, b
 	return req, nil
 }
 
-func (c *RestClient) isApiCallSucceeded(successResponseCodes []int, actual int) bool {
+func (c *RestClient) isApiCallSucceeded(actual int, successResponseCodes ...Spec) (*Spec, bool) {
 	for _, code := range successResponseCodes {
-		if code == actual {
-			return true
+		if code.Status() == actual {
+			return &code, true
 		}
 	}
 
-	return false
+	return nil, false
+}
+
+type Spec interface {
+	Status() int
+	DecodeFromJSON(r *json.Decoder) error
+}
+
+type SuccessReturn[T any] struct {
+	status int
+	Out    *T
+}
+
+func NewSuccessReturn[T any](status int, out *T) *SuccessReturn[T] {
+	return &SuccessReturn[T]{status, out}
+}
+
+func (s SuccessReturn[T]) Status() int { return s.status }
+
+func (s SuccessReturn[T]) DecodeFromJSON(d *json.Decoder) error {
+	if s.Out == nil {
+		return nil
+	}
+	return d.Decode(s.Out)
 }
 
 // do executes req and decodes a successful response into v (when v != nil).
@@ -282,9 +305,9 @@ func (c *RestClient) isApiCallSucceeded(successResponseCodes []int, actual int) 
 // read from it. Inspect headers and status codes via the returned value, but
 // do not call resp.Body.Read or resp.Body.Close again.
 
-func (c *RestClient) do(req *http.Request, successResponseCodes []int, v interface{}) (*http.Response, error) {
+func (c *RestClient) do(req *http.Request, successResponses ...Spec) error {
 	if req == nil {
-		return nil, errors.New("request must not be nil")
+		return errors.New("request must not be nil")
 	}
 
 	// Extract the relative path stored by generateRequest for rate limiting.
@@ -292,7 +315,7 @@ func (c *RestClient) do(req *http.Request, successResponseCodes []int, v interfa
 
 	bodyBytes, err := captureRequestBody(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	maxAttempts := c.retryOptions.MaxRetries + 1
@@ -300,20 +323,20 @@ func (c *RestClient) do(req *http.Request, successResponseCodes []int, v interfa
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		// Crude global request interval (legacy option, complementary to rate limiter).
 		if err := c.waitForMinInterval(req.Context()); err != nil {
-			return nil, err
+			return err
 		}
 
 		// Proactive rate limit check — blocks if the route's bucket is exhausted
 		// or the global rate limit is active.
 		if c.rateLimiter != nil && routePath != "" {
 			if err := c.rateLimiter.wait(req.Context(), req.Method, routePath); err != nil {
-				return nil, err
+				return err
 			}
 		}
 
 		attemptReq, err := cloneRequest(req, bodyBytes)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		safeReq := redactRequestSecrets(attemptReq)
@@ -323,7 +346,7 @@ func (c *RestClient) do(req *http.Request, successResponseCodes []int, v interfa
 		if reqErr != nil {
 			c.emitEvent(RestEvent{Type: RestEventError, Request: safeReq, Attempt: attempt, Err: reqErr})
 			if attempt == maxAttempts {
-				return nil, reqErr
+				return reqErr
 			}
 
 			delay := c.retryDelay(attempt, 0)
@@ -331,7 +354,7 @@ func (c *RestClient) do(req *http.Request, successResponseCodes []int, v interfa
 			select {
 			case <-time.After(delay):
 			case <-req.Context().Done():
-				return nil, req.Context().Err()
+				return req.Context().Err()
 			}
 			continue
 		}
@@ -344,16 +367,15 @@ func (c *RestClient) do(req *http.Request, successResponseCodes []int, v interfa
 
 		c.emitEvent(RestEvent{Type: RestEventResponse, Request: safeReq, Response: resp, Attempt: attempt})
 
-		if c.isApiCallSucceeded(successResponseCodes, resp.StatusCode) {
-			if v != nil && resp.StatusCode != http.StatusNoContent {
-				if decodeErr := json.NewDecoder(resp.Body).Decode(v); decodeErr != nil {
-					_ = resp.Body.Close()
-					return nil, decodeErr
-				}
+		if spec, isSuccess := c.isApiCallSucceeded(resp.StatusCode, successResponses...); isSuccess {
+			if err := (*spec).DecodeFromJSON(json.NewDecoder(resp.Body)); err != nil {
+				_ = resp.Body.Close()
+				return err
 			}
 
 			_ = resp.Body.Close()
-			return resp, nil
+
+			return nil
 		}
 
 		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode) {
@@ -368,7 +390,7 @@ func (c *RestClient) do(req *http.Request, successResponseCodes []int, v interfa
 			select {
 			case <-time.After(delay):
 			case <-req.Context().Done():
-				return nil, req.Context().Err()
+				return req.Context().Err()
 			}
 			continue
 		}
@@ -376,10 +398,10 @@ func (c *RestClient) do(req *http.Request, successResponseCodes []int, v interfa
 		respErr := decodeGatewayError(resp)
 		_ = resp.Body.Close()
 		c.emitEvent(RestEvent{Type: RestEventError, Request: safeReq, Response: resp, Attempt: attempt, Err: respErr})
-		return nil, respErr
+		return respErr
 	}
 
-	return nil, errors.New("request failed after retries")
+	return errors.New("request failed after retries")
 }
 
 func (c *RestClient) shouldRetry(statusCode int) bool {

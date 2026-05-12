@@ -349,8 +349,10 @@ func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID com
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // BulkDeleteMessages deletes 2–100 messages at once.
@@ -381,8 +383,10 @@ func (c *RestClient) BulkDeleteMessages(ctx context.Context, channelID common.Sn
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // CrosspostMessage publishes a message in an announcement channel to all following channels.
@@ -446,8 +450,10 @@ func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID common
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // UnpinMessage unpins a message from a channel. Requires MANAGE_MESSAGES.
@@ -466,8 +472,10 @@ func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID comm
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // ── Reaction endpoints ────────────────────────────────────────────────────────
@@ -489,8 +497,10 @@ func (c *RestClient) AddReaction(ctx context.Context, channelID, messageID commo
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // DeleteOwnReaction removes the bot's own reaction from a message.
@@ -509,8 +519,10 @@ func (c *RestClient) DeleteOwnReaction(ctx context.Context, channelID, messageID
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // DeleteUserReaction removes another user's reaction from a message. Requires MANAGE_MESSAGES.
@@ -533,8 +545,10 @@ func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageI
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // GetReactions returns the users who reacted to a message with the given emoji.
@@ -577,8 +591,10 @@ func (c *RestClient) DeleteAllReactions(ctx context.Context, channelID, messageI
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
 
 // DeleteAllReactionsForEmoji removes all reactions for a specific emoji. Requires MANAGE_MESSAGES.
@@ -597,6 +613,8 @@ func (c *RestClient) DeleteAllReactionsForEmoji(ctx context.Context, channelID, 
 		return err
 	}
 
-	_, err = c.do(req, []int{http.StatusNoContent}, nil)
-	return err
+	return c.do(req, SuccessReturn[common.Channel]{
+		status: http.StatusNoContent,
+		Out:    nil,
+	})
 }
