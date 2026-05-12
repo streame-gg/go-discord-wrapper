@@ -39,13 +39,13 @@ func (p GetInviteParams) toQuery() string {
 // GetInvite returns the invite object for the given invite code.
 func (c *RestClient) GetInvite(ctx context.Context, code string, params GetInviteParams) (*Invite, error) {
 	path := "/invites/" + url.PathEscape(code) + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var invite Invite
-	if _, err := c.do(req, http.StatusOK, &invite); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &invite); err != nil {
 		return nil, err
 	}
 
@@ -54,13 +54,13 @@ func (c *RestClient) GetInvite(ctx context.Context, code string, params GetInvit
 
 // DeleteInvite deletes an invite by its code. Requires MANAGE_CHANNELS or MANAGE_GUILD.
 func (c *RestClient) DeleteInvite(ctx context.Context, code string) (*Invite, error) {
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/invites/"+url.PathEscape(code), nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/invites/"+url.PathEscape(code), nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var invite Invite
-	if _, err := c.do(req, http.StatusOK, &invite); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &invite); err != nil {
 		return nil, err
 	}
 

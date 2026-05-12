@@ -40,13 +40,13 @@ func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID common
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/auto-moderation/rules", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/auto-moderation/rules", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var rules []*common.AutoModerationRule
-	if _, err := c.do(req, http.StatusOK, &rules); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &rules); err != nil {
 		return nil, err
 	}
 
@@ -64,13 +64,13 @@ func (c *RestClient) GetAutoModerationRule(ctx context.Context, guildID, ruleID 
 	}
 
 	path := "/guilds/" + guildID.String() + "/auto-moderation/rules/" + ruleID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var rule common.AutoModerationRule
-	if _, err := c.do(req, http.StatusOK, &rule); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &rule); err != nil {
 		return nil, err
 	}
 
@@ -88,13 +88,13 @@ func (c *RestClient) CreateAutoModerationRule(ctx context.Context, guildID commo
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/auto-moderation/rules", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/auto-moderation/rules", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var rule common.AutoModerationRule
-	if _, err := c.do(req, http.StatusOK, &rule); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &rule); err != nil {
 		return nil, err
 	}
 
@@ -117,13 +117,13 @@ func (c *RestClient) ModifyAutoModerationRule(ctx context.Context, guildID, rule
 	}
 
 	path := "/guilds/" + guildID.String() + "/auto-moderation/rules/" + ruleID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var rule common.AutoModerationRule
-	if _, err := c.do(req, http.StatusOK, &rule); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &rule); err != nil {
 		return nil, err
 	}
 
@@ -141,11 +141,11 @@ func (c *RestClient) DeleteAutoModerationRule(ctx context.Context, guildID, rule
 	}
 
 	path := "/guilds/" + guildID.String() + "/auto-moderation/rules/" + ruleID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }

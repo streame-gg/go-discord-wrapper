@@ -35,13 +35,13 @@ type SendSoundboardSoundParams struct {
 
 // ListDefaultSoundboardSounds returns the list of default sounds available to all users.
 func (c *RestClient) ListDefaultSoundboardSounds(ctx context.Context) ([]*common.SoundboardSound, error) {
-	req, err := c.generateRequest(ctx, http.MethodGet, "/soundboard-default-sounds", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/soundboard-default-sounds", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var sounds []*common.SoundboardSound
-	if _, err := c.do(req, http.StatusOK, &sounds); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &sounds); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +54,7 @@ func (c *RestClient) ListGuildSoundboardSounds(ctx context.Context, guildID comm
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/soundboard-sounds", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/soundboard-sounds", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (c *RestClient) ListGuildSoundboardSounds(ctx context.Context, guildID comm
 	var result struct {
 		Items []*common.SoundboardSound `json:"items"`
 	}
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -80,13 +80,13 @@ func (c *RestClient) GetGuildSoundboardSound(ctx context.Context, guildID, sound
 	}
 
 	path := "/guilds/" + guildID.String() + "/soundboard-sounds/" + soundID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var sound common.SoundboardSound
-	if _, err := c.do(req, http.StatusOK, &sound); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &sound); err != nil {
 		return nil, err
 	}
 
@@ -104,13 +104,13 @@ func (c *RestClient) CreateGuildSoundboardSound(ctx context.Context, guildID com
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/soundboard-sounds", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/soundboard-sounds", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var sound common.SoundboardSound
-	if _, err := c.do(req, http.StatusOK, &sound); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &sound); err != nil {
 		return nil, err
 	}
 
@@ -133,13 +133,13 @@ func (c *RestClient) ModifyGuildSoundboardSound(ctx context.Context, guildID, so
 	}
 
 	path := "/guilds/" + guildID.String() + "/soundboard-sounds/" + soundID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var sound common.SoundboardSound
-	if _, err := c.do(req, http.StatusOK, &sound); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &sound); err != nil {
 		return nil, err
 	}
 
@@ -157,12 +157,12 @@ func (c *RestClient) DeleteGuildSoundboardSound(ctx context.Context, guildID, so
 	}
 
 	path := "/guilds/" + guildID.String() + "/soundboard-sounds/" + soundID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -178,11 +178,11 @@ func (c *RestClient) SendSoundboardSound(ctx context.Context, channelID common.S
 	}
 
 	path := "/channels/" + channelID.String() + "/send-soundboard-sound"
-	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }

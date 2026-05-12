@@ -21,13 +21,13 @@ func (c *RestClient) RegisterCommand(ctx context.Context, appID common.Snowflake
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, "POST", "/applications/"+appID.String()+"/commands", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, "POST", "/applications/"+appID.String()+"/commands", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var registered commands.ApplicationCommand
-	if _, err := c.do(req, http.StatusCreated, &registered); err != nil {
+	if _, err := c.do(req, []int{http.StatusCreated}, &registered); err != nil {
 		return nil, err
 	}
 
@@ -46,13 +46,13 @@ func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID common.Snow
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, "PUT", "/applications/"+appID.String()+"/commands", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, "PUT", "/applications/"+appID.String()+"/commands", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var registered []*commands.ApplicationCommand
-	if _, err := c.do(req, http.StatusOK, &registered); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &registered); err != nil {
 		return nil, err
 	}
 
@@ -73,13 +73,13 @@ func (c *RestClient) GetGlobalApplicationCommands(ctx context.Context, appID com
 		path += "?with_localizations=true"
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var cmds []*commands.ApplicationCommand
-	if _, err := c.do(req, http.StatusOK, &cmds); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &cmds); err != nil {
 		return nil, err
 	}
 
@@ -97,13 +97,13 @@ func (c *RestClient) GetGlobalApplicationCommand(ctx context.Context, appID, cmd
 	}
 
 	path := "/applications/" + appID.String() + "/commands/" + cmdID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var cmd commands.ApplicationCommand
-	if _, err := c.do(req, http.StatusOK, &cmd); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &cmd); err != nil {
 		return nil, err
 	}
 
@@ -126,13 +126,13 @@ func (c *RestClient) EditGlobalApplicationCommand(ctx context.Context, appID, cm
 	}
 
 	path := "/applications/" + appID.String() + "/commands/" + cmdID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var cmd commands.ApplicationCommand
-	if _, err := c.do(req, http.StatusOK, &cmd); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &cmd); err != nil {
 		return nil, err
 	}
 
@@ -150,12 +150,12 @@ func (c *RestClient) DeleteGlobalApplicationCommand(ctx context.Context, appID, 
 	}
 
 	path := "/applications/" + appID.String() + "/commands/" + cmdID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -176,13 +176,13 @@ func (c *RestClient) GetGuildApplicationCommands(ctx context.Context, appID, gui
 		path += "?with_localizations=true"
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var cmds []*commands.ApplicationCommand
-	if _, err := c.do(req, http.StatusOK, &cmds); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &cmds); err != nil {
 		return nil, err
 	}
 
@@ -205,13 +205,13 @@ func (c *RestClient) CreateGuildApplicationCommand(ctx context.Context, appID, g
 	}
 
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands"
-	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var registered commands.ApplicationCommand
-	if _, err := c.do(req, http.StatusCreated, &registered); err != nil {
+	if _, err := c.do(req, []int{http.StatusCreated}, &registered); err != nil {
 		return nil, err
 	}
 
@@ -233,13 +233,13 @@ func (c *RestClient) GetGuildApplicationCommand(ctx context.Context, appID, guil
 	}
 
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/" + cmdID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var cmd commands.ApplicationCommand
-	if _, err := c.do(req, http.StatusOK, &cmd); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &cmd); err != nil {
 		return nil, err
 	}
 
@@ -266,13 +266,13 @@ func (c *RestClient) EditGuildApplicationCommand(ctx context.Context, appID, gui
 	}
 
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/" + cmdID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var cmd commands.ApplicationCommand
-	if _, err := c.do(req, http.StatusOK, &cmd); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &cmd); err != nil {
 		return nil, err
 	}
 
@@ -294,12 +294,12 @@ func (c *RestClient) DeleteGuildApplicationCommand(ctx context.Context, appID, g
 	}
 
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/" + cmdID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -320,13 +320,13 @@ func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, 
 	}
 
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands"
-	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var registered []*commands.ApplicationCommand
-	if _, err := c.do(req, http.StatusOK, &registered); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &registered); err != nil {
 		return nil, err
 	}
 
@@ -346,13 +346,13 @@ func (c *RestClient) GetGuildApplicationCommandPermissions(ctx context.Context, 
 	}
 
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/permissions"
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var perms []*common.GuildApplicationCommandPermissions
-	if _, err := c.do(req, http.StatusOK, &perms); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &perms); err != nil {
 		return nil, err
 	}
 
@@ -374,13 +374,13 @@ func (c *RestClient) GetApplicationCommandPermissions(ctx context.Context, appID
 	}
 
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/" + cmdID.String() + "/permissions"
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var perms common.GuildApplicationCommandPermissions
-	if _, err := c.do(req, http.StatusOK, &perms); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &perms); err != nil {
 		return nil, err
 	}
 
@@ -408,13 +408,13 @@ func (c *RestClient) EditApplicationCommandPermissions(ctx context.Context, appI
 	}
 
 	path := "/applications/" + appID.String() + "/guilds/" + guildID.String() + "/commands/" + cmdID.String() + "/permissions"
-	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var perms common.GuildApplicationCommandPermissions
-	if _, err := c.do(req, http.StatusOK, &perms); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &perms); err != nil {
 		return nil, err
 	}
 

@@ -53,7 +53,7 @@ func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, message
 	}
 
 	path := "/channels/" + channelID.String() + "/polls/" + messageID.String() + "/answers/" + strconv.Itoa(answerID) + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, message
 	var result struct {
 		Users []*common.User `json:"users"`
 	}
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -70,13 +70,13 @@ func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, message
 
 func (c *RestClient) EndPoll(ctx context.Context, channelID, messageID common.Snowflake) (*common.Message, error) {
 	path := "/channels/" + channelID.String() + "/polls/" + messageID.String() + "/expire"
-	req, err := c.generateRequest(ctx, http.MethodPost, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPost, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result common.Message
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 

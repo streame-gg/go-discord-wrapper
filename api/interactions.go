@@ -35,25 +35,25 @@ func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionI
 		if err != nil {
 			return nil, err
 		}
-		req, err = c.generateRequest(ctx, http.MethodPost, path, buf)
+		req, err = c.generateRequest(ctx, http.MethodPost, path, buf, c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", ct)
 	} else {
-		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
+		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if !withResponse {
-		_, err = c.do(req, http.StatusNoContent, nil)
+		_, err = c.do(req, []int{http.StatusNoContent}, nil)
 		return nil, err
 	}
 
 	var result responses.InteractionCallbackResponse
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -67,13 +67,13 @@ func (c *RestClient) GetOriginalInteractionResponse(ctx context.Context, webhook
 	}
 
 	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/@original"
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
 		return nil, err
 	}
 
@@ -100,20 +100,20 @@ func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, webhoo
 		if err != nil {
 			return nil, err
 		}
-		req, err = c.generateRequest(ctx, http.MethodPatch, path, buf)
+		req, err = c.generateRequest(ctx, http.MethodPatch, path, buf, c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", ct)
 	} else {
-		req, err = c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(jsonBody))
+		req, err = c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(jsonBody), c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
 		return nil, err
 	}
 
@@ -127,12 +127,12 @@ func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, webh
 	}
 
 	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/@original"
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -156,20 +156,20 @@ func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID common.Sno
 		if err != nil {
 			return nil, err
 		}
-		req, err = c.generateRequest(ctx, http.MethodPost, path, buf)
+		req, err = c.generateRequest(ctx, http.MethodPost, path, buf, c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", ct)
 	} else {
-		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(jsonBody))
+		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(jsonBody), c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
 		return nil, err
 	}
 
@@ -187,13 +187,13 @@ func (c *RestClient) GetFollowupMessage(ctx context.Context, appID common.Snowfl
 	}
 
 	path := "/webhooks/" + appID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
 		return nil, err
 	}
 
@@ -228,20 +228,20 @@ func (c *RestClient) EditFollowupMessage(ctx context.Context, appID common.Snowf
 		if err != nil {
 			return nil, err
 		}
-		req, err = c.generateRequest(ctx, http.MethodPatch, path, buf)
+		req, err = c.generateRequest(ctx, http.MethodPatch, path, buf, c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", ct)
 	} else {
-		req, err = c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(jsonBody))
+		req, err = c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(jsonBody), c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
 		return nil, err
 	}
 
@@ -259,11 +259,11 @@ func (c *RestClient) DeleteFollowupMessage(ctx context.Context, appID common.Sno
 	}
 
 	path := "/webhooks/" + appID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }

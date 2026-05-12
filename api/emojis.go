@@ -31,13 +31,13 @@ func (c *RestClient) ListGuildEmojis(ctx context.Context, guildID common.Snowfla
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/emojis", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/emojis", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var emojis []*common.Emoji
-	if _, err := c.do(req, http.StatusOK, &emojis); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &emojis); err != nil {
 		return nil, err
 	}
 
@@ -55,13 +55,13 @@ func (c *RestClient) GetGuildEmoji(ctx context.Context, guildID, emojiID common.
 	}
 
 	path := "/guilds/" + guildID.String() + "/emojis/" + emojiID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var emoji common.Emoji
-	if _, err := c.do(req, http.StatusOK, &emoji); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &emoji); err != nil {
 		return nil, err
 	}
 
@@ -80,13 +80,13 @@ func (c *RestClient) CreateGuildEmoji(ctx context.Context, guildID common.Snowfl
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/emojis", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/emojis", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var emoji common.Emoji
-	if _, err := c.do(req, http.StatusOK, &emoji); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &emoji); err != nil {
 		return nil, err
 	}
 
@@ -109,13 +109,13 @@ func (c *RestClient) ModifyGuildEmoji(ctx context.Context, guildID, emojiID comm
 	}
 
 	path := "/guilds/" + guildID.String() + "/emojis/" + emojiID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var emoji common.Emoji
-	if _, err := c.do(req, http.StatusOK, &emoji); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &emoji); err != nil {
 		return nil, err
 	}
 
@@ -133,12 +133,12 @@ func (c *RestClient) DeleteGuildEmoji(ctx context.Context, guildID, emojiID comm
 	}
 
 	path := "/guilds/" + guildID.String() + "/emojis/" + emojiID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -161,7 +161,7 @@ func (c *RestClient) ListApplicationEmojis(ctx context.Context, appID common.Sno
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/applications/"+appID.String()+"/emojis", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/applications/"+appID.String()+"/emojis", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (c *RestClient) ListApplicationEmojis(ctx context.Context, appID common.Sno
 	var result struct {
 		Items []*common.Emoji `json:"items"`
 	}
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -187,13 +187,13 @@ func (c *RestClient) GetApplicationEmoji(ctx context.Context, appID, emojiID com
 	}
 
 	path := "/applications/" + appID.String() + "/emojis/" + emojiID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var emoji common.Emoji
-	if _, err := c.do(req, http.StatusOK, &emoji); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &emoji); err != nil {
 		return nil, err
 	}
 
@@ -211,13 +211,13 @@ func (c *RestClient) CreateApplicationEmoji(ctx context.Context, appID common.Sn
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/applications/"+appID.String()+"/emojis", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/applications/"+appID.String()+"/emojis", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var emoji common.Emoji
-	if _, err := c.do(req, http.StatusOK, &emoji); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &emoji); err != nil {
 		return nil, err
 	}
 
@@ -240,13 +240,13 @@ func (c *RestClient) ModifyApplicationEmoji(ctx context.Context, appID, emojiID 
 	}
 
 	path := "/applications/" + appID.String() + "/emojis/" + emojiID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var emoji common.Emoji
-	if _, err := c.do(req, http.StatusOK, &emoji); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &emoji); err != nil {
 		return nil, err
 	}
 
@@ -264,11 +264,11 @@ func (c *RestClient) DeleteApplicationEmoji(ctx context.Context, appID, emojiID 
 	}
 
 	path := "/applications/" + appID.String() + "/emojis/" + emojiID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }

@@ -951,28 +951,6 @@ func (d *Client) DeleteInvite(ctx context.Context, code string) (*api.Invite, er
 	return d.RestClient.DeleteInvite(ctx, code)
 }
 
-// ── Additional user methods ───────────────────────────────────────────────────
-
-func (d *Client) GetCurrentUserConnections(ctx context.Context) ([]*api.UserConnection, error) {
-	return d.RestClient.GetCurrentUserConnections(ctx)
-}
-
-func (d *Client) GetCurrentUserApplicationRoleConnection(ctx context.Context, appID common.Snowflake) (*api.ApplicationRoleConnection, error) {
-	return d.RestClient.GetCurrentUserApplicationRoleConnection(ctx, appID)
-}
-
-func (d *Client) UpdateCurrentUserApplicationRoleConnection(ctx context.Context, appID common.Snowflake, params api.UpdateRoleConnectionParams) (*api.ApplicationRoleConnection, error) {
-	return d.RestClient.UpdateCurrentUserApplicationRoleConnection(ctx, appID, params)
-}
-
-func (d *Client) CreateGroupDM(ctx context.Context, params api.CreateGroupDMParams) (*common.Channel, error) {
-	channel, err := d.RestClient.CreateGroupDM(ctx, params)
-	if err == nil {
-		d.cacheChannel(channel)
-	}
-	return channel, err
-}
-
 // ── Additional webhook methods ────────────────────────────────────────────────
 
 func (d *Client) ExecuteSlackWebhook(ctx context.Context, webhookID common.Snowflake, token string, wait bool, body json.RawMessage) error {

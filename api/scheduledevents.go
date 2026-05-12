@@ -88,13 +88,13 @@ func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID commo
 		path += "?with_user_count=true"
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var events []*common.GuildScheduledEvent
-	if _, err := c.do(req, http.StatusOK, &events); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &events); err != nil {
 		return nil, err
 	}
 
@@ -112,13 +112,13 @@ func (c *RestClient) CreateGuildScheduledEvent(ctx context.Context, guildID comm
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/scheduled-events", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/scheduled-events", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var event common.GuildScheduledEvent
-	if _, err := c.do(req, http.StatusOK, &event); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &event); err != nil {
 		return nil, err
 	}
 
@@ -141,13 +141,13 @@ func (c *RestClient) GetGuildScheduledEvent(ctx context.Context, guildID, eventI
 		path += "?with_user_count=true"
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var event common.GuildScheduledEvent
-	if _, err := c.do(req, http.StatusOK, &event); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &event); err != nil {
 		return nil, err
 	}
 
@@ -170,13 +170,13 @@ func (c *RestClient) ModifyGuildScheduledEvent(ctx context.Context, guildID, eve
 	}
 
 	path := "/guilds/" + guildID.String() + "/scheduled-events/" + eventID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var event common.GuildScheduledEvent
-	if _, err := c.do(req, http.StatusOK, &event); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &event); err != nil {
 		return nil, err
 	}
 
@@ -194,12 +194,12 @@ func (c *RestClient) DeleteGuildScheduledEvent(ctx context.Context, guildID, eve
 	}
 
 	path := "/guilds/" + guildID.String() + "/scheduled-events/" + eventID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -214,13 +214,13 @@ func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, e
 	}
 
 	path := "/guilds/" + guildID.String() + "/scheduled-events/" + eventID.String() + "/users" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var users []*GuildScheduledEventUser
-	if _, err := c.do(req, http.StatusOK, &users); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &users); err != nil {
 		return nil, err
 	}
 

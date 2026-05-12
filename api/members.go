@@ -73,13 +73,13 @@ func (c *RestClient) GetGuildMember(ctx context.Context, guildID, userID common.
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var member common.GuildMember
-	if _, err := c.do(req, http.StatusOK, &member); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &member); err != nil {
 		return nil, err
 	}
 
@@ -93,13 +93,13 @@ func (c *RestClient) ListGuildMembers(ctx context.Context, guildID common.Snowfl
 	}
 
 	path := "/guilds/" + guildID.String() + "/members" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var members []*common.GuildMember
-	if _, err := c.do(req, http.StatusOK, &members); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &members); err != nil {
 		return nil, err
 	}
 
@@ -113,13 +113,13 @@ func (c *RestClient) SearchGuildMembers(ctx context.Context, guildID common.Snow
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/search" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var members []*common.GuildMember
-	if _, err := c.do(req, http.StatusOK, &members); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &members); err != nil {
 		return nil, err
 	}
 
@@ -142,13 +142,13 @@ func (c *RestClient) ModifyGuildMember(ctx context.Context, guildID, userID comm
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var member common.GuildMember
-	if _, err := c.do(req, http.StatusOK, &member); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &member); err != nil {
 		return nil, err
 	}
 
@@ -167,13 +167,13 @@ func (c *RestClient) ModifyCurrentMember(ctx context.Context, guildID common.Sno
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/@me"
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var member common.GuildMember
-	if _, err := c.do(req, http.StatusOK, &member); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &member); err != nil {
 		return nil, err
 	}
 
@@ -195,12 +195,12 @@ func (c *RestClient) AddGuildMemberRole(ctx context.Context, guildID, userID, ro
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String() + "/roles/" + roleID.String()
-	req, err := c.generateRequest(ctx, http.MethodPut, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -219,12 +219,12 @@ func (c *RestClient) RemoveGuildMemberRole(ctx context.Context, guildID, userID,
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String() + "/roles/" + roleID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -239,11 +239,11 @@ func (c *RestClient) KickGuildMember(ctx context.Context, guildID, userID common
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }

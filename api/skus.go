@@ -12,13 +12,13 @@ func (c *RestClient) ListSKUs(ctx context.Context, appID common.Snowflake) ([]*c
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/applications/"+appID.String()+"/skus", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/applications/"+appID.String()+"/skus", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result []*common.SKU
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 

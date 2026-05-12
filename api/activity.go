@@ -14,13 +14,13 @@ func (c *RestClient) GetActivityInstance(ctx context.Context, appID common.Snowf
 	}
 
 	path := "/applications/" + appID.String() + "/activity-instances/" + url.PathEscape(instanceID)
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result common.ActivityInstance
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 

@@ -31,13 +31,13 @@ type CreateGuildFromTemplateParams struct {
 
 // GetTemplate returns the guild template for the given template code.
 func (c *RestClient) GetTemplate(ctx context.Context, templateCode string) (*common.GuildTemplate, error) {
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/templates/"+url.PathEscape(templateCode), nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/templates/"+url.PathEscape(templateCode), nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var tmpl common.GuildTemplate
-	if _, err := c.do(req, http.StatusOK, &tmpl); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &tmpl); err != nil {
 		return nil, err
 	}
 
@@ -51,13 +51,13 @@ func (c *RestClient) CreateGuildFromTemplate(ctx context.Context, templateCode s
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/templates/"+url.PathEscape(templateCode), bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/templates/"+url.PathEscape(templateCode), bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var guild common.Guild
-	if _, err := c.do(req, http.StatusCreated, &guild); err != nil {
+	if _, err := c.do(req, []int{http.StatusCreated}, &guild); err != nil {
 		return nil, err
 	}
 
@@ -70,13 +70,13 @@ func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID common.Snowf
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/templates", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/templates", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var templates []*common.GuildTemplate
-	if _, err := c.do(req, http.StatusOK, &templates); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &templates); err != nil {
 		return nil, err
 	}
 
@@ -94,13 +94,13 @@ func (c *RestClient) CreateGuildTemplate(ctx context.Context, guildID common.Sno
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/templates", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/templates", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var tmpl common.GuildTemplate
-	if _, err := c.do(req, http.StatusCreated, &tmpl); err != nil {
+	if _, err := c.do(req, []int{http.StatusCreated}, &tmpl); err != nil {
 		return nil, err
 	}
 
@@ -114,13 +114,13 @@ func (c *RestClient) SyncGuildTemplate(ctx context.Context, guildID common.Snowf
 	}
 
 	path := "/guilds/" + guildID.String() + "/templates/" + url.PathEscape(templateCode)
-	req, err := c.generateRequest(ctx, http.MethodPut, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var tmpl common.GuildTemplate
-	if _, err := c.do(req, http.StatusOK, &tmpl); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &tmpl); err != nil {
 		return nil, err
 	}
 
@@ -139,13 +139,13 @@ func (c *RestClient) ModifyGuildTemplate(ctx context.Context, guildID common.Sno
 	}
 
 	path := "/guilds/" + guildID.String() + "/templates/" + url.PathEscape(templateCode)
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var tmpl common.GuildTemplate
-	if _, err := c.do(req, http.StatusOK, &tmpl); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &tmpl); err != nil {
 		return nil, err
 	}
 
@@ -159,13 +159,13 @@ func (c *RestClient) DeleteGuildTemplate(ctx context.Context, guildID common.Sno
 	}
 
 	path := "/guilds/" + guildID.String() + "/templates/" + url.PathEscape(templateCode)
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var tmpl common.GuildTemplate
-	if _, err := c.do(req, http.StatusOK, &tmpl); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &tmpl); err != nil {
 		return nil, err
 	}
 

@@ -46,13 +46,13 @@ func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID common.Snow
 	}
 
 	path := "/skus/" + skuID.String() + "/subscriptions" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result []*common.Subscription
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -69,13 +69,13 @@ func (c *RestClient) GetSKUSubscription(ctx context.Context, skuID, subscription
 	}
 
 	path := "/skus/" + skuID.String() + "/subscriptions/" + subscriptionID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result common.Subscription
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 

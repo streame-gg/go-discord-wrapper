@@ -49,13 +49,13 @@ func (c *RestClient) GetSticker(ctx context.Context, stickerID common.Snowflake)
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/stickers/"+stickerID.String(), nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/stickers/"+stickerID.String(), nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var sticker common.Sticker
-	if _, err := c.do(req, http.StatusOK, &sticker); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &sticker); err != nil {
 		return nil, err
 	}
 
@@ -64,7 +64,7 @@ func (c *RestClient) GetSticker(ctx context.Context, stickerID common.Snowflake)
 
 // ListStickerPacks returns the list of sticker packs available to Nitro subscribers.
 func (c *RestClient) ListStickerPacks(ctx context.Context) ([]*StickerPack, error) {
-	req, err := c.generateRequest(ctx, http.MethodGet, "/sticker-packs", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/sticker-packs", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (c *RestClient) ListStickerPacks(ctx context.Context) ([]*StickerPack, erro
 	var result struct {
 		StickerPacks []*StickerPack `json:"sticker_packs"`
 	}
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -85,13 +85,13 @@ func (c *RestClient) ListGuildStickers(ctx context.Context, guildID common.Snowf
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/stickers", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/stickers", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var stickers []*common.Sticker
-	if _, err := c.do(req, http.StatusOK, &stickers); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &stickers); err != nil {
 		return nil, err
 	}
 
@@ -109,13 +109,13 @@ func (c *RestClient) GetGuildSticker(ctx context.Context, guildID, stickerID com
 	}
 
 	path := "/guilds/" + guildID.String() + "/stickers/" + stickerID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var sticker common.Sticker
-	if _, err := c.do(req, http.StatusOK, &sticker); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &sticker); err != nil {
 		return nil, err
 	}
 
@@ -138,13 +138,13 @@ func (c *RestClient) ModifyGuildSticker(ctx context.Context, guildID, stickerID 
 	}
 
 	path := "/guilds/" + guildID.String() + "/stickers/" + stickerID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var sticker common.Sticker
-	if _, err := c.do(req, http.StatusOK, &sticker); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &sticker); err != nil {
 		return nil, err
 	}
 
@@ -162,12 +162,12 @@ func (c *RestClient) DeleteGuildSticker(ctx context.Context, guildID, stickerID 
 	}
 
 	path := "/guilds/" + guildID.String() + "/stickers/" + stickerID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -177,13 +177,13 @@ func (c *RestClient) GetStickerPack(ctx context.Context, packID common.Snowflake
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/sticker-packs/"+packID.String(), nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/sticker-packs/"+packID.String(), nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var pack StickerPack
-	if _, err := c.do(req, http.StatusOK, &pack); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &pack); err != nil {
 		return nil, err
 	}
 
@@ -226,14 +226,14 @@ func (c *RestClient) CreateGuildSticker(ctx context.Context, guildID common.Snow
 	}
 	w.Close()
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/stickers", &buf)
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/stickers", &buf, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", w.FormDataContentType())
 
 	var sticker common.Sticker
-	if _, err := c.do(req, http.StatusCreated, &sticker); err != nil {
+	if _, err := c.do(req, []int{http.StatusCreated}, &sticker); err != nil {
 		return nil, err
 	}
 

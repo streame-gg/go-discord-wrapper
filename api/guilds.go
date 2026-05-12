@@ -256,13 +256,13 @@ func (c *RestClient) GetGuild(ctx context.Context, guildID common.Snowflake, wit
 		path += "?with_counts=true"
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var guild common.Guild
-	if _, err := c.do(req, http.StatusOK, &guild); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &guild); err != nil {
 		return nil, err
 	}
 
@@ -275,13 +275,13 @@ func (c *RestClient) GetGuildPreview(ctx context.Context, guildID common.Snowfla
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/preview", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/preview", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var guild common.Guild
-	if _, err := c.do(req, http.StatusOK, &guild); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &guild); err != nil {
 		return nil, err
 	}
 
@@ -299,13 +299,13 @@ func (c *RestClient) ModifyGuild(ctx context.Context, guildID common.Snowflake, 
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String(), bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String(), bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var guild common.Guild
-	if _, err := c.do(req, http.StatusOK, &guild); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &guild); err != nil {
 		return nil, err
 	}
 
@@ -318,12 +318,12 @@ func (c *RestClient) DeleteGuild(ctx context.Context, guildID common.Snowflake) 
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/guilds/"+guildID.String(), nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/guilds/"+guildID.String(), nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -335,13 +335,13 @@ func (c *RestClient) GetGuildChannels(ctx context.Context, guildID common.Snowfl
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/channels", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/channels", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var channels []*common.Channel
-	if _, err := c.do(req, http.StatusOK, &channels); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &channels); err != nil {
 		return nil, err
 	}
 
@@ -359,13 +359,13 @@ func (c *RestClient) CreateGuildChannel(ctx context.Context, guildID common.Snow
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/channels", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/channels", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var channel common.Channel
-	if _, err := c.do(req, http.StatusOK, &channel); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &channel); err != nil {
 		return nil, err
 	}
 
@@ -383,12 +383,12 @@ func (c *RestClient) ModifyGuildChannelPositions(ctx context.Context, guildID co
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/channels", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/channels", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -396,13 +396,13 @@ func (c *RestClient) ModifyGuildChannelPositions(ctx context.Context, guildID co
 
 // GetGuildRoles returns all roles in a guild.
 func (c *RestClient) GetGuildRoles(ctx context.Context, guildID common.Snowflake) ([]*common.Role, error) {
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/roles", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/roles", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var roles []*common.Role
-	if _, err := c.do(req, http.StatusOK, &roles); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &roles); err != nil {
 		return nil, err
 	}
 
@@ -416,13 +416,13 @@ func (c *RestClient) GetGuildRoleMemberCounts(ctx context.Context, guildID commo
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/roles/member-counts", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/roles/member-counts", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var roles map[string]int64
-	if _, err := c.do(req, http.StatusOK, &roles); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &roles); err != nil {
 		return nil, err
 	}
 
@@ -440,13 +440,13 @@ func (c *RestClient) GetGuildRole(ctx context.Context, guildID, roleID common.Sn
 	}
 
 	path := "/guilds/" + guildID.String() + "/roles/" + roleID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var role common.Role
-	if _, err := c.do(req, http.StatusOK, &role); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &role); err != nil {
 		return nil, err
 	}
 
@@ -464,13 +464,13 @@ func (c *RestClient) CreateGuildRole(ctx context.Context, guildID common.Snowfla
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var role common.Role
-	if _, err := c.do(req, http.StatusOK, &role); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &role); err != nil {
 		return nil, err
 	}
 
@@ -488,13 +488,13 @@ func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID commo
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var roles []*common.Role
-	if _, err := c.do(req, http.StatusOK, &roles); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &roles); err != nil {
 		return nil, err
 	}
 
@@ -517,13 +517,13 @@ func (c *RestClient) ModifyGuildRole(ctx context.Context, guildID, roleID common
 	}
 
 	path := "/guilds/" + guildID.String() + "/roles/" + roleID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var role common.Role
-	if _, err := c.do(req, http.StatusOK, &role); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &role); err != nil {
 		return nil, err
 	}
 
@@ -541,12 +541,12 @@ func (c *RestClient) DeleteGuildRole(ctx context.Context, guildID, roleID common
 	}
 
 	path := "/guilds/" + guildID.String() + "/roles/" + roleID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -557,13 +557,13 @@ func (c *RestClient) GetGuildBans(ctx context.Context, guildID common.Snowflake,
 	}
 
 	path := "/guilds/" + guildID.String() + "/bans" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var bans []*Ban
-	if _, err := c.do(req, http.StatusOK, &bans); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &bans); err != nil {
 		return nil, err
 	}
 
@@ -581,13 +581,13 @@ func (c *RestClient) GetGuildBan(ctx context.Context, guildID, userID common.Sno
 	}
 
 	path := "/guilds/" + guildID.String() + "/bans/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var ban Ban
-	if _, err := c.do(req, http.StatusOK, &ban); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &ban); err != nil {
 		return nil, err
 	}
 
@@ -610,12 +610,12 @@ func (c *RestClient) CreateGuildBan(ctx context.Context, guildID, userID common.
 	}
 
 	path := "/guilds/" + guildID.String() + "/bans/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -630,12 +630,12 @@ func (c *RestClient) RemoveGuildBan(ctx context.Context, guildID, userID common.
 	}
 
 	path := "/guilds/" + guildID.String() + "/bans/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -646,13 +646,13 @@ func (c *RestClient) GetGuildPruneCount(ctx context.Context, guildID common.Snow
 	}
 
 	path := "/guilds/" + guildID.String() + "/prune" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result GuildPruneCountResult
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -670,13 +670,13 @@ func (c *RestClient) BeginGuildPrune(ctx context.Context, guildID common.Snowfla
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/prune", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/prune", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result GuildPruneCountResult
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -691,13 +691,13 @@ func (c *RestClient) GetGuildInvites(ctx context.Context, guildID common.Snowfla
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/invites", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/invites", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var invites []*Invite
-	if _, err := c.do(req, http.StatusOK, &invites); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &invites); err != nil {
 		return nil, err
 	}
 
@@ -710,13 +710,13 @@ func (c *RestClient) GetGuildVanityURL(ctx context.Context, guildID common.Snowf
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/vanity-url", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/vanity-url", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var vanity GuildVanityURL
-	if _, err := c.do(req, http.StatusOK, &vanity); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &vanity); err != nil {
 		return nil, err
 	}
 
@@ -730,13 +730,13 @@ func (c *RestClient) GetGuildAuditLog(ctx context.Context, guildID common.Snowfl
 	}
 
 	path := "/guilds/" + guildID.String() + "/audit-logs" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var log AuditLog
-	if _, err := c.do(req, http.StatusOK, &log); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &log); err != nil {
 		return nil, err
 	}
 
@@ -751,13 +751,13 @@ func (c *RestClient) GetGuildWidgetSettings(ctx context.Context, guildID common.
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/widget", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/widget", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var settings common.GuildWidgetSettings
-	if _, err := c.do(req, http.StatusOK, &settings); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &settings); err != nil {
 		return nil, err
 	}
 
@@ -775,13 +775,13 @@ func (c *RestClient) ModifyGuildWidgetSettings(ctx context.Context, guildID comm
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/widget", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/widget", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var settings common.GuildWidgetSettings
-	if _, err := c.do(req, http.StatusOK, &settings); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &settings); err != nil {
 		return nil, err
 	}
 
@@ -799,7 +799,7 @@ func (c *RestClient) GetGuildWidgetImage(ctx context.Context, guildID common.Sno
 	if style != "" {
 		path += "?style=" + style
 	}
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
@@ -822,13 +822,13 @@ func (c *RestClient) GetGuildWidget(ctx context.Context, guildID common.Snowflak
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/widget.json", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/widget.json", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var widget common.GuildWidget
-	if _, err := c.do(req, http.StatusOK, &widget); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &widget); err != nil {
 		return nil, err
 	}
 
@@ -843,13 +843,13 @@ func (c *RestClient) GetGuildWelcomeScreen(ctx context.Context, guildID common.S
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/welcome-screen", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/welcome-screen", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var screen common.GuildWelcomeScreen
-	if _, err := c.do(req, http.StatusOK, &screen); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &screen); err != nil {
 		return nil, err
 	}
 
@@ -867,13 +867,13 @@ func (c *RestClient) ModifyGuildWelcomeScreen(ctx context.Context, guildID commo
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/welcome-screen", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/welcome-screen", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var screen common.GuildWelcomeScreen
-	if _, err := c.do(req, http.StatusOK, &screen); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &screen); err != nil {
 		return nil, err
 	}
 
@@ -888,13 +888,13 @@ func (c *RestClient) GetGuildOnboarding(ctx context.Context, guildID common.Snow
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/onboarding", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/onboarding", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var onboarding common.GuildOnboarding
-	if _, err := c.do(req, http.StatusOK, &onboarding); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &onboarding); err != nil {
 		return nil, err
 	}
 
@@ -912,13 +912,13 @@ func (c *RestClient) ModifyGuildOnboarding(ctx context.Context, guildID common.S
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPut, "/guilds/"+guildID.String()+"/onboarding", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPut, "/guilds/"+guildID.String()+"/onboarding", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var onboarding common.GuildOnboarding
-	if _, err := c.do(req, http.StatusOK, &onboarding); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &onboarding); err != nil {
 		return nil, err
 	}
 
@@ -970,13 +970,13 @@ func (c *RestClient) CreateGuild(ctx context.Context, params CreateGuildParams) 
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var guild common.Guild
-	if _, err := c.do(req, http.StatusCreated, &guild); err != nil {
+	if _, err := c.do(req, []int{http.StatusCreated}, &guild); err != nil {
 		return nil, err
 	}
 
@@ -999,13 +999,13 @@ func (c *RestClient) AddGuildMember(ctx context.Context, guildID, userID common.
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var member common.GuildMember
-	if _, err := c.do(req, http.StatusCreated, &member); err != nil {
+	if _, err := c.do(req, []int{http.StatusCreated}, &member); err != nil {
 		return nil, err
 	}
 
@@ -1023,13 +1023,13 @@ func (c *RestClient) BulkBanGuildMembers(ctx context.Context, guildID common.Sno
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/bulk-ban", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/bulk-ban", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result BulkBanResult
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -1042,13 +1042,13 @@ func (c *RestClient) GetGuildIntegrations(ctx context.Context, guildID common.Sn
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/integrations", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/integrations", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result []*common.Integration
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -1067,13 +1067,13 @@ func (c *RestClient) ModifyGuildMFALevel(ctx context.Context, guildID common.Sno
 		return 0, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/mfa", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/mfa", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return 0, err
 	}
 
 	var result int
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return 0, err
 	}
 
@@ -1091,11 +1091,11 @@ func (c *RestClient) DeleteGuildIntegration(ctx context.Context, guildID, integr
 	}
 
 	path := "/guilds/" + guildID.String() + "/integrations/" + integrationID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }

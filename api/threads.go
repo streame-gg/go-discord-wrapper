@@ -110,13 +110,13 @@ func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, mes
 	}
 
 	path := "/channels/" + channelID.String() + "/messages/" + messageID.String() + "/threads"
-	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var thread common.Channel
-	if _, err := c.do(req, http.StatusCreated, &thread); err != nil {
+	if _, err := c.do(req, []int{http.StatusCreated}, &thread); err != nil {
 		return nil, err
 	}
 
@@ -134,13 +134,13 @@ func (c *RestClient) CreateThread(ctx context.Context, channelID common.Snowflak
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var thread common.Channel
-	if _, err := c.do(req, http.StatusCreated, &thread); err != nil {
+	if _, err := c.do(req, []int{http.StatusCreated}, &thread); err != nil {
 		return nil, err
 	}
 
@@ -158,13 +158,13 @@ func (c *RestClient) CreateForumThread(ctx context.Context, channelID common.Sno
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var thread common.Channel
-	if _, err := c.do(req, http.StatusCreated, &thread); err != nil {
+	if _, err := c.do(req, []int{http.StatusCreated}, &thread); err != nil {
 		return nil, err
 	}
 
@@ -177,12 +177,12 @@ func (c *RestClient) JoinThread(ctx context.Context, channelID common.Snowflake)
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPut, "/channels/"+channelID.String()+"/thread-members/@me", nil)
+	req, err := c.generateRequest(ctx, http.MethodPut, "/channels/"+channelID.String()+"/thread-members/@me", nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -192,12 +192,12 @@ func (c *RestClient) LeaveThread(ctx context.Context, channelID common.Snowflake
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/channels/"+channelID.String()+"/thread-members/@me", nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/channels/"+channelID.String()+"/thread-members/@me", nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -208,12 +208,12 @@ func (c *RestClient) AddThreadMember(ctx context.Context, channelID, userID comm
 	}
 
 	path := "/channels/" + channelID.String() + "/thread-members/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodPut, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -224,12 +224,12 @@ func (c *RestClient) RemoveThreadMember(ctx context.Context, channelID, userID c
 	}
 
 	path := "/channels/" + channelID.String() + "/thread-members/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -249,13 +249,13 @@ func (c *RestClient) GetThreadMember(ctx context.Context, channelID, userID comm
 		path += "?with_member=true"
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var member common.ThreadMember
-	if _, err := c.do(req, http.StatusOK, &member); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &member); err != nil {
 		return nil, err
 	}
 
@@ -269,13 +269,13 @@ func (c *RestClient) ListThreadMembers(ctx context.Context, channelID common.Sno
 	}
 
 	path := "/channels/" + channelID.String() + "/thread-members" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var members []*common.ThreadMember
-	if _, err := c.do(req, http.StatusOK, &members); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &members); err != nil {
 		return nil, err
 	}
 
@@ -289,13 +289,13 @@ func (c *RestClient) ListPublicArchivedThreads(ctx context.Context, channelID co
 	}
 
 	path := "/channels/" + channelID.String() + "/threads/archived/public" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result ArchivedThreadsResponse
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -309,13 +309,13 @@ func (c *RestClient) ListPrivateArchivedThreads(ctx context.Context, channelID c
 	}
 
 	path := "/channels/" + channelID.String() + "/threads/archived/private" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result ArchivedThreadsResponse
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -329,13 +329,13 @@ func (c *RestClient) ListJoinedPrivateArchivedThreads(ctx context.Context, chann
 	}
 
 	path := "/channels/" + channelID.String() + "/users/@me/threads/archived/private" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result ArchivedThreadsResponse
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -348,13 +348,13 @@ func (c *RestClient) ListActiveGuildThreads(ctx context.Context, guildID common.
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/threads/active", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/threads/active", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result ActiveThreadsResponse
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 

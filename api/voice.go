@@ -27,13 +27,13 @@ type ModifyUserVoiceStateParams struct {
 
 // ListVoiceRegions returns all available voice regions.
 func (c *RestClient) ListVoiceRegions(ctx context.Context) ([]*common.VoiceRegion, error) {
-	req, err := c.generateRequest(ctx, http.MethodGet, "/voice/regions", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/voice/regions", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var regions []*common.VoiceRegion
-	if _, err := c.do(req, http.StatusOK, &regions); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &regions); err != nil {
 		return nil, err
 	}
 
@@ -46,13 +46,13 @@ func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID common.S
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/regions", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/regions", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var regions []*common.VoiceRegion
-	if _, err := c.do(req, http.StatusOK, &regions); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &regions); err != nil {
 		return nil, err
 	}
 
@@ -70,12 +70,12 @@ func (c *RestClient) ModifyCurrentUserVoiceState(ctx context.Context, guildID co
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/voice-states/@me", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/voice-states/@me", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -95,12 +95,12 @@ func (c *RestClient) ModifyUserVoiceState(ctx context.Context, guildID, userID c
 	}
 
 	path := "/guilds/" + guildID.String() + "/voice-states/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -110,13 +110,13 @@ func (c *RestClient) GetCurrentUserVoiceState(ctx context.Context, guildID commo
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/voice-states/@me", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/voice-states/@me", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var state common.VoiceState
-	if _, err := c.do(req, http.StatusOK, &state); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &state); err != nil {
 		return nil, err
 	}
 
@@ -134,13 +134,13 @@ func (c *RestClient) GetUserVoiceState(ctx context.Context, guildID, userID comm
 	}
 
 	path := "/guilds/" + guildID.String() + "/voice-states/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var state common.VoiceState
-	if _, err := c.do(req, http.StatusOK, &state); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &state); err != nil {
 		return nil, err
 	}
 

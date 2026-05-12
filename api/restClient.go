@@ -229,9 +229,21 @@ func isAllDigits(s string) bool {
 	return true
 }
 
+func (c *RestClient) WithBotAuthorization() string {
+	return "Bot " + c.token
+}
+
+func WithUserAuthorization(token string) string {
+	return "Bearer " + token
+}
+
+func WithoutAuthorization() string {
+	return ""
+}
+
 // generateRequest builds an authenticated HTTP request and embeds the relative
 // route path into the request context for the rate limiter to consume.
-func (c *RestClient) generateRequest(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
+func (c *RestClient) generateRequest(ctx context.Context, method, path string, body io.Reader, auth string) (*http.Request, error) {
 	if err := validateAPIPath(path); err != nil {
 		return nil, err
 	}
@@ -244,19 +256,33 @@ func (c *RestClient) generateRequest(ctx context.Context, method, path string, b
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", "Bot "+c.token)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", fmt.Sprintf("GoDiscordWrapper (%s@%s)", common.RepositoryURL, common.RepositoryVersion))
 
+	if auth != "" {
+		req.Header.Set("Authorization", "Bot "+c.token)
+	}
+
 	return req, nil
+}
+
+func (c *RestClient) isApiCallSucceeded(successResponseCodes []int, actual int) bool {
+	for _, code := range successResponseCodes {
+		if code == actual {
+			return true
+		}
+	}
+
+	return false
 }
 
 // do executes req and decodes a successful response into v (when v != nil).
 // The returned *http.Response has its Body already closed; callers must not
 // read from it. Inspect headers and status codes via the returned value, but
 // do not call resp.Body.Read or resp.Body.Close again.
-func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{}) (*http.Response, error) {
+
+func (c *RestClient) do(req *http.Request, successResponseCodes []int, v interface{}) (*http.Response, error) {
 	if req == nil {
 		return nil, errors.New("request must not be nil")
 	}
@@ -318,7 +344,7 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 
 		c.emitEvent(RestEvent{Type: RestEventResponse, Request: safeReq, Response: resp, Attempt: attempt})
 
-		if resp.StatusCode == successResponseCode {
+		if c.isApiCallSucceeded(successResponseCodes, resp.StatusCode) {
 			if v != nil && resp.StatusCode != http.StatusNoContent {
 				if decodeErr := json.NewDecoder(resp.Body).Decode(v); decodeErr != nil {
 					_ = resp.Body.Close()

@@ -71,13 +71,13 @@ func (c *RestClient) ListEntitlements(ctx context.Context, appID common.Snowflak
 	}
 
 	path := "/applications/" + appID.String() + "/entitlements" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result []*common.Entitlement
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -94,13 +94,13 @@ func (c *RestClient) GetEntitlement(ctx context.Context, appID, entitlementID co
 	}
 
 	path := "/applications/" + appID.String() + "/entitlements/" + entitlementID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result common.Entitlement
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -117,13 +117,13 @@ func (c *RestClient) CreateTestEntitlement(ctx context.Context, appID common.Sno
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/applications/"+appID.String()+"/entitlements", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/applications/"+appID.String()+"/entitlements", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result common.Entitlement
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -140,12 +140,12 @@ func (c *RestClient) ConsumeEntitlement(ctx context.Context, appID, entitlementI
 	}
 
 	path := "/applications/" + appID.String() + "/entitlements/" + entitlementID.String() + "/consume"
-	req, err := c.generateRequest(ctx, http.MethodPost, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPost, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -159,11 +159,11 @@ func (c *RestClient) DeleteTestEntitlement(ctx context.Context, appID, entitleme
 	}
 
 	path := "/applications/" + appID.String() + "/entitlements/" + entitlementID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }

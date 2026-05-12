@@ -61,14 +61,14 @@ type CurrentUserGuild struct {
 // ── User endpoints ────────────────────────────────────────────────────────────
 
 // GetCurrentUser returns the bot user associated with the current token.
-func (c *RestClient) GetCurrentUser(ctx context.Context) (*common.User, error) {
-	req, err := c.generateRequest(ctx, http.MethodGet, "/users/@me", nil)
+func (c *RestClient) GetCurrentUser(ctx context.Context, authHeader string) (*common.User, error) {
+	req, err := c.generateRequest(ctx, http.MethodGet, "/users/@me", nil, authHeader)
 	if err != nil {
 		return nil, err
 	}
 
 	var user common.User
-	if _, err := c.do(req, http.StatusOK, &user); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &user); err != nil {
 		return nil, err
 	}
 
@@ -81,13 +81,13 @@ func (c *RestClient) GetUser(ctx context.Context, userID common.Snowflake) (*com
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/users/"+userID.String(), nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/users/"+userID.String(), nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var user common.User
-	if _, err := c.do(req, http.StatusOK, &user); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &user); err != nil {
 		return nil, err
 	}
 
@@ -101,13 +101,13 @@ func (c *RestClient) ModifyCurrentUser(ctx context.Context, params ModifyCurrent
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/users/@me", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/users/@me", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var user common.User
-	if _, err := c.do(req, http.StatusOK, &user); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &user); err != nil {
 		return nil, err
 	}
 
@@ -115,15 +115,15 @@ func (c *RestClient) ModifyCurrentUser(ctx context.Context, params ModifyCurrent
 }
 
 // GetCurrentUserGuilds returns the guilds the current user is a member of.
-func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrentUserGuildsParams) ([]*CurrentUserGuild, error) {
+func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, authHeader string, params GetCurrentUserGuildsParams) ([]*CurrentUserGuild, error) {
 	path := "/users/@me/guilds" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, authHeader)
 	if err != nil {
 		return nil, err
 	}
 
 	var guilds []*CurrentUserGuild
-	if _, err := c.do(req, http.StatusOK, &guilds); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &guilds); err != nil {
 		return nil, err
 	}
 
@@ -131,19 +131,19 @@ func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrent
 }
 
 // GetCurrentUserGuildMember returns the guild member object for the current user in the given guild.
-func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID common.Snowflake) (*common.GuildMember, error) {
+func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID common.Snowflake, authHeader string) (*common.GuildMember, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
 
 	path := "/users/@me/guilds/" + guildID.String() + "/member"
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, authHeader)
 	if err != nil {
 		return nil, err
 	}
 
 	var member common.GuildMember
-	if _, err := c.do(req, http.StatusOK, &member); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &member); err != nil {
 		return nil, err
 	}
 
@@ -156,12 +156,12 @@ func (c *RestClient) LeaveGuild(ctx context.Context, guildID common.Snowflake) e
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/users/@me/guilds/"+guildID.String(), nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/users/@me/guilds/"+guildID.String(), nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -176,13 +176,13 @@ func (c *RestClient) CreateDM(ctx context.Context, recipientID common.Snowflake)
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/users/@me/channels", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/users/@me/channels", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var channel common.Channel
-	if _, err := c.do(req, http.StatusOK, &channel); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &channel); err != nil {
 		return nil, err
 	}
 
@@ -210,96 +210,26 @@ type ApplicationRoleConnection struct {
 	Metadata         map[string]string `json:"metadata,omitempty"`
 }
 
-// UpdateRoleConnectionParams holds params for updating the user's application role connection.
-type UpdateRoleConnectionParams struct {
-	PlatformName     *string           `json:"platform_name,omitempty"`
-	PlatformUsername *string           `json:"platform_username,omitempty"`
-	Metadata         map[string]string `json:"metadata,omitempty"`
-}
-
 // CreateGroupDMParams holds params for creating a Group DM.
 type CreateGroupDMParams struct {
 	AccessTokens []string          `json:"access_tokens"`
 	Nicks        map[string]string `json:"nicks"`
 }
 
-// GetCurrentUserConnections returns the connections linked to the current user's account.
-// Requires an OAuth2 bearer token with the connections scope; bot tokens will receive a 401.
-func (c *RestClient) GetCurrentUserConnections(ctx context.Context) ([]*UserConnection, error) {
-	req, err := c.generateRequest(ctx, http.MethodGet, "/users/@me/connections", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var result []*UserConnection
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// GetCurrentUserApplicationRoleConnection returns the application role connection for the current user.
-// Requires an OAuth2 bearer token with the role_connections.write scope; bot tokens will receive a 401.
-func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context, appID common.Snowflake) (*ApplicationRoleConnection, error) {
-	if err := appID.Validate(); err != nil {
-		return nil, err
-	}
-
-	path := "/users/@me/applications/" + appID.String() + "/role-connection"
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var result ApplicationRoleConnection
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
-}
-
-// UpdateCurrentUserApplicationRoleConnection updates the application role connection for the current user.
-// Requires an OAuth2 bearer token with the role_connections.write scope; bot tokens will receive a 401.
-func (c *RestClient) UpdateCurrentUserApplicationRoleConnection(ctx context.Context, appID common.Snowflake, params UpdateRoleConnectionParams) (*ApplicationRoleConnection, error) {
-	if err := appID.Validate(); err != nil {
-		return nil, err
-	}
-
-	body, err := json.Marshal(params)
-	if err != nil {
-		return nil, err
-	}
-
-	path := "/users/@me/applications/" + appID.String() + "/role-connection"
-	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-
-	var result ApplicationRoleConnection
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
-}
-
 // CreateGroupDM creates a new Group DM channel.
-func (c *RestClient) CreateGroupDM(ctx context.Context, params CreateGroupDMParams) (*common.Channel, error) {
+func (c *RestClient) CreateGroupDM(ctx context.Context, authHeader string, params CreateGroupDMParams) (*common.Channel, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/users/@me/channels", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/users/@me/channels", bytes.NewReader(body), authHeader)
 	if err != nil {
 		return nil, err
 	}
 
 	var channel common.Channel
-	if _, err := c.do(req, http.StatusOK, &channel); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &channel); err != nil {
 		return nil, err
 	}
 

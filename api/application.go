@@ -26,13 +26,13 @@ type ModifyCurrentApplicationParams struct {
 
 // GetCurrentApplication returns the application object for the bot's application.
 func (c *RestClient) GetCurrentApplication(ctx context.Context) (*common.Application, error) {
-	req, err := c.generateRequest(ctx, http.MethodGet, "/applications/@me", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/applications/@me", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var app common.Application
-	if _, err := c.do(req, http.StatusOK, &app); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &app); err != nil {
 		return nil, err
 	}
 
@@ -46,13 +46,13 @@ func (c *RestClient) ModifyCurrentApplication(ctx context.Context, params Modify
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/applications/@me", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/applications/@me", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var app common.Application
-	if _, err := c.do(req, http.StatusOK, &app); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &app); err != nil {
 		return nil, err
 	}
 

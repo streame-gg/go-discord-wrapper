@@ -78,13 +78,13 @@ func (c *RestClient) CreateWebhook(ctx context.Context, channelID common.Snowfla
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/webhooks", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/webhooks", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result common.Webhook
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -97,13 +97,13 @@ func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID common.Sn
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/channels/"+channelID.String()+"/webhooks", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/channels/"+channelID.String()+"/webhooks", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result []*common.Webhook
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -116,13 +116,13 @@ func (c *RestClient) GetGuildWebhooks(ctx context.Context, guildID common.Snowfl
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/webhooks", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/webhooks", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result []*common.Webhook
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -135,13 +135,13 @@ func (c *RestClient) GetWebhook(ctx context.Context, webhookID common.Snowflake)
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/webhooks/"+webhookID.String(), nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/webhooks/"+webhookID.String(), nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result common.Webhook
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -154,13 +154,13 @@ func (c *RestClient) GetWebhookWithToken(ctx context.Context, webhookID common.S
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/webhooks/"+webhookID.String()+"/"+url.PathEscape(token), nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/webhooks/"+webhookID.String()+"/"+url.PathEscape(token), nil, WithoutAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result common.Webhook
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -178,13 +178,13 @@ func (c *RestClient) ModifyWebhook(ctx context.Context, webhookID common.Snowfla
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/webhooks/"+webhookID.String(), bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/webhooks/"+webhookID.String(), bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result common.Webhook
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -202,13 +202,13 @@ func (c *RestClient) ModifyWebhookWithToken(ctx context.Context, webhookID commo
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/webhooks/"+webhookID.String()+"/"+url.PathEscape(token), bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/webhooks/"+webhookID.String()+"/"+url.PathEscape(token), bytes.NewReader(body), WithoutAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result common.Webhook
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -221,12 +221,12 @@ func (c *RestClient) DeleteWebhook(ctx context.Context, webhookID common.Snowfla
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/webhooks/"+webhookID.String(), nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/webhooks/"+webhookID.String(), nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -236,12 +236,12 @@ func (c *RestClient) DeleteWebhookWithToken(ctx context.Context, webhookID commo
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/webhooks/"+webhookID.String()+"/"+url.PathEscape(token), nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/webhooks/"+webhookID.String()+"/"+url.PathEscape(token), nil, WithoutAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -265,13 +265,13 @@ func (c *RestClient) ExecuteWebhook(ctx context.Context, webhookID common.Snowfl
 		if err != nil {
 			return nil, err
 		}
-		req, err = c.generateRequest(ctx, http.MethodPost, path, buf)
+		req, err = c.generateRequest(ctx, http.MethodPost, path, buf, WithoutAuthorization())
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", ct)
 	} else {
-		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(jsonBody))
+		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(jsonBody), WithoutAuthorization())
 		if err != nil {
 			return nil, err
 		}
@@ -279,13 +279,13 @@ func (c *RestClient) ExecuteWebhook(ctx context.Context, webhookID common.Snowfl
 
 	if query.Wait != nil && *query.Wait {
 		var result common.Message
-		if _, err := c.do(req, http.StatusOK, &result); err != nil {
+		if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 			return nil, err
 		}
 		return &result, nil
 	}
 
-	if _, err := c.do(req, http.StatusNoContent, nil); err != nil {
+	if _, err := c.do(req, []int{http.StatusNoContent}, nil); err != nil {
 		return nil, err
 	}
 	return nil, nil
@@ -302,13 +302,13 @@ func (c *RestClient) GetWebhookMessage(ctx context.Context, webhookID common.Sno
 	}
 
 	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result common.Message
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -331,13 +331,13 @@ func (c *RestClient) EditWebhookMessage(ctx context.Context, webhookID common.Sn
 	}
 
 	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), WithoutAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result common.Message
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -355,12 +355,12 @@ func (c *RestClient) DeleteWebhookMessage(ctx context.Context, webhookID common.
 	}
 
 	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -375,15 +375,15 @@ func (c *RestClient) ExecuteSlackWebhook(ctx context.Context, webhookID common.S
 		q = "?wait=true"
 	}
 	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/slack" + q
-	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), WithoutAuthorization())
 	if err != nil {
 		return err
 	}
 
 	if wait {
-		_, err = c.do(req, http.StatusOK, nil)
+		_, err = c.do(req, []int{http.StatusOK}, nil)
 	} else {
-		_, err = c.do(req, http.StatusNoContent, nil)
+		_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	}
 	return err
 }
@@ -399,15 +399,15 @@ func (c *RestClient) ExecuteGitHubWebhook(ctx context.Context, webhookID common.
 		q = "?wait=true"
 	}
 	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/github" + q
-	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), WithoutAuthorization())
 	if err != nil {
 		return err
 	}
 
 	if wait {
-		_, err = c.do(req, http.StatusOK, nil)
+		_, err = c.do(req, []int{http.StatusOK}, nil)
 	} else {
-		_, err = c.do(req, http.StatusNoContent, nil)
+		_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	}
 	return err
 }

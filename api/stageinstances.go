@@ -37,13 +37,13 @@ func (c *RestClient) CreateStageInstance(ctx context.Context, params CreateStage
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/stage-instances", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/stage-instances", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var instance common.StageInstance
-	if _, err := c.do(req, http.StatusCreated, &instance); err != nil {
+	if _, err := c.do(req, []int{http.StatusCreated}, &instance); err != nil {
 		return nil, err
 	}
 
@@ -52,13 +52,13 @@ func (c *RestClient) CreateStageInstance(ctx context.Context, params CreateStage
 
 // GetStageInstance returns the stage instance for the given stage channel.
 func (c *RestClient) GetStageInstance(ctx context.Context, channelID common.Snowflake) (*common.StageInstance, error) {
-	req, err := c.generateRequest(ctx, http.MethodGet, "/stage-instances/"+channelID.String(), nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/stage-instances/"+channelID.String(), nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var instance common.StageInstance
-	if _, err := c.do(req, http.StatusOK, &instance); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &instance); err != nil {
 		return nil, err
 	}
 
@@ -76,13 +76,13 @@ func (c *RestClient) ModifyStageInstance(ctx context.Context, channelID common.S
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/stage-instances/"+channelID.String(), bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/stage-instances/"+channelID.String(), bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var instance common.StageInstance
-	if _, err := c.do(req, http.StatusOK, &instance); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &instance); err != nil {
 		return nil, err
 	}
 
@@ -95,11 +95,11 @@ func (c *RestClient) DeleteStageInstance(ctx context.Context, channelID common.S
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/stage-instances/"+channelID.String(), nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/stage-instances/"+channelID.String(), nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }

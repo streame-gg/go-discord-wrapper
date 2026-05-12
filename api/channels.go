@@ -15,13 +15,13 @@ func (c *RestClient) GetChannel(ctx context.Context, channelID common.Snowflake)
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, "GET", "/channels/"+channelID.String(), nil)
+	req, err := c.generateRequest(ctx, "GET", "/channels/"+channelID.String(), nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var channel common.Channel
-	if _, err := c.do(req, http.StatusOK, &channel); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &channel); err != nil {
 		return nil, err
 	}
 
@@ -81,13 +81,13 @@ func (c *RestClient) ModifyChannel(ctx context.Context, channelID common.Snowfla
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/channels/"+channelID.String(), bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/channels/"+channelID.String(), bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var channel common.Channel
-	if _, err := c.do(req, http.StatusOK, &channel); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &channel); err != nil {
 		return nil, err
 	}
 
@@ -101,13 +101,13 @@ func (c *RestClient) DeleteChannel(ctx context.Context, channelID common.Snowfla
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/channels/"+channelID.String(), nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/channels/"+channelID.String(), nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var channel common.Channel
-	if _, err := c.do(req, http.StatusOK, &channel); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &channel); err != nil {
 		return nil, err
 	}
 
@@ -120,13 +120,13 @@ func (c *RestClient) GetChannelInvites(ctx context.Context, channelID common.Sno
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/channels/"+channelID.String()+"/invites", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/channels/"+channelID.String()+"/invites", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var invites []*Invite
-	if _, err := c.do(req, http.StatusOK, &invites); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &invites); err != nil {
 		return nil, err
 	}
 
@@ -144,13 +144,13 @@ func (c *RestClient) CreateChannelInvite(ctx context.Context, channelID common.S
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/invites", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/invites", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var invite Invite
-	if _, err := c.do(req, http.StatusOK, &invite); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &invite); err != nil {
 		return nil, err
 	}
 
@@ -174,12 +174,12 @@ func (c *RestClient) EditChannelPermissions(ctx context.Context, channelID, over
 	}
 
 	path := "/channels/" + channelID.String() + "/permissions/" + overwriteID.String()
-	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -195,12 +195,12 @@ func (c *RestClient) DeleteChannelPermission(ctx context.Context, channelID, ove
 	}
 
 	path := "/channels/" + channelID.String() + "/permissions/" + overwriteID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -210,12 +210,12 @@ func (c *RestClient) TriggerTypingIndicator(ctx context.Context, channelID commo
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/typing", nil)
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/typing", nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -244,12 +244,12 @@ func (c *RestClient) SetVoiceChannelStatus(ctx context.Context, channelID common
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPut, "/channels/"+channelID.String()+"/voice-status", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPut, "/channels/"+channelID.String()+"/voice-status", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -268,13 +268,13 @@ func (c *RestClient) FollowAnnouncementChannel(ctx context.Context, channelID, w
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/followers", bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/followers", bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var result FollowedChannel
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
 		return nil, err
 	}
 
@@ -297,12 +297,12 @@ func (c *RestClient) AddGroupDMRecipient(ctx context.Context, channelID, userID 
 	}
 
 	path := "/channels/" + channelID.String() + "/recipients/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -317,11 +317,11 @@ func (c *RestClient) RemoveGroupDMRecipient(ctx context.Context, channelID, user
 	}
 
 	path := "/channels/" + channelID.String() + "/recipients/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }

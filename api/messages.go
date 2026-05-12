@@ -212,13 +212,13 @@ func (c *RestClient) GetMessages(ctx context.Context, channelID common.Snowflake
 	}
 
 	path := "/channels/" + channelID.String() + "/messages" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var msgs []*common.Message
-	if _, err := c.do(req, http.StatusOK, &msgs); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &msgs); err != nil {
 		return nil, err
 	}
 
@@ -236,13 +236,13 @@ func (c *RestClient) GetMessage(ctx context.Context, channelID, messageID common
 	}
 
 	path := "/channels/" + channelID.String() + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
 		return nil, err
 	}
 
@@ -269,20 +269,20 @@ func (c *RestClient) CreateMessage(ctx context.Context, channelID common.Snowfla
 		if err != nil {
 			return nil, err
 		}
-		req, err = c.generateRequest(ctx, http.MethodPost, path, buf)
+		req, err = c.generateRequest(ctx, http.MethodPost, path, buf, c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", ct)
 	} else {
-		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(jsonBody))
+		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(jsonBody), c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
 		return nil, err
 	}
 
@@ -313,20 +313,20 @@ func (c *RestClient) EditMessage(ctx context.Context, channelID, messageID commo
 		if err != nil {
 			return nil, err
 		}
-		req, err = c.generateRequest(ctx, http.MethodPatch, path, buf)
+		req, err = c.generateRequest(ctx, http.MethodPatch, path, buf, c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", ct)
 	} else {
-		req, err = c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(jsonBody))
+		req, err = c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(jsonBody), c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
 		return nil, err
 	}
 
@@ -344,12 +344,12 @@ func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID com
 	}
 
 	path := "/channels/" + channelID.String() + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -376,12 +376,12 @@ func (c *RestClient) BulkDeleteMessages(ctx context.Context, channelID common.Sn
 	}
 
 	path := "/channels/" + channelID.String() + "/messages/bulk-delete"
-	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -396,13 +396,13 @@ func (c *RestClient) CrosspostMessage(ctx context.Context, channelID, messageID 
 	}
 
 	path := "/channels/" + channelID.String() + "/messages/" + messageID.String() + "/crosspost"
-	req, err := c.generateRequest(ctx, http.MethodPost, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPost, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
 		return nil, err
 	}
 
@@ -417,13 +417,13 @@ func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID common.Sno
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/channels/"+channelID.String()+"/pins", nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, "/channels/"+channelID.String()+"/pins", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var msgs []*common.Message
-	if _, err := c.do(req, http.StatusOK, &msgs); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &msgs); err != nil {
 		return nil, err
 	}
 
@@ -441,12 +441,12 @@ func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID common
 	}
 
 	path := "/channels/" + channelID.String() + "/pins/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodPut, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -461,12 +461,12 @@ func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID comm
 	}
 
 	path := "/channels/" + channelID.String() + "/pins/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -484,12 +484,12 @@ func (c *RestClient) AddReaction(ctx context.Context, channelID, messageID commo
 	}
 
 	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s/@me", channelID, messageID, encodeEmoji(emoji))
-	req, err := c.generateRequest(ctx, http.MethodPut, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -504,12 +504,12 @@ func (c *RestClient) DeleteOwnReaction(ctx context.Context, channelID, messageID
 	}
 
 	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s/@me", channelID, messageID, encodeEmoji(emoji))
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -528,12 +528,12 @@ func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageI
 	}
 
 	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s/%s", channelID, messageID, encodeEmoji(emoji), userID)
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -548,13 +548,13 @@ func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID comm
 	}
 
 	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s%s", channelID, messageID, encodeEmoji(emoji), params.toQuery())
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
 	var users []*common.User
-	if _, err := c.do(req, http.StatusOK, &users); err != nil {
+	if _, err := c.do(req, []int{http.StatusOK}, &users); err != nil {
 		return nil, err
 	}
 
@@ -572,12 +572,12 @@ func (c *RestClient) DeleteAllReactions(ctx context.Context, channelID, messageI
 	}
 
 	path := fmt.Sprintf("/channels/%s/messages/%s/reactions", channelID, messageID)
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
 
@@ -592,11 +592,11 @@ func (c *RestClient) DeleteAllReactionsForEmoji(ctx context.Context, channelID, 
 	}
 
 	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s", channelID, messageID, encodeEmoji(emoji))
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
+	_, err = c.do(req, []int{http.StatusNoContent}, nil)
 	return err
 }
