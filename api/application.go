@@ -31,15 +31,9 @@ func (c *RestClient) GetCurrentApplication(ctx context.Context) (*common.Applica
 		return nil, err
 	}
 
-	var app common.Application
-	if err := c.do(req, SuccessReturn[common.Application]{
-		status: http.StatusOK,
-		Out:    &app,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &app, nil
+	return doRequest[common.Application](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyCurrentApplication updates the current application. Returns the updated application.
@@ -54,13 +48,7 @@ func (c *RestClient) ModifyCurrentApplication(ctx context.Context, params Modify
 		return nil, err
 	}
 
-	var app common.Application
-	if err := c.do(req, SuccessReturn[common.Application]{
-		status: http.StatusOK,
-		Out:    &app,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &app, nil
+	return doRequest[common.Application](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

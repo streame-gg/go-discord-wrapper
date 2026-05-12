@@ -814,7 +814,7 @@ func (c *RestClient) GetGuildWidgetImage(ctx context.Context, guildID common.Sno
 		return nil, err
 	}
 
-	// Widget image is PNG, not JSON — bypass the normal do() JSON decoder.
+	// Widget image is PNG, not JSON — bypass the normal doRequest() JSON decoder.
 	resp, reqErr := c.httpClient.Do(req)
 	if reqErr != nil {
 		return nil, reqErr

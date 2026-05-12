@@ -267,47 +267,30 @@ func (c *RestClient) generateRequest(ctx context.Context, method, path string, b
 	return req, nil
 }
 
-func (c *RestClient) isApiCallSucceeded(actual int, successResponseCodes ...Spec) (*Spec, bool) {
-	for _, code := range successResponseCodes {
-		if code.Status() == actual {
-			return &code, true
+func (c *RestClient) includesInIntList(actual int, list []int) bool {
+	for _, code := range list {
+		if code == actual {
+			return true
 		}
 	}
 
-	return nil, false
+	return false
 }
 
-type Spec interface {
-	Status() int
-	DecodeFromJSON(r *json.Decoder) error
-}
-
-type SuccessReturn[T any] struct {
-	status int
-	Out    *T
-}
-
-func NewSuccessReturn[T any](status int, out *T) *SuccessReturn[T] {
-	return &SuccessReturn[T]{status, out}
-}
-
-func (s SuccessReturn[T]) Status() int { return s.status }
-
-func (s SuccessReturn[T]) DecodeFromJSON(d *json.Decoder) error {
-	if s.Out == nil {
-		return nil
-	}
-	return d.Decode(s.Out)
-}
-
-// do executes req and decodes a successful response into v (when v != nil).
+// doRequest executes req and decodes a successful response into v (when v != nil).
 // The returned *http.Response has its Body already closed; callers must not
 // read from it. Inspect headers and status codes via the returned value, but
-// do not call resp.Body.Read or resp.Body.Close again.
+// doRequest not call resp.Body.Read or resp.Body.Close again.
 
-func (c *RestClient) do(req *http.Request, successResponses ...Spec) error {
+// successResponseCodeData is based on map[statusCode]returnRequestBody
+// if statusCode is 204 (No Content), no request body will be returned, so you do not have to set it to false
+
+// Waiting for Go 1.27 to implement this in the RestClient;
+// https://github.com/golang/go/issues/77273
+
+func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData map[int]bool) (*T, error) {
 	if req == nil {
-		return errors.New("request must not be nil")
+		return nil, errors.New("request must not be nil")
 	}
 
 	// Extract the relative path stored by generateRequest for rate limiting.
@@ -315,7 +298,7 @@ func (c *RestClient) do(req *http.Request, successResponses ...Spec) error {
 
 	bodyBytes, err := captureRequestBody(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	maxAttempts := c.retryOptions.MaxRetries + 1
@@ -323,20 +306,20 @@ func (c *RestClient) do(req *http.Request, successResponses ...Spec) error {
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		// Crude global request interval (legacy option, complementary to rate limiter).
 		if err := c.waitForMinInterval(req.Context()); err != nil {
-			return err
+			return nil, err
 		}
 
 		// Proactive rate limit check — blocks if the route's bucket is exhausted
 		// or the global rate limit is active.
 		if c.rateLimiter != nil && routePath != "" {
 			if err := c.rateLimiter.wait(req.Context(), req.Method, routePath); err != nil {
-				return err
+				return nil, err
 			}
 		}
 
 		attemptReq, err := cloneRequest(req, bodyBytes)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		safeReq := redactRequestSecrets(attemptReq)
@@ -346,7 +329,7 @@ func (c *RestClient) do(req *http.Request, successResponses ...Spec) error {
 		if reqErr != nil {
 			c.emitEvent(RestEvent{Type: RestEventError, Request: safeReq, Attempt: attempt, Err: reqErr})
 			if attempt == maxAttempts {
-				return reqErr
+				return nil, reqErr
 			}
 
 			delay := c.retryDelay(attempt, 0)
@@ -354,7 +337,7 @@ func (c *RestClient) do(req *http.Request, successResponses ...Spec) error {
 			select {
 			case <-time.After(delay):
 			case <-req.Context().Done():
-				return req.Context().Err()
+				return nil, req.Context().Err()
 			}
 			continue
 		}
@@ -367,15 +350,20 @@ func (c *RestClient) do(req *http.Request, successResponses ...Spec) error {
 
 		c.emitEvent(RestEvent{Type: RestEventResponse, Request: safeReq, Response: resp, Attempt: attempt})
 
-		if spec, isSuccess := c.isApiCallSucceeded(resp.StatusCode, successResponses...); isSuccess {
-			if err := (*spec).DecodeFromJSON(json.NewDecoder(resp.Body)); err != nil {
-				_ = resp.Body.Close()
-				return err
+		if entry, ok := successResponseCodeData[resp.StatusCode]; ok {
+			if resp.StatusCode == http.StatusNoContent || !entry {
+				return nil, nil
+			}
+
+			var returnType T
+
+			if json.NewDecoder(resp.Body).Decode(&returnType) != nil {
+				return nil, err
 			}
 
 			_ = resp.Body.Close()
 
-			return nil
+			return &returnType, nil
 		}
 
 		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode) {
@@ -390,7 +378,7 @@ func (c *RestClient) do(req *http.Request, successResponses ...Spec) error {
 			select {
 			case <-time.After(delay):
 			case <-req.Context().Done():
-				return req.Context().Err()
+				return nil, req.Context().Err()
 			}
 			continue
 		}
@@ -398,10 +386,10 @@ func (c *RestClient) do(req *http.Request, successResponses ...Spec) error {
 		respErr := decodeGatewayError(resp)
 		_ = resp.Body.Close()
 		c.emitEvent(RestEvent{Type: RestEventError, Request: safeReq, Response: resp, Attempt: attempt, Err: respErr})
-		return respErr
+		return nil, respErr
 	}
 
-	return errors.New("request failed after retries")
+	return nil, errors.New("request failed after retries")
 }
 
 func (c *RestClient) shouldRetry(statusCode int) bool {
