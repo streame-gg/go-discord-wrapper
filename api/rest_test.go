@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -278,4 +279,47 @@ func TestDecodeAPIError(t *testing.T) {
 	assert.Equal(t, 10003, int(apiErr.Code))
 	assert.Equal(t, "Unknown Channel", apiErr.Message)
 	assert.Equal(t, http.StatusNotFound, apiErr.HTTPStatus)
+}
+
+// Bug 3a: an event handler that reads/closes resp.Body must not affect the
+// decoder.  After the fix, the handler and the decoder each get their own body
+// reader backed by the buffered bytes.
+func TestBug3a_EventHandlerBodyCloseDoesNotBreakDecode(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"id":"111222333444555666","name":"bug3-channel","type":0}`))
+	}))
+	defer ts.Close()
+
+	client := newTestClient(ts)
+
+	// Register a handler that drains and closes the response body.
+	client.OnEvent(RestEventResponse, func(_ *RestClient, ev RestEvent) {
+		if ev.Response != nil {
+			_, _ = io.ReadAll(ev.Response.Body)
+			_ = ev.Response.Body.Close()
+		}
+	})
+
+	ch, err := client.GetChannel(context.Background(), "111222333444555666")
+	require.NoError(t, err, "decode must succeed even after event handler closes resp.Body (Bug 3a)")
+	require.NotNil(t, ch)
+	assert.Equal(t, "bug3-channel", ch.Name)
+}
+
+// Bug 3b: a server that returns invalid JSON must produce a non-nil error;
+// before the fix the caller received (nil, nil).
+func TestBug3b_BadJSONReturnsError(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{invalid json`))
+	}))
+	defer ts.Close()
+
+	client := newTestClient(ts)
+	ch, err := client.GetChannel(context.Background(), "111222333444555667")
+	assert.Error(t, err, "invalid JSON body must return an error (Bug 3b)")
+	assert.Nil(t, ch)
 }
