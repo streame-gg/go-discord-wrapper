@@ -233,7 +233,6 @@ type ModifyGuildWelcomeScreenOptions struct {
 	Reason string
 }
 
-// TODO: verify audit log support
 type ModifyGuildOnboardingParams struct {
 	Prompts           []discord.OnboardingPrompt `json:"prompts"`
 	DefaultChannelIDs []discord.Snowflake        `json:"default_channel_ids"`
