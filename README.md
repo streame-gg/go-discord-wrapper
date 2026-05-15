@@ -2,7 +2,7 @@
 
 A Go library for the Discord gateway and REST API.
 
-> **Status:** v0.1.0 — first stable release. Bug reports and pull requests are welcome.
+> **Status:** This library is very new and being checked for bugs. I am currently updating a lot so please do not use yet. :)
 
 ## Features
 
