@@ -43,7 +43,11 @@ func (c *RestClient) CreatePoll(ctx context.Context, channelID common.Snowflake,
 	})
 }
 
-func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, messageID common.Snowflake, answerID int, params GetPollAnswerVotersParams) ([]*common.User, error) {
+type GetPollAnswerVotersResponse struct {
+	Users []*common.User `json:"users"`
+}
+
+func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, messageID common.Snowflake, answerID int, params GetPollAnswerVotersParams) (*GetPollAnswerVotersResponse, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -58,14 +62,9 @@ func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, message
 		return nil, err
 	}
 
-	var result struct {
-		Users []*common.User `json:"users"`
-	}
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return result.Users, nil
+	return doRequest[GetPollAnswerVotersResponse](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 func (c *RestClient) EndPoll(ctx context.Context, channelID, messageID common.Snowflake) (*common.Message, error) {
@@ -75,10 +74,7 @@ func (c *RestClient) EndPoll(ctx context.Context, channelID, messageID common.Sn
 		return nil, err
 	}
 
-	var result common.Message
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[common.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

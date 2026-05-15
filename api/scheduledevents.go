@@ -78,7 +78,7 @@ type GuildScheduledEventUser struct {
 
 // ListGuildScheduledEvents returns all scheduled events for a guild.
 // Set withUserCount to true to include subscriber counts.
-func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID common.Snowflake, withUserCount bool) ([]*common.GuildScheduledEvent, error) {
+func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID common.Snowflake, withUserCount bool) (*[]*common.GuildScheduledEvent, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -93,12 +93,9 @@ func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID commo
 		return nil, err
 	}
 
-	var events []*common.GuildScheduledEvent
-	if _, err := c.do(req, []int{http.StatusOK}, &events); err != nil {
-		return nil, err
-	}
-
-	return events, nil
+	return doRequest[[]*common.GuildScheduledEvent](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // CreateGuildScheduledEvent creates a new scheduled event in a guild.
@@ -117,12 +114,9 @@ func (c *RestClient) CreateGuildScheduledEvent(ctx context.Context, guildID comm
 		return nil, err
 	}
 
-	var event common.GuildScheduledEvent
-	if _, err := c.do(req, []int{http.StatusOK}, &event); err != nil {
-		return nil, err
-	}
-
-	return &event, nil
+	return doRequest[common.GuildScheduledEvent](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetGuildScheduledEvent returns a single scheduled event.
@@ -146,12 +140,9 @@ func (c *RestClient) GetGuildScheduledEvent(ctx context.Context, guildID, eventI
 		return nil, err
 	}
 
-	var event common.GuildScheduledEvent
-	if _, err := c.do(req, []int{http.StatusOK}, &event); err != nil {
-		return nil, err
-	}
-
-	return &event, nil
+	return doRequest[common.GuildScheduledEvent](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyGuildScheduledEvent updates a scheduled event.
@@ -175,12 +166,9 @@ func (c *RestClient) ModifyGuildScheduledEvent(ctx context.Context, guildID, eve
 		return nil, err
 	}
 
-	var event common.GuildScheduledEvent
-	if _, err := c.do(req, []int{http.StatusOK}, &event); err != nil {
-		return nil, err
-	}
-
-	return &event, nil
+	return doRequest[common.GuildScheduledEvent](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteGuildScheduledEvent deletes a scheduled event.
@@ -199,14 +187,11 @@ func (c *RestClient) DeleteGuildScheduledEvent(ctx context.Context, guildID, eve
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // GetGuildScheduledEventUsers returns users subscribed to a scheduled event.
-func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID common.Snowflake, params GetGuildScheduledEventUsersParams) ([]*GuildScheduledEventUser, error) {
+func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID common.Snowflake, params GetGuildScheduledEventUsersParams) (*[]*GuildScheduledEventUser, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -221,10 +206,7 @@ func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, e
 		return nil, err
 	}
 
-	var users []*GuildScheduledEventUser
-	if _, err := c.do(req, []int{http.StatusOK}, &users); err != nil {
-		return nil, err
-	}
-
-	return users, nil
+	return doRequest[[]*GuildScheduledEventUser](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

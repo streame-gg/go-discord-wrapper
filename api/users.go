@@ -24,6 +24,8 @@ type GetCurrentUserGuildsParams struct {
 	After      *common.Snowflake
 	Limit      *int
 	WithCounts *bool
+
+	UserToken *string
 }
 
 func (p GetCurrentUserGuildsParams) toQuery() string {
@@ -61,18 +63,22 @@ type CurrentUserGuild struct {
 // ── User endpoints ────────────────────────────────────────────────────────────
 
 // GetCurrentUser returns the bot user associated with the current token.
-func (c *RestClient) GetCurrentUser(ctx context.Context, authHeader string) (*common.User, error) {
-	req, err := c.generateRequest(ctx, http.MethodGet, "/users/@me", nil, authHeader)
+func (c *RestClient) GetCurrentUser(ctx context.Context, userToken *string) (*common.User, error) {
+	var authOption func(req *http.Request)
+	if userToken != nil {
+		authOption = WithUserAuthorization(*userToken)
+	} else {
+		authOption = c.WithBotAuthorization()
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodGet, "/users/@me", nil, authOption)
 	if err != nil {
 		return nil, err
 	}
 
-	var user common.User
-	if _, err := c.do(req, []int{http.StatusOK}, &user); err != nil {
-		return nil, err
-	}
-
-	return &user, nil
+	return doRequest[common.User](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetUser returns the user object for the given user ID.
@@ -86,12 +92,9 @@ func (c *RestClient) GetUser(ctx context.Context, userID common.Snowflake) (*com
 		return nil, err
 	}
 
-	var user common.User
-	if _, err := c.do(req, []int{http.StatusOK}, &user); err != nil {
-		return nil, err
-	}
-
-	return &user, nil
+	return doRequest[common.User](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyCurrentUser updates the bot user's username or avatar.
@@ -106,48 +109,49 @@ func (c *RestClient) ModifyCurrentUser(ctx context.Context, params ModifyCurrent
 		return nil, err
 	}
 
-	var user common.User
-	if _, err := c.do(req, []int{http.StatusOK}, &user); err != nil {
-		return nil, err
-	}
-
-	return &user, nil
+	return doRequest[common.User](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetCurrentUserGuilds returns the guilds the current user is a member of.
-func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, authHeader string, params GetCurrentUserGuildsParams) ([]*CurrentUserGuild, error) {
+func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrentUserGuildsParams) (*[]*CurrentUserGuild, error) {
+	var authOption func(req *http.Request)
+	if params.UserToken != nil {
+		authOption = WithUserAuthorization(*params.UserToken)
+	} else {
+		authOption = c.WithBotAuthorization()
+	}
+
 	path := "/users/@me/guilds" + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, authHeader)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, authOption)
 	if err != nil {
 		return nil, err
 	}
 
-	var guilds []*CurrentUserGuild
-	if _, err := c.do(req, []int{http.StatusOK}, &guilds); err != nil {
-		return nil, err
-	}
-
-	return guilds, nil
+	return doRequest[[]*CurrentUserGuild](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetCurrentUserGuildMember returns the guild member object for the current user in the given guild.
-func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID common.Snowflake, authHeader string) (*common.GuildMember, error) {
-	if err := guildID.Validate(); err != nil {
-		return nil, err
+func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID common.Snowflake, userAccessToken *string) (*common.GuildMember, error) {
+	var authOption func(req *http.Request)
+	if userAccessToken != nil {
+		authOption = WithUserAuthorization(*userAccessToken)
+	} else {
+		authOption = c.WithBotAuthorization()
 	}
 
 	path := "/users/@me/guilds/" + guildID.String() + "/member"
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, authHeader)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, authOption)
 	if err != nil {
 		return nil, err
 	}
 
-	var member common.GuildMember
-	if _, err := c.do(req, []int{http.StatusOK}, &member); err != nil {
-		return nil, err
-	}
-
-	return &member, nil
+	return doRequest[common.GuildMember](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // LeaveGuild makes the current user leave the given guild.
@@ -161,10 +165,7 @@ func (c *RestClient) LeaveGuild(ctx context.Context, guildID common.Snowflake) e
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // CreateDM opens a DM channel with the given user and returns it.
@@ -183,12 +184,9 @@ func (c *RestClient) CreateDM(ctx context.Context, recipientID common.Snowflake)
 		return nil, err
 	}
 
-	var channel common.Channel
-	if _, err := c.do(req, []int{http.StatusOK}, &channel); err != nil {
-		return nil, err
-	}
-
-	return &channel, nil
+	return doRequest[common.Channel](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // UserConnection represents an external account linked to a Discord user.
@@ -216,24 +214,30 @@ type ApplicationRoleConnection struct {
 type CreateGroupDMParams struct {
 	AccessTokens []string          `json:"access_tokens"`
 	Nicks        map[string]string `json:"nicks"`
+
+	UserAccessToken *string
 }
 
 // CreateGroupDM creates a new Group DM channel.
-func (c *RestClient) CreateGroupDM(ctx context.Context, authHeader string, params CreateGroupDMParams) (*common.Channel, error) {
+func (c *RestClient) CreateGroupDM(ctx context.Context, params CreateGroupDMParams) (*common.Channel, error) {
+	var authOption func(req *http.Request)
+	if params.UserAccessToken != nil {
+		authOption = WithUserAuthorization(*params.UserAccessToken)
+	} else {
+		authOption = c.WithBotAuthorization()
+	}
+
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/users/@me/channels", bytes.NewReader(body), authHeader)
+	req, err := c.generateRequest(ctx, http.MethodPost, "/users/@me/channels", bytes.NewReader(body), authOption)
 	if err != nil {
 		return nil, err
 	}
 
-	var channel common.Channel
-	if _, err := c.do(req, []int{http.StatusOK}, &channel); err != nil {
-		return nil, err
-	}
-
-	return &channel, nil
+	return doRequest[common.Channel](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

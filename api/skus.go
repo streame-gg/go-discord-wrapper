@@ -7,7 +7,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/common"
 )
 
-func (c *RestClient) ListSKUs(ctx context.Context, appID common.Snowflake) ([]*common.SKU, error) {
+func (c *RestClient) ListSKUs(ctx context.Context, appID common.Snowflake) (*[]*common.SKU, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -17,10 +17,7 @@ func (c *RestClient) ListSKUs(ctx context.Context, appID common.Snowflake) ([]*c
 		return nil, err
 	}
 
-	var result []*common.SKU
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return doRequest[[]*common.SKU](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

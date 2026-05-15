@@ -26,22 +26,19 @@ type ModifyUserVoiceStateParams struct {
 // ── Voice endpoints ───────────────────────────────────────────────────────────
 
 // ListVoiceRegions returns all available voice regions.
-func (c *RestClient) ListVoiceRegions(ctx context.Context) ([]*common.VoiceRegion, error) {
+func (c *RestClient) ListVoiceRegions(ctx context.Context) (*[]*common.VoiceRegion, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/voice/regions", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	var regions []*common.VoiceRegion
-	if _, err := c.do(req, []int{http.StatusOK}, &regions); err != nil {
-		return nil, err
-	}
-
-	return regions, nil
+	return doRequest[[]*common.VoiceRegion](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ListGuildVoiceRegions returns voice regions available for a guild, including VIP regions if applicable.
-func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID common.Snowflake) ([]*common.VoiceRegion, error) {
+func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID common.Snowflake) (*[]*common.VoiceRegion, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -51,12 +48,9 @@ func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID common.S
 		return nil, err
 	}
 
-	var regions []*common.VoiceRegion
-	if _, err := c.do(req, []int{http.StatusOK}, &regions); err != nil {
-		return nil, err
-	}
-
-	return regions, nil
+	return doRequest[[]*common.VoiceRegion](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyCurrentUserVoiceState updates the bot's voice state in a guild stage channel.
@@ -75,10 +69,7 @@ func (c *RestClient) ModifyCurrentUserVoiceState(ctx context.Context, guildID co
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // ModifyUserVoiceState updates another user's voice state in a guild stage channel. Requires MUTE_MEMBERS.
@@ -102,10 +93,7 @@ func (c *RestClient) ModifyUserVoiceState(ctx context.Context, guildID, userID c
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // GetCurrentUserVoiceState returns the current user's voice state in a guild.
@@ -119,12 +107,9 @@ func (c *RestClient) GetCurrentUserVoiceState(ctx context.Context, guildID commo
 		return nil, err
 	}
 
-	var state common.VoiceState
-	if _, err := c.do(req, []int{http.StatusOK}, &state); err != nil {
-		return nil, err
-	}
-
-	return &state, nil
+	return doRequest[common.VoiceState](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetUserVoiceState returns a specific user's voice state in a guild.
@@ -143,10 +128,7 @@ func (c *RestClient) GetUserVoiceState(ctx context.Context, guildID, userID comm
 		return nil, err
 	}
 
-	var state common.VoiceState
-	if _, err := c.do(req, []int{http.StatusOK}, &state); err != nil {
-		return nil, err
-	}
-
-	return &state, nil
+	return doRequest[common.VoiceState](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

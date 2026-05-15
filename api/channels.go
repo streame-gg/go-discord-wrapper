@@ -20,15 +20,9 @@ func (c *RestClient) GetChannel(ctx context.Context, channelID common.Snowflake)
 		return nil, err
 	}
 
-	var channel common.Channel
-	if err := c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusOK,
-		Out:    &channel,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &channel, nil
+	return doRequest[common.Channel](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ── Param types ───────────────────────────────────────────────────────────────
@@ -89,15 +83,9 @@ func (c *RestClient) ModifyChannel(ctx context.Context, channelID common.Snowfla
 		return nil, err
 	}
 
-	var channel common.Channel
-	if err := c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusOK,
-		Out:    &channel,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &channel, nil
+	return doRequest[common.Channel](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteChannel deletes a channel by ID. For guild channels requires MANAGE_CHANNELS.
@@ -112,19 +100,13 @@ func (c *RestClient) DeleteChannel(ctx context.Context, channelID common.Snowfla
 		return nil, err
 	}
 
-	var channel common.Channel
-	if err := c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusOK,
-		Out:    &channel,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &channel, nil
+	return doRequest[common.Channel](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetChannelInvites returns all invites for a channel. Requires MANAGE_CHANNELS.
-func (c *RestClient) GetChannelInvites(ctx context.Context, channelID common.Snowflake) ([]*Invite, error) {
+func (c *RestClient) GetChannelInvites(ctx context.Context, channelID common.Snowflake) (*[]*Invite, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -134,15 +116,9 @@ func (c *RestClient) GetChannelInvites(ctx context.Context, channelID common.Sno
 		return nil, err
 	}
 
-	var invites []*Invite
-	if err := c.do(req, SuccessReturn[[]*Invite]{
-		status: http.StatusOK,
-		Out:    &invites,
-	}); err != nil {
-		return nil, err
-	}
-
-	return invites, nil
+	return doRequest[[]*Invite](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // CreateChannelInvite creates a new invite for a channel. Requires CREATE_INSTANT_INVITE.
@@ -161,15 +137,9 @@ func (c *RestClient) CreateChannelInvite(ctx context.Context, channelID common.S
 		return nil, err
 	}
 
-	var invite Invite
-	if err := c.do(req, SuccessReturn[Invite]{
-		status: http.StatusOK,
-		Out:    &invite,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &invite, nil
+	return doRequest[Invite](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // EditChannelPermissions creates or updates a permission overwrite for a user or role in a channel.
@@ -194,10 +164,7 @@ func (c *RestClient) EditChannelPermissions(ctx context.Context, channelID, over
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // DeleteChannelPermission removes a permission overwrite for a user or role from a channel.
@@ -217,10 +184,7 @@ func (c *RestClient) DeleteChannelPermission(ctx context.Context, channelID, ove
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // TriggerTypingIndicator posts a typing indicator to the channel for ~10 seconds.
@@ -234,10 +198,7 @@ func (c *RestClient) TriggerTypingIndicator(ctx context.Context, channelID commo
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // ── Additional channel endpoints ──────────────────────────────────────────────
@@ -270,10 +231,9 @@ func (c *RestClient) SetVoiceChannelStatus(ctx context.Context, channelID common
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	_, err = doRequest[NoReturnData](c, req, map[int]bool{})
+
+	return doRequestWithoutResponse(c, req)
 }
 
 // FollowAnnouncementChannel follows an announcement channel, publishing messages to webhookChannelID.
@@ -296,15 +256,9 @@ func (c *RestClient) FollowAnnouncementChannel(ctx context.Context, channelID, w
 		return nil, err
 	}
 
-	var result FollowedChannel
-	if err := c.do(req, SuccessReturn[FollowedChannel]{
-		status: http.StatusOK,
-		Out:    &result,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[FollowedChannel](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // AddGroupDMRecipient adds a user to a Group DM using their OAuth2 access token.
@@ -328,10 +282,7 @@ func (c *RestClient) AddGroupDMRecipient(ctx context.Context, channelID, userID 
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // RemoveGroupDMRecipient removes a user from a Group DM.
@@ -350,8 +301,5 @@ func (c *RestClient) RemoveGroupDMRecipient(ctx context.Context, channelID, user
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }

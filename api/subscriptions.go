@@ -40,7 +40,7 @@ func (p ListSKUSubscriptionsParams) toQuery() string {
 
 // ── Subscription endpoints ────────────────────────────────────────────────────
 
-func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID common.Snowflake, params ListSKUSubscriptionsParams) ([]*common.Subscription, error) {
+func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID common.Snowflake, params ListSKUSubscriptionsParams) (*[]*common.Subscription, error) {
 	if err := skuID.Validate(); err != nil {
 		return nil, err
 	}
@@ -51,12 +51,9 @@ func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID common.Snow
 		return nil, err
 	}
 
-	var result []*common.Subscription
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return doRequest[[]*common.Subscription](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 func (c *RestClient) GetSKUSubscription(ctx context.Context, skuID, subscriptionID common.Snowflake) (*common.Subscription, error) {
@@ -74,10 +71,7 @@ func (c *RestClient) GetSKUSubscription(ctx context.Context, skuID, subscription
 		return nil, err
 	}
 
-	var result common.Subscription
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[common.Subscription](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

@@ -42,12 +42,9 @@ func (c *RestClient) CreateStageInstance(ctx context.Context, params CreateStage
 		return nil, err
 	}
 
-	var instance common.StageInstance
-	if _, err := c.do(req, []int{http.StatusCreated}, &instance); err != nil {
-		return nil, err
-	}
-
-	return &instance, nil
+	return doRequest[common.StageInstance](c, req, map[int]bool{
+		http.StatusCreated: true,
+	})
 }
 
 // GetStageInstance returns the stage instance for the given stage channel.
@@ -57,12 +54,9 @@ func (c *RestClient) GetStageInstance(ctx context.Context, channelID common.Snow
 		return nil, err
 	}
 
-	var instance common.StageInstance
-	if _, err := c.do(req, []int{http.StatusOK}, &instance); err != nil {
-		return nil, err
-	}
-
-	return &instance, nil
+	return doRequest[common.StageInstance](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyStageInstance updates fields on an existing stage instance.
@@ -81,12 +75,9 @@ func (c *RestClient) ModifyStageInstance(ctx context.Context, channelID common.S
 		return nil, err
 	}
 
-	var instance common.StageInstance
-	if _, err := c.do(req, []int{http.StatusOK}, &instance); err != nil {
-		return nil, err
-	}
-
-	return &instance, nil
+	return doRequest[common.StageInstance](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteStageInstance deletes the stage instance for the given stage channel.
@@ -100,8 +91,5 @@ func (c *RestClient) DeleteStageInstance(ctx context.Context, channelID common.S
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }

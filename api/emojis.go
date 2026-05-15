@@ -26,7 +26,7 @@ type ModifyGuildEmojiParams struct {
 // ── Emoji endpoints ───────────────────────────────────────────────────────────
 
 // ListGuildEmojis returns all emojis for a guild.
-func (c *RestClient) ListGuildEmojis(ctx context.Context, guildID common.Snowflake) ([]*common.Emoji, error) {
+func (c *RestClient) ListGuildEmojis(ctx context.Context, guildID common.Snowflake) (*[]*common.Emoji, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -36,12 +36,9 @@ func (c *RestClient) ListGuildEmojis(ctx context.Context, guildID common.Snowfla
 		return nil, err
 	}
 
-	var emojis []*common.Emoji
-	if _, err := c.do(req, []int{http.StatusOK}, &emojis); err != nil {
-		return nil, err
-	}
-
-	return emojis, nil
+	return doRequest[[]*common.Emoji](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetGuildEmoji returns a specific emoji from a guild.
@@ -60,12 +57,9 @@ func (c *RestClient) GetGuildEmoji(ctx context.Context, guildID, emojiID common.
 		return nil, err
 	}
 
-	var emoji common.Emoji
-	if _, err := c.do(req, []int{http.StatusOK}, &emoji); err != nil {
-		return nil, err
-	}
-
-	return &emoji, nil
+	return doRequest[common.Emoji](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // CreateGuildEmoji creates a new emoji in a guild.
@@ -85,12 +79,9 @@ func (c *RestClient) CreateGuildEmoji(ctx context.Context, guildID common.Snowfl
 		return nil, err
 	}
 
-	var emoji common.Emoji
-	if _, err := c.do(req, []int{http.StatusOK}, &emoji); err != nil {
-		return nil, err
-	}
-
-	return &emoji, nil
+	return doRequest[common.Emoji](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyGuildEmoji updates the name or allowed roles for a guild emoji.
@@ -114,12 +105,9 @@ func (c *RestClient) ModifyGuildEmoji(ctx context.Context, guildID, emojiID comm
 		return nil, err
 	}
 
-	var emoji common.Emoji
-	if _, err := c.do(req, []int{http.StatusOK}, &emoji); err != nil {
-		return nil, err
-	}
-
-	return &emoji, nil
+	return doRequest[common.Emoji](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteGuildEmoji deletes the given guild emoji.
@@ -138,10 +126,7 @@ func (c *RestClient) DeleteGuildEmoji(ctx context.Context, guildID, emojiID comm
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // ── Application emoji endpoints ───────────────────────────────────────────────
@@ -157,8 +142,12 @@ type ModifyEmojiParams struct {
 	Name *string `json:"name,omitempty"`
 }
 
+type ListApplicationEmojisResponse struct {
+	Items []*common.Emoji `json:"items"`
+}
+
 // ListApplicationEmojis returns all emojis for an application.
-func (c *RestClient) ListApplicationEmojis(ctx context.Context, appID common.Snowflake) ([]*common.Emoji, error) {
+func (c *RestClient) ListApplicationEmojis(ctx context.Context, appID common.Snowflake) (*ListApplicationEmojisResponse, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -168,14 +157,9 @@ func (c *RestClient) ListApplicationEmojis(ctx context.Context, appID common.Sno
 		return nil, err
 	}
 
-	var result struct {
-		Items []*common.Emoji `json:"items"`
-	}
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return result.Items, nil
+	return doRequest[ListApplicationEmojisResponse](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetApplicationEmoji returns a specific application emoji.
@@ -194,12 +178,9 @@ func (c *RestClient) GetApplicationEmoji(ctx context.Context, appID, emojiID com
 		return nil, err
 	}
 
-	var emoji common.Emoji
-	if _, err := c.do(req, []int{http.StatusOK}, &emoji); err != nil {
-		return nil, err
-	}
-
-	return &emoji, nil
+	return doRequest[common.Emoji](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // CreateApplicationEmoji creates a new emoji for an application.
@@ -218,12 +199,9 @@ func (c *RestClient) CreateApplicationEmoji(ctx context.Context, appID common.Sn
 		return nil, err
 	}
 
-	var emoji common.Emoji
-	if _, err := c.do(req, []int{http.StatusOK}, &emoji); err != nil {
-		return nil, err
-	}
-
-	return &emoji, nil
+	return doRequest[common.Emoji](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyApplicationEmoji updates an application emoji.
@@ -247,12 +225,9 @@ func (c *RestClient) ModifyApplicationEmoji(ctx context.Context, appID, emojiID 
 		return nil, err
 	}
 
-	var emoji common.Emoji
-	if _, err := c.do(req, []int{http.StatusOK}, &emoji); err != nil {
-		return nil, err
-	}
-
-	return &emoji, nil
+	return doRequest[common.Emoji](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteApplicationEmoji deletes an application emoji.
@@ -271,8 +246,5 @@ func (c *RestClient) DeleteApplicationEmoji(ctx context.Context, appID, emojiID 
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }

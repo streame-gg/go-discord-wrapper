@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +25,8 @@ import (
 type routePathKey struct{}
 
 type RestEventType string
+
+type NoReturnData struct{}
 
 const (
 	RestEventRequest   RestEventType = "REQUEST"
@@ -229,26 +232,32 @@ func isAllDigits(s string) bool {
 	return true
 }
 
-func (c *RestClient) WithBotAuthorization() string {
-	return "Bot " + c.token
+func (c *RestClient) WithBotAuthorization() func(req *http.Request) {
+	return func(req *http.Request) {
+		req.Header.Set("Authorization", "Bot "+c.token)
+	}
 }
 
-func WithUserAuthorization(token string) string {
-	return "Bearer " + token
+func WithUserAuthorization(token string) func(req *http.Request) {
+	return func(req *http.Request) {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
 }
 
-func WithoutAuthorization() string {
-	return ""
+func WithAuditLogReason(reason string) func(req *http.Request) {
+	return func(req *http.Request) {
+		req.Header.Set("X-Audit-Log-Reason", reason)
+	}
 }
 
 // generateRequest builds an authenticated HTTP request and embeds the relative
 // route path into the request context for the rate limiter to consume.
-func (c *RestClient) generateRequest(ctx context.Context, method, path string, body io.Reader, auth string) (*http.Request, error) {
+func (c *RestClient) generateRequest(ctx context.Context, method, path string, body io.Reader, options ...func(req *http.Request)) (*http.Request, error) {
 	if err := validateAPIPath(path); err != nil {
 		return nil, err
 	}
 	// Store the relative path (e.g. "/channels/111/messages") so that the
-	// rate limiter can normalise it into a bucket key without re-parsing the URL.
+	// rate limiter can normalize it into a bucket key without reparsing the URL.
 	ctx = context.WithValue(ctx, routePathKey{}, path)
 
 	req, err := http.NewRequestWithContext(ctx, method, c.buildURL()+path, body)
@@ -260,14 +269,14 @@ func (c *RestClient) generateRequest(ctx context.Context, method, path string, b
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", fmt.Sprintf("GoDiscordWrapper (%s@%s)", common.RepositoryURL, common.RepositoryVersion))
 
-	if auth != "" {
-		req.Header.Set("Authorization", "Bot "+c.token)
+	for _, option := range options {
+		option(req)
 	}
 
 	return req, nil
 }
 
-func (c *RestClient) includesInIntList(actual int, list []int) bool {
+func DoesIntExistInList(actual int, list []int) bool {
 	for _, code := range list {
 		if code == actual {
 			return true
@@ -287,6 +296,29 @@ func (c *RestClient) includesInIntList(actual int, list []int) bool {
 
 // Waiting for Go 1.27 to implement this in the RestClient;
 // https://github.com/golang/go/issues/77273
+
+func doRequestWithoutResponse(c *RestClient, req *http.Request, enforceStatusCodes ...int) error {
+	if len(enforceStatusCodes) == 0 {
+		_, err := doRequest[NoReturnData](c, req, map[int]bool{
+			http.StatusOK:        false,
+			http.StatusCreated:   false,
+			http.StatusAccepted:  false,
+			http.StatusNoContent: false,
+		})
+
+		return err
+	}
+
+	statusCodes := map[int]bool{}
+
+	for _, code := range enforceStatusCodes {
+		statusCodes[code] = false
+	}
+
+	_, err := doRequest[NoReturnData](c, req, statusCodes)
+
+	return err
+}
 
 func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData map[int]bool) (*T, error) {
 	if req == nil {
@@ -351,11 +383,17 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 		c.emitEvent(RestEvent{Type: RestEventResponse, Request: safeReq, Response: resp, Attempt: attempt})
 
 		if entry, ok := successResponseCodeData[resp.StatusCode]; ok {
-			if resp.StatusCode == http.StatusNoContent || !entry {
+			var returnType T
+
+			if resp.StatusCode == http.StatusNoContent || reflect.TypeOf(returnType) == reflect.TypeOf(NoReturnData{}) || !entry {
+				_ = resp.Body.Close()
 				return nil, nil
 			}
 
-			var returnType T
+			if reflect.TypeOf(returnType) == reflect.TypeOf(NoReturnData{}) {
+				_ = resp.Body.Close()
+				return nil, nil
+			}
 
 			if json.NewDecoder(resp.Body).Decode(&returnType) != nil {
 				return nil, err

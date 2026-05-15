@@ -115,12 +115,9 @@ func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, mes
 		return nil, err
 	}
 
-	var thread common.Channel
-	if _, err := c.do(req, []int{http.StatusCreated}, &thread); err != nil {
-		return nil, err
-	}
-
-	return &thread, nil
+	return doRequest[common.Channel](c, req, map[int]bool{
+		http.StatusCreated: true,
+	})
 }
 
 // CreateThread starts a thread that is not connected to an existing message.
@@ -139,12 +136,9 @@ func (c *RestClient) CreateThread(ctx context.Context, channelID common.Snowflak
 		return nil, err
 	}
 
-	var thread common.Channel
-	if _, err := c.do(req, []int{http.StatusCreated}, &thread); err != nil {
-		return nil, err
-	}
-
-	return &thread, nil
+	return doRequest[common.Channel](c, req, map[int]bool{
+		http.StatusCreated: true,
+	})
 }
 
 // CreateForumThread starts a thread in a forum or media channel.
@@ -163,12 +157,9 @@ func (c *RestClient) CreateForumThread(ctx context.Context, channelID common.Sno
 		return nil, err
 	}
 
-	var thread common.Channel
-	if _, err := c.do(req, []int{http.StatusCreated}, &thread); err != nil {
-		return nil, err
-	}
-
-	return &thread, nil
+	return doRequest[common.Channel](c, req, map[int]bool{
+		http.StatusCreated: true,
+	})
 }
 
 // JoinThread adds the current user to a thread.
@@ -182,10 +173,7 @@ func (c *RestClient) JoinThread(ctx context.Context, channelID common.Snowflake)
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // LeaveThread removes the current user from a thread.
@@ -199,10 +187,7 @@ func (c *RestClient) LeaveThread(ctx context.Context, channelID common.Snowflake
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // AddThreadMember adds another user to a thread.
@@ -217,10 +202,7 @@ func (c *RestClient) AddThreadMember(ctx context.Context, channelID, userID comm
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // RemoveThreadMember removes a user from a thread.
@@ -235,10 +217,7 @@ func (c *RestClient) RemoveThreadMember(ctx context.Context, channelID, userID c
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // GetThreadMember returns the thread member object for the given user.
@@ -262,16 +241,13 @@ func (c *RestClient) GetThreadMember(ctx context.Context, channelID, userID comm
 		return nil, err
 	}
 
-	var member common.ThreadMember
-	if _, err := c.do(req, []int{http.StatusOK}, &member); err != nil {
-		return nil, err
-	}
-
-	return &member, nil
+	return doRequest[common.ThreadMember](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ListThreadMembers returns the members of a thread.
-func (c *RestClient) ListThreadMembers(ctx context.Context, channelID common.Snowflake, params ListThreadMembersParams) ([]*common.ThreadMember, error) {
+func (c *RestClient) ListThreadMembers(ctx context.Context, channelID common.Snowflake, params ListThreadMembersParams) (*[]*common.ThreadMember, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -282,12 +258,9 @@ func (c *RestClient) ListThreadMembers(ctx context.Context, channelID common.Sno
 		return nil, err
 	}
 
-	var members []*common.ThreadMember
-	if _, err := c.do(req, []int{http.StatusOK}, &members); err != nil {
-		return nil, err
-	}
-
-	return members, nil
+	return doRequest[[]*common.ThreadMember](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ListPublicArchivedThreads returns archived public threads in a channel, newest first.
@@ -302,12 +275,9 @@ func (c *RestClient) ListPublicArchivedThreads(ctx context.Context, channelID co
 		return nil, err
 	}
 
-	var result ArchivedThreadsResponse
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[ArchivedThreadsResponse](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ListPrivateArchivedThreads returns archived private threads in a channel, newest first.
@@ -322,12 +292,9 @@ func (c *RestClient) ListPrivateArchivedThreads(ctx context.Context, channelID c
 		return nil, err
 	}
 
-	var result ArchivedThreadsResponse
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[ArchivedThreadsResponse](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ListJoinedPrivateArchivedThreads returns private archived threads the current user has joined.
@@ -342,12 +309,9 @@ func (c *RestClient) ListJoinedPrivateArchivedThreads(ctx context.Context, chann
 		return nil, err
 	}
 
-	var result ArchivedThreadsResponse
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[ArchivedThreadsResponse](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ListActiveGuildThreads returns all active threads in the guild that the current user can access.
@@ -361,10 +325,7 @@ func (c *RestClient) ListActiveGuildThreads(ctx context.Context, guildID common.
 		return nil, err
 	}
 
-	var result ActiveThreadsResponse
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[ActiveThreadsResponse](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

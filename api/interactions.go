@@ -48,16 +48,12 @@ func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionI
 	}
 
 	if !withResponse {
-		_, err = c.do(req, []int{http.StatusNoContent}, nil)
-		return nil, err
+		return nil, doRequestWithoutResponse(c, req)
 	}
 
-	var result responses.InteractionCallbackResponse
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[responses.InteractionCallbackResponse](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetOriginalInteractionResponse fetches the initial response message for an interaction.
@@ -72,12 +68,9 @@ func (c *RestClient) GetOriginalInteractionResponse(ctx context.Context, webhook
 		return nil, err
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[common.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // EditOriginalInteractionResponse edits the initial response message for an interaction.
@@ -112,12 +105,9 @@ func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, webhoo
 		}
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[common.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteOriginalInteractionResponse deletes the initial response message for an interaction.
@@ -132,10 +122,7 @@ func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, webh
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // CreateFollowupMessage sends a follow-up message to an interaction (usable up to 15 minutes after the initial response).
@@ -170,12 +157,9 @@ func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID common.Sno
 		}
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[common.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetFollowupMessage fetches a follow-up message sent for an interaction.
@@ -194,12 +178,9 @@ func (c *RestClient) GetFollowupMessage(ctx context.Context, appID common.Snowfl
 		return nil, err
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[common.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // EditFollowupMessage edits a follow-up message sent for an interaction.
@@ -242,12 +223,9 @@ func (c *RestClient) EditFollowupMessage(ctx context.Context, appID common.Snowf
 		}
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[common.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteFollowupMessage deletes a follow-up message sent for an interaction.
@@ -266,8 +244,5 @@ func (c *RestClient) DeleteFollowupMessage(ctx context.Context, appID common.Sno
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }

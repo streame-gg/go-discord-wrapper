@@ -65,7 +65,7 @@ type CreateTestEntitlementParams struct {
 
 // ── Entitlement endpoints ─────────────────────────────────────────────────────
 
-func (c *RestClient) ListEntitlements(ctx context.Context, appID common.Snowflake, params ListEntitlementsParams) ([]*common.Entitlement, error) {
+func (c *RestClient) ListEntitlements(ctx context.Context, appID common.Snowflake, params ListEntitlementsParams) (*[]*common.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -76,12 +76,9 @@ func (c *RestClient) ListEntitlements(ctx context.Context, appID common.Snowflak
 		return nil, err
 	}
 
-	var result []*common.Entitlement
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return doRequest[[]*common.Entitlement](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 func (c *RestClient) GetEntitlement(ctx context.Context, appID, entitlementID common.Snowflake) (*common.Entitlement, error) {
@@ -99,12 +96,9 @@ func (c *RestClient) GetEntitlement(ctx context.Context, appID, entitlementID co
 		return nil, err
 	}
 
-	var result common.Entitlement
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[common.Entitlement](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 func (c *RestClient) CreateTestEntitlement(ctx context.Context, appID common.Snowflake, params CreateTestEntitlementParams) (*common.Entitlement, error) {
@@ -122,12 +116,9 @@ func (c *RestClient) CreateTestEntitlement(ctx context.Context, appID common.Sno
 		return nil, err
 	}
 
-	var result common.Entitlement
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[common.Entitlement](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 func (c *RestClient) ConsumeEntitlement(ctx context.Context, appID, entitlementID common.Snowflake) error {
@@ -145,10 +136,7 @@ func (c *RestClient) ConsumeEntitlement(ctx context.Context, appID, entitlementI
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 func (c *RestClient) DeleteTestEntitlement(ctx context.Context, appID, entitlementID common.Snowflake) error {
@@ -166,8 +154,5 @@ func (c *RestClient) DeleteTestEntitlement(ctx context.Context, appID, entitleme
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }

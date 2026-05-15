@@ -35,7 +35,7 @@ type ModifyAutoModerationRuleParams struct {
 // ── Auto moderation endpoints ─────────────────────────────────────────────────
 
 // ListAutoModerationRules returns all auto moderation rules for a guild.
-func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID common.Snowflake) ([]*common.AutoModerationRule, error) {
+func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID common.Snowflake) (*[]*common.AutoModerationRule, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -45,15 +45,9 @@ func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID common
 		return nil, err
 	}
 
-	var rules []*common.AutoModerationRule
-	if err := c.do(req, SuccessReturn[[]*common.AutoModerationRule]{
-		status: http.StatusOK,
-		Out:    &rules,
-	}); err != nil {
-		return nil, err
-	}
-
-	return rules, nil
+	return doRequest[[]*common.AutoModerationRule](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetAutoModerationRule returns a single auto moderation rule.
@@ -72,14 +66,9 @@ func (c *RestClient) GetAutoModerationRule(ctx context.Context, guildID, ruleID 
 		return nil, err
 	}
 
-	var rule common.AutoModerationRule
-	if err := c.do(req, SuccessReturn[common.AutoModerationRule]{
-		status: http.StatusOK,
-		Out:    &rule,
-	}); err != nil {
-		return nil, err
-	}
-	return &rule, nil
+	return doRequest[common.AutoModerationRule](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // CreateAutoModerationRule creates a new auto moderation rule in a guild.
@@ -98,15 +87,9 @@ func (c *RestClient) CreateAutoModerationRule(ctx context.Context, guildID commo
 		return nil, err
 	}
 
-	var rule common.AutoModerationRule
-	if err := c.do(req, SuccessReturn[common.AutoModerationRule]{
-		status: http.StatusOK,
-		Out:    &rule,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &rule, nil
+	return doRequest[common.AutoModerationRule](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyAutoModerationRule updates an existing auto moderation rule.
@@ -130,15 +113,9 @@ func (c *RestClient) ModifyAutoModerationRule(ctx context.Context, guildID, rule
 		return nil, err
 	}
 
-	var rule common.AutoModerationRule
-	if err := c.do(req, SuccessReturn[common.AutoModerationRule]{
-		status: http.StatusOK,
-		Out:    &rule,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &rule, nil
+	return doRequest[common.AutoModerationRule](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteAutoModerationRule deletes an auto moderation rule.
@@ -157,8 +134,5 @@ func (c *RestClient) DeleteAutoModerationRule(ctx context.Context, guildID, rule
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.AutoModerationRule]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }

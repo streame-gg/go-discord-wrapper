@@ -18,18 +18,15 @@ type UpdateRoleConnectionParams struct {
 
 // GetCurrentUserConnections returns the connections linked to the current user's account.
 // Requires an OAuth2 bearer token with the connections scope; bot tokens will receive a 401.
-func (c *RestClient) GetCurrentUserConnections(ctx context.Context, userToken string) ([]*UserConnection, error) {
+func (c *RestClient) GetCurrentUserConnections(ctx context.Context, userToken string) (*[]*UserConnection, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/users/@me/connections", nil, WithUserAuthorization(userToken))
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*UserConnection
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return doRequest[[]*UserConnection](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetCurrentUserApplicationRoleConnection returns the application role connection for the current user.
@@ -45,12 +42,9 @@ func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context
 		return nil, err
 	}
 
-	var result ApplicationRoleConnection
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[ApplicationRoleConnection](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // UpdateCurrentUserApplicationRoleConnection updates the application role connection for the current user.
@@ -71,10 +65,33 @@ func (c *RestClient) UpdateCurrentUserApplicationRoleConnection(ctx context.Cont
 		return nil, err
 	}
 
-	var result ApplicationRoleConnection
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
+	return doRequest[ApplicationRoleConnection](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
+}
+
+// AddGuildMember adds a user to a guild using their OAuth2 access token.
+func (c *RestClient) AddGuildMember(ctx context.Context, guildID, userID common.Snowflake, params AddGuildMemberParams) (*common.GuildMember, error) {
+	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
 
-	return &result, nil
+	if err := userID.Validate(); err != nil {
+		return nil, err
+	}
+
+	body, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+
+	path := "/guilds/" + guildID.String() + "/members/" + userID.String()
+	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization())
+	if err != nil {
+		return nil, err
+	}
+
+	return doRequest[common.GuildMember](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

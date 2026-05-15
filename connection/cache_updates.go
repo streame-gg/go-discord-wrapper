@@ -20,8 +20,8 @@ func (d *Client) cacheChannel(channel *common.Channel) {
 	}
 }
 
-func (d *Client) cacheChannels(channels []*common.Channel) {
-	for _, channel := range channels {
+func (d *Client) cacheChannels(channels *[]*common.Channel) {
+	for _, channel := range *channels {
 		d.cacheChannel(channel)
 	}
 }
@@ -47,8 +47,8 @@ func (d *Client) cacheMember(guildID common.Snowflake, member *common.GuildMembe
 	d.cacheUser(member.User)
 }
 
-func (d *Client) cacheMembers(guildID common.Snowflake, members []*common.GuildMember) {
-	for _, member := range members {
+func (d *Client) cacheMembers(guildID common.Snowflake, members *[]*common.GuildMember) {
+	for _, member := range *members {
 		d.cacheMember(guildID, member)
 	}
 }
@@ -64,8 +64,8 @@ func (d *Client) cacheMessage(msg *common.Message) {
 	}
 }
 
-func (d *Client) cacheMessages(messages []*common.Message) {
-	for _, msg := range messages {
+func (d *Client) cacheMessages(messages *[]*common.Message) {
+	for _, msg := range *messages {
 		d.cacheMessage(msg)
 	}
 }
@@ -78,8 +78,8 @@ func (d *Client) cacheRole(guildID common.Snowflake, role *common.Role) {
 	d.Cache.Roles().Set(guildID, role)
 }
 
-func (d *Client) cacheRoles(guildID common.Snowflake, roles []*common.Role) {
-	for _, role := range roles {
+func (d *Client) cacheRoles(guildID common.Snowflake, roles *[]*common.Role) {
+	for _, role := range *roles {
 		d.cacheRole(guildID, role)
 	}
 }

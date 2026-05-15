@@ -34,22 +34,23 @@ type SendSoundboardSoundParams struct {
 // ── Soundboard endpoints ──────────────────────────────────────────────────────
 
 // ListDefaultSoundboardSounds returns the list of default sounds available to all users.
-func (c *RestClient) ListDefaultSoundboardSounds(ctx context.Context) ([]*common.SoundboardSound, error) {
+func (c *RestClient) ListDefaultSoundboardSounds(ctx context.Context) (*[]*common.SoundboardSound, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/soundboard-default-sounds", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	var sounds []*common.SoundboardSound
-	if _, err := c.do(req, []int{http.StatusOK}, &sounds); err != nil {
-		return nil, err
-	}
+	return doRequest[[]*common.SoundboardSound](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
+}
 
-	return sounds, nil
+type ListGuildSoundboardSoundsResponse struct {
+	Items []*common.SoundboardSound `json:"items"`
 }
 
 // ListGuildSoundboardSounds returns all soundboard sounds for a guild.
-func (c *RestClient) ListGuildSoundboardSounds(ctx context.Context, guildID common.Snowflake) ([]*common.SoundboardSound, error) {
+func (c *RestClient) ListGuildSoundboardSounds(ctx context.Context, guildID common.Snowflake) (*ListGuildSoundboardSoundsResponse, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -59,14 +60,9 @@ func (c *RestClient) ListGuildSoundboardSounds(ctx context.Context, guildID comm
 		return nil, err
 	}
 
-	var result struct {
-		Items []*common.SoundboardSound `json:"items"`
-	}
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return result.Items, nil
+	return doRequest[ListGuildSoundboardSoundsResponse](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetGuildSoundboardSound returns a single soundboard sound for a guild.
@@ -85,12 +81,9 @@ func (c *RestClient) GetGuildSoundboardSound(ctx context.Context, guildID, sound
 		return nil, err
 	}
 
-	var sound common.SoundboardSound
-	if _, err := c.do(req, []int{http.StatusOK}, &sound); err != nil {
-		return nil, err
-	}
-
-	return &sound, nil
+	return doRequest[common.SoundboardSound](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // CreateGuildSoundboardSound creates a new soundboard sound in a guild. Requires MANAGE_GUILD_EXPRESSIONS.
@@ -109,12 +102,9 @@ func (c *RestClient) CreateGuildSoundboardSound(ctx context.Context, guildID com
 		return nil, err
 	}
 
-	var sound common.SoundboardSound
-	if _, err := c.do(req, []int{http.StatusOK}, &sound); err != nil {
-		return nil, err
-	}
-
-	return &sound, nil
+	return doRequest[common.SoundboardSound](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyGuildSoundboardSound edits a soundboard sound. Requires MANAGE_GUILD_EXPRESSIONS.
@@ -138,12 +128,9 @@ func (c *RestClient) ModifyGuildSoundboardSound(ctx context.Context, guildID, so
 		return nil, err
 	}
 
-	var sound common.SoundboardSound
-	if _, err := c.do(req, []int{http.StatusOK}, &sound); err != nil {
-		return nil, err
-	}
-
-	return &sound, nil
+	return doRequest[common.SoundboardSound](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteGuildSoundboardSound deletes a soundboard sound. Requires MANAGE_GUILD_EXPRESSIONS.
@@ -162,10 +149,7 @@ func (c *RestClient) DeleteGuildSoundboardSound(ctx context.Context, guildID, so
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // SendSoundboardSound sends a soundboard sound to a voice channel the user is connected to.
@@ -185,8 +169,5 @@ func (c *RestClient) SendSoundboardSound(ctx context.Context, channelID common.S
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }

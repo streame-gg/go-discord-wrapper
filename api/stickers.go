@@ -54,33 +54,29 @@ func (c *RestClient) GetSticker(ctx context.Context, stickerID common.Snowflake)
 		return nil, err
 	}
 
-	var sticker common.Sticker
-	if _, err := c.do(req, []int{http.StatusOK}, &sticker); err != nil {
-		return nil, err
-	}
+	return doRequest[common.Sticker](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
+}
 
-	return &sticker, nil
+type ListStickerPacksResponse struct {
+	StickerPacks []*StickerPack `json:"sticker_packs"`
 }
 
 // ListStickerPacks returns the list of sticker packs available to Nitro subscribers.
-func (c *RestClient) ListStickerPacks(ctx context.Context) ([]*StickerPack, error) {
+func (c *RestClient) ListStickerPacks(ctx context.Context) (*ListStickerPacksResponse, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/sticker-packs", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	var result struct {
-		StickerPacks []*StickerPack `json:"sticker_packs"`
-	}
-	if _, err := c.do(req, []int{http.StatusOK}, &result); err != nil {
-		return nil, err
-	}
-
-	return result.StickerPacks, nil
+	return doRequest[ListStickerPacksResponse](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ListGuildStickers returns all stickers for the given guild.
-func (c *RestClient) ListGuildStickers(ctx context.Context, guildID common.Snowflake) ([]*common.Sticker, error) {
+func (c *RestClient) ListGuildStickers(ctx context.Context, guildID common.Snowflake) (*[]*common.Sticker, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -90,12 +86,9 @@ func (c *RestClient) ListGuildStickers(ctx context.Context, guildID common.Snowf
 		return nil, err
 	}
 
-	var stickers []*common.Sticker
-	if _, err := c.do(req, []int{http.StatusOK}, &stickers); err != nil {
-		return nil, err
-	}
-
-	return stickers, nil
+	return doRequest[[]*common.Sticker](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetGuildSticker returns a specific sticker from a guild.
@@ -114,12 +107,9 @@ func (c *RestClient) GetGuildSticker(ctx context.Context, guildID, stickerID com
 		return nil, err
 	}
 
-	var sticker common.Sticker
-	if _, err := c.do(req, []int{http.StatusOK}, &sticker); err != nil {
-		return nil, err
-	}
-
-	return &sticker, nil
+	return doRequest[common.Sticker](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyGuildSticker updates the name, description, or tags of a guild sticker.
@@ -143,12 +133,9 @@ func (c *RestClient) ModifyGuildSticker(ctx context.Context, guildID, stickerID 
 		return nil, err
 	}
 
-	var sticker common.Sticker
-	if _, err := c.do(req, []int{http.StatusOK}, &sticker); err != nil {
-		return nil, err
-	}
-
-	return &sticker, nil
+	return doRequest[common.Sticker](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteGuildSticker deletes a sticker from a guild.
@@ -167,10 +154,7 @@ func (c *RestClient) DeleteGuildSticker(ctx context.Context, guildID, stickerID 
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // GetStickerPack returns the sticker pack object for the given pack ID.
@@ -184,12 +168,9 @@ func (c *RestClient) GetStickerPack(ctx context.Context, packID common.Snowflake
 		return nil, err
 	}
 
-	var pack StickerPack
-	if _, err := c.do(req, []int{http.StatusOK}, &pack); err != nil {
-		return nil, err
-	}
-
-	return &pack, nil
+	return doRequest[StickerPack](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 var validStickerContentTypes = map[string]bool{
@@ -234,10 +215,7 @@ func (c *RestClient) CreateGuildSticker(ctx context.Context, guildID common.Snow
 	}
 	req.Header.Set("Content-Type", w.FormDataContentType())
 
-	var sticker common.Sticker
-	if _, err := c.do(req, []int{http.StatusCreated}, &sticker); err != nil {
-		return nil, err
-	}
-
-	return &sticker, nil
+	return doRequest[common.Sticker](c, req, map[int]bool{
+		http.StatusCreated: true,
+	})
 }

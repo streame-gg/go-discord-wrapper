@@ -78,16 +78,13 @@ func (c *RestClient) GetGuildMember(ctx context.Context, guildID, userID common.
 		return nil, err
 	}
 
-	var member common.GuildMember
-	if _, err := c.do(req, []int{http.StatusOK}, &member); err != nil {
-		return nil, err
-	}
-
-	return &member, nil
+	return doRequest[common.GuildMember](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ListGuildMembers returns a paginated list of members in a guild (max 1000 per request).
-func (c *RestClient) ListGuildMembers(ctx context.Context, guildID common.Snowflake, params GetGuildMembersParams) ([]*common.GuildMember, error) {
+func (c *RestClient) ListGuildMembers(ctx context.Context, guildID common.Snowflake, params GetGuildMembersParams) (*[]*common.GuildMember, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -98,16 +95,13 @@ func (c *RestClient) ListGuildMembers(ctx context.Context, guildID common.Snowfl
 		return nil, err
 	}
 
-	var members []*common.GuildMember
-	if _, err := c.do(req, []int{http.StatusOK}, &members); err != nil {
-		return nil, err
-	}
-
-	return members, nil
+	return doRequest[[]*common.GuildMember](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // SearchGuildMembers returns members whose username or nickname starts with the given query string.
-func (c *RestClient) SearchGuildMembers(ctx context.Context, guildID common.Snowflake, params SearchGuildMembersParams) ([]*common.GuildMember, error) {
+func (c *RestClient) SearchGuildMembers(ctx context.Context, guildID common.Snowflake, params SearchGuildMembersParams) (*[]*common.GuildMember, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -118,12 +112,9 @@ func (c *RestClient) SearchGuildMembers(ctx context.Context, guildID common.Snow
 		return nil, err
 	}
 
-	var members []*common.GuildMember
-	if _, err := c.do(req, []int{http.StatusOK}, &members); err != nil {
-		return nil, err
-	}
-
-	return members, nil
+	return doRequest[[]*common.GuildMember](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyGuildMember updates attributes of a guild member.
@@ -147,12 +138,9 @@ func (c *RestClient) ModifyGuildMember(ctx context.Context, guildID, userID comm
 		return nil, err
 	}
 
-	var member common.GuildMember
-	if _, err := c.do(req, []int{http.StatusOK}, &member); err != nil {
-		return nil, err
-	}
-
-	return &member, nil
+	return doRequest[common.GuildMember](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyCurrentMember updates the current user's member object in a guild (e.g. nickname).
@@ -172,12 +160,9 @@ func (c *RestClient) ModifyCurrentMember(ctx context.Context, guildID common.Sno
 		return nil, err
 	}
 
-	var member common.GuildMember
-	if _, err := c.do(req, []int{http.StatusOK}, &member); err != nil {
-		return nil, err
-	}
-
-	return &member, nil
+	return doRequest[common.GuildMember](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // AddGuildMemberRole grants a role to a guild member. Requires MANAGE_ROLES.
@@ -200,10 +185,7 @@ func (c *RestClient) AddGuildMemberRole(ctx context.Context, guildID, userID, ro
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // RemoveGuildMemberRole removes a role from a guild member. Requires MANAGE_ROLES.
@@ -226,10 +208,7 @@ func (c *RestClient) RemoveGuildMemberRole(ctx context.Context, guildID, userID,
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // KickGuildMember kicks a member from a guild. Requires KICK_MEMBERS.
@@ -248,8 +227,5 @@ func (c *RestClient) KickGuildMember(ctx context.Context, guildID, userID common
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }

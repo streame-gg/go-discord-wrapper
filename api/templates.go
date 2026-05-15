@@ -36,12 +36,9 @@ func (c *RestClient) GetTemplate(ctx context.Context, templateCode string) (*com
 		return nil, err
 	}
 
-	var tmpl common.GuildTemplate
-	if _, err := c.do(req, []int{http.StatusOK}, &tmpl); err != nil {
-		return nil, err
-	}
-
-	return &tmpl, nil
+	return doRequest[common.GuildTemplate](c, req, map[int]bool{
+		http.StatusCreated: true,
+	})
 }
 
 // CreateGuildFromTemplate creates a new guild from a template. Only available for bots in fewer than 10 guilds.
@@ -56,16 +53,13 @@ func (c *RestClient) CreateGuildFromTemplate(ctx context.Context, templateCode s
 		return nil, err
 	}
 
-	var guild common.Guild
-	if _, err := c.do(req, []int{http.StatusCreated}, &guild); err != nil {
-		return nil, err
-	}
-
-	return &guild, nil
+	return doRequest[common.Guild](c, req, map[int]bool{
+		http.StatusCreated: true,
+	})
 }
 
 // GetGuildTemplates returns the templates for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID common.Snowflake) ([]*common.GuildTemplate, error) {
+func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID common.Snowflake) (*[]*common.GuildTemplate, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -75,12 +69,9 @@ func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID common.Snowf
 		return nil, err
 	}
 
-	var templates []*common.GuildTemplate
-	if _, err := c.do(req, []int{http.StatusOK}, &templates); err != nil {
-		return nil, err
-	}
-
-	return templates, nil
+	return doRequest[[]*common.GuildTemplate](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // CreateGuildTemplate creates a template for a guild. Requires MANAGE_GUILD.
@@ -99,12 +90,9 @@ func (c *RestClient) CreateGuildTemplate(ctx context.Context, guildID common.Sno
 		return nil, err
 	}
 
-	var tmpl common.GuildTemplate
-	if _, err := c.do(req, []int{http.StatusCreated}, &tmpl); err != nil {
-		return nil, err
-	}
-
-	return &tmpl, nil
+	return doRequest[common.GuildTemplate](c, req, map[int]bool{
+		http.StatusCreated: true,
+	})
 }
 
 // SyncGuildTemplate syncs the template to the guild's current state. Requires MANAGE_GUILD.
@@ -119,12 +107,9 @@ func (c *RestClient) SyncGuildTemplate(ctx context.Context, guildID common.Snowf
 		return nil, err
 	}
 
-	var tmpl common.GuildTemplate
-	if _, err := c.do(req, []int{http.StatusOK}, &tmpl); err != nil {
-		return nil, err
-	}
-
-	return &tmpl, nil
+	return doRequest[common.GuildTemplate](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyGuildTemplate modifies a guild template. Requires MANAGE_GUILD.
@@ -144,12 +129,9 @@ func (c *RestClient) ModifyGuildTemplate(ctx context.Context, guildID common.Sno
 		return nil, err
 	}
 
-	var tmpl common.GuildTemplate
-	if _, err := c.do(req, []int{http.StatusOK}, &tmpl); err != nil {
-		return nil, err
-	}
-
-	return &tmpl, nil
+	return doRequest[common.GuildTemplate](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteGuildTemplate deletes a guild template. Requires MANAGE_GUILD.
@@ -164,10 +146,7 @@ func (c *RestClient) DeleteGuildTemplate(ctx context.Context, guildID common.Sno
 		return nil, err
 	}
 
-	var tmpl common.GuildTemplate
-	if _, err := c.do(req, []int{http.StatusOK}, &tmpl); err != nil {
-		return nil, err
-	}
-
-	return &tmpl, nil
+	return doRequest[common.GuildTemplate](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

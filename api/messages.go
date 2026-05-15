@@ -206,7 +206,7 @@ func encodeEmoji(emoji string) string {
 // ── Message endpoints ─────────────────────────────────────────────────────────
 
 // GetMessages returns up to 100 messages from a channel.
-func (c *RestClient) GetMessages(ctx context.Context, channelID common.Snowflake, params GetMessagesParams) ([]*common.Message, error) {
+func (c *RestClient) GetMessages(ctx context.Context, channelID common.Snowflake, params GetMessagesParams) (*[]*common.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -217,12 +217,9 @@ func (c *RestClient) GetMessages(ctx context.Context, channelID common.Snowflake
 		return nil, err
 	}
 
-	var msgs []*common.Message
-	if _, err := c.do(req, []int{http.StatusOK}, &msgs); err != nil {
-		return nil, err
-	}
-
-	return msgs, nil
+	return doRequest[[]*common.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetMessage returns a single message by ID.
@@ -241,12 +238,9 @@ func (c *RestClient) GetMessage(ctx context.Context, channelID, messageID common
 		return nil, err
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[common.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // CreateMessage sends a new message to a channel.
@@ -281,12 +275,9 @@ func (c *RestClient) CreateMessage(ctx context.Context, channelID common.Snowfla
 		}
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[common.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // EditMessage edits a previously sent message. Only fields set in params are changed.
@@ -325,12 +316,9 @@ func (c *RestClient) EditMessage(ctx context.Context, channelID, messageID commo
 		}
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[common.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteMessage deletes a message.
@@ -349,10 +337,7 @@ func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID com
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // BulkDeleteMessages deletes 2–100 messages at once.
@@ -383,10 +368,7 @@ func (c *RestClient) BulkDeleteMessages(ctx context.Context, channelID common.Sn
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // CrosspostMessage publishes a message in an announcement channel to all following channels.
@@ -405,18 +387,15 @@ func (c *RestClient) CrosspostMessage(ctx context.Context, channelID, messageID 
 		return nil, err
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, []int{http.StatusOK}, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[common.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ── Pin endpoints ─────────────────────────────────────────────────────────────
 
 // GetPinnedMessages returns all pinned messages in a channel (max 50).
-func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID common.Snowflake) ([]*common.Message, error) {
+func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID common.Snowflake) (*[]*common.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -426,12 +405,9 @@ func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID common.Sno
 		return nil, err
 	}
 
-	var msgs []*common.Message
-	if _, err := c.do(req, []int{http.StatusOK}, &msgs); err != nil {
-		return nil, err
-	}
-
-	return msgs, nil
+	return doRequest[[]*common.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // PinMessage pins a message in a channel. Requires MANAGE_MESSAGES.
@@ -450,10 +426,7 @@ func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID common
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // UnpinMessage unpins a message from a channel. Requires MANAGE_MESSAGES.
@@ -472,10 +445,7 @@ func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID comm
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // ── Reaction endpoints ────────────────────────────────────────────────────────
@@ -497,10 +467,7 @@ func (c *RestClient) AddReaction(ctx context.Context, channelID, messageID commo
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // DeleteOwnReaction removes the bot's own reaction from a message.
@@ -519,10 +486,7 @@ func (c *RestClient) DeleteOwnReaction(ctx context.Context, channelID, messageID
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // DeleteUserReaction removes another user's reaction from a message. Requires MANAGE_MESSAGES.
@@ -545,14 +509,11 @@ func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageI
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // GetReactions returns the users who reacted to a message with the given emoji.
-func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID common.Snowflake, emoji string, params GetReactionsParams) ([]*common.User, error) {
+func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID common.Snowflake, emoji string, params GetReactionsParams) (*[]*common.User, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -567,12 +528,9 @@ func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID comm
 		return nil, err
 	}
 
-	var users []*common.User
-	if _, err := c.do(req, []int{http.StatusOK}, &users); err != nil {
-		return nil, err
-	}
-
-	return users, nil
+	return doRequest[[]*common.User](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteAllReactions removes every reaction from a message. Requires MANAGE_MESSAGES.
@@ -591,10 +549,7 @@ func (c *RestClient) DeleteAllReactions(ctx context.Context, channelID, messageI
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // DeleteAllReactionsForEmoji removes all reactions for a specific emoji. Requires MANAGE_MESSAGES.
@@ -613,8 +568,5 @@ func (c *RestClient) DeleteAllReactionsForEmoji(ctx context.Context, channelID, 
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }

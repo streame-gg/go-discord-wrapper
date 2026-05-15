@@ -26,19 +26,14 @@ func (c *RestClient) RegisterCommand(ctx context.Context, appID common.Snowflake
 		return nil, err
 	}
 
-	var registered commands.ApplicationCommand
-	if err := c.do(req, SuccessReturn[commands.ApplicationCommand]{
-		status: http.StatusCreated,
-		Out:    &registered,
-	}); err != nil {
-		return nil, err
-	}
-	return &registered, nil
+	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
+		http.StatusCreated: true,
+	})
 }
 
 // BulkRegisterCommands overwrites all global application commands for the given application ID.
 // Any commands not included in cmds are deleted.
-func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID common.Snowflake, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
+func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID common.Snowflake, cmds []*commands.ApplicationCommand) (*[]*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -53,22 +48,16 @@ func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID common.Snow
 		return nil, err
 	}
 
-	var registered []*commands.ApplicationCommand
-	if err := c.do(req, SuccessReturn[[]*commands.ApplicationCommand]{
-		status: http.StatusOK,
-		Out:    &registered,
-	}); err != nil {
-		return nil, err
-	}
-
-	return registered, nil
+	return doRequest[[]*commands.ApplicationCommand](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ── Global command management ─────────────────────────────────────────────────
 
 // GetGlobalApplicationCommands returns all global application commands for the given application ID.
 // Set withLocalizations to true to include localization dictionaries.
-func (c *RestClient) GetGlobalApplicationCommands(ctx context.Context, appID common.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
+func (c *RestClient) GetGlobalApplicationCommands(ctx context.Context, appID common.Snowflake, withLocalizations bool) (*[]*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -83,15 +72,9 @@ func (c *RestClient) GetGlobalApplicationCommands(ctx context.Context, appID com
 		return nil, err
 	}
 
-	var cmds []*commands.ApplicationCommand
-	if err := c.do(req, SuccessReturn[[]*commands.ApplicationCommand]{
-		status: http.StatusOK,
-		Out:    &cmds,
-	}); err != nil {
-		return nil, err
-	}
-
-	return cmds, nil
+	return doRequest[[]*commands.ApplicationCommand](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetGlobalApplicationCommand returns a single global application command.
@@ -110,15 +93,9 @@ func (c *RestClient) GetGlobalApplicationCommand(ctx context.Context, appID, cmd
 		return nil, err
 	}
 
-	var cmd commands.ApplicationCommand
-	if err := c.do(req, SuccessReturn[commands.ApplicationCommand]{
-		status: http.StatusOK,
-		Out:    &cmd,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &cmd, nil
+	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // EditGlobalApplicationCommand updates a global application command.
@@ -142,15 +119,9 @@ func (c *RestClient) EditGlobalApplicationCommand(ctx context.Context, appID, cm
 		return nil, err
 	}
 
-	var cmd commands.ApplicationCommand
-	if err := c.do(req, SuccessReturn[commands.ApplicationCommand]{
-		status: http.StatusOK,
-		Out:    &cmd,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &cmd, nil
+	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteGlobalApplicationCommand deletes a global application command.
@@ -169,16 +140,13 @@ func (c *RestClient) DeleteGlobalApplicationCommand(ctx context.Context, appID, 
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // ── Guild command management ──────────────────────────────────────────────────
 
 // GetGuildApplicationCommands returns all application commands registered to a specific guild.
-func (c *RestClient) GetGuildApplicationCommands(ctx context.Context, appID, guildID common.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
+func (c *RestClient) GetGuildApplicationCommands(ctx context.Context, appID, guildID common.Snowflake, withLocalizations bool) (*[]*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -197,15 +165,9 @@ func (c *RestClient) GetGuildApplicationCommands(ctx context.Context, appID, gui
 		return nil, err
 	}
 
-	var cmds []*commands.ApplicationCommand
-	if err := c.do(req, SuccessReturn[[]*commands.ApplicationCommand]{
-		status: http.StatusOK,
-		Out:    &cmds,
-	}); err != nil {
-		return nil, err
-	}
-
-	return cmds, nil
+	return doRequest[[]*commands.ApplicationCommand](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // CreateGuildApplicationCommand registers a command in a specific guild.
@@ -229,15 +191,9 @@ func (c *RestClient) CreateGuildApplicationCommand(ctx context.Context, appID, g
 		return nil, err
 	}
 
-	var registered commands.ApplicationCommand
-	if err := c.do(req, SuccessReturn[commands.ApplicationCommand]{
-		status: http.StatusOK,
-		Out:    &registered,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &registered, nil
+	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetGuildApplicationCommand returns a single guild-specific application command.
@@ -260,15 +216,9 @@ func (c *RestClient) GetGuildApplicationCommand(ctx context.Context, appID, guil
 		return nil, err
 	}
 
-	var cmd commands.ApplicationCommand
-	if err := c.do(req, SuccessReturn[commands.ApplicationCommand]{
-		status: http.StatusOK,
-		Out:    &cmd,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &cmd, nil
+	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // EditGuildApplicationCommand updates a guild-specific application command.
@@ -296,15 +246,9 @@ func (c *RestClient) EditGuildApplicationCommand(ctx context.Context, appID, gui
 		return nil, err
 	}
 
-	var cmd commands.ApplicationCommand
-	if err := c.do(req, SuccessReturn[commands.ApplicationCommand]{
-		status: http.StatusOK,
-		Out:    &cmd,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &cmd, nil
+	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteGuildApplicationCommand deletes a guild-specific application command.
@@ -327,15 +271,12 @@ func (c *RestClient) DeleteGuildApplicationCommand(ctx context.Context, appID, g
 		return err
 	}
 
-	return c.do(req, SuccessReturn[common.Channel]{
-		status: http.StatusNoContent,
-		Out:    nil,
-	})
+	return doRequestWithoutResponse(c, req)
 }
 
 // BulkOverwriteGuildApplicationCommands overwrites all guild-specific commands for the given guild.
 // Any commands not included in cmds are deleted.
-func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, appID, guildID common.Snowflake, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
+func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, appID, guildID common.Snowflake, cmds []*commands.ApplicationCommand) (*[]*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -355,21 +296,15 @@ func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, 
 		return nil, err
 	}
 
-	var registered []*commands.ApplicationCommand
-	if err := c.do(req, SuccessReturn[[]*commands.ApplicationCommand]{
-		status: http.StatusOK,
-		Out:    &registered,
-	}); err != nil {
-		return nil, err
-	}
-
-	return registered, nil
+	return doRequest[[]*commands.ApplicationCommand](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ── Command permissions ───────────────────────────────────────────────────────
 
 // GetGuildApplicationCommandPermissions returns all permission overrides for every command in a guild.
-func (c *RestClient) GetGuildApplicationCommandPermissions(ctx context.Context, appID, guildID common.Snowflake) ([]*common.GuildApplicationCommandPermissions, error) {
+func (c *RestClient) GetGuildApplicationCommandPermissions(ctx context.Context, appID, guildID common.Snowflake) (*[]*common.GuildApplicationCommandPermissions, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -384,15 +319,9 @@ func (c *RestClient) GetGuildApplicationCommandPermissions(ctx context.Context, 
 		return nil, err
 	}
 
-	var perms []*common.GuildApplicationCommandPermissions
-	if err := c.do(req, SuccessReturn[[]*common.GuildApplicationCommandPermissions]{
-		status: http.StatusOK,
-		Out:    &perms,
-	}); err != nil {
-		return nil, err
-	}
-
-	return perms, nil
+	return doRequest[[]*common.GuildApplicationCommandPermissions](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetApplicationCommandPermissions returns the permission overrides for a specific command in a guild.
@@ -415,15 +344,9 @@ func (c *RestClient) GetApplicationCommandPermissions(ctx context.Context, appID
 		return nil, err
 	}
 
-	var perms common.GuildApplicationCommandPermissions
-	if err := c.do(req, SuccessReturn[common.GuildApplicationCommandPermissions]{
-		status: http.StatusOK,
-		Out:    &perms,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &perms, nil
+	return doRequest[common.GuildApplicationCommandPermissions](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // EditApplicationCommandPermissions overwrites the permission overrides for a specific command in a guild.
@@ -452,13 +375,7 @@ func (c *RestClient) EditApplicationCommandPermissions(ctx context.Context, appI
 		return nil, err
 	}
 
-	var perms common.GuildApplicationCommandPermissions
-	if err := c.do(req, SuccessReturn[common.GuildApplicationCommandPermissions]{
-		status: http.StatusOK,
-		Out:    &perms,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &perms, nil
+	return doRequest[common.GuildApplicationCommandPermissions](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
