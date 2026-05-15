@@ -35,6 +35,7 @@ type LocalCoordinator struct {
 
 	mu       sync.RWMutex
 	handlers map[int]func(options.ShardMessage)
+	closed   bool
 	wg       sync.WaitGroup // tracks in-flight handler goroutines (Bug 27)
 }
 
@@ -47,14 +48,17 @@ func NewLocalCoordinator(totalShards int) *LocalCoordinator {
 }
 
 // Register installs the message handler for shardID.
-// Returns an error if shardID is out of range.
+// Returns an error if shardID is out of range or the coordinator is closed.
 func (c *LocalCoordinator) Register(shardID int, handler func(options.ShardMessage)) error {
 	if shardID < 0 || shardID >= c.total {
 		return fmt.Errorf("sharding: shard ID %d out of range [0, %d)", shardID, c.total)
 	}
 	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.closed {
+		return fmt.Errorf("sharding: coordinator is closed")
+	}
 	c.handlers[shardID] = handler
-	c.mu.Unlock()
 	return nil
 }
 
@@ -62,6 +66,10 @@ func (c *LocalCoordinator) Register(shardID int, handler func(options.ShardMessa
 // Delivery is asynchronous; the goroutine is started before Send returns.
 func (c *LocalCoordinator) Send(msg options.ShardMessage) error {
 	c.mu.RLock()
+	if c.closed {
+		c.mu.RUnlock()
+		return fmt.Errorf("sharding: coordinator is closed")
+	}
 	h, ok := c.handlers[msg.To]
 	if ok {
 		c.wg.Add(1) // increment while holding RLock so Close cannot race wg.Wait
@@ -83,6 +91,10 @@ func (c *LocalCoordinator) Broadcast(msg options.ShardMessage) error {
 	msg.To = options.BroadcastAll
 
 	c.mu.RLock()
+	if c.closed {
+		c.mu.RUnlock()
+		return fmt.Errorf("sharding: coordinator is closed")
+	}
 	hs := make([]func(options.ShardMessage), 0, len(c.handlers))
 	for _, h := range c.handlers {
 		hs = append(hs, h)
@@ -104,9 +116,10 @@ func (c *LocalCoordinator) Broadcast(msg options.ShardMessage) error {
 func (c *LocalCoordinator) TotalShards() int { return c.total }
 
 // Close removes all registered handlers, waits for in-flight handler goroutines
-// to finish, and prevents further message delivery (Bug 27).
+// to finish, and prevents further message delivery.
 func (c *LocalCoordinator) Close() error {
 	c.mu.Lock()
+	c.closed = true
 	c.handlers = nil
 	c.mu.Unlock()
 	c.wg.Wait()
