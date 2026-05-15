@@ -376,32 +376,35 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 			continue
 		}
 
+		// Buffer the response body so that event handlers and the decoder both see
+		// the full body without competing for the live network reader.
+		bodyBuf, readErr := io.ReadAll(io.LimitReader(resp.Body, 50<<20))
+		_ = resp.Body.Close()
+		if readErr != nil {
+			return nil, fmt.Errorf("read response body: %w", readErr)
+		}
+		resp.Body = io.NopCloser(bytes.NewReader(bodyBuf))
+
 		// Update rate limit state from response headers on every response,
 		// including 429s, so bucket state stays accurate for future requests.
 		if c.rateLimiter != nil && routePath != "" {
 			c.rateLimiter.update(req.Method, routePath, resp)
 		}
 
-		c.emitEvent(RestEvent{Type: RestEventResponse, Request: safeReq, Response: resp, Attempt: attempt})
+		// Event handlers receive a snapshot with a fresh body reader so they cannot
+		// interfere with the decoder below even if they read or close the body.
+		c.emitEvent(RestEvent{Type: RestEventResponse, Request: safeReq, Response: snapshotResponse(resp, bodyBuf), Attempt: attempt})
 
 		if entry, ok := successResponseCodeData[resp.StatusCode]; ok {
 			var returnType T
 
 			if resp.StatusCode == http.StatusNoContent || reflect.TypeOf(returnType) == reflect.TypeOf(NoReturnData{}) || !entry {
-				_ = resp.Body.Close()
 				return nil, nil
 			}
 
-			if reflect.TypeOf(returnType) == reflect.TypeOf(NoReturnData{}) {
-				_ = resp.Body.Close()
-				return nil, nil
+			if decErr := json.NewDecoder(bytes.NewReader(bodyBuf)).Decode(&returnType); decErr != nil {
+				return nil, fmt.Errorf("decode response body: %w", decErr)
 			}
-
-			if json.NewDecoder(resp.Body).Decode(&returnType) != nil {
-				return nil, err
-			}
-
-			_ = resp.Body.Close()
 
 			return &returnType, nil
 		}
@@ -410,11 +413,10 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 			retryAfter := parseRetryAfter(resp)
 			delay := c.retryDelay(attempt, retryAfter)
 			if retryAfter > 0 {
-				c.emitEvent(RestEvent{Type: RestEventRateLimit, Request: safeReq, Response: resp, Attempt: attempt, RetryAfter: retryAfter})
+				c.emitEvent(RestEvent{Type: RestEventRateLimit, Request: safeReq, Response: snapshotResponse(resp, bodyBuf), Attempt: attempt, RetryAfter: retryAfter})
 			}
 
-			c.emitEvent(RestEvent{Type: RestEventRetry, Request: safeReq, Response: resp, Attempt: attempt, RetryAfter: delay})
-			_ = resp.Body.Close()
+			c.emitEvent(RestEvent{Type: RestEventRetry, Request: safeReq, Response: snapshotResponse(resp, bodyBuf), Attempt: attempt, RetryAfter: delay})
 			select {
 			case <-time.After(delay):
 			case <-req.Context().Done():
@@ -423,9 +425,8 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 			continue
 		}
 
-		respErr := decodeGatewayError(resp)
-		_ = resp.Body.Close()
-		c.emitEvent(RestEvent{Type: RestEventError, Request: safeReq, Response: resp, Attempt: attempt, Err: respErr})
+		respErr := decodeGatewayErrorFromBytes(bodyBuf, resp)
+		c.emitEvent(RestEvent{Type: RestEventError, Request: safeReq, Response: snapshotResponse(resp, bodyBuf), Attempt: attempt, Err: respErr})
 		return nil, respErr
 	}
 
@@ -499,6 +500,25 @@ func decodeGatewayError(resp *http.Response) error {
 		Message:    body.Message,
 		Errors:     body.Errors,
 	}
+}
+
+func decodeGatewayErrorFromBytes(buf []byte, resp *http.Response) error {
+	var body discord.GatewayError
+	_ = json.Unmarshal(buf, &body)
+	return &Error{
+		HTTPStatus: resp.StatusCode,
+		Code:       discord.GatewayErrorCode(body.Code),
+		Message:    body.Message,
+		Errors:     body.Errors,
+	}
+}
+
+// snapshotResponse returns a shallow copy of resp with a fresh body reader
+// backed by buf. The caller retains ownership of the original resp.
+func snapshotResponse(resp *http.Response, buf []byte) *http.Response {
+	snap := *resp
+	snap.Body = io.NopCloser(bytes.NewReader(buf))
+	return &snap
 }
 
 func captureRequestBody(req *http.Request) ([]byte, error) {

@@ -29,6 +29,7 @@ type rateLimitBucket struct {
 // persisted for future requests on the same route.
 type rateLimiter struct {
 	safetyMargin int // block when remaining <= safetyMargin
+	closeOnce    sync.Once
 
 	// Global rate limit. All requests park here when the global limit fires.
 	globalMu    sync.RWMutex
@@ -56,8 +57,9 @@ func newRateLimiter(safetyMargin int) *rateLimiter {
 
 // close stops the background cleanup goroutine. Call it when the owning
 // RestClient is no longer needed to prevent a goroutine leak.
+// Safe to call more than once.
 func (r *rateLimiter) close() {
-	close(r.done)
+	r.closeOnce.Do(func() { close(r.done) })
 }
 
 // cleanupLoop runs purgeStaleBuckets on a fixed cadence until close() is called.
@@ -268,6 +270,9 @@ func (r *rateLimiter) update(method, path string, resp *http.Response) {
 //	GET  /guilds/222/members/333     → "GET:/guilds/222/members/{id}"
 //	GET  /webhooks/444/tok/messages  → "GET:/webhooks/444/tok/messages"
 func routeKey(method, path string) string {
+	if i := strings.IndexAny(path, "?#"); i >= 0 {
+		path = path[:i]
+	}
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 
 	for i, part := range parts {

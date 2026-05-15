@@ -8,6 +8,7 @@ import (
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -896,4 +897,59 @@ func TestBug11ConcurrentUpdatesSameKeySweepStability(t *testing.T) {
 	if _, ok := c.Guilds().Get(discord.Snowflake("1")); !ok {
 		t.Error("guild was spuriously evicted during concurrent same-key updates (Bug 11)")
 	}
+}
+
+// Bug 8: Set methods must not panic when called with nil.
+func TestBug8_SetNilDoesNotPanic(t *testing.T) {
+	c := cache.NewMemoryCache(cache.Options{})
+	defer c.Close()
+
+	guildID := discord.Snowflake("1")
+
+	assert.NotPanics(t, func() { c.Guilds().Set(nil) })
+	assert.NotPanics(t, func() { c.Channels().Set(nil) })
+	assert.NotPanics(t, func() { c.Users().Set(nil) })
+	assert.NotPanics(t, func() { c.Roles().Set(guildID, nil) })
+	assert.NotPanics(t, func() { c.VoiceStates().Set(guildID, nil) })
+	assert.NotPanics(t, func() { c.ScheduledEvents().Set(nil) })
+	assert.NotPanics(t, func() { c.StageInstances().Set(nil) })
+	assert.NotPanics(t, func() { c.Emojis().Set(guildID, nil) })
+	assert.NotPanics(t, func() { c.Stickers().Set(guildID, nil) })
+}
+
+// Bug 7: concurrent Get and DeleteChannel on the same channel must not race or
+// return data from a deleted ring.
+func TestBug7_MessageStoreGetDeleteChannelRace(t *testing.T) {
+	c := cache.NewMemoryCache(cache.Options{})
+	defer c.Close()
+
+	channelID := discord.Snowflake("chan1")
+	msg := &discord.Message{
+		ID:        "msg1",
+		ChannelID: channelID,
+		Content:   "hello",
+	}
+
+	const iters = 1000
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Goroutine A: repeatedly Get messages.
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iters; i++ {
+			c.Messages().Get(channelID, "msg1")
+		}
+	}()
+
+	// Goroutine B: repeatedly add a message, then delete the channel.
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iters; i++ {
+			c.Messages().Add(msg)
+			c.Messages().DeleteChannel(channelID)
+		}
+	}()
+
+	wg.Wait()
 }

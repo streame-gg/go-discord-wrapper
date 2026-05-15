@@ -123,6 +123,9 @@ func (c Config) Validate() error {
 	if c.RateLimiter != nil && c.RateLimiter.SafetyMargin < 0 {
 		return fmt.Errorf("options: RateLimiter.SafetyMargin must be >= 0, got %d", c.RateLimiter.SafetyMargin)
 	}
+	if c.MaxConcurrentEvents < 0 {
+		return fmt.Errorf("options: MaxConcurrentEvents must be >= 0, got %d", c.MaxConcurrentEvents)
+	}
 	return nil
 }
 
@@ -209,9 +212,13 @@ func WithMaxReconnectRetries(n int) Option {
 	return func(c *Config) { c.MaxReconnectRetries = n }
 }
 
-// WithMaxConcurrentEvents sets the maximum number of gateway events that may be
-// processed concurrently. Events arriving when the pool is full are dropped and
-// logged as warnings. The default is 64.
+// WithMaxConcurrentEvents sets the size of the gateway event worker pool.
+// Each worker processes one event at a time; all handlers registered for that
+// event run serially inside the same worker goroutine before the next event is
+// dequeued. This makes MaxConcurrentEvents the true upper bound on the number
+// of handlers executing concurrently. Events that overflow the queue are
+// dropped and logged as warnings. Use 0 (or omit) for the default of 64.
+// Negative values are rejected by Validate.
 func WithMaxConcurrentEvents(n int) Option {
 	return func(c *Config) { c.MaxConcurrentEvents = n }
 }

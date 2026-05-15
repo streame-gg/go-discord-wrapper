@@ -610,7 +610,15 @@ func (d *Client) Login(ctx context.Context) error {
 	d.wsMu.RLock()
 	ready := d.Websocket.Ready
 	d.wsMu.RUnlock()
-	<-ready
+
+	select {
+	case <-ready:
+	case <-ctx.Done():
+		_ = d.Shutdown()
+		return ctx.Err()
+	case <-d.shutdownCh:
+		return errors.New("gateway closed before READY")
+	}
 
 	d.Logger.Info("Successfully connected to the Discord gateway")
 	d.emitConnect()
@@ -621,8 +629,25 @@ func (d *Client) Login(ctx context.Context) error {
 func (d *Client) dispatch(event events.Event) {
 	handlers := d.discordEventEmitter.Handlers(event.Event())
 
-	// Each handler runs in its own goroutine so a slow handler cannot stall
-	// the gateway event loop or block subsequent event processing.
+	if d.eventCh != nil {
+		// Pool mode: handlers run serially, inline in the worker goroutine.
+		// MaxConcurrentEvents is the number of workers, so it is the true upper
+		// bound on concurrent handler execution.
+		for _, h := range handlers {
+			h := h
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						d.Logger.Error("panic in event handler", slog.Any("recover", r))
+					}
+				}()
+				h(d, event)
+			}()
+		}
+		return
+	}
+
+	// Unlimited mode: each handler gets its own goroutine.
 	// dispatchWg tracks in-flight handlers so Shutdown can drain them.
 	for _, h := range handlers {
 		h := h
@@ -657,8 +682,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 
+			d.wsMu.Lock()
 			d.Websocket.SessionID = &readyEvent.SessionID
 			d.Websocket.ReconnectURL = &readyEvent.ResumeGatewayURL
+			d.wsMu.Unlock()
 			d.User = &readyEvent.User
 
 			if len(readyEvent.Shard) >= 2 {

@@ -1,6 +1,7 @@
 package connection
 
 import (
+	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -41,12 +42,15 @@ func (d *Client) cacheGuild(guild *discord.Guild) {
 }
 
 func (d *Client) cacheMember(guildID discord.Snowflake, member *discord.GuildMember) {
-	if d.Cache == nil || member == nil || member.User == nil {
+	if member == nil || member.User == nil {
 		return
 	}
-
-	d.Cache.Members().Set(guildID, member)
-	d.cacheUser(member.User)
+	if d.cacheStoreEnabled(cache.CategoryMembers) {
+		d.Cache.Members().Set(guildID, member)
+	}
+	if d.cacheStoreEnabled(cache.CategoryUsers) {
+		d.cacheUser(member.User)
+	}
 }
 
 func (d *Client) cacheMembers(guildID discord.Snowflake, members *[]*discord.GuildMember) {
