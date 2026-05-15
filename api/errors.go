@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-// Sentinel errors for common HTTP status codes. Use errors.Is to check against these.
+// Sentinel errors for discord HTTP status codes. Use errors.Is to check against these.
 //
 //	if errors.Is(err, api.ErrNotFound) { ... }
 var (
@@ -20,7 +20,7 @@ var (
 
 // discordCodeError is a sentinel value for checking a specific Discord JSON error code.
 type discordCodeError struct {
-	code common.GatewayErrorCode
+	code discord.GatewayErrorCode
 }
 
 func (e *discordCodeError) Error() string {
@@ -32,24 +32,24 @@ func (e *discordCodeError) Error() string {
 //
 //	if errors.Is(err, api.ErrMissingPermissions) { ... }
 var (
-	ErrUnknownChannel                 = &discordCodeError{common.GatewayErrorCodeUnknownChannel}
-	ErrUnknownGuild                   = &discordCodeError{common.GatewayErrorCodeUnknownGuild}
-	ErrUnknownMessage                 = &discordCodeError{common.GatewayErrorCodeUnknownMessage}
-	ErrUnknownMember                  = &discordCodeError{common.GatewayErrorCodeUnknownMember}
-	ErrUnknownRole                    = &discordCodeError{common.GatewayErrorCodeUnknownRole}
-	ErrUnknownWebhook                 = &discordCodeError{common.GatewayErrorCodeUnknownWebhook}
-	ErrUnknownUser                    = &discordCodeError{common.GatewayErrorCodeUnknownUser}
-	ErrUnknownEmoji                   = &discordCodeError{common.GatewayErrorCodeUnknownEmoji}
-	ErrUnknownInteraction             = &discordCodeError{common.GatewayErrorCodeUnknownInteraction}
-	ErrMissingAccess                  = &discordCodeError{common.GatewayErrorCodeMissingAccess}
-	ErrMissingPermissions             = &discordCodeError{common.GatewayErrorCodeMissingPermissions}
-	ErrCannotSendMessagesToUser       = &discordCodeError{common.GatewayErrorCodeCannotSendMessagesToThisUser}
-	ErrInteractionAlreadyAcknowledged = &discordCodeError{common.GatewayErrorCodeInteractionAlreadyAcknowledged}
-	ErrThreadIsLocked                 = &discordCodeError{common.GatewayErrorCodeThreadIsLocked}
-	ErrMessageTooOldForBulkDelete     = &discordCodeError{common.GatewayErrorCodeMessageTooOldForBulkDelete}
-	ErrInvalidFormBody                = &discordCodeError{common.GatewayErrorCodeInvalidFormBody}
-	ErrMaxReactionsReached            = &discordCodeError{common.GatewayErrorCodeMaxReactions}
-	ErrCannotExecuteOnSystemMessage   = &discordCodeError{common.GatewayErrorCodeCannotExecuteOnSystemMessage}
+	ErrUnknownChannel                 = &discordCodeError{discord.GatewayErrorCodeUnknownChannel}
+	ErrUnknownGuild                   = &discordCodeError{discord.GatewayErrorCodeUnknownGuild}
+	ErrUnknownMessage                 = &discordCodeError{discord.GatewayErrorCodeUnknownMessage}
+	ErrUnknownMember                  = &discordCodeError{discord.GatewayErrorCodeUnknownMember}
+	ErrUnknownRole                    = &discordCodeError{discord.GatewayErrorCodeUnknownRole}
+	ErrUnknownWebhook                 = &discordCodeError{discord.GatewayErrorCodeUnknownWebhook}
+	ErrUnknownUser                    = &discordCodeError{discord.GatewayErrorCodeUnknownUser}
+	ErrUnknownEmoji                   = &discordCodeError{discord.GatewayErrorCodeUnknownEmoji}
+	ErrUnknownInteraction             = &discordCodeError{discord.GatewayErrorCodeUnknownInteraction}
+	ErrMissingAccess                  = &discordCodeError{discord.GatewayErrorCodeMissingAccess}
+	ErrMissingPermissions             = &discordCodeError{discord.GatewayErrorCodeMissingPermissions}
+	ErrCannotSendMessagesToUser       = &discordCodeError{discord.GatewayErrorCodeCannotSendMessagesToThisUser}
+	ErrInteractionAlreadyAcknowledged = &discordCodeError{discord.GatewayErrorCodeInteractionAlreadyAcknowledged}
+	ErrThreadIsLocked                 = &discordCodeError{discord.GatewayErrorCodeThreadIsLocked}
+	ErrMessageTooOldForBulkDelete     = &discordCodeError{discord.GatewayErrorCodeMessageTooOldForBulkDelete}
+	ErrInvalidFormBody                = &discordCodeError{discord.GatewayErrorCodeInvalidFormBody}
+	ErrMaxReactionsReached            = &discordCodeError{discord.GatewayErrorCodeMaxReactions}
+	ErrCannotExecuteOnSystemMessage   = &discordCodeError{discord.GatewayErrorCodeCannotExecuteOnSystemMessage}
 )
 
 // Error is returned by all REST methods when Discord responds with a non-success status.
@@ -68,7 +68,7 @@ type Error struct {
 	HTTPStatus int
 
 	// Code is the Discord JSON error code. Zero when Discord did not return one.
-	Code common.GatewayErrorCode
+	Code discord.GatewayErrorCode
 
 	// Message is the human-readable error message from Discord.
 	Message string

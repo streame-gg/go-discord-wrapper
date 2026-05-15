@@ -9,18 +9,18 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Param / response types ────────────────────────────────────────────────────
 
 type ListEntitlementsParams struct {
-	UserID       *common.Snowflake
-	SkuIDs       []common.Snowflake
-	Before       *common.Snowflake
-	After        *common.Snowflake
+	UserID       *discord.Snowflake
+	SkuIDs       []discord.Snowflake
+	Before       *discord.Snowflake
+	After        *discord.Snowflake
 	Limit        *int
-	GuildID      *common.Snowflake
+	GuildID      *discord.Snowflake
 	ExcludeEnded *bool
 }
 
@@ -58,14 +58,14 @@ func (p ListEntitlementsParams) toQuery() string {
 }
 
 type CreateTestEntitlementParams struct {
-	SkuID     common.Snowflake `json:"sku_id"`
-	OwnerID   common.Snowflake `json:"owner_id"`
-	OwnerType int              `json:"owner_type"`
+	SkuID     discord.Snowflake `json:"sku_id"`
+	OwnerID   discord.Snowflake `json:"owner_id"`
+	OwnerType int               `json:"owner_type"`
 }
 
 // ── Entitlement endpoints ─────────────────────────────────────────────────────
 
-func (c *RestClient) ListEntitlements(ctx context.Context, appID common.Snowflake, params ListEntitlementsParams) (*[]*common.Entitlement, error) {
+func (c *RestClient) ListEntitlements(ctx context.Context, appID discord.Snowflake, params ListEntitlementsParams) (*[]*discord.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -76,12 +76,12 @@ func (c *RestClient) ListEntitlements(ctx context.Context, appID common.Snowflak
 		return nil, err
 	}
 
-	return doRequest[[]*common.Entitlement](c, req, map[int]bool{
+	return doRequest[[]*discord.Entitlement](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
-func (c *RestClient) GetEntitlement(ctx context.Context, appID, entitlementID common.Snowflake) (*common.Entitlement, error) {
+func (c *RestClient) GetEntitlement(ctx context.Context, appID, entitlementID discord.Snowflake) (*discord.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -96,12 +96,12 @@ func (c *RestClient) GetEntitlement(ctx context.Context, appID, entitlementID co
 		return nil, err
 	}
 
-	return doRequest[common.Entitlement](c, req, map[int]bool{
+	return doRequest[discord.Entitlement](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
-func (c *RestClient) CreateTestEntitlement(ctx context.Context, appID common.Snowflake, params CreateTestEntitlementParams) (*common.Entitlement, error) {
+func (c *RestClient) CreateTestEntitlement(ctx context.Context, appID discord.Snowflake, params CreateTestEntitlementParams) (*discord.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -116,12 +116,12 @@ func (c *RestClient) CreateTestEntitlement(ctx context.Context, appID common.Sno
 		return nil, err
 	}
 
-	return doRequest[common.Entitlement](c, req, map[int]bool{
+	return doRequest[discord.Entitlement](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
-func (c *RestClient) ConsumeEntitlement(ctx context.Context, appID, entitlementID common.Snowflake) error {
+func (c *RestClient) ConsumeEntitlement(ctx context.Context, appID, entitlementID discord.Snowflake) error {
 	if err := appID.Validate(); err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (c *RestClient) ConsumeEntitlement(ctx context.Context, appID, entitlementI
 	return doRequestWithoutResponse(c, req)
 }
 
-func (c *RestClient) DeleteTestEntitlement(ctx context.Context, appID, entitlementID common.Snowflake) error {
+func (c *RestClient) DeleteTestEntitlement(ctx context.Context, appID, entitlementID discord.Snowflake) error {
 	if err := appID.Validate(); err != nil {
 		return err
 	}

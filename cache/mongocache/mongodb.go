@@ -61,7 +61,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Document types ────────────────────────────────────────────────────────────
@@ -336,7 +336,7 @@ type mongoGuildStore struct{ c *MongoDBCache }
 
 func (s *mongoGuildStore) col() *mongo.Collection { return s.c.db.Collection("guilds") }
 
-func (s *mongoGuildStore) Set(guild *common.Guild) {
+func (s *mongoGuildStore) Set(guild *discord.Guild) {
 	b, err := json.Marshal(guild)
 	if err != nil {
 		return
@@ -349,7 +349,7 @@ func (s *mongoGuildStore) Set(guild *common.Guild) {
 	_ = upsertByID(s.c.ctx, s.col(), doc)
 }
 
-func (s *mongoGuildStore) Get(id common.Snowflake) (*common.Guild, bool) {
+func (s *mongoGuildStore) Get(id discord.Snowflake) (*discord.Guild, bool) {
 	filter := bson.M{"_id": string(id)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -358,18 +358,18 @@ func (s *mongoGuildStore) Get(id common.Snowflake) (*common.Guild, bool) {
 	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
 		return nil, false
 	}
-	var g common.Guild
+	var g discord.Guild
 	if err := json.Unmarshal([]byte(doc.JSON), &g); err != nil {
 		return nil, false
 	}
 	return &g, true
 }
 
-func (s *mongoGuildStore) Delete(id common.Snowflake) {
+func (s *mongoGuildStore) Delete(id discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(id)})
 }
 
-func (s *mongoGuildStore) All() []*common.Guild {
+func (s *mongoGuildStore) All() []*discord.Guild {
 	cursor, err := s.col().Find(s.c.ctx, liveFilter(s.c.opts.TTL))
 	if err != nil {
 		return nil
@@ -379,9 +379,9 @@ func (s *mongoGuildStore) All() []*common.Guild {
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.Guild, 0, len(docs))
+	out := make([]*discord.Guild, 0, len(docs))
 	for _, d := range docs {
-		var g common.Guild
+		var g discord.Guild
 		if json.Unmarshal([]byte(d.JSON), &g) == nil {
 			out = append(out, &g)
 		}
@@ -400,7 +400,7 @@ type mongoChannelStore struct{ c *MongoDBCache }
 
 func (s *mongoChannelStore) col() *mongo.Collection { return s.c.db.Collection("channels") }
 
-func (s *mongoChannelStore) Set(ch *common.Channel) {
+func (s *mongoChannelStore) Set(ch *discord.Channel) {
 	b, err := json.Marshal(ch)
 	if err != nil {
 		return
@@ -413,7 +413,7 @@ func (s *mongoChannelStore) Set(ch *common.Channel) {
 	_ = upsertByID(s.c.ctx, s.col(), doc)
 }
 
-func (s *mongoChannelStore) Get(id common.Snowflake) (*common.Channel, bool) {
+func (s *mongoChannelStore) Get(id discord.Snowflake) (*discord.Channel, bool) {
 	filter := bson.M{"_id": string(id)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -422,18 +422,18 @@ func (s *mongoChannelStore) Get(id common.Snowflake) (*common.Channel, bool) {
 	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
 		return nil, false
 	}
-	var ch common.Channel
+	var ch discord.Channel
 	if err := json.Unmarshal([]byte(doc.JSON), &ch); err != nil {
 		return nil, false
 	}
 	return &ch, true
 }
 
-func (s *mongoChannelStore) Delete(id common.Snowflake) {
+func (s *mongoChannelStore) Delete(id discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(id)})
 }
 
-func (s *mongoChannelStore) All() []*common.Channel {
+func (s *mongoChannelStore) All() []*discord.Channel {
 	cursor, err := s.col().Find(s.c.ctx, liveFilter(s.c.opts.TTL))
 	if err != nil {
 		return nil
@@ -443,9 +443,9 @@ func (s *mongoChannelStore) All() []*common.Channel {
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.Channel, 0, len(docs))
+	out := make([]*discord.Channel, 0, len(docs))
 	for _, d := range docs {
-		var ch common.Channel
+		var ch discord.Channel
 		if json.Unmarshal([]byte(d.JSON), &ch) == nil {
 			out = append(out, &ch)
 		}
@@ -464,7 +464,7 @@ type mongoUserStore struct{ c *MongoDBCache }
 
 func (s *mongoUserStore) col() *mongo.Collection { return s.c.db.Collection("users") }
 
-func (s *mongoUserStore) Set(user *common.User) {
+func (s *mongoUserStore) Set(user *discord.User) {
 	b, err := json.Marshal(user)
 	if err != nil {
 		return
@@ -477,7 +477,7 @@ func (s *mongoUserStore) Set(user *common.User) {
 	_ = upsertByID(s.c.ctx, s.col(), doc)
 }
 
-func (s *mongoUserStore) Get(id common.Snowflake) (*common.User, bool) {
+func (s *mongoUserStore) Get(id discord.Snowflake) (*discord.User, bool) {
 	filter := bson.M{"_id": string(id)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -486,18 +486,18 @@ func (s *mongoUserStore) Get(id common.Snowflake) (*common.User, bool) {
 	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
 		return nil, false
 	}
-	var u common.User
+	var u discord.User
 	if err := json.Unmarshal([]byte(doc.JSON), &u); err != nil {
 		return nil, false
 	}
 	return &u, true
 }
 
-func (s *mongoUserStore) Delete(id common.Snowflake) {
+func (s *mongoUserStore) Delete(id discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(id)})
 }
 
-func (s *mongoUserStore) All() []*common.User {
+func (s *mongoUserStore) All() []*discord.User {
 	cursor, err := s.col().Find(s.c.ctx, liveFilter(s.c.opts.TTL))
 	if err != nil {
 		return nil
@@ -507,9 +507,9 @@ func (s *mongoUserStore) All() []*common.User {
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.User, 0, len(docs))
+	out := make([]*discord.User, 0, len(docs))
 	for _, d := range docs {
-		var u common.User
+		var u discord.User
 		if json.Unmarshal([]byte(d.JSON), &u) == nil {
 			out = append(out, &u)
 		}
@@ -528,15 +528,15 @@ type mongoMemberStore struct{ c *MongoDBCache }
 
 func (s *mongoMemberStore) col() *mongo.Collection { return s.c.db.Collection("members") }
 
-func memberID(guildID, userID common.Snowflake) string {
+func memberID(guildID, userID discord.Snowflake) string {
 	return string(guildID) + ":" + string(userID)
 }
 
-func guildUserID(guildID, userID common.Snowflake) string {
+func guildUserID(guildID, userID discord.Snowflake) string {
 	return string(guildID) + ":" + string(userID)
 }
 
-func (s *mongoMemberStore) Set(guildID common.Snowflake, member *common.GuildMember) {
+func (s *mongoMemberStore) Set(guildID discord.Snowflake, member *discord.GuildMember) {
 	if member.User == nil {
 		return
 	}
@@ -553,7 +553,7 @@ func (s *mongoMemberStore) Set(guildID common.Snowflake, member *common.GuildMem
 	_ = upsertByID(s.c.ctx, s.col(), doc)
 }
 
-func (s *mongoMemberStore) Get(guildID, userID common.Snowflake) (*common.GuildMember, bool) {
+func (s *mongoMemberStore) Get(guildID, userID discord.Snowflake) (*discord.GuildMember, bool) {
 	filter := bson.M{"_id": memberID(guildID, userID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -562,22 +562,22 @@ func (s *mongoMemberStore) Get(guildID, userID common.Snowflake) (*common.GuildM
 	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
 		return nil, false
 	}
-	var m common.GuildMember
+	var m discord.GuildMember
 	if err := json.Unmarshal([]byte(doc.JSON), &m); err != nil {
 		return nil, false
 	}
 	return &m, true
 }
 
-func (s *mongoMemberStore) Delete(guildID, userID common.Snowflake) {
+func (s *mongoMemberStore) Delete(guildID, userID discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": memberID(guildID, userID)})
 }
 
-func (s *mongoMemberStore) DeleteGuild(guildID common.Snowflake) {
+func (s *mongoMemberStore) DeleteGuild(guildID discord.Snowflake) {
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
 }
 
-func (s *mongoMemberStore) AllInGuild(guildID common.Snowflake) []*common.GuildMember {
+func (s *mongoMemberStore) AllInGuild(guildID discord.Snowflake) []*discord.GuildMember {
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -591,9 +591,9 @@ func (s *mongoMemberStore) AllInGuild(guildID common.Snowflake) []*common.GuildM
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.GuildMember, 0, len(docs))
+	out := make([]*discord.GuildMember, 0, len(docs))
 	for _, d := range docs {
-		var m common.GuildMember
+		var m discord.GuildMember
 		if json.Unmarshal([]byte(d.JSON), &m) == nil {
 			out = append(out, &m)
 		}
@@ -612,7 +612,7 @@ type mongoRoleStore struct{ c *MongoDBCache }
 
 func (s *mongoRoleStore) col() *mongo.Collection { return s.c.db.Collection("roles") }
 
-func (s *mongoRoleStore) Set(guildID common.Snowflake, role *common.Role) {
+func (s *mongoRoleStore) Set(guildID discord.Snowflake, role *discord.Role) {
 	b, err := json.Marshal(role)
 	if err != nil {
 		return
@@ -626,7 +626,7 @@ func (s *mongoRoleStore) Set(guildID common.Snowflake, role *common.Role) {
 	_ = upsertByID(s.c.ctx, s.col(), doc)
 }
 
-func (s *mongoRoleStore) Get(roleID common.Snowflake) (*common.Role, bool) {
+func (s *mongoRoleStore) Get(roleID discord.Snowflake) (*discord.Role, bool) {
 	filter := bson.M{"_id": string(roleID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -635,14 +635,14 @@ func (s *mongoRoleStore) Get(roleID common.Snowflake) (*common.Role, bool) {
 	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
 		return nil, false
 	}
-	var role common.Role
+	var role discord.Role
 	if err := json.Unmarshal([]byte(doc.JSON), &role); err != nil {
 		return nil, false
 	}
 	return &role, true
 }
 
-func (s *mongoRoleStore) GetByGuild(guildID common.Snowflake) []*common.Role {
+func (s *mongoRoleStore) GetByGuild(guildID discord.Snowflake) []*discord.Role {
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -656,9 +656,9 @@ func (s *mongoRoleStore) GetByGuild(guildID common.Snowflake) []*common.Role {
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.Role, 0, len(docs))
+	out := make([]*discord.Role, 0, len(docs))
 	for _, d := range docs {
-		var role common.Role
+		var role discord.Role
 		if json.Unmarshal([]byte(d.JSON), &role) == nil {
 			out = append(out, &role)
 		}
@@ -666,15 +666,15 @@ func (s *mongoRoleStore) GetByGuild(guildID common.Snowflake) []*common.Role {
 	return out
 }
 
-func (s *mongoRoleStore) Delete(roleID common.Snowflake) {
+func (s *mongoRoleStore) Delete(roleID discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(roleID)})
 }
 
-func (s *mongoRoleStore) DeleteGuild(guildID common.Snowflake) {
+func (s *mongoRoleStore) DeleteGuild(guildID discord.Snowflake) {
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
 }
 
-func (s *mongoRoleStore) All() []*common.Role {
+func (s *mongoRoleStore) All() []*discord.Role {
 	cursor, err := s.col().Find(s.c.ctx, liveFilter(s.c.opts.TTL))
 	if err != nil {
 		return nil
@@ -684,9 +684,9 @@ func (s *mongoRoleStore) All() []*common.Role {
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.Role, 0, len(docs))
+	out := make([]*discord.Role, 0, len(docs))
 	for _, d := range docs {
-		var role common.Role
+		var role discord.Role
 		if json.Unmarshal([]byte(d.JSON), &role) == nil {
 			out = append(out, &role)
 		}
@@ -705,7 +705,7 @@ type mongoVoiceStateStore struct{ c *MongoDBCache }
 
 func (s *mongoVoiceStateStore) col() *mongo.Collection { return s.c.db.Collection("voice_states") }
 
-func (s *mongoVoiceStateStore) Set(guildID common.Snowflake, state *common.VoiceState) {
+func (s *mongoVoiceStateStore) Set(guildID discord.Snowflake, state *discord.VoiceState) {
 	b, err := json.Marshal(state)
 	if err != nil {
 		return
@@ -719,7 +719,7 @@ func (s *mongoVoiceStateStore) Set(guildID common.Snowflake, state *common.Voice
 	_ = upsertByID(s.c.ctx, s.col(), doc)
 }
 
-func (s *mongoVoiceStateStore) Get(guildID, userID common.Snowflake) (*common.VoiceState, bool) {
+func (s *mongoVoiceStateStore) Get(guildID, userID discord.Snowflake) (*discord.VoiceState, bool) {
 	filter := bson.M{"_id": guildUserID(guildID, userID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -728,22 +728,22 @@ func (s *mongoVoiceStateStore) Get(guildID, userID common.Snowflake) (*common.Vo
 	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
 		return nil, false
 	}
-	var state common.VoiceState
+	var state discord.VoiceState
 	if err := json.Unmarshal([]byte(doc.JSON), &state); err != nil {
 		return nil, false
 	}
 	return &state, true
 }
 
-func (s *mongoVoiceStateStore) Delete(guildID, userID common.Snowflake) {
+func (s *mongoVoiceStateStore) Delete(guildID, userID discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": guildUserID(guildID, userID)})
 }
 
-func (s *mongoVoiceStateStore) DeleteGuild(guildID common.Snowflake) {
+func (s *mongoVoiceStateStore) DeleteGuild(guildID discord.Snowflake) {
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
 }
 
-func (s *mongoVoiceStateStore) AllInGuild(guildID common.Snowflake) []*common.VoiceState {
+func (s *mongoVoiceStateStore) AllInGuild(guildID discord.Snowflake) []*discord.VoiceState {
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -757,9 +757,9 @@ func (s *mongoVoiceStateStore) AllInGuild(guildID common.Snowflake) []*common.Vo
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.VoiceState, 0, len(docs))
+	out := make([]*discord.VoiceState, 0, len(docs))
 	for _, d := range docs {
-		var state common.VoiceState
+		var state discord.VoiceState
 		if json.Unmarshal([]byte(d.JSON), &state) == nil {
 			out = append(out, &state)
 		}
@@ -778,7 +778,7 @@ type mongoSoundboardStore struct{ c *MongoDBCache }
 
 func (s *mongoSoundboardStore) col() *mongo.Collection { return s.c.db.Collection("soundboard_sounds") }
 
-func (s *mongoSoundboardStore) Set(guildID common.Snowflake, sound *common.SoundboardSound) {
+func (s *mongoSoundboardStore) Set(guildID discord.Snowflake, sound *discord.SoundboardSound) {
 	b, err := json.Marshal(sound)
 	if err != nil {
 		return
@@ -792,7 +792,7 @@ func (s *mongoSoundboardStore) Set(guildID common.Snowflake, sound *common.Sound
 	_ = upsertByID(s.c.ctx, s.col(), doc)
 }
 
-func (s *mongoSoundboardStore) Get(soundID common.Snowflake) (*common.SoundboardSound, bool) {
+func (s *mongoSoundboardStore) Get(soundID discord.Snowflake) (*discord.SoundboardSound, bool) {
 	filter := bson.M{"_id": string(soundID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -801,14 +801,14 @@ func (s *mongoSoundboardStore) Get(soundID common.Snowflake) (*common.Soundboard
 	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
 		return nil, false
 	}
-	var sound common.SoundboardSound
+	var sound discord.SoundboardSound
 	if err := json.Unmarshal([]byte(doc.JSON), &sound); err != nil {
 		return nil, false
 	}
 	return &sound, true
 }
 
-func (s *mongoSoundboardStore) GetByGuild(guildID common.Snowflake) []*common.SoundboardSound {
+func (s *mongoSoundboardStore) GetByGuild(guildID discord.Snowflake) []*discord.SoundboardSound {
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -822,9 +822,9 @@ func (s *mongoSoundboardStore) GetByGuild(guildID common.Snowflake) []*common.So
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.SoundboardSound, 0, len(docs))
+	out := make([]*discord.SoundboardSound, 0, len(docs))
 	for _, d := range docs {
-		var sound common.SoundboardSound
+		var sound discord.SoundboardSound
 		if json.Unmarshal([]byte(d.JSON), &sound) == nil {
 			out = append(out, &sound)
 		}
@@ -832,7 +832,7 @@ func (s *mongoSoundboardStore) GetByGuild(guildID common.Snowflake) []*common.So
 	return out
 }
 
-func (s *mongoSoundboardStore) SetAll(guildID common.Snowflake, sounds []*common.SoundboardSound) {
+func (s *mongoSoundboardStore) SetAll(guildID discord.Snowflake, sounds []*discord.SoundboardSound) {
 	var docs []interface{}
 	for _, sound := range sounds {
 		if sound == nil {
@@ -852,11 +852,11 @@ func (s *mongoSoundboardStore) SetAll(guildID common.Snowflake, sounds []*common
 	setAllTx(s.c.ctx, s.col(), string(guildID), docs)
 }
 
-func (s *mongoSoundboardStore) Delete(soundID common.Snowflake) {
+func (s *mongoSoundboardStore) Delete(soundID discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(soundID)})
 }
 
-func (s *mongoSoundboardStore) DeleteGuild(guildID common.Snowflake) {
+func (s *mongoSoundboardStore) DeleteGuild(guildID discord.Snowflake) {
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
 }
 
@@ -873,7 +873,7 @@ func (s *mongoScheduledEventStore) col() *mongo.Collection {
 	return s.c.db.Collection("scheduled_events")
 }
 
-func (s *mongoScheduledEventStore) Set(event *common.GuildScheduledEvent) {
+func (s *mongoScheduledEventStore) Set(event *discord.GuildScheduledEvent) {
 	b, err := json.Marshal(event)
 	if err != nil {
 		return
@@ -887,7 +887,7 @@ func (s *mongoScheduledEventStore) Set(event *common.GuildScheduledEvent) {
 	_ = upsertByID(s.c.ctx, s.col(), doc)
 }
 
-func (s *mongoScheduledEventStore) Get(eventID common.Snowflake) (*common.GuildScheduledEvent, bool) {
+func (s *mongoScheduledEventStore) Get(eventID discord.Snowflake) (*discord.GuildScheduledEvent, bool) {
 	filter := bson.M{"_id": string(eventID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -896,14 +896,14 @@ func (s *mongoScheduledEventStore) Get(eventID common.Snowflake) (*common.GuildS
 	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
 		return nil, false
 	}
-	var event common.GuildScheduledEvent
+	var event discord.GuildScheduledEvent
 	if err := json.Unmarshal([]byte(doc.JSON), &event); err != nil {
 		return nil, false
 	}
 	return &event, true
 }
 
-func (s *mongoScheduledEventStore) GetByGuild(guildID common.Snowflake) []*common.GuildScheduledEvent {
+func (s *mongoScheduledEventStore) GetByGuild(guildID discord.Snowflake) []*discord.GuildScheduledEvent {
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -917,9 +917,9 @@ func (s *mongoScheduledEventStore) GetByGuild(guildID common.Snowflake) []*commo
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.GuildScheduledEvent, 0, len(docs))
+	out := make([]*discord.GuildScheduledEvent, 0, len(docs))
 	for _, d := range docs {
-		var event common.GuildScheduledEvent
+		var event discord.GuildScheduledEvent
 		if json.Unmarshal([]byte(d.JSON), &event) == nil {
 			out = append(out, &event)
 		}
@@ -927,11 +927,11 @@ func (s *mongoScheduledEventStore) GetByGuild(guildID common.Snowflake) []*commo
 	return out
 }
 
-func (s *mongoScheduledEventStore) Delete(eventID common.Snowflake) {
+func (s *mongoScheduledEventStore) Delete(eventID discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(eventID)})
 }
 
-func (s *mongoScheduledEventStore) DeleteGuild(guildID common.Snowflake) {
+func (s *mongoScheduledEventStore) DeleteGuild(guildID discord.Snowflake) {
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
 }
 
@@ -948,7 +948,7 @@ func (s *mongoStageInstanceStore) col() *mongo.Collection {
 	return s.c.db.Collection("stage_instances")
 }
 
-func (s *mongoStageInstanceStore) Set(instance *common.StageInstance) {
+func (s *mongoStageInstanceStore) Set(instance *discord.StageInstance) {
 	b, err := json.Marshal(instance)
 	if err != nil {
 		return
@@ -962,7 +962,7 @@ func (s *mongoStageInstanceStore) Set(instance *common.StageInstance) {
 	_ = upsertByID(s.c.ctx, s.col(), doc)
 }
 
-func (s *mongoStageInstanceStore) Get(instanceID common.Snowflake) (*common.StageInstance, bool) {
+func (s *mongoStageInstanceStore) Get(instanceID discord.Snowflake) (*discord.StageInstance, bool) {
 	filter := bson.M{"_id": string(instanceID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -971,14 +971,14 @@ func (s *mongoStageInstanceStore) Get(instanceID common.Snowflake) (*common.Stag
 	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
 		return nil, false
 	}
-	var instance common.StageInstance
+	var instance discord.StageInstance
 	if err := json.Unmarshal([]byte(doc.JSON), &instance); err != nil {
 		return nil, false
 	}
 	return &instance, true
 }
 
-func (s *mongoStageInstanceStore) GetByGuild(guildID common.Snowflake) []*common.StageInstance {
+func (s *mongoStageInstanceStore) GetByGuild(guildID discord.Snowflake) []*discord.StageInstance {
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -992,9 +992,9 @@ func (s *mongoStageInstanceStore) GetByGuild(guildID common.Snowflake) []*common
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.StageInstance, 0, len(docs))
+	out := make([]*discord.StageInstance, 0, len(docs))
 	for _, d := range docs {
-		var instance common.StageInstance
+		var instance discord.StageInstance
 		if json.Unmarshal([]byte(d.JSON), &instance) == nil {
 			out = append(out, &instance)
 		}
@@ -1002,11 +1002,11 @@ func (s *mongoStageInstanceStore) GetByGuild(guildID common.Snowflake) []*common
 	return out
 }
 
-func (s *mongoStageInstanceStore) Delete(instanceID common.Snowflake) {
+func (s *mongoStageInstanceStore) Delete(instanceID discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(instanceID)})
 }
 
-func (s *mongoStageInstanceStore) DeleteGuild(guildID common.Snowflake) {
+func (s *mongoStageInstanceStore) DeleteGuild(guildID discord.Snowflake) {
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
 }
 
@@ -1021,7 +1021,7 @@ type mongoEmojiStore struct{ c *MongoDBCache }
 
 func (s *mongoEmojiStore) col() *mongo.Collection { return s.c.db.Collection("emojis") }
 
-func (s *mongoEmojiStore) Set(guildID common.Snowflake, emoji *common.Emoji) {
+func (s *mongoEmojiStore) Set(guildID discord.Snowflake, emoji *discord.Emoji) {
 	b, err := json.Marshal(emoji)
 	if err != nil {
 		return
@@ -1035,7 +1035,7 @@ func (s *mongoEmojiStore) Set(guildID common.Snowflake, emoji *common.Emoji) {
 	_ = upsertByID(s.c.ctx, s.col(), doc)
 }
 
-func (s *mongoEmojiStore) Get(emojiID common.Snowflake) (*common.Emoji, bool) {
+func (s *mongoEmojiStore) Get(emojiID discord.Snowflake) (*discord.Emoji, bool) {
 	filter := bson.M{"_id": string(emojiID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -1044,14 +1044,14 @@ func (s *mongoEmojiStore) Get(emojiID common.Snowflake) (*common.Emoji, bool) {
 	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
 		return nil, false
 	}
-	var emoji common.Emoji
+	var emoji discord.Emoji
 	if err := json.Unmarshal([]byte(doc.JSON), &emoji); err != nil {
 		return nil, false
 	}
 	return &emoji, true
 }
 
-func (s *mongoEmojiStore) GetByGuild(guildID common.Snowflake) []*common.Emoji {
+func (s *mongoEmojiStore) GetByGuild(guildID discord.Snowflake) []*discord.Emoji {
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -1065,9 +1065,9 @@ func (s *mongoEmojiStore) GetByGuild(guildID common.Snowflake) []*common.Emoji {
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.Emoji, 0, len(docs))
+	out := make([]*discord.Emoji, 0, len(docs))
 	for _, d := range docs {
-		var emoji common.Emoji
+		var emoji discord.Emoji
 		if json.Unmarshal([]byte(d.JSON), &emoji) == nil {
 			out = append(out, &emoji)
 		}
@@ -1075,7 +1075,7 @@ func (s *mongoEmojiStore) GetByGuild(guildID common.Snowflake) []*common.Emoji {
 	return out
 }
 
-func (s *mongoEmojiStore) SetAll(guildID common.Snowflake, emojis []*common.Emoji) {
+func (s *mongoEmojiStore) SetAll(guildID discord.Snowflake, emojis []*discord.Emoji) {
 	var docs []interface{}
 	for _, emoji := range emojis {
 		if emoji == nil || emoji.ID == "" {
@@ -1095,11 +1095,11 @@ func (s *mongoEmojiStore) SetAll(guildID common.Snowflake, emojis []*common.Emoj
 	setAllTx(s.c.ctx, s.col(), string(guildID), docs)
 }
 
-func (s *mongoEmojiStore) Delete(emojiID common.Snowflake) {
+func (s *mongoEmojiStore) Delete(emojiID discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(emojiID)})
 }
 
-func (s *mongoEmojiStore) DeleteGuild(guildID common.Snowflake) {
+func (s *mongoEmojiStore) DeleteGuild(guildID discord.Snowflake) {
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
 }
 
@@ -1114,7 +1114,7 @@ type mongoStickerStore struct{ c *MongoDBCache }
 
 func (s *mongoStickerStore) col() *mongo.Collection { return s.c.db.Collection("stickers") }
 
-func (s *mongoStickerStore) Set(guildID common.Snowflake, sticker *common.Sticker) {
+func (s *mongoStickerStore) Set(guildID discord.Snowflake, sticker *discord.Sticker) {
 	b, err := json.Marshal(sticker)
 	if err != nil {
 		return
@@ -1128,7 +1128,7 @@ func (s *mongoStickerStore) Set(guildID common.Snowflake, sticker *common.Sticke
 	_ = upsertByID(s.c.ctx, s.col(), doc)
 }
 
-func (s *mongoStickerStore) Get(stickerID common.Snowflake) (*common.Sticker, bool) {
+func (s *mongoStickerStore) Get(stickerID discord.Snowflake) (*discord.Sticker, bool) {
 	filter := bson.M{"_id": string(stickerID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -1137,14 +1137,14 @@ func (s *mongoStickerStore) Get(stickerID common.Snowflake) (*common.Sticker, bo
 	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
 		return nil, false
 	}
-	var sticker common.Sticker
+	var sticker discord.Sticker
 	if err := json.Unmarshal([]byte(doc.JSON), &sticker); err != nil {
 		return nil, false
 	}
 	return &sticker, true
 }
 
-func (s *mongoStickerStore) GetByGuild(guildID common.Snowflake) []*common.Sticker {
+func (s *mongoStickerStore) GetByGuild(guildID discord.Snowflake) []*discord.Sticker {
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -1158,9 +1158,9 @@ func (s *mongoStickerStore) GetByGuild(guildID common.Snowflake) []*common.Stick
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.Sticker, 0, len(docs))
+	out := make([]*discord.Sticker, 0, len(docs))
 	for _, d := range docs {
-		var sticker common.Sticker
+		var sticker discord.Sticker
 		if json.Unmarshal([]byte(d.JSON), &sticker) == nil {
 			out = append(out, &sticker)
 		}
@@ -1168,7 +1168,7 @@ func (s *mongoStickerStore) GetByGuild(guildID common.Snowflake) []*common.Stick
 	return out
 }
 
-func (s *mongoStickerStore) SetAll(guildID common.Snowflake, stickers []*common.Sticker) {
+func (s *mongoStickerStore) SetAll(guildID discord.Snowflake, stickers []*discord.Sticker) {
 	var docs []interface{}
 	for _, sticker := range stickers {
 		if sticker == nil || sticker.ID == "" {
@@ -1188,11 +1188,11 @@ func (s *mongoStickerStore) SetAll(guildID common.Snowflake, stickers []*common.
 	setAllTx(s.c.ctx, s.col(), string(guildID), docs)
 }
 
-func (s *mongoStickerStore) Delete(stickerID common.Snowflake) {
+func (s *mongoStickerStore) Delete(stickerID discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(stickerID)})
 }
 
-func (s *mongoStickerStore) DeleteGuild(guildID common.Snowflake) {
+func (s *mongoStickerStore) DeleteGuild(guildID discord.Snowflake) {
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
 }
 
@@ -1207,7 +1207,7 @@ type mongoPresenceStore struct{ c *MongoDBCache }
 
 func (s *mongoPresenceStore) col() *mongo.Collection { return s.c.db.Collection("presences") }
 
-func (s *mongoPresenceStore) Set(presence *common.Presence) {
+func (s *mongoPresenceStore) Set(presence *discord.Presence) {
 	b, err := json.Marshal(presence)
 	if err != nil {
 		return
@@ -1221,7 +1221,7 @@ func (s *mongoPresenceStore) Set(presence *common.Presence) {
 	_ = upsertByID(s.c.ctx, s.col(), doc)
 }
 
-func (s *mongoPresenceStore) Get(guildID, userID common.Snowflake) (*common.Presence, bool) {
+func (s *mongoPresenceStore) Get(guildID, userID discord.Snowflake) (*discord.Presence, bool) {
 	filter := bson.M{"_id": guildUserID(guildID, userID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -1230,14 +1230,14 @@ func (s *mongoPresenceStore) Get(guildID, userID common.Snowflake) (*common.Pres
 	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
 		return nil, false
 	}
-	var presence common.Presence
+	var presence discord.Presence
 	if err := json.Unmarshal([]byte(doc.JSON), &presence); err != nil {
 		return nil, false
 	}
 	return &presence, true
 }
 
-func (s *mongoPresenceStore) GetByGuild(guildID common.Snowflake) []*common.Presence {
+func (s *mongoPresenceStore) GetByGuild(guildID discord.Snowflake) []*discord.Presence {
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -1251,9 +1251,9 @@ func (s *mongoPresenceStore) GetByGuild(guildID common.Snowflake) []*common.Pres
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.Presence, 0, len(docs))
+	out := make([]*discord.Presence, 0, len(docs))
 	for _, d := range docs {
-		var presence common.Presence
+		var presence discord.Presence
 		if json.Unmarshal([]byte(d.JSON), &presence) == nil {
 			out = append(out, &presence)
 		}
@@ -1261,11 +1261,11 @@ func (s *mongoPresenceStore) GetByGuild(guildID common.Snowflake) []*common.Pres
 	return out
 }
 
-func (s *mongoPresenceStore) Delete(guildID, userID common.Snowflake) {
+func (s *mongoPresenceStore) Delete(guildID, userID discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": guildUserID(guildID, userID)})
 }
 
-func (s *mongoPresenceStore) DeleteGuild(guildID common.Snowflake) {
+func (s *mongoPresenceStore) DeleteGuild(guildID discord.Snowflake) {
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
 }
 
@@ -1280,11 +1280,11 @@ type mongoMessageStore struct{ c *MongoDBCache }
 
 func (s *mongoMessageStore) col() *mongo.Collection { return s.c.db.Collection("messages") }
 
-func msgID(channelID, messageID common.Snowflake) string {
+func msgID(channelID, messageID discord.Snowflake) string {
 	return string(channelID) + ":" + string(messageID)
 }
 
-func (s *mongoMessageStore) Add(msg *common.Message) {
+func (s *mongoMessageStore) Add(msg *discord.Message) {
 	if s.c.opts.Messages.MaxPerChannel == 0 {
 		return
 	}
@@ -1347,7 +1347,7 @@ func (s *mongoMessageStore) Add(msg *common.Message) {
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"_id": bson.M{"$in": ids}})
 }
 
-func (s *mongoMessageStore) Get(channelID, messageID common.Snowflake) (*common.Message, bool) {
+func (s *mongoMessageStore) Get(channelID, messageID discord.Snowflake) (*discord.Message, bool) {
 	filter := bson.M{"_id": msgID(channelID, messageID)}
 	if s.c.opts.Messages.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -1356,14 +1356,14 @@ func (s *mongoMessageStore) Get(channelID, messageID common.Snowflake) (*common.
 	if err := s.col().FindOne(s.c.ctx, filter).Decode(&doc); err != nil {
 		return nil, false
 	}
-	var msg common.Message
+	var msg discord.Message
 	if err := json.Unmarshal([]byte(doc.JSON), &msg); err != nil {
 		return nil, false
 	}
 	return &msg, true
 }
 
-func (s *mongoMessageStore) Update(msg *common.Message) {
+func (s *mongoMessageStore) Update(msg *discord.Message) {
 	b, err := json.Marshal(msg)
 	if err != nil {
 		return
@@ -1380,11 +1380,11 @@ func (s *mongoMessageStore) Update(msg *common.Message) {
 	)
 }
 
-func (s *mongoMessageStore) Delete(channelID, messageID common.Snowflake) {
+func (s *mongoMessageStore) Delete(channelID, messageID discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": msgID(channelID, messageID)})
 }
 
-func (s *mongoMessageStore) DeleteBulk(channelID common.Snowflake, ids []common.Snowflake) {
+func (s *mongoMessageStore) DeleteBulk(channelID discord.Snowflake, ids []discord.Snowflake) {
 	if len(ids) == 0 {
 		return
 	}
@@ -1396,7 +1396,7 @@ func (s *mongoMessageStore) DeleteBulk(channelID common.Snowflake, ids []common.
 }
 
 // Channel returns messages for channelID newest-first, excluding expired entries.
-func (s *mongoMessageStore) Channel(channelID common.Snowflake) []*common.Message {
+func (s *mongoMessageStore) Channel(channelID discord.Snowflake) []*discord.Message {
 	if s.c.opts.Messages.MaxPerChannel == 0 {
 		return nil
 	}
@@ -1419,9 +1419,9 @@ func (s *mongoMessageStore) Channel(channelID common.Snowflake) []*common.Messag
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
 		return nil
 	}
-	out := make([]*common.Message, 0, len(docs))
+	out := make([]*discord.Message, 0, len(docs))
 	for _, d := range docs {
-		var msg common.Message
+		var msg discord.Message
 		if json.Unmarshal([]byte(d.JSON), &msg) == nil {
 			out = append(out, &msg)
 		}
@@ -1429,7 +1429,7 @@ func (s *mongoMessageStore) Channel(channelID common.Snowflake) []*common.Messag
 	return out
 }
 
-func (s *mongoMessageStore) DeleteChannel(channelID common.Snowflake) {
+func (s *mongoMessageStore) DeleteChannel(channelID discord.Snowflake) {
 	if s.c.db != nil {
 		_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"channel_id": string(channelID)})
 	}

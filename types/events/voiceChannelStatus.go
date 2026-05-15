@@ -3,24 +3,24 @@ package events
 import (
 	"time"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type VoiceChannelStatusUpdateEvent struct {
-	ChannelID common.Snowflake `json:"id"`
-	GuildID   common.Snowflake `json:"guild_id"`
-	Status    *string          `json:"status"`
+	ChannelID discord.Snowflake `json:"id"`
+	GuildID   discord.Snowflake `json:"guild_id"`
+	Status    *string           `json:"status"`
 }
 
 type VoiceChannelStartTimeUpdateEvent struct {
-	ChannelID              common.Snowflake `json:"id"`
-	GuildID                common.Snowflake `json:"guild_id"`
-	VoiceSessionsStartedAt time.Time        `json:"voice_sessions_started_at"`
+	ChannelID              discord.Snowflake `json:"id"`
+	GuildID                discord.Snowflake `json:"guild_id"`
+	VoiceSessionsStartedAt time.Time         `json:"voice_sessions_started_at"`
 }
 
 type SoundboardSoundsEvent struct {
-	GuildID          common.Snowflake         `json:"guild_id"`
-	SoundboardSounds []common.SoundboardSound `json:"soundboard_sounds"`
+	GuildID          discord.Snowflake         `json:"guild_id"`
+	SoundboardSounds []discord.SoundboardSound `json:"soundboard_sounds"`
 }
 
 func init() {

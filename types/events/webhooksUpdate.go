@@ -1,10 +1,12 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type WebhooksUpdateEvent struct {
-	GuildID   common.Snowflake `json:"guild_id"`
-	ChannelID common.Snowflake `json:"channel_id"`
+	GuildID   discord.Snowflake `json:"guild_id"`
+	ChannelID discord.Snowflake `json:"channel_id"`
 }
 
 func init() { RegisterEvent(WebhooksUpdateEvent{}) }

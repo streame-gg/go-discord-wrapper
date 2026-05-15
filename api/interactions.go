@@ -7,14 +7,14 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
 
 // CreateInteractionResponse sends a response to an interaction. Must be called within 3 seconds.
 // Set withResponse=true to receive the created message back; returns nil otherwise.
 // Pass optional files to send attachments; when present the request is encoded as multipart/form-data.
-func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionID common.Snowflake, token string, response responses.InteractionResponse, withResponse bool, files ...MessageFile) (*responses.InteractionCallbackResponse, error) {
+func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionID discord.Snowflake, token string, response responses.InteractionResponse, withResponse bool, files ...MessageFile) (*responses.InteractionCallbackResponse, error) {
 	if err := interactionID.Validate(); err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionI
 }
 
 // GetOriginalInteractionResponse fetches the initial response message for an interaction.
-func (c *RestClient) GetOriginalInteractionResponse(ctx context.Context, webhookID common.Snowflake, token string) (*common.Message, error) {
+func (c *RestClient) GetOriginalInteractionResponse(ctx context.Context, webhookID discord.Snowflake, token string) (*discord.Message, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
 	}
@@ -68,14 +68,14 @@ func (c *RestClient) GetOriginalInteractionResponse(ctx context.Context, webhook
 		return nil, err
 	}
 
-	return doRequest[common.Message](c, req, map[int]bool{
+	return doRequest[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // EditOriginalInteractionResponse edits the initial response message for an interaction.
 // When params.Files is non-empty the request is sent as multipart/form-data.
-func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, webhookID common.Snowflake, token string, params EditMessageParams) (*common.Message, error) {
+func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, webhookID discord.Snowflake, token string, params EditMessageParams) (*discord.Message, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
 	}
@@ -105,13 +105,13 @@ func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, webhoo
 		}
 	}
 
-	return doRequest[common.Message](c, req, map[int]bool{
+	return doRequest[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // DeleteOriginalInteractionResponse deletes the initial response message for an interaction.
-func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, webhookID common.Snowflake, token string) error {
+func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, webhookID discord.Snowflake, token string) error {
 	if err := webhookID.Validate(); err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, webh
 
 // CreateFollowupMessage sends a follow-up message to an interaction (usable up to 15 minutes after the initial response).
 // When params.Files is non-empty the request is sent as multipart/form-data.
-func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID common.Snowflake, token string, params CreateMessageParams) (*common.Message, error) {
+func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID discord.Snowflake, token string, params CreateMessageParams) (*discord.Message, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -157,13 +157,13 @@ func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID common.Sno
 		}
 	}
 
-	return doRequest[common.Message](c, req, map[int]bool{
+	return doRequest[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetFollowupMessage fetches a follow-up message sent for an interaction.
-func (c *RestClient) GetFollowupMessage(ctx context.Context, appID common.Snowflake, token string, messageID common.Snowflake) (*common.Message, error) {
+func (c *RestClient) GetFollowupMessage(ctx context.Context, appID discord.Snowflake, token string, messageID discord.Snowflake) (*discord.Message, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -178,14 +178,14 @@ func (c *RestClient) GetFollowupMessage(ctx context.Context, appID common.Snowfl
 		return nil, err
 	}
 
-	return doRequest[common.Message](c, req, map[int]bool{
+	return doRequest[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // EditFollowupMessage edits a follow-up message sent for an interaction.
 // When params.Files is non-empty the request is sent as multipart/form-data.
-func (c *RestClient) EditFollowupMessage(ctx context.Context, appID common.Snowflake, token string, messageID common.Snowflake, params EditMessageParams) (*common.Message, error) {
+func (c *RestClient) EditFollowupMessage(ctx context.Context, appID discord.Snowflake, token string, messageID discord.Snowflake, params EditMessageParams) (*discord.Message, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -223,13 +223,13 @@ func (c *RestClient) EditFollowupMessage(ctx context.Context, appID common.Snowf
 		}
 	}
 
-	return doRequest[common.Message](c, req, map[int]bool{
+	return doRequest[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // DeleteFollowupMessage deletes a follow-up message sent for an interaction.
-func (c *RestClient) DeleteFollowupMessage(ctx context.Context, appID common.Snowflake, token string, messageID common.Snowflake) error {
+func (c *RestClient) DeleteFollowupMessage(ctx context.Context, appID discord.Snowflake, token string, messageID discord.Snowflake) error {
 	if err := appID.Validate(); err != nil {
 		return err
 	}

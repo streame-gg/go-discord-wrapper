@@ -18,7 +18,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/api"
 	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/options"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 	"github.com/streame-gg/go-discord-wrapper/util"
 
@@ -30,11 +30,11 @@ type EventHandler func(*Client, events.Event)
 type Client struct {
 	token *string
 
-	APIVersion *common.APIVersion
+	APIVersion *discord.APIVersion
 
 	Logger *slog.Logger
 
-	Intents *common.Intent
+	Intents *discord.Intent
 
 	Websocket *Websocket
 
@@ -82,9 +82,9 @@ type Client struct {
 	// cacheAutoPopulate mirrors options.Config.CacheStores, zero disables auto-population.
 	cacheAutoPopulate cache.OverflowCategory
 
-	UnavailableGuilds map[common.Snowflake]struct{}
+	UnavailableGuilds map[discord.Snowflake]struct{}
 
-	User *common.User
+	User *discord.User
 
 	Sharding *options.Sharding
 
@@ -104,24 +104,24 @@ type Client struct {
 	channelIndexMu sync.RWMutex
 	// channelsByGuild maps each guild ID to the set of channel IDs that
 	// belong to it. Used to efficiently evict all guild channels on GUILD_DELETE.
-	channelsByGuild map[common.Snowflake]map[common.Snowflake]struct{}
+	channelsByGuild map[discord.Snowflake]map[discord.Snowflake]struct{}
 	// guildByChannel is the reverse mapping: channel ID → guild ID.
-	guildByChannel map[common.Snowflake]common.Snowflake
+	guildByChannel map[discord.Snowflake]discord.Snowflake
 
 	// threadIndexMu protects threadsByParent.
 	threadIndexMu sync.RWMutex
 	// threadsByParent maps parent channel ID → set of thread IDs.
 	// Used to evict stale threads on THREAD_LIST_SYNC (Bug 43).
-	threadsByParent map[common.Snowflake]map[common.Snowflake]struct{}
+	threadsByParent map[discord.Snowflake]map[discord.Snowflake]struct{}
 
 	// guildMemberCounts tracks the member_count for every available guild on
 	// this shard, updated from GUILD_CREATE / GUILD_DELETE gateway events.
-	guildMemberCounts map[common.Snowflake]int
+	guildMemberCounts map[discord.Snowflake]int
 	guildMu           sync.RWMutex
 
 	// voiceStates caches the latest voice state per (guildID:userID) key so
 	// VoiceStateUpdateEvent can carry OldState alongside the new state.
-	voiceStates   map[string]*common.VoiceState
+	voiceStates   map[string]*discord.VoiceState
 	voiceStatesMu sync.RWMutex
 
 	// Client lifecycle event handlers.
@@ -155,9 +155,9 @@ type Client struct {
 //	    options.WithCoordinator(coord),
 //	    options.WithLogger(&myLogger),
 //	)
-func NewClient(token string, intents common.Intent, opts ...options.Option) (*Client, error) {
+func NewClient(token string, intents discord.Intent, opts ...options.Option) (*Client, error) {
 	cfg := options.Build(options.Config{
-		APIVersion:  common.APIVersion10,
+		APIVersion:  discord.APIVersion10,
 		CacheStores: cache.CategoryAll,
 	}, opts)
 	if err := cfg.Validate(); err != nil {
@@ -179,12 +179,12 @@ func NewClient(token string, intents common.Intent, opts ...options.Option) (*Cl
 		APIVersion:          util.PointerOf(cfg.APIVersion),
 		Intents:             &intents,
 		discordEventEmitter: util.NewEventEmitter[events.EventType, EventHandler](),
-		UnavailableGuilds:   make(map[common.Snowflake]struct{}),
-		guildMemberCounts:   make(map[common.Snowflake]int),
-		voiceStates:         make(map[string]*common.VoiceState),
-		channelsByGuild:     make(map[common.Snowflake]map[common.Snowflake]struct{}),
-		guildByChannel:      make(map[common.Snowflake]common.Snowflake),
-		threadsByParent:     make(map[common.Snowflake]map[common.Snowflake]struct{}),
+		UnavailableGuilds:   make(map[discord.Snowflake]struct{}),
+		guildMemberCounts:   make(map[discord.Snowflake]int),
+		voiceStates:         make(map[string]*discord.VoiceState),
+		channelsByGuild:     make(map[discord.Snowflake]map[discord.Snowflake]struct{}),
+		guildByChannel:      make(map[discord.Snowflake]discord.Snowflake),
+		threadsByParent:     make(map[discord.Snowflake]map[discord.Snowflake]struct{}),
 		httpClient:          &http.Client{Timeout: 10 * time.Second},
 		RestClient:          rc,
 		Sharding:            cfg.Sharding,
@@ -461,11 +461,11 @@ func (d *Client) dispatchShardMessage(msg options.ShardMessage) {
 
 // ── Gateway connection ───────────────────────────────────────────────────────
 
-func (d *Client) initializeGatewayConnection(ctx context.Context) (*common.BotRegisterResponse, error) {
+func (d *Client) initializeGatewayConnection(ctx context.Context) (*discord.BotRegisterResponse, error) {
 	const userAgent = "DiscordBot (https://github.com/streame-gg/go-discord-wrapper, alpha)"
 
 	for {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://discord.com"+common.APIBaseString(*d.APIVersion)+"gateway/bot", nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://discord.com"+discord.APIBaseString(*d.APIVersion)+"gateway/bot", nil)
 		if err != nil {
 			return nil, err
 		}
@@ -500,7 +500,7 @@ func (d *Client) initializeGatewayConnection(ctx context.Context) (*common.BotRe
 			return nil, errors.New("failed to register bot gateway connection, status code: " + resp.Status)
 		}
 
-		var result common.BotRegisterResponse
+		var result discord.BotRegisterResponse
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			return nil, err
 		}
@@ -666,7 +666,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			}
 
 			// Build the set of guilds the bot currently belongs to.
-			currentGuildIDs := make(map[common.Snowflake]struct{}, len(readyEvent.Guilds))
+			currentGuildIDs := make(map[discord.Snowflake]struct{}, len(readyEvent.Guilds))
 			for _, g := range readyEvent.Guilds {
 				currentGuildIDs[g.Guild.GetID()] = struct{}{}
 			}
@@ -682,7 +682,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 
 			// Reset unavailable-guild tracking and rebuild from the READY payload.
 			d.mu.Lock()
-			d.UnavailableGuilds = make(map[common.Snowflake]struct{})
+			d.UnavailableGuilds = make(map[discord.Snowflake]struct{})
 			d.mu.Unlock()
 			for _, guild := range readyEvent.Guilds {
 				if !guild.Guild.IsAvailable() {
@@ -710,18 +710,18 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 
 			if guildCreateEvent.Guild.IsAvailable() {
 				memberCount := guildCreateEvent.MemberCount
-				var guild common.Guild
-				var gatewayGuild common.GatewayGuild
+				var guild discord.Guild
+				var gatewayGuild discord.GatewayGuild
 				hasGateway := false
 				switch g := guildCreateEvent.Guild.(type) {
-				case common.GatewayGuild:
+				case discord.GatewayGuild:
 					guild = g.Guild
 					gatewayGuild = g
 					hasGateway = true
 					if memberCount == 0 && g.MemberCount > 0 {
 						memberCount = g.MemberCount
 					}
-				case common.Guild:
+				case discord.Guild:
 					guild = g
 				}
 
@@ -761,7 +761,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					}
 
 					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryEmojis) {
-						emojis := make([]*common.Emoji, 0, len(guild.Emojis))
+						emojis := make([]*discord.Emoji, 0, len(guild.Emojis))
 						for i := range guild.Emojis {
 							emoji := guild.Emojis[i]
 							if emoji.ID != "" {
@@ -771,7 +771,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						d.Cache.Emojis().SetAll(guild.ID, emojis)
 					}
 					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryStickers) && guild.Stickers != nil {
-						stickers := make([]*common.Sticker, 0, len(*guild.Stickers))
+						stickers := make([]*discord.Sticker, 0, len(*guild.Stickers))
 						for i := range *guild.Stickers {
 							sticker := (*guild.Stickers)[i]
 							if sticker.ID != "" {
@@ -843,7 +843,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 							d.Cache.Presences().DeleteGuild(guildID)
 							for i := range gatewayGuild.Presences {
 								p := gatewayGuild.Presences[i]
-								presence := common.Presence{
+								presence := discord.Presence{
 									User:         p.User,
 									GuildID:      guildID,
 									Status:       p.Status,
@@ -855,7 +855,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						}
 
 						if d.cacheStoreEnabled(cache.CategorySoundboard) {
-							sounds := make([]*common.SoundboardSound, 0, len(gatewayGuild.SoundboardSounds))
+							sounds := make([]*discord.SoundboardSound, 0, len(gatewayGuild.SoundboardSounds))
 							for i := range gatewayGuild.SoundboardSounds {
 								s := gatewayGuild.SoundboardSounds[i]
 								sounds = append(sounds, &s)
@@ -976,7 +976,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal PRESENCE_UPDATE event", slog.Any("err", err))
 					return false
 				}
-				presence := common.Presence{
+				presence := discord.Presence{
 					User:         ev.User,
 					GuildID:      ev.GuildID,
 					Status:       ev.Status,
@@ -1016,7 +1016,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal GUILD_EMOJIS_UPDATE event", slog.Any("err", err))
 					return false
 				}
-				emojis := make([]*common.Emoji, 0, len(ev.Emojis))
+				emojis := make([]*discord.Emoji, 0, len(ev.Emojis))
 				for i := range ev.Emojis {
 					emoji := ev.Emojis[i]
 					emojis = append(emojis, &emoji)
@@ -1032,7 +1032,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal GUILD_STICKERS_UPDATE event", slog.Any("err", err))
 					return false
 				}
-				stickers := make([]*common.Sticker, 0, len(ev.Stickers))
+				stickers := make([]*discord.Sticker, 0, len(ev.Stickers))
 				for i := range ev.Stickers {
 					sticker := ev.Stickers[i]
 					stickers = append(stickers, &sticker)
@@ -1079,7 +1079,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				// Copy the cached entry rather than mutating the stored pointer in-place.
 				// Mutating the stored pointer without a lock produces data races with
 				// concurrent Get() callers that read the same pointer.
-				var m common.GuildMember
+				var m discord.GuildMember
 				if existing, ok := d.Cache.Members().Get(ev.GuildID, ev.User.ID); ok {
 					m = *existing
 				}
@@ -1292,7 +1292,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal GUILD_SOUNDBOARD_SOUNDS_UPDATE event", slog.Any("err", err))
 					return false
 				}
-				sounds := make([]*common.SoundboardSound, 0, len(ev.SoundboardSounds))
+				sounds := make([]*discord.SoundboardSound, 0, len(ev.SoundboardSounds))
 				for i := range ev.SoundboardSounds {
 					sound := ev.SoundboardSounds[i]
 					sounds = append(sounds, &sound)
@@ -1308,7 +1308,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal SOUNDBOARD_SOUNDS event", slog.Any("err", err))
 					return false
 				}
-				sounds := make([]*common.SoundboardSound, 0, len(ev.SoundboardSounds))
+				sounds := make([]*discord.SoundboardSound, 0, len(ev.SoundboardSounds))
 				for i := range ev.SoundboardSounds {
 					sound := ev.SoundboardSounds[i]
 					sounds = append(sounds, &sound)
@@ -1401,14 +1401,14 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 
 				// Build a set of incoming thread IDs for O(1) lookup.
-				incoming := make(map[common.Snowflake]struct{}, len(ev.Threads))
+				incoming := make(map[discord.Snowflake]struct{}, len(ev.Threads))
 				for i := range ev.Threads {
 					incoming[ev.Threads[i].ID] = struct{}{}
 				}
 
 				// Determine which parent channels are in scope for this sync.
 				// If ChannelIDs is absent, all threads in the guild are synced.
-				var parents []common.Snowflake
+				var parents []discord.Snowflake
 				if len(ev.ChannelIDs) > 0 {
 					parents = ev.ChannelIDs
 				} else {
@@ -1535,19 +1535,19 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 	return true
 }
 
-func (d *Client) addUnavailableGuild(id common.Snowflake) {
+func (d *Client) addUnavailableGuild(id discord.Snowflake) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.UnavailableGuilds[id] = struct{}{}
 }
 
-func (d *Client) deleteUnavailableGuild(id common.Snowflake) {
+func (d *Client) deleteUnavailableGuild(id discord.Snowflake) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	delete(d.UnavailableGuilds, id)
 }
 
-func (d *Client) IsGuildUnavailable(id common.Snowflake) bool {
+func (d *Client) IsGuildUnavailable(id discord.Snowflake) bool {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	_, exists := d.UnavailableGuilds[id]

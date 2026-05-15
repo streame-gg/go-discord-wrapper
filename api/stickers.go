@@ -9,20 +9,20 @@ import (
 	"net/http"
 	"net/textproto"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Response types ────────────────────────────────────────────────────────────
 
 // StickerPack is a pack of standard stickers sold in the Discord store.
 type StickerPack struct {
-	ID             common.Snowflake  `json:"id"`
-	Stickers       []common.Sticker  `json:"stickers"`
-	Name           string            `json:"name"`
-	SKUId          common.Snowflake  `json:"sku_id"`
-	CoverStickerID *common.Snowflake `json:"cover_sticker_id,omitempty"`
-	Description    string            `json:"description"`
-	BannerAssetID  *common.Snowflake `json:"banner_asset_id,omitempty"`
+	ID             discord.Snowflake  `json:"id"`
+	Stickers       []discord.Sticker  `json:"stickers"`
+	Name           string             `json:"name"`
+	SKUId          discord.Snowflake  `json:"sku_id"`
+	CoverStickerID *discord.Snowflake `json:"cover_sticker_id,omitempty"`
+	Description    string             `json:"description"`
+	BannerAssetID  *discord.Snowflake `json:"banner_asset_id,omitempty"`
 }
 
 // ── Param types ───────────────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ type CreateGuildStickerParams struct {
 // ── Sticker endpoints ─────────────────────────────────────────────────────────
 
 // GetSticker returns the sticker object for the given sticker ID.
-func (c *RestClient) GetSticker(ctx context.Context, stickerID common.Snowflake) (*common.Sticker, error) {
+func (c *RestClient) GetSticker(ctx context.Context, stickerID discord.Snowflake) (*discord.Sticker, error) {
 	if err := stickerID.Validate(); err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (c *RestClient) GetSticker(ctx context.Context, stickerID common.Snowflake)
 		return nil, err
 	}
 
-	return doRequest[common.Sticker](c, req, map[int]bool{
+	return doRequest[discord.Sticker](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -76,7 +76,7 @@ func (c *RestClient) ListStickerPacks(ctx context.Context) (*ListStickerPacksRes
 }
 
 // ListGuildStickers returns all stickers for the given guild.
-func (c *RestClient) ListGuildStickers(ctx context.Context, guildID common.Snowflake) (*[]*common.Sticker, error) {
+func (c *RestClient) ListGuildStickers(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Sticker, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -86,13 +86,13 @@ func (c *RestClient) ListGuildStickers(ctx context.Context, guildID common.Snowf
 		return nil, err
 	}
 
-	return doRequest[[]*common.Sticker](c, req, map[int]bool{
+	return doRequest[[]*discord.Sticker](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetGuildSticker returns a specific sticker from a guild.
-func (c *RestClient) GetGuildSticker(ctx context.Context, guildID, stickerID common.Snowflake) (*common.Sticker, error) {
+func (c *RestClient) GetGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake) (*discord.Sticker, error) {
 	if err := stickerID.Validate(); err != nil {
 		return nil, err
 	}
@@ -107,13 +107,13 @@ func (c *RestClient) GetGuildSticker(ctx context.Context, guildID, stickerID com
 		return nil, err
 	}
 
-	return doRequest[common.Sticker](c, req, map[int]bool{
+	return doRequest[discord.Sticker](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // ModifyGuildSticker updates the name, description, or tags of a guild sticker.
-func (c *RestClient) ModifyGuildSticker(ctx context.Context, guildID, stickerID common.Snowflake, params ModifyGuildStickerParams) (*common.Sticker, error) {
+func (c *RestClient) ModifyGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake, params ModifyGuildStickerParams) (*discord.Sticker, error) {
 	if err := stickerID.Validate(); err != nil {
 		return nil, err
 	}
@@ -133,13 +133,13 @@ func (c *RestClient) ModifyGuildSticker(ctx context.Context, guildID, stickerID 
 		return nil, err
 	}
 
-	return doRequest[common.Sticker](c, req, map[int]bool{
+	return doRequest[discord.Sticker](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // DeleteGuildSticker deletes a sticker from a guild.
-func (c *RestClient) DeleteGuildSticker(ctx context.Context, guildID, stickerID common.Snowflake) error {
+func (c *RestClient) DeleteGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake) error {
 	if err := stickerID.Validate(); err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (c *RestClient) DeleteGuildSticker(ctx context.Context, guildID, stickerID 
 }
 
 // GetStickerPack returns the sticker pack object for the given pack ID.
-func (c *RestClient) GetStickerPack(ctx context.Context, packID common.Snowflake) (*StickerPack, error) {
+func (c *RestClient) GetStickerPack(ctx context.Context, packID discord.Snowflake) (*StickerPack, error) {
 	if err := packID.Validate(); err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ var validStickerContentTypes = map[string]bool{
 }
 
 // CreateGuildSticker uploads a new sticker to a guild using multipart form encoding.
-func (c *RestClient) CreateGuildSticker(ctx context.Context, guildID common.Snowflake, params CreateGuildStickerParams) (*common.Sticker, error) {
+func (c *RestClient) CreateGuildSticker(ctx context.Context, guildID discord.Snowflake, params CreateGuildStickerParams) (*discord.Sticker, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (c *RestClient) CreateGuildSticker(ctx context.Context, guildID common.Snow
 	}
 	req.Header.Set("Content-Type", w.FormDataContentType())
 
-	return doRequest[common.Sticker](c, req, map[int]bool{
+	return doRequest[discord.Sticker](c, req, map[int]bool{
 		http.StatusCreated: true,
 	})
 }

@@ -1,27 +1,29 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 // GuildSoundboardSoundCreateEvent is dispatched when a soundboard sound is created in a guild.
 type GuildSoundboardSoundCreateEvent struct {
-	common.SoundboardSound
+	discord.SoundboardSound
 }
 
 // GuildSoundboardSoundUpdateEvent is dispatched when a soundboard sound is updated.
 type GuildSoundboardSoundUpdateEvent struct {
-	common.SoundboardSound
+	discord.SoundboardSound
 }
 
 // GuildSoundboardSoundDeleteEvent is dispatched when a soundboard sound is deleted.
 type GuildSoundboardSoundDeleteEvent struct {
-	SoundID common.Snowflake `json:"sound_id"`
-	GuildID common.Snowflake `json:"guild_id"`
+	SoundID discord.Snowflake `json:"sound_id"`
+	GuildID discord.Snowflake `json:"guild_id"`
 }
 
 // GuildSoundboardSoundsUpdateEvent is dispatched when multiple guild soundboard sounds are updated.
 type GuildSoundboardSoundsUpdateEvent struct {
-	GuildID          common.Snowflake         `json:"guild_id"`
-	SoundboardSounds []common.SoundboardSound `json:"soundboard_sounds"`
+	GuildID          discord.Snowflake         `json:"guild_id"`
+	SoundboardSounds []discord.SoundboardSound `json:"soundboard_sounds"`
 }
 
 func init() {

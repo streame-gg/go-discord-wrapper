@@ -1,43 +1,45 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type ThreadCreateEvent struct {
-	common.Channel
+	discord.Channel
 	NewlyCreated bool `json:"newly_created,omitempty"`
 }
 
 type ThreadUpdateEvent struct {
-	common.Channel
+	discord.Channel
 }
 
 type ThreadDeleteEvent struct {
-	ID       common.Snowflake   `json:"id"`
-	GuildID  *common.Snowflake  `json:"guild_id,omitempty"`
-	ParentID *common.Snowflake  `json:"parent_id,omitempty"`
-	Type     common.ChannelType `json:"type"`
+	ID       discord.Snowflake   `json:"id"`
+	GuildID  *discord.Snowflake  `json:"guild_id,omitempty"`
+	ParentID *discord.Snowflake  `json:"parent_id,omitempty"`
+	Type     discord.ChannelType `json:"type"`
 }
 
 type ThreadListSyncEvent struct {
-	GuildID    common.Snowflake      `json:"guild_id"`
-	ChannelIDs []common.Snowflake    `json:"channel_ids,omitempty"`
-	Threads    []common.Channel      `json:"threads"`
-	Members    []common.ThreadMember `json:"members"`
+	GuildID    discord.Snowflake      `json:"guild_id"`
+	ChannelIDs []discord.Snowflake    `json:"channel_ids,omitempty"`
+	Threads    []discord.Channel      `json:"threads"`
+	Members    []discord.ThreadMember `json:"members"`
 }
 
 // ThreadMemberUpdateEvent is dispatched when the current user's thread member is updated.
 type ThreadMemberUpdateEvent struct {
-	common.ThreadMember
-	GuildID common.Snowflake `json:"guild_id"`
+	discord.ThreadMember
+	GuildID discord.Snowflake `json:"guild_id"`
 }
 
 // ThreadMembersUpdateEvent is dispatched when thread membership for any user changes.
 type ThreadMembersUpdateEvent struct {
-	ID               common.Snowflake      `json:"id"`
-	GuildID          common.Snowflake      `json:"guild_id"`
-	MemberCount      int                   `json:"member_count"`
-	AddedMembers     []common.ThreadMember `json:"added_members,omitempty"`
-	RemovedMemberIDs []common.Snowflake    `json:"removed_member_ids,omitempty"`
+	ID               discord.Snowflake      `json:"id"`
+	GuildID          discord.Snowflake      `json:"guild_id"`
+	MemberCount      int                    `json:"member_count"`
+	AddedMembers     []discord.ThreadMember `json:"added_members,omitempty"`
+	RemovedMemberIDs []discord.Snowflake    `json:"removed_member_ids,omitempty"`
 }
 
 func init() {

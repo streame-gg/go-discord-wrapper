@@ -2,7 +2,7 @@ package components
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type TextInputStyle int
@@ -13,19 +13,19 @@ const (
 )
 
 type TextInputComponent struct {
-	Type        common.ComponentType `json:"type"`
-	ID          *int                 `json:"id,omitempty"`
-	CustomID    string               `json:"custom_id"`
-	Style       TextInputStyle       `json:"style"`
-	MinLength   *int                 `json:"min_length,omitempty"`
-	MaxLength   *int                 `json:"max_length,omitempty"`
-	Required    *bool                `json:"required,omitempty"`
-	Value       string               `json:"value,omitempty"`
-	Placeholder string               `json:"placeholder,omitempty"`
+	Type        discord.ComponentType `json:"type"`
+	ID          *int                  `json:"id,omitempty"`
+	CustomID    string                `json:"custom_id"`
+	Style       TextInputStyle        `json:"style"`
+	MinLength   *int                  `json:"min_length,omitempty"`
+	MaxLength   *int                  `json:"max_length,omitempty"`
+	Required    *bool                 `json:"required,omitempty"`
+	Value       string                `json:"value,omitempty"`
+	Placeholder string                `json:"placeholder,omitempty"`
 }
 
 func (t *TextInputComponent) MarshalJSON() ([]byte, error) {
-	t.Type = common.ComponentTypeTextInput
+	t.Type = discord.ComponentTypeTextInput
 	type Alias TextInputComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -48,8 +48,8 @@ func (t *TextInputComponent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (t *TextInputComponent) GetType() common.ComponentType {
-	return common.ComponentTypeTextInput
+func (t *TextInputComponent) GetType() discord.ComponentType {
+	return discord.ComponentTypeTextInput
 }
 
 func (t *TextInputComponent) IsAnyContainerComponent() {
@@ -61,10 +61,10 @@ func (t *TextInputComponent) IsAnyLabelComponent() {
 }
 
 type TextInputComponentInteractionResponse struct {
-	Type     common.ComponentType `json:"type"`
-	Value    string               `json:"value"`
-	ID       *int                 `json:"id,omitempty"`
-	CustomID string               `json:"custom_id"`
+	Type     discord.ComponentType `json:"type"`
+	Value    string                `json:"value"`
+	ID       *int                  `json:"id,omitempty"`
+	CustomID string                `json:"custom_id"`
 }
 
 func (t *TextInputComponentInteractionResponse) IsInteractionResponseDataComponent() {
@@ -72,7 +72,7 @@ func (t *TextInputComponentInteractionResponse) IsInteractionResponseDataCompone
 }
 
 func (t *TextInputComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	t.Type = common.ComponentTypeTextInput
+	t.Type = discord.ComponentTypeTextInput
 
 	type Alias TextInputComponentInteractionResponse
 

@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type LabelComponent struct {
-	Type        common.ComponentType `json:"type"`
-	ID          *int                 `json:"id,omitempty"`
-	Label       string               `json:"label"`
-	Description string               `json:"description,omitempty"`
-	Component   AnyChildComponent    `json:"component,omitempty"`
+	Type        discord.ComponentType `json:"type"`
+	ID          *int                  `json:"id,omitempty"`
+	Label       string                `json:"label"`
+	Description string                `json:"description,omitempty"`
+	Component   AnyChildComponent     `json:"component,omitempty"`
 }
 
 func (l *LabelComponent) UnmarshalJSON(data []byte) error {
@@ -30,7 +30,7 @@ func (l *LabelComponent) UnmarshalJSON(data []byte) error {
 
 	if raw.Component != nil {
 		var probe struct {
-			Type common.ComponentType `json:"type"`
+			Type discord.ComponentType `json:"type"`
 		}
 
 		if err := json.Unmarshal(raw.Component, &probe); err != nil {
@@ -38,43 +38,43 @@ func (l *LabelComponent) UnmarshalJSON(data []byte) error {
 		}
 
 		switch probe.Type {
-		case common.ComponentTypeTextInput:
+		case discord.ComponentTypeTextInput:
 			var t *TextInputComponent
 			if err := json.Unmarshal(raw.Component, &t); err != nil {
 				return err
 			}
 			l.Component = t
-		case common.ComponentTypeFileUpload:
+		case discord.ComponentTypeFileUpload:
 			var f *FileUploadComponent
 			if err := json.Unmarshal(raw.Component, &f); err != nil {
 				return err
 			}
 			l.Component = f
-		case common.ComponentTypeStringSelectMenu:
+		case discord.ComponentTypeStringSelectMenu:
 			var s *StringSelectMenuComponent
 			if err := json.Unmarshal(raw.Component, &s); err != nil {
 				return err
 			}
 			l.Component = s
-		case common.ComponentTypeUserSelectMenu:
+		case discord.ComponentTypeUserSelectMenu:
 			var u *UserSelectMenuComponent
 			if err := json.Unmarshal(raw.Component, &u); err != nil {
 				return err
 			}
 			l.Component = u
-		case common.ComponentTypeRoleSelectMenu:
+		case discord.ComponentTypeRoleSelectMenu:
 			var r *RoleSelectMenuComponent
 			if err := json.Unmarshal(raw.Component, &r); err != nil {
 				return err
 			}
 			l.Component = r
-		case common.ComponentTypeMentionableMenu:
+		case discord.ComponentTypeMentionableMenu:
 			var m *MentionableSelectMenuComponent
 			if err := json.Unmarshal(raw.Component, &m); err != nil {
 				return err
 			}
 			l.Component = m
-		case common.ComponentTypeChannelSelect:
+		case discord.ComponentTypeChannelSelect:
 			var c *ChannelSelectMenuComponent
 			if err := json.Unmarshal(raw.Component, &c); err != nil {
 				return err
@@ -89,7 +89,7 @@ func (l *LabelComponent) UnmarshalJSON(data []byte) error {
 }
 
 func (l *LabelComponent) MarshalJSON() ([]byte, error) {
-	l.Type = common.ComponentTypeLabel
+	l.Type = discord.ComponentTypeLabel
 	type Alias LabelComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -98,15 +98,15 @@ func (l *LabelComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (l *LabelComponent) GetType() common.ComponentType {
-	return common.ComponentTypeLabel
+func (l *LabelComponent) GetType() discord.ComponentType {
+	return discord.ComponentTypeLabel
 }
 
 type LabelComponentInteractionResponse struct {
-	Type     common.ComponentType `json:"type"`
-	Value    string               `json:"values"`
-	ID       *int                 `json:"id,omitempty"`
-	CustomID string               `json:"custom_id,omitempty"`
+	Type     discord.ComponentType `json:"type"`
+	Value    string                `json:"values"`
+	ID       *int                  `json:"id,omitempty"`
+	CustomID string                `json:"custom_id,omitempty"`
 }
 
 func (l *LabelComponentInteractionResponse) IsInteractionResponseDataComponent() {
@@ -114,7 +114,7 @@ func (l *LabelComponentInteractionResponse) IsInteractionResponseDataComponent()
 }
 
 func (l *LabelComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	l.Type = common.ComponentTypeLabel
+	l.Type = discord.ComponentTypeLabel
 
 	type Alias LabelComponentInteractionResponse
 
@@ -140,7 +140,7 @@ func (l *LabelComponentInteractionResponse) UnmarshalJSON(data []byte) error {
 }
 
 type ComponentLabelComponent struct {
-	Type        common.ComponentType             `json:"type"`
+	Type        discord.ComponentType            `json:"type"`
 	ID          *int                             `json:"id,omitempty"`
 	Label       *string                          `json:"label"`
 	Description *string                          `json:"description,omitempty"`
@@ -165,7 +165,7 @@ func (l *ComponentLabelComponent) UnmarshalJSON(data []byte) error {
 	}
 
 	var probe struct {
-		Type common.ComponentType `json:"type"`
+		Type discord.ComponentType `json:"type"`
 	}
 	if err := json.Unmarshal(*raw.Component, &probe); err != nil {
 		return err
@@ -174,29 +174,29 @@ func (l *ComponentLabelComponent) UnmarshalJSON(data []byte) error {
 	var c AnyComponentInteractionResponse
 
 	switch probe.Type {
-	case common.ComponentTypeUserSelectMenu:
+	case discord.ComponentTypeUserSelectMenu:
 		c = &UserSelectComponentInteractionResponse{}
-	case common.ComponentTypeRoleSelectMenu:
+	case discord.ComponentTypeRoleSelectMenu:
 		c = &RoleComponentInteractionResponse{}
-	case common.ComponentTypeStringSelectMenu:
+	case discord.ComponentTypeStringSelectMenu:
 		c = &StringSelectComponentInteractionResponse{}
-	case common.ComponentTypeChannelSelect:
+	case discord.ComponentTypeChannelSelect:
 		c = &ChannelComponentInteractionResponse{}
-	case common.ComponentTypeMentionableMenu:
+	case discord.ComponentTypeMentionableMenu:
 		c = &MentionableComponentInteractionResponse{}
-	case common.ComponentTypeTextDisplay:
+	case discord.ComponentTypeTextDisplay:
 		c = &TextDisplayComponentInteractionResponse{}
-	case common.ComponentTypeTextInput:
+	case discord.ComponentTypeTextInput:
 		c = &TextInputComponentInteractionResponse{}
-	case common.ComponentTypeFileUpload:
+	case discord.ComponentTypeFileUpload:
 		c = &FileUploadComponentInteractionResponse{}
-	case common.ComponentTypeLabel:
+	case discord.ComponentTypeLabel:
 		c = &LabelComponentInteractionResponse{}
-	case common.ComponentTypeRadioGroup:
+	case discord.ComponentTypeRadioGroup:
 		c = &RadioGroupComponentInteractionResponse{}
-	case common.ComponentTypeCheckboxGroup:
+	case discord.ComponentTypeCheckboxGroup:
 		c = &CheckboxGroupComponentInteractionResponse{}
-	case common.ComponentTypeCheckbox:
+	case discord.ComponentTypeCheckbox:
 		c = &CheckboxComponentInteractionResponse{}
 
 	default:

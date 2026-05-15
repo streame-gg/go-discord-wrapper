@@ -3,13 +3,13 @@ package events
 import (
 	"time"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type ChannelPinsUpdateEvent struct {
-	GuildID          *common.Snowflake `json:"guild_id,omitempty"`
-	ChannelID        common.Snowflake  `json:"channel_id"`
-	LastPinTimestamp *time.Time        `json:"last_pin_timestamp,omitempty"`
+	GuildID          *discord.Snowflake `json:"guild_id,omitempty"`
+	ChannelID        discord.Snowflake  `json:"channel_id"`
+	LastPinTimestamp *time.Time         `json:"last_pin_timestamp,omitempty"`
 }
 
 func init() { RegisterEvent(ChannelPinsUpdateEvent{}) }

@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Param / response types ────────────────────────────────────────────────────
@@ -21,11 +21,11 @@ type CreateThreadFromMessageParams struct {
 }
 
 type CreateThreadParams struct {
-	Name                string              `json:"name"`
-	AutoArchiveDuration *int                `json:"auto_archive_duration,omitempty"`
-	Type                *common.ChannelType `json:"type,omitempty"`
-	Invitable           *bool               `json:"invitable,omitempty"`
-	RateLimitPerUser    *int                `json:"rate_limit_per_user,omitempty"`
+	Name                string               `json:"name"`
+	AutoArchiveDuration *int                 `json:"auto_archive_duration,omitempty"`
+	Type                *discord.ChannelType `json:"type,omitempty"`
+	Invitable           *bool                `json:"invitable,omitempty"`
+	RateLimitPerUser    *int                 `json:"rate_limit_per_user,omitempty"`
 }
 
 // CreateForumThreadParams is used to start a thread in a forum or media channel.
@@ -34,12 +34,12 @@ type CreateForumThreadParams struct {
 	AutoArchiveDuration *int                `json:"auto_archive_duration,omitempty"`
 	RateLimitPerUser    *int                `json:"rate_limit_per_user,omitempty"`
 	Message             CreateMessageParams `json:"message"`
-	AppliedTags         []common.Snowflake  `json:"applied_tags,omitempty"`
+	AppliedTags         []discord.Snowflake `json:"applied_tags,omitempty"`
 }
 
 type ListThreadMembersParams struct {
 	WithMember *bool
-	After      *common.Snowflake
+	After      *discord.Snowflake
 	Limit      *int
 }
 
@@ -81,21 +81,21 @@ func (p ListArchivedThreadsParams) toQuery() string {
 
 // ArchivedThreadsResponse is returned by the list-archived-threads endpoints.
 type ArchivedThreadsResponse struct {
-	Threads []*common.Channel      `json:"threads"`
-	Members []*common.ThreadMember `json:"members"`
-	HasMore bool                   `json:"has_more"`
+	Threads []*discord.Channel      `json:"threads"`
+	Members []*discord.ThreadMember `json:"members"`
+	HasMore bool                    `json:"has_more"`
 }
 
 // ActiveThreadsResponse is returned by ListActiveGuildThreads.
 type ActiveThreadsResponse struct {
-	Threads []*common.Channel      `json:"threads"`
-	Members []*common.ThreadMember `json:"members"`
+	Threads []*discord.Channel      `json:"threads"`
+	Members []*discord.ThreadMember `json:"members"`
 }
 
 // ── Thread endpoints ──────────────────────────────────────────────────────────
 
 // CreateThreadFromMessage starts a public thread from an existing message.
-func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, messageID common.Snowflake, params CreateThreadFromMessageParams) (*common.Channel, error) {
+func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, messageID discord.Snowflake, params CreateThreadFromMessageParams) (*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -115,13 +115,13 @@ func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, mes
 		return nil, err
 	}
 
-	return doRequest[common.Channel](c, req, map[int]bool{
+	return doRequest[discord.Channel](c, req, map[int]bool{
 		http.StatusCreated: true,
 	})
 }
 
 // CreateThread starts a thread that is not connected to an existing message.
-func (c *RestClient) CreateThread(ctx context.Context, channelID common.Snowflake, params CreateThreadParams) (*common.Channel, error) {
+func (c *RestClient) CreateThread(ctx context.Context, channelID discord.Snowflake, params CreateThreadParams) (*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -136,13 +136,13 @@ func (c *RestClient) CreateThread(ctx context.Context, channelID common.Snowflak
 		return nil, err
 	}
 
-	return doRequest[common.Channel](c, req, map[int]bool{
+	return doRequest[discord.Channel](c, req, map[int]bool{
 		http.StatusCreated: true,
 	})
 }
 
 // CreateForumThread starts a thread in a forum or media channel.
-func (c *RestClient) CreateForumThread(ctx context.Context, channelID common.Snowflake, params CreateForumThreadParams) (*common.Channel, error) {
+func (c *RestClient) CreateForumThread(ctx context.Context, channelID discord.Snowflake, params CreateForumThreadParams) (*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -157,13 +157,13 @@ func (c *RestClient) CreateForumThread(ctx context.Context, channelID common.Sno
 		return nil, err
 	}
 
-	return doRequest[common.Channel](c, req, map[int]bool{
+	return doRequest[discord.Channel](c, req, map[int]bool{
 		http.StatusCreated: true,
 	})
 }
 
 // JoinThread adds the current user to a thread.
-func (c *RestClient) JoinThread(ctx context.Context, channelID common.Snowflake) error {
+func (c *RestClient) JoinThread(ctx context.Context, channelID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func (c *RestClient) JoinThread(ctx context.Context, channelID common.Snowflake)
 }
 
 // LeaveThread removes the current user from a thread.
-func (c *RestClient) LeaveThread(ctx context.Context, channelID common.Snowflake) error {
+func (c *RestClient) LeaveThread(ctx context.Context, channelID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (c *RestClient) LeaveThread(ctx context.Context, channelID common.Snowflake
 }
 
 // AddThreadMember adds another user to a thread.
-func (c *RestClient) AddThreadMember(ctx context.Context, channelID, userID common.Snowflake) error {
+func (c *RestClient) AddThreadMember(ctx context.Context, channelID, userID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -206,7 +206,7 @@ func (c *RestClient) AddThreadMember(ctx context.Context, channelID, userID comm
 }
 
 // RemoveThreadMember removes a user from a thread.
-func (c *RestClient) RemoveThreadMember(ctx context.Context, channelID, userID common.Snowflake) error {
+func (c *RestClient) RemoveThreadMember(ctx context.Context, channelID, userID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func (c *RestClient) RemoveThreadMember(ctx context.Context, channelID, userID c
 
 // GetThreadMember returns the thread member object for the given user.
 // Set withMember to true to include the guild member object.
-func (c *RestClient) GetThreadMember(ctx context.Context, channelID, userID common.Snowflake, withMember bool) (*common.ThreadMember, error) {
+func (c *RestClient) GetThreadMember(ctx context.Context, channelID, userID discord.Snowflake, withMember bool) (*discord.ThreadMember, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -241,13 +241,13 @@ func (c *RestClient) GetThreadMember(ctx context.Context, channelID, userID comm
 		return nil, err
 	}
 
-	return doRequest[common.ThreadMember](c, req, map[int]bool{
+	return doRequest[discord.ThreadMember](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // ListThreadMembers returns the members of a thread.
-func (c *RestClient) ListThreadMembers(ctx context.Context, channelID common.Snowflake, params ListThreadMembersParams) (*[]*common.ThreadMember, error) {
+func (c *RestClient) ListThreadMembers(ctx context.Context, channelID discord.Snowflake, params ListThreadMembersParams) (*[]*discord.ThreadMember, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -258,13 +258,13 @@ func (c *RestClient) ListThreadMembers(ctx context.Context, channelID common.Sno
 		return nil, err
 	}
 
-	return doRequest[[]*common.ThreadMember](c, req, map[int]bool{
+	return doRequest[[]*discord.ThreadMember](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // ListPublicArchivedThreads returns archived public threads in a channel, newest first.
-func (c *RestClient) ListPublicArchivedThreads(ctx context.Context, channelID common.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
+func (c *RestClient) ListPublicArchivedThreads(ctx context.Context, channelID discord.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -281,7 +281,7 @@ func (c *RestClient) ListPublicArchivedThreads(ctx context.Context, channelID co
 }
 
 // ListPrivateArchivedThreads returns archived private threads in a channel, newest first.
-func (c *RestClient) ListPrivateArchivedThreads(ctx context.Context, channelID common.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
+func (c *RestClient) ListPrivateArchivedThreads(ctx context.Context, channelID discord.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -298,7 +298,7 @@ func (c *RestClient) ListPrivateArchivedThreads(ctx context.Context, channelID c
 }
 
 // ListJoinedPrivateArchivedThreads returns private archived threads the current user has joined.
-func (c *RestClient) ListJoinedPrivateArchivedThreads(ctx context.Context, channelID common.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
+func (c *RestClient) ListJoinedPrivateArchivedThreads(ctx context.Context, channelID discord.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -315,7 +315,7 @@ func (c *RestClient) ListJoinedPrivateArchivedThreads(ctx context.Context, chann
 }
 
 // ListActiveGuildThreads returns all active threads in the guild that the current user can access.
-func (c *RestClient) ListActiveGuildThreads(ctx context.Context, guildID common.Snowflake) (*ActiveThreadsResponse, error) {
+func (c *RestClient) ListActiveGuildThreads(ctx context.Context, guildID discord.Snowflake) (*ActiveThreadsResponse, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}

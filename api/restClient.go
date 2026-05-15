@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/options"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/util"
 )
 
@@ -50,7 +50,7 @@ type RestEventHandler func(*RestClient, RestEvent)
 type RestClient struct {
 	BaseURL string
 	token   string
-	Version common.APIVersion
+	Version discord.APIVersion
 
 	httpClient *http.Client
 
@@ -79,7 +79,7 @@ type RestClient struct {
 func NewRestClient(token string, opts ...options.Option) (*RestClient, error) {
 	cfg := options.Build(options.Config{
 		BaseURL:    "https://discord.com/api",
-		APIVersion: common.APIVersion10,
+		APIVersion: discord.APIVersion10,
 		Retry: options.RetryOptions{
 			MaxRetries:          3,
 			BaseBackoff:         500 * time.Millisecond,
@@ -203,7 +203,7 @@ func (c *RestClient) emitEvent(event RestEvent) {
 }
 
 // validateAPIPath rejects any digit-only path segment that is not a valid Discord Snowflake
-// (15–20 decimal digits). This stops the most common URL-injection pattern where user-supplied
+// (15–20 decimal digits). This stops the most discord URL-injection pattern where user-supplied
 // short numeric input (e.g. "123") is concatenated directly into a path without sanitisation.
 // Slash-injection (e.g. Snowflake("123456789012345/evil")) is caught earlier by Snowflake.String(),
 // which panics when the value contains a '/'.
@@ -267,7 +267,7 @@ func (c *RestClient) generateRequest(ctx context.Context, method, path string, b
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", fmt.Sprintf("GoDiscordWrapper (%s@%s)", common.RepositoryURL, common.RepositoryVersion))
+	req.Header.Set("User-Agent", fmt.Sprintf("GoDiscordWrapper (%s@%s)", discord.RepositoryURL, discord.RepositoryVersion))
 
 	for _, option := range options {
 		option(req)
@@ -489,11 +489,11 @@ func (c *RestClient) waitForMinInterval(ctx context.Context) error {
 }
 
 func decodeGatewayError(resp *http.Response) error {
-	var body common.GatewayError
+	var body discord.GatewayError
 	_ = json.NewDecoder(resp.Body).Decode(&body)
 	return &Error{
 		HTTPStatus: resp.StatusCode,
-		Code:       common.GatewayErrorCode(body.Code),
+		Code:       discord.GatewayErrorCode(body.Code),
 		Message:    body.Message,
 		Errors:     body.Errors,
 	}

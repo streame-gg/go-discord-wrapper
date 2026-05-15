@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // UpdateRoleConnectionParams holds params for updating the user's application role connection.
@@ -31,7 +31,7 @@ func (c *RestClient) GetCurrentUserConnections(ctx context.Context, userToken st
 
 // GetCurrentUserApplicationRoleConnection returns the application role connection for the current user.
 // Requires an OAuth2 bearer token with the role_connections.write scope; bot tokens will receive a 401.
-func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context, appID common.Snowflake, userToken string) (*ApplicationRoleConnection, error) {
+func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context, appID discord.Snowflake, userToken string) (*ApplicationRoleConnection, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context
 
 // UpdateCurrentUserApplicationRoleConnection updates the application role connection for the current user.
 // Requires an OAuth2 bearer token with the role_connections.write scope; bot tokens will receive a 401.
-func (c *RestClient) UpdateCurrentUserApplicationRoleConnection(ctx context.Context, appID common.Snowflake, userToken string, params UpdateRoleConnectionParams) (*ApplicationRoleConnection, error) {
+func (c *RestClient) UpdateCurrentUserApplicationRoleConnection(ctx context.Context, appID discord.Snowflake, userToken string, params UpdateRoleConnectionParams) (*ApplicationRoleConnection, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (c *RestClient) UpdateCurrentUserApplicationRoleConnection(ctx context.Cont
 }
 
 // AddGuildMember adds a user to a guild using their OAuth2 access token.
-func (c *RestClient) AddGuildMember(ctx context.Context, guildID, userID common.Snowflake, params AddGuildMemberParams) (*common.GuildMember, error) {
+func (c *RestClient) AddGuildMember(ctx context.Context, guildID, userID discord.Snowflake, params AddGuildMemberParams) (*discord.GuildMember, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (c *RestClient) AddGuildMember(ctx context.Context, guildID, userID common.
 		return nil, err
 	}
 
-	return doRequest[common.GuildMember](c, req, map[int]bool{
+	return doRequest[discord.GuildMember](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

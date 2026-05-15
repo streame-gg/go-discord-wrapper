@@ -2,16 +2,16 @@ package components
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type FileComponent struct {
-	Type    common.ComponentType `json:"type"`
-	ID      *int                 `json:"id,omitempty"`
-	Spoiler bool                 `json:"spoiler,omitempty"`
-	Name    string               `json:"name,omitempty"`
-	Size    int                  `json:"size,omitempty"`
-	File    *UnfurledMediaItem   `json:"file,omitempty"`
+	Type    discord.ComponentType `json:"type"`
+	ID      *int                  `json:"id,omitempty"`
+	Spoiler bool                  `json:"spoiler,omitempty"`
+	Name    string                `json:"name,omitempty"`
+	Size    int                   `json:"size,omitempty"`
+	File    *UnfurledMediaItem    `json:"file,omitempty"`
 }
 
 func (f *FileComponent) UnmarshalJSON(data []byte) error {
@@ -29,7 +29,7 @@ func (f *FileComponent) UnmarshalJSON(data []byte) error {
 }
 
 func (f *FileComponent) MarshalJSON() ([]byte, error) {
-	f.Type = common.ComponentTypeFileDisplay
+	f.Type = discord.ComponentTypeFileDisplay
 	type Alias FileComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -38,8 +38,8 @@ func (f *FileComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (f *FileComponent) GetType() common.ComponentType {
-	return common.ComponentTypeFileDisplay
+func (f *FileComponent) GetType() discord.ComponentType {
+	return discord.ComponentTypeFileDisplay
 }
 
 func (f *FileComponent) IsAnyContainerComponent() {

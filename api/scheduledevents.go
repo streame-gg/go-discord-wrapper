@@ -9,42 +9,42 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Param / response types ────────────────────────────────────────────────────
 
 type CreateGuildScheduledEventParams struct {
-	ChannelID          *common.Snowflake                         `json:"channel_id,omitempty"`
-	EntityMetadata     *common.GuildScheduledEventEntityMetadata `json:"entity_metadata,omitempty"`
-	Name               string                                    `json:"name"`
-	PrivacyLevel       common.GuildScheduledEventPrivacyLevel    `json:"privacy_level"`
-	ScheduledStartTime time.Time                                 `json:"scheduled_start_time"`
-	ScheduledEndTime   *time.Time                                `json:"scheduled_end_time,omitempty"`
-	Description        *string                                   `json:"description,omitempty"`
-	EntityType         common.GuildScheduledEventEntityType      `json:"entity_type"`
+	ChannelID          *discord.Snowflake                         `json:"channel_id,omitempty"`
+	EntityMetadata     *discord.GuildScheduledEventEntityMetadata `json:"entity_metadata,omitempty"`
+	Name               string                                     `json:"name"`
+	PrivacyLevel       discord.GuildScheduledEventPrivacyLevel    `json:"privacy_level"`
+	ScheduledStartTime time.Time                                  `json:"scheduled_start_time"`
+	ScheduledEndTime   *time.Time                                 `json:"scheduled_end_time,omitempty"`
+	Description        *string                                    `json:"description,omitempty"`
+	EntityType         discord.GuildScheduledEventEntityType      `json:"entity_type"`
 	// Image is a base64-encoded image data URI for the event cover image.
 	Image *string `json:"image,omitempty"`
 }
 
 type ModifyGuildScheduledEventParams struct {
-	ChannelID          *common.Snowflake                         `json:"channel_id,omitempty"`
-	EntityMetadata     *common.GuildScheduledEventEntityMetadata `json:"entity_metadata,omitempty"`
-	Name               *string                                   `json:"name,omitempty"`
-	PrivacyLevel       *common.GuildScheduledEventPrivacyLevel   `json:"privacy_level,omitempty"`
-	ScheduledStartTime *time.Time                                `json:"scheduled_start_time,omitempty"`
-	ScheduledEndTime   *time.Time                                `json:"scheduled_end_time,omitempty"`
-	Description        *string                                   `json:"description,omitempty"`
-	EntityType         *common.GuildScheduledEventEntityType     `json:"entity_type,omitempty"`
-	Status             *common.GuildScheduledEventStatus         `json:"status,omitempty"`
-	Image              *string                                   `json:"image,omitempty"`
+	ChannelID          *discord.Snowflake                         `json:"channel_id,omitempty"`
+	EntityMetadata     *discord.GuildScheduledEventEntityMetadata `json:"entity_metadata,omitempty"`
+	Name               *string                                    `json:"name,omitempty"`
+	PrivacyLevel       *discord.GuildScheduledEventPrivacyLevel   `json:"privacy_level,omitempty"`
+	ScheduledStartTime *time.Time                                 `json:"scheduled_start_time,omitempty"`
+	ScheduledEndTime   *time.Time                                 `json:"scheduled_end_time,omitempty"`
+	Description        *string                                    `json:"description,omitempty"`
+	EntityType         *discord.GuildScheduledEventEntityType     `json:"entity_type,omitempty"`
+	Status             *discord.GuildScheduledEventStatus         `json:"status,omitempty"`
+	Image              *string                                    `json:"image,omitempty"`
 }
 
 type GetGuildScheduledEventUsersParams struct {
 	Limit      *int
 	WithMember *bool
-	Before     *common.Snowflake
-	After      *common.Snowflake
+	Before     *discord.Snowflake
+	After      *discord.Snowflake
 }
 
 func (p GetGuildScheduledEventUsersParams) toQuery() string {
@@ -69,16 +69,16 @@ func (p GetGuildScheduledEventUsersParams) toQuery() string {
 
 // GuildScheduledEventUser is an entry in the list returned by GetGuildScheduledEventUsers.
 type GuildScheduledEventUser struct {
-	GuildScheduledEventID common.Snowflake    `json:"guild_scheduled_event_id"`
-	User                  common.User         `json:"user"`
-	Member                *common.GuildMember `json:"member,omitempty"`
+	GuildScheduledEventID discord.Snowflake    `json:"guild_scheduled_event_id"`
+	User                  discord.User         `json:"user"`
+	Member                *discord.GuildMember `json:"member,omitempty"`
 }
 
 // ── Scheduled event endpoints ─────────────────────────────────────────────────
 
 // ListGuildScheduledEvents returns all scheduled events for a guild.
 // Set withUserCount to true to include subscriber counts.
-func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID common.Snowflake, withUserCount bool) (*[]*common.GuildScheduledEvent, error) {
+func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID discord.Snowflake, withUserCount bool) (*[]*discord.GuildScheduledEvent, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -93,13 +93,13 @@ func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID commo
 		return nil, err
 	}
 
-	return doRequest[[]*common.GuildScheduledEvent](c, req, map[int]bool{
+	return doRequest[[]*discord.GuildScheduledEvent](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // CreateGuildScheduledEvent creates a new scheduled event in a guild.
-func (c *RestClient) CreateGuildScheduledEvent(ctx context.Context, guildID common.Snowflake, params CreateGuildScheduledEventParams) (*common.GuildScheduledEvent, error) {
+func (c *RestClient) CreateGuildScheduledEvent(ctx context.Context, guildID discord.Snowflake, params CreateGuildScheduledEventParams) (*discord.GuildScheduledEvent, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -114,14 +114,14 @@ func (c *RestClient) CreateGuildScheduledEvent(ctx context.Context, guildID comm
 		return nil, err
 	}
 
-	return doRequest[common.GuildScheduledEvent](c, req, map[int]bool{
+	return doRequest[discord.GuildScheduledEvent](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetGuildScheduledEvent returns a single scheduled event.
 // Set withUserCount to true to include subscriber count.
-func (c *RestClient) GetGuildScheduledEvent(ctx context.Context, guildID, eventID common.Snowflake, withUserCount bool) (*common.GuildScheduledEvent, error) {
+func (c *RestClient) GetGuildScheduledEvent(ctx context.Context, guildID, eventID discord.Snowflake, withUserCount bool) (*discord.GuildScheduledEvent, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -140,13 +140,13 @@ func (c *RestClient) GetGuildScheduledEvent(ctx context.Context, guildID, eventI
 		return nil, err
 	}
 
-	return doRequest[common.GuildScheduledEvent](c, req, map[int]bool{
+	return doRequest[discord.GuildScheduledEvent](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // ModifyGuildScheduledEvent updates a scheduled event.
-func (c *RestClient) ModifyGuildScheduledEvent(ctx context.Context, guildID, eventID common.Snowflake, params ModifyGuildScheduledEventParams) (*common.GuildScheduledEvent, error) {
+func (c *RestClient) ModifyGuildScheduledEvent(ctx context.Context, guildID, eventID discord.Snowflake, params ModifyGuildScheduledEventParams) (*discord.GuildScheduledEvent, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -166,13 +166,13 @@ func (c *RestClient) ModifyGuildScheduledEvent(ctx context.Context, guildID, eve
 		return nil, err
 	}
 
-	return doRequest[common.GuildScheduledEvent](c, req, map[int]bool{
+	return doRequest[discord.GuildScheduledEvent](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // DeleteGuildScheduledEvent deletes a scheduled event.
-func (c *RestClient) DeleteGuildScheduledEvent(ctx context.Context, guildID, eventID common.Snowflake) error {
+func (c *RestClient) DeleteGuildScheduledEvent(ctx context.Context, guildID, eventID discord.Snowflake) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (c *RestClient) DeleteGuildScheduledEvent(ctx context.Context, guildID, eve
 }
 
 // GetGuildScheduledEventUsers returns users subscribed to a scheduled event.
-func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID common.Snowflake, params GetGuildScheduledEventUsersParams) (*[]*GuildScheduledEventUser, error) {
+func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, params GetGuildScheduledEventUsersParams) (*[]*GuildScheduledEventUser, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}

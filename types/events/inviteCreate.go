@@ -3,24 +3,24 @@ package events
 import (
 	"time"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type InviteCreateEvent struct {
-	ChannelID         common.Snowflake             `json:"channel_id"`
-	Code              string                       `json:"code"`
-	CreatedAt         time.Time                    `json:"created_at"`
-	GuildID           *common.Snowflake            `json:"guild_id"`
-	Inviter           *common.User                 `json:"inviter,omitempty"`
-	MaxAge            *int                         `json:"max_age,omitempty"`
-	MaxUses           *int                         `json:"max_uses,omitempty"`
-	TargetUserType    *common.InviteTargetUserType `json:"target_user_type,omitempty"`
-	TargetUser        *common.User                 `json:"target_user,omitempty"`
-	TargetApplication *common.Application          `json:"target_application,omitempty"`
-	Temporary         bool                         `json:"temporary"`
-	Uses              int                          `json:"uses,omitempty"`
-	ExpiresAt         *time.Time                   `json:"expires_at,omitempty"`
-	RoleIDs           *[]common.Snowflake          `json:"role_ids,omitempty"`
+	ChannelID         discord.Snowflake             `json:"channel_id"`
+	Code              string                        `json:"code"`
+	CreatedAt         time.Time                     `json:"created_at"`
+	GuildID           *discord.Snowflake            `json:"guild_id"`
+	Inviter           *discord.User                 `json:"inviter,omitempty"`
+	MaxAge            *int                          `json:"max_age,omitempty"`
+	MaxUses           *int                          `json:"max_uses,omitempty"`
+	TargetUserType    *discord.InviteTargetUserType `json:"target_user_type,omitempty"`
+	TargetUser        *discord.User                 `json:"target_user,omitempty"`
+	TargetApplication *discord.Application          `json:"target_application,omitempty"`
+	Temporary         bool                          `json:"temporary"`
+	Uses              int                           `json:"uses,omitempty"`
+	ExpiresAt         *time.Time                    `json:"expires_at,omitempty"`
+	RoleIDs           *[]discord.Snowflake          `json:"role_ids,omitempty"`
 }
 
 func init() { RegisterEvent(InviteCreateEvent{}) }

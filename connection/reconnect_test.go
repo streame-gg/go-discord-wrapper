@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/streame-gg/go-discord-wrapper/options"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // mockGatewayThenClose starts a WS server that sends HELLO → reads IDENTIFY →
@@ -72,7 +72,7 @@ func TestBug17NonRecoverableCloseCodesExitListenerLoop(t *testing.T) {
 			wsURL, closeServer := mockGatewayThenClose(t, code)
 			defer closeServer()
 
-			c, err := NewClient("Bot fake-token", common.IntentGuilds)
+			c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 			require.NoError(t, err)
 
 			require.NoError(t, c.connectWebsocket(wsURL, false, nil, nil))
@@ -112,7 +112,7 @@ func TestBug17NonRecoverableCloseCodesExitListenerLoop(t *testing.T) {
 // READY payload causes internalEventHandler to return false without closing
 // the Ready channel or modifying the cache.
 func TestBug18CorruptReadyPayloadDoesNotCloseReadyChan(t *testing.T) {
-	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
 	// Construct a minimal websocket so we can call internalEventHandler directly.
@@ -139,7 +139,7 @@ func TestBug18CorruptReadyPayloadDoesNotCloseReadyChan(t *testing.T) {
 // UpdatePresence are safe to call concurrently with a reconnect that swaps
 // d.Websocket under the hood (race detector must pass).
 func TestBug19RequestGuildMembersRaceSafe(t *testing.T) {
-	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
 	// Seed with a non-nil Websocket so the nil-check path is exercised.
@@ -191,7 +191,7 @@ func TestBug16NoHeartbeatLeakOnWriteFailure(t *testing.T) {
 
 	wsURL := "ws" + ts.URL[len("http"):]
 
-	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
 	before := runtime.NumGoroutine()
@@ -237,8 +237,8 @@ func TestBug28APIVersionInWebSocketURL(t *testing.T) {
 	defer ts.Close()
 	wsURL := "ws" + ts.URL[len("http"):]
 
-	c, err := NewClient("Bot fake-token", common.IntentGuilds,
-		options.WithAPIVersion(common.APIVersion9),
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds,
+		options.WithAPIVersion(discord.APIVersion9),
 	)
 	require.NoError(t, err)
 
@@ -259,7 +259,7 @@ func TestBug26ConcurrentCloseIsIdempotent(t *testing.T) {
 	wsURL, closeFn := mockGatewayThenClose(t, websocket.CloseNormalClosure)
 	defer closeFn()
 
-	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
 	err = c.connectWebsocket(wsURL, false, nil, nil)
@@ -314,7 +314,7 @@ func TestBug47ReconnectBackoffNoOverflow(t *testing.T) {
 // TestBug41DoubleReadyDoesNotPanic verifies that receiving a READY event twice
 // on the same Websocket does not panic from a double-close of the Ready channel.
 func TestBug41DoubleReadyDoesNotPanic(t *testing.T) {
-	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
 	c.Websocket = &Websocket{

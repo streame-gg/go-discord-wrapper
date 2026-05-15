@@ -2,13 +2,13 @@ package components
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type TextDisplayComponent struct {
-	Type    common.ComponentType `json:"type"`
-	ID      *int                 `json:"id,omitempty"`
-	Content string               `json:"content"`
+	Type    discord.ComponentType `json:"type"`
+	ID      *int                  `json:"id,omitempty"`
+	Content string                `json:"content"`
 }
 
 func (t *TextDisplayComponent) UnmarshalJSON(data []byte) error {
@@ -27,12 +27,12 @@ func (t *TextDisplayComponent) UnmarshalJSON(data []byte) error {
 
 func (t *TextDisplayComponent) IsAnyContainerComponent() {}
 
-func (t *TextDisplayComponent) GetType() common.ComponentType {
-	return common.ComponentTypeTextDisplay
+func (t *TextDisplayComponent) GetType() discord.ComponentType {
+	return discord.ComponentTypeTextDisplay
 }
 
 func (t *TextDisplayComponent) MarshalJSON() ([]byte, error) {
-	t.Type = common.ComponentTypeTextDisplay
+	t.Type = discord.ComponentTypeTextDisplay
 	type Alias TextDisplayComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -44,14 +44,14 @@ func (t *TextDisplayComponent) MarshalJSON() ([]byte, error) {
 func (t *TextDisplayComponent) IsAnySectionComponent() {}
 
 type TextDisplayComponentInteractionResponse struct {
-	Type common.ComponentType `json:"type"`
-	ID   *int                 `json:"id,omitempty"`
+	Type discord.ComponentType `json:"type"`
+	ID   *int                  `json:"id,omitempty"`
 }
 
 func (t *TextDisplayComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (t *TextDisplayComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	t.Type = common.ComponentTypeTextDisplay
+	t.Type = discord.ComponentTypeTextDisplay
 
 	type Alias TextDisplayComponentInteractionResponse
 

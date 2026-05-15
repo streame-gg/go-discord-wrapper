@@ -7,38 +7,38 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
 type ModifyCurrentUserVoiceStateParams struct {
-	ChannelID               *common.Snowflake `json:"channel_id,omitempty"`
-	Suppress                *bool             `json:"suppress,omitempty"`
-	RequestToSpeakTimestamp *time.Time        `json:"request_to_speak_timestamp,omitempty"`
+	ChannelID               *discord.Snowflake `json:"channel_id,omitempty"`
+	Suppress                *bool              `json:"suppress,omitempty"`
+	RequestToSpeakTimestamp *time.Time         `json:"request_to_speak_timestamp,omitempty"`
 }
 
 type ModifyUserVoiceStateParams struct {
-	ChannelID *common.Snowflake `json:"channel_id,omitempty"`
-	Suppress  *bool             `json:"suppress,omitempty"`
+	ChannelID *discord.Snowflake `json:"channel_id,omitempty"`
+	Suppress  *bool              `json:"suppress,omitempty"`
 }
 
 // ── Voice endpoints ───────────────────────────────────────────────────────────
 
 // ListVoiceRegions returns all available voice regions.
-func (c *RestClient) ListVoiceRegions(ctx context.Context) (*[]*common.VoiceRegion, error) {
+func (c *RestClient) ListVoiceRegions(ctx context.Context) (*[]*discord.VoiceRegion, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/voice/regions", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequest[[]*common.VoiceRegion](c, req, map[int]bool{
+	return doRequest[[]*discord.VoiceRegion](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // ListGuildVoiceRegions returns voice regions available for a guild, including VIP regions if applicable.
-func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID common.Snowflake) (*[]*common.VoiceRegion, error) {
+func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID discord.Snowflake) (*[]*discord.VoiceRegion, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -48,13 +48,13 @@ func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID common.S
 		return nil, err
 	}
 
-	return doRequest[[]*common.VoiceRegion](c, req, map[int]bool{
+	return doRequest[[]*discord.VoiceRegion](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // ModifyCurrentUserVoiceState updates the bot's voice state in a guild stage channel.
-func (c *RestClient) ModifyCurrentUserVoiceState(ctx context.Context, guildID common.Snowflake, params ModifyCurrentUserVoiceStateParams) error {
+func (c *RestClient) ModifyCurrentUserVoiceState(ctx context.Context, guildID discord.Snowflake, params ModifyCurrentUserVoiceStateParams) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (c *RestClient) ModifyCurrentUserVoiceState(ctx context.Context, guildID co
 }
 
 // ModifyUserVoiceState updates another user's voice state in a guild stage channel. Requires MUTE_MEMBERS.
-func (c *RestClient) ModifyUserVoiceState(ctx context.Context, guildID, userID common.Snowflake, params ModifyUserVoiceStateParams) error {
+func (c *RestClient) ModifyUserVoiceState(ctx context.Context, guildID, userID discord.Snowflake, params ModifyUserVoiceStateParams) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (c *RestClient) ModifyUserVoiceState(ctx context.Context, guildID, userID c
 }
 
 // GetCurrentUserVoiceState returns the current user's voice state in a guild.
-func (c *RestClient) GetCurrentUserVoiceState(ctx context.Context, guildID common.Snowflake) (*common.VoiceState, error) {
+func (c *RestClient) GetCurrentUserVoiceState(ctx context.Context, guildID discord.Snowflake) (*discord.VoiceState, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -107,13 +107,13 @@ func (c *RestClient) GetCurrentUserVoiceState(ctx context.Context, guildID commo
 		return nil, err
 	}
 
-	return doRequest[common.VoiceState](c, req, map[int]bool{
+	return doRequest[discord.VoiceState](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetUserVoiceState returns a specific user's voice state in a guild.
-func (c *RestClient) GetUserVoiceState(ctx context.Context, guildID, userID common.Snowflake) (*common.VoiceState, error) {
+func (c *RestClient) GetUserVoiceState(ctx context.Context, guildID, userID discord.Snowflake) (*discord.VoiceState, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (c *RestClient) GetUserVoiceState(ctx context.Context, guildID, userID comm
 		return nil, err
 	}
 
-	return doRequest[common.VoiceState](c, req, map[int]bool{
+	return doRequest[discord.VoiceState](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

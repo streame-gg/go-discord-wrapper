@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/streame-gg/go-discord-wrapper/api"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
 	"github.com/streame-gg/go-discord-wrapper/types/components"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
 
@@ -19,13 +19,13 @@ type Client interface {
 	ReplyWithModal(ctx context.Context, i *Interaction, modal *components.Modal) error
 	ReplyAutocomplete(ctx context.Context, i *Interaction, choices []responses.AutocompleteChoice) error
 	LaunchActivity(ctx context.Context, i *Interaction) error
-	GetOriginalResponse(ctx context.Context, i *Interaction) (*common.Message, error)
-	EditReply(ctx context.Context, i *Interaction, params api.EditMessageParams) (*common.Message, error)
+	GetOriginalResponse(ctx context.Context, i *Interaction) (*discord.Message, error)
+	EditReply(ctx context.Context, i *Interaction, params api.EditMessageParams) (*discord.Message, error)
 	DeleteReply(ctx context.Context, i *Interaction) error
-	CreateFollowup(ctx context.Context, i *Interaction, params api.CreateMessageParams) (*common.Message, error)
-	GetFollowup(ctx context.Context, i *Interaction, messageID common.Snowflake) (*common.Message, error)
-	EditFollowup(ctx context.Context, i *Interaction, messageID common.Snowflake, params api.EditMessageParams) (*common.Message, error)
-	DeleteFollowup(ctx context.Context, i *Interaction, messageID common.Snowflake) error
+	CreateFollowup(ctx context.Context, i *Interaction, params api.CreateMessageParams) (*discord.Message, error)
+	GetFollowup(ctx context.Context, i *Interaction, messageID discord.Snowflake) (*discord.Message, error)
+	EditFollowup(ctx context.Context, i *Interaction, messageID discord.Snowflake, params api.EditMessageParams) (*discord.Message, error)
+	DeleteFollowup(ctx context.Context, i *Interaction, messageID discord.Snowflake) error
 }
 
 // Reply sends an immediate message response to the interaction.
@@ -67,12 +67,12 @@ func (i *Interaction) LaunchActivity(ctx context.Context, client Client) error {
 }
 
 // GetOriginalResponse fetches the original response message for this interaction.
-func (i *Interaction) GetOriginalResponse(ctx context.Context, client Client) (*common.Message, error) {
+func (i *Interaction) GetOriginalResponse(ctx context.Context, client Client) (*discord.Message, error) {
 	return client.GetOriginalResponse(ctx, i)
 }
 
 // EditReply edits the original interaction response.
-func (i *Interaction) EditReply(ctx context.Context, client Client, params api.EditMessageParams) (*common.Message, error) {
+func (i *Interaction) EditReply(ctx context.Context, client Client, params api.EditMessageParams) (*discord.Message, error) {
 	return client.EditReply(ctx, i, params)
 }
 
@@ -82,22 +82,22 @@ func (i *Interaction) DeleteReply(ctx context.Context, client Client) error {
 }
 
 // FollowUp sends a follow-up message (usable up to 15 minutes after the initial response).
-func (i *Interaction) FollowUp(ctx context.Context, client Client, params api.CreateMessageParams) (*common.Message, error) {
+func (i *Interaction) FollowUp(ctx context.Context, client Client, params api.CreateMessageParams) (*discord.Message, error) {
 	return client.CreateFollowup(ctx, i, params)
 }
 
 // GetFollowup fetches a follow-up message by ID.
-func (i *Interaction) GetFollowup(ctx context.Context, client Client, messageID common.Snowflake) (*common.Message, error) {
+func (i *Interaction) GetFollowup(ctx context.Context, client Client, messageID discord.Snowflake) (*discord.Message, error) {
 	return client.GetFollowup(ctx, i, messageID)
 }
 
 // EditFollowup edits a follow-up message by ID.
-func (i *Interaction) EditFollowup(ctx context.Context, client Client, messageID common.Snowflake, params api.EditMessageParams) (*common.Message, error) {
+func (i *Interaction) EditFollowup(ctx context.Context, client Client, messageID discord.Snowflake, params api.EditMessageParams) (*discord.Message, error) {
 	return client.EditFollowup(ctx, i, messageID, params)
 }
 
 // DeleteFollowup deletes a follow-up message by ID.
-func (i *Interaction) DeleteFollowup(ctx context.Context, client Client, messageID common.Snowflake) error {
+func (i *Interaction) DeleteFollowup(ctx context.Context, client Client, messageID discord.Snowflake) error {
 	return client.DeleteFollowup(ctx, i, messageID)
 }
 
@@ -110,11 +110,11 @@ func (i *Interaction) DeleteFollowup(ctx context.Context, client Client, message
 //	if err != nil { return }
 //	result := doSlowWork()
 //	send(api.CreateMessageParams{Content: result})
-func (i *Interaction) DeferAndFollowup(ctx context.Context, client Client, ephemeral bool) (func(api.CreateMessageParams) (*common.Message, error), error) {
+func (i *Interaction) DeferAndFollowup(ctx context.Context, client Client, ephemeral bool) (func(api.CreateMessageParams) (*discord.Message, error), error) {
 	if err := client.DeferReply(ctx, i, ephemeral); err != nil {
 		return nil, err
 	}
-	return func(params api.CreateMessageParams) (*common.Message, error) {
+	return func(params api.CreateMessageParams) (*discord.Message, error) {
 		return client.CreateFollowup(ctx, i, params)
 	}, nil
 }

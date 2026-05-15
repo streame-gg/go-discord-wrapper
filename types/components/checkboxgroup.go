@@ -2,11 +2,11 @@ package components
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type CheckboxGroupComponent struct {
-	Type      common.ComponentType            `json:"type"`
+	Type      discord.ComponentType           `json:"type"`
 	ID        *int                            `json:"id,omitempty"`
 	CustomID  string                          `json:"custom_id"`
 	Options   *[]CheckboxGroupComponentOption `json:"options"`
@@ -23,7 +23,7 @@ type CheckboxGroupComponentOption struct {
 }
 
 func (c *CheckboxGroupComponent) MarshalJSON() ([]byte, error) {
-	c.Type = common.ComponentTypeCheckboxGroup
+	c.Type = discord.ComponentTypeCheckboxGroup
 	type Alias CheckboxGroupComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -46,8 +46,8 @@ func (c *CheckboxGroupComponent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *CheckboxGroupComponent) GetType() common.ComponentType {
-	return common.ComponentTypeCheckboxGroup
+func (c *CheckboxGroupComponent) GetType() discord.ComponentType {
+	return discord.ComponentTypeCheckboxGroup
 }
 
 func (c *CheckboxGroupComponent) IsAnyLabelComponent() {
@@ -55,16 +55,16 @@ func (c *CheckboxGroupComponent) IsAnyLabelComponent() {
 }
 
 type CheckboxGroupComponentInteractionResponse struct {
-	Type     common.ComponentType `json:"type"`
-	Values   []string             `json:"values"`
-	ID       *int                 `json:"id,omitempty"`
-	CustomID string               `json:"custom_id,omitempty"`
+	Type     discord.ComponentType `json:"type"`
+	Values   []string              `json:"values"`
+	ID       *int                  `json:"id,omitempty"`
+	CustomID string                `json:"custom_id,omitempty"`
 }
 
 func (c *CheckboxGroupComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (c *CheckboxGroupComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	c.Type = common.ComponentTypeCheckboxGroup
+	c.Type = discord.ComponentTypeCheckboxGroup
 	type Alias CheckboxGroupComponentInteractionResponse
 	return json.Marshal(&struct {
 		*Alias

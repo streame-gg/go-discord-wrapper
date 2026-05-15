@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 func TestAPIErrorIs(t *testing.T) {
@@ -41,7 +41,7 @@ func TestAPIErrorIs(t *testing.T) {
 func TestAPIErrorAs(t *testing.T) {
 	original := &Error{
 		HTTPStatus: http.StatusNotFound,
-		Code:       common.GatewayErrorCode(10003),
+		Code:       discord.GatewayErrorCode(10003),
 		Message:    "Unknown Channel",
 	}
 
@@ -50,7 +50,7 @@ func TestAPIErrorAs(t *testing.T) {
 	var apiErr *Error
 	require.True(t, errors.As(wrapped, &apiErr), "errors.As should unwrap *APIError")
 	assert.Equal(t, http.StatusNotFound, apiErr.HTTPStatus)
-	assert.Equal(t, common.GatewayErrorCode(10003), apiErr.Code)
+	assert.Equal(t, discord.GatewayErrorCode(10003), apiErr.Code)
 	assert.Equal(t, "Unknown Channel", apiErr.Message)
 }
 
@@ -58,7 +58,7 @@ func TestAPIErrorString(t *testing.T) {
 	t.Run("with discord code", func(t *testing.T) {
 		err := &Error{
 			HTTPStatus: http.StatusNotFound,
-			Code:       common.GatewayErrorCode(10003),
+			Code:       discord.GatewayErrorCode(10003),
 			Message:    "Unknown Channel",
 		}
 		s := err.Error()

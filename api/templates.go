@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Param types ───────────────────────────────────────────────────────────────
@@ -30,19 +30,19 @@ type CreateGuildFromTemplateParams struct {
 // ── Template endpoints ────────────────────────────────────────────────────────
 
 // GetTemplate returns the guild template for the given template code.
-func (c *RestClient) GetTemplate(ctx context.Context, templateCode string) (*common.GuildTemplate, error) {
+func (c *RestClient) GetTemplate(ctx context.Context, templateCode string) (*discord.GuildTemplate, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/templates/"+url.PathEscape(templateCode), nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequest[common.GuildTemplate](c, req, map[int]bool{
+	return doRequest[discord.GuildTemplate](c, req, map[int]bool{
 		http.StatusCreated: true,
 	})
 }
 
 // CreateGuildFromTemplate creates a new guild from a template. Only available for bots in fewer than 10 guilds.
-func (c *RestClient) CreateGuildFromTemplate(ctx context.Context, templateCode string, params CreateGuildFromTemplateParams) (*common.Guild, error) {
+func (c *RestClient) CreateGuildFromTemplate(ctx context.Context, templateCode string, params CreateGuildFromTemplateParams) (*discord.Guild, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -53,13 +53,13 @@ func (c *RestClient) CreateGuildFromTemplate(ctx context.Context, templateCode s
 		return nil, err
 	}
 
-	return doRequest[common.Guild](c, req, map[int]bool{
+	return doRequest[discord.Guild](c, req, map[int]bool{
 		http.StatusCreated: true,
 	})
 }
 
 // GetGuildTemplates returns the templates for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID common.Snowflake) (*[]*common.GuildTemplate, error) {
+func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID discord.Snowflake) (*[]*discord.GuildTemplate, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -69,13 +69,13 @@ func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID common.Snowf
 		return nil, err
 	}
 
-	return doRequest[[]*common.GuildTemplate](c, req, map[int]bool{
+	return doRequest[[]*discord.GuildTemplate](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // CreateGuildTemplate creates a template for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) CreateGuildTemplate(ctx context.Context, guildID common.Snowflake, params CreateGuildTemplateParams) (*common.GuildTemplate, error) {
+func (c *RestClient) CreateGuildTemplate(ctx context.Context, guildID discord.Snowflake, params CreateGuildTemplateParams) (*discord.GuildTemplate, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -90,13 +90,13 @@ func (c *RestClient) CreateGuildTemplate(ctx context.Context, guildID common.Sno
 		return nil, err
 	}
 
-	return doRequest[common.GuildTemplate](c, req, map[int]bool{
+	return doRequest[discord.GuildTemplate](c, req, map[int]bool{
 		http.StatusCreated: true,
 	})
 }
 
 // SyncGuildTemplate syncs the template to the guild's current state. Requires MANAGE_GUILD.
-func (c *RestClient) SyncGuildTemplate(ctx context.Context, guildID common.Snowflake, templateCode string) (*common.GuildTemplate, error) {
+func (c *RestClient) SyncGuildTemplate(ctx context.Context, guildID discord.Snowflake, templateCode string) (*discord.GuildTemplate, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -107,13 +107,13 @@ func (c *RestClient) SyncGuildTemplate(ctx context.Context, guildID common.Snowf
 		return nil, err
 	}
 
-	return doRequest[common.GuildTemplate](c, req, map[int]bool{
+	return doRequest[discord.GuildTemplate](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // ModifyGuildTemplate modifies a guild template. Requires MANAGE_GUILD.
-func (c *RestClient) ModifyGuildTemplate(ctx context.Context, guildID common.Snowflake, templateCode string, params ModifyGuildTemplateParams) (*common.GuildTemplate, error) {
+func (c *RestClient) ModifyGuildTemplate(ctx context.Context, guildID discord.Snowflake, templateCode string, params ModifyGuildTemplateParams) (*discord.GuildTemplate, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -129,13 +129,13 @@ func (c *RestClient) ModifyGuildTemplate(ctx context.Context, guildID common.Sno
 		return nil, err
 	}
 
-	return doRequest[common.GuildTemplate](c, req, map[int]bool{
+	return doRequest[discord.GuildTemplate](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // DeleteGuildTemplate deletes a guild template. Requires MANAGE_GUILD.
-func (c *RestClient) DeleteGuildTemplate(ctx context.Context, guildID common.Snowflake, templateCode string) (*common.GuildTemplate, error) {
+func (c *RestClient) DeleteGuildTemplate(ctx context.Context, guildID discord.Snowflake, templateCode string) (*discord.GuildTemplate, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (c *RestClient) DeleteGuildTemplate(ctx context.Context, guildID common.Sno
 		return nil, err
 	}
 
-	return doRequest[common.GuildTemplate](c, req, map[int]bool{
+	return doRequest[discord.GuildTemplate](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

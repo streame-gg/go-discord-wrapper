@@ -16,7 +16,7 @@ import (
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/cache/rediscache"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type RedisCacheTestSuite struct {
@@ -75,30 +75,30 @@ func (s *RedisCacheTestSuite) newCache(opts cache.Options) *rediscache.RedisCach
 	return c
 }
 
-func guild(id string) *common.Guild {
-	return &common.Guild{ID: common.Snowflake(id), Name: "guild-" + id}
+func guild(id string) *discord.Guild {
+	return &discord.Guild{ID: discord.Snowflake(id), Name: "guild-" + id}
 }
 
-func channel(id string) *common.Channel {
-	return &common.Channel{ID: common.Snowflake(id), Name: "chan-" + id}
+func channel(id string) *discord.Channel {
+	return &discord.Channel{ID: discord.Snowflake(id), Name: "chan-" + id}
 }
 
-func user(id string) *common.User {
-	return &common.User{ID: common.Snowflake(id), Username: "user-" + id}
+func user(id string) *discord.User {
+	return &discord.User{ID: discord.Snowflake(id), Username: "user-" + id}
 }
 
-func member(userID string) *common.GuildMember {
-	return &common.GuildMember{User: user(userID)}
+func member(userID string) *discord.GuildMember {
+	return &discord.GuildMember{User: user(userID)}
 }
 
-func sticker(id string) *common.Sticker {
-	return &common.Sticker{ID: common.Snowflake(id), Name: "sticker-" + id}
+func sticker(id string) *discord.Sticker {
+	return &discord.Sticker{ID: discord.Snowflake(id), Name: "sticker-" + id}
 }
 
-func message(id, channelID string) *common.Message {
-	return &common.Message{
-		ID:        common.Snowflake(id),
-		ChannelID: common.Snowflake(channelID),
+func message(id, channelID string) *discord.Message {
+	return &discord.Message{
+		ID:        discord.Snowflake(id),
+		ChannelID: discord.Snowflake(channelID),
 		Content:   "msg-" + id,
 	}
 }
@@ -112,7 +112,7 @@ func (s *RedisCacheTestSuite) TestGuildStore_SetGetDelete() {
 
 	got, ok := c.Guilds().Get("1")
 	s.Require().True(ok, "expected guild to exist after set")
-	s.Require().Equal(common.Snowflake("1"), got.ID)
+	s.Require().Equal(discord.Snowflake("1"), got.ID)
 	s.Require().Equal("guild-1", got.Name)
 
 	c.Guilds().Delete("1")
@@ -158,8 +158,8 @@ func (s *RedisCacheTestSuite) TestGuildStore_TTL() {
 func (s *RedisCacheTestSuite) TestGuildStore_Overwrite() {
 	c := s.newCache(cache.Options{})
 
-	c.Guilds().Set(&common.Guild{ID: "1", Name: "old"})
-	c.Guilds().Set(&common.Guild{ID: "1", Name: "new"})
+	c.Guilds().Set(&discord.Guild{ID: "1", Name: "old"})
+	c.Guilds().Set(&discord.Guild{ID: "1", Name: "new"})
 
 	got, ok := c.Guilds().Get("1")
 	s.Require().True(ok, "expected guild to exist after set")
@@ -228,7 +228,7 @@ func (s *RedisCacheTestSuite) TestMemberStore_SetGet() {
 	s.Require().True(ok, "expected member 99 in guild1")
 	s.Require().NotNil(got)
 	s.Require().NotNil(got.User)
-	s.Require().Equal(common.Snowflake("99"), got.User.ID)
+	s.Require().Equal(discord.Snowflake("99"), got.User.ID)
 }
 
 func (s *RedisCacheTestSuite) TestMemberStore_Delete() {
@@ -271,7 +271,7 @@ func (s *RedisCacheTestSuite) TestMemberStore_AllInGuild() {
 func (s *RedisCacheTestSuite) TestMemberStore_NilUser() {
 	c := s.newCache(cache.Options{})
 
-	c.Members().Set("g1", &common.GuildMember{})
+	c.Members().Set("g1", &discord.GuildMember{})
 
 	s.Require().Equal(0, c.Members().Size(), "expected size 0 when member.User is nil")
 }
@@ -300,9 +300,9 @@ func (s *RedisCacheTestSuite) TestStickerStore_CRUDAndSetAll() {
 	got, ok := c.Stickers().Get("s1")
 	s.Require().True(ok, "expected sticker s1")
 	s.Require().NotNil(got)
-	s.Require().Equal(common.Snowflake("s1"), got.ID)
+	s.Require().Equal(discord.Snowflake("s1"), got.ID)
 
-	c.Stickers().SetAll("guild1", []*common.Sticker{sticker("s2"), sticker("s3")})
+	c.Stickers().SetAll("guild1", []*discord.Sticker{sticker("s2"), sticker("s3")})
 
 	_, ok = c.Stickers().Get("s1")
 	s.Require().False(ok, "expected old guild stickers replaced by SetAll")
@@ -330,7 +330,7 @@ func (s *RedisCacheTestSuite) TestMessageStore_AddGet() {
 	got, ok := c.Messages().Get("c1", "m1")
 	s.Require().True(ok, "expected msg m1")
 	s.Require().NotNil(got)
-	s.Require().Equal(common.Snowflake("m1"), got.ID)
+	s.Require().Equal(discord.Snowflake("m1"), got.ID)
 }
 
 func (s *RedisCacheTestSuite) TestMessageStore_Update() {
@@ -375,13 +375,13 @@ func (s *RedisCacheTestSuite) TestMessageStore_DeleteBulk() {
 	for i := 1; i <= 5; i++ {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
 	}
-	c.Messages().DeleteBulk("c1", []common.Snowflake{"m1", "m3", "m5"})
+	c.Messages().DeleteBulk("c1", []discord.Snowflake{"m1", "m3", "m5"})
 
-	for _, id := range []common.Snowflake{"m1", "m3", "m5"} {
+	for _, id := range []discord.Snowflake{"m1", "m3", "m5"} {
 		_, ok := c.Messages().Get("c1", id)
 		s.Require().False(ok, "expected message %s deleted", id)
 	}
-	for _, id := range []common.Snowflake{"m2", "m4"} {
+	for _, id := range []discord.Snowflake{"m2", "m4"} {
 		_, ok := c.Messages().Get("c1", id)
 		s.Require().True(ok, "expected message %s present", id)
 	}
@@ -397,7 +397,7 @@ func (s *RedisCacheTestSuite) TestMessageStore_Channel_NewestFirst() {
 	s.Require().Len(msgs, 5, "expected 5 messages")
 
 	// The most recently added message must be first.
-	s.Require().Equal(common.Snowflake("m5"), msgs[0].ID, "expected newest first")
+	s.Require().Equal(discord.Snowflake("m5"), msgs[0].ID, "expected newest first")
 }
 
 func (s *RedisCacheTestSuite) TestMessageStore_DeleteChannel() {
@@ -426,8 +426,8 @@ func (s *RedisCacheTestSuite) TestMessageStore_RingCap() {
 
 	// Oldest messages (m1, m2) must have been evicted.
 	for _, m := range msgs {
-		s.Require().NotEqual(common.Snowflake("m1"), m.ID, "m1 should have been evicted")
-		s.Require().NotEqual(common.Snowflake("m2"), m.ID, "m2 should have been evicted")
+		s.Require().NotEqual(discord.Snowflake("m1"), m.ID, "m1 should have been evicted")
+		s.Require().NotEqual(discord.Snowflake("m2"), m.ID, "m2 should have been evicted")
 	}
 }
 
@@ -513,10 +513,10 @@ func (s *RedisCacheTestSuite) TestConcurrent_NoRace() {
 		g := g
 		go func() {
 			defer wg.Done()
-			gid := common.Snowflake(fmt.Sprintf("g%d", g%3))
-			uid := common.Snowflake(fmt.Sprintf("u%d", g%4))
-			cid := common.Snowflake(fmt.Sprintf("c%d", g%2))
-			mid := common.Snowflake(fmt.Sprintf("msg%d", g))
+			gid := discord.Snowflake(fmt.Sprintf("g%d", g%3))
+			uid := discord.Snowflake(fmt.Sprintf("u%d", g%4))
+			cid := discord.Snowflake(fmt.Sprintf("c%d", g%2))
+			mid := discord.Snowflake(fmt.Sprintf("msg%d", g))
 			for i := 0; i < ops; i++ {
 				c.Guilds().Set(guild(string(gid)))
 				c.Guilds().Get(gid)
@@ -543,7 +543,7 @@ func (s *RedisCacheTestSuite) TestBug6NetworkErrorDoesNotPruneIndex() {
 	defer c.Close()
 
 	// Seed a guild into the cache.
-	c.Guilds().Set(&common.Guild{ID: "g1", Name: "test"})
+	c.Guilds().Set(&discord.Guild{ID: "g1", Name: "test"})
 
 	// Confirm it's in the index.
 	idx := client.SMembers(context.Background(), "discord:guild:index").Val()
@@ -589,7 +589,7 @@ func (s *RedisCacheTestSuite) TestBug7UpdateIsAtomicNoGhostEntry() {
 	})
 	defer c.Close()
 
-	msg := &common.Message{ID: "m1", ChannelID: "c1", Content: "original"}
+	msg := &discord.Message{ID: "m1", ChannelID: "c1", Content: "original"}
 	c.Messages().Add(msg)
 
 	// Let the TTL expire so the key no longer exists.
@@ -597,7 +597,7 @@ func (s *RedisCacheTestSuite) TestBug7UpdateIsAtomicNoGhostEntry() {
 
 	// Update after expiry — with the old code (Exists+Set) this would create
 	// a new key with no matching ZSet entry. With SetXX it's a no-op.
-	c.Messages().Update(&common.Message{ID: "m1", ChannelID: "c1", Content: "updated"})
+	c.Messages().Update(&discord.Message{ID: "m1", ChannelID: "c1", Content: "updated"})
 
 	// The key must not exist (SetXX must be a no-op after expiry).
 	exists := client.Exists(context.Background(), "discord:msg:c1:m1").Val()
@@ -625,8 +625,8 @@ func (s *RedisCacheTestSuite) TestBug8AddIsAtomicParallelAddsRespectMaxPerChanne
 		i := i
 		go func() {
 			defer wg.Done()
-			c.Messages().Add(&common.Message{
-				ID:        common.Snowflake(fmt.Sprintf("m%d", i)),
+			c.Messages().Add(&discord.Message{
+				ID:        discord.Snowflake(fmt.Sprintf("m%d", i)),
 				ChannelID: "ch-atomic",
 				Content:   "payload",
 			})
@@ -662,11 +662,11 @@ func (s *RedisCacheTestSuite) TestBug36MaxPerChannelZeroDisables() {
 func (s *RedisCacheTestSuite) TestBug50SetAllIsAtomic() {
 	c := s.newCache(cache.Options{})
 
-	const guildID = common.Snowflake("g1")
+	const guildID = discord.Snowflake("g1")
 	const workers = 100
 
 	// Seed an initial non-empty emoji set.
-	initial := []*common.Emoji{
+	initial := []*discord.Emoji{
 		{ID: "e1", Name: "emoji1"},
 		{ID: "e2", Name: "emoji2"},
 		{ID: "e3", Name: "emoji3"},
@@ -698,7 +698,7 @@ func (s *RedisCacheTestSuite) TestBug50SetAllIsAtomic() {
 	}
 
 	// Writer: repeatedly call SetAll with a different 5-emoji set.
-	newSet := []*common.Emoji{
+	newSet := []*discord.Emoji{
 		{ID: "n1", Name: "new1"}, {ID: "n2", Name: "new2"},
 		{ID: "n3", Name: "new3"}, {ID: "n4", Name: "new4"},
 		{ID: "n5", Name: "new5"},

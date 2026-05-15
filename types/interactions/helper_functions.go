@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
 
@@ -23,14 +23,14 @@ func (i *Interaction) GetSubCommand() string {
 	}
 
 	for _, option := range *cmdData.Options {
-		if option.Type == common.ApplicationCommandOptionTypeSubCommand {
+		if option.Type == discord.ApplicationCommandOptionTypeSubCommand {
 			return option.Name
 		}
 
-		if option.Type == common.ApplicationCommandOptionTypeSubCommandGroup {
+		if option.Type == discord.ApplicationCommandOptionTypeSubCommandGroup {
 			if option.Options != nil {
 				for _, subOption := range option.Options {
-					if subOption.Type == common.ApplicationCommandOptionTypeSubCommand {
+					if subOption.Type == discord.ApplicationCommandOptionTypeSubCommand {
 						return subOption.Name
 					}
 				}
@@ -56,7 +56,7 @@ func (i *Interaction) GetSubCommandGroup() string {
 	}
 
 	for _, option := range *cmdData.Options {
-		if option.Type == common.ApplicationCommandOptionTypeSubCommandGroup {
+		if option.Type == discord.ApplicationCommandOptionTypeSubCommandGroup {
 			return option.Name
 		}
 	}
@@ -121,8 +121,8 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 	}
 
 	var typeProbe struct {
-		Type          common.ApplicationCommandType `json:"type"`
-		ComponentType common.ComponentType          `json:"component_type"`
+		Type          discord.ApplicationCommandType `json:"type"`
+		ComponentType discord.ComponentType          `json:"component_type"`
 	}
 
 	if err := json.Unmarshal(aux.Data, &typeProbe); err != nil {
@@ -132,14 +132,14 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 	// Autocomplete and regular commands both carry type=ChatInput in the data
 	// payload, so check the interaction type first to distinguish them.
 	switch i.Type {
-	case common.InteractionTypeApplicationCommandAutocomplete:
+	case discord.InteractionTypeApplicationCommandAutocomplete:
 		var auto responses.InteractionDataAutocomplete
 		if err := json.Unmarshal(aux.Data, &auto); err != nil {
 			return err
 		}
 		i.Data = &auto
 		return nil
-	case common.InteractionTypeModalSubmit:
+	case discord.InteractionTypeModalSubmit:
 		var modal responses.InteractionDataModalSubmit
 		if err := json.Unmarshal(aux.Data, &modal); err != nil {
 			return err
@@ -149,12 +149,12 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 	}
 
 	switch typeProbe.ComponentType {
-	case common.ComponentTypeButton,
-		common.ComponentTypeStringSelectMenu,
-		common.ComponentTypeUserSelectMenu,
-		common.ComponentTypeRoleSelectMenu,
-		common.ComponentTypeMentionableMenu,
-		common.ComponentTypeChannelSelect:
+	case discord.ComponentTypeButton,
+		discord.ComponentTypeStringSelectMenu,
+		discord.ComponentTypeUserSelectMenu,
+		discord.ComponentTypeRoleSelectMenu,
+		discord.ComponentTypeMentionableMenu,
+		discord.ComponentTypeChannelSelect:
 		var comp responses.InteractionDataMessageComponent
 		if err := json.Unmarshal(aux.Data, &comp); err != nil {
 			return err
@@ -164,7 +164,7 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 	}
 
 	switch typeProbe.Type {
-	case common.ApplicationCommandTypeChatInput, common.ApplicationCommandTypeUser, common.ApplicationCommandTypeMessage:
+	case discord.ApplicationCommandTypeChatInput, discord.ApplicationCommandTypeUser, discord.ApplicationCommandTypeMessage:
 		var cmd responses.InteractionDataApplicationCommand
 		if err := json.Unmarshal(aux.Data, &cmd); err != nil {
 			return err

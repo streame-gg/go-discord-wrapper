@@ -55,7 +55,7 @@ package cache
 import (
 	"time"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Eviction strategy ─────────────────────────────────────────────────────────
@@ -216,152 +216,152 @@ type Options struct {
 
 // ── Entity store interfaces ───────────────────────────────────────────────────
 
-// GuildStore is a thread-safe cache for [common.Guild] objects.
+// GuildStore is a thread-safe cache for [discord.Guild] objects.
 type GuildStore interface {
-	Set(guild *common.Guild)
-	Get(id common.Snowflake) (*common.Guild, bool)
-	Delete(id common.Snowflake)
-	All() []*common.Guild
+	Set(guild *discord.Guild)
+	Get(id discord.Snowflake) (*discord.Guild, bool)
+	Delete(id discord.Snowflake)
+	All() []*discord.Guild
 	Size() int
 }
 
-// ChannelStore is a thread-safe cache for [common.Channel] objects.
+// ChannelStore is a thread-safe cache for [discord.Channel] objects.
 type ChannelStore interface {
-	Set(channel *common.Channel)
-	Get(id common.Snowflake) (*common.Channel, bool)
-	Delete(id common.Snowflake)
-	All() []*common.Channel
+	Set(channel *discord.Channel)
+	Get(id discord.Snowflake) (*discord.Channel, bool)
+	Delete(id discord.Snowflake)
+	All() []*discord.Channel
 	Size() int
 }
 
-// UserStore is a thread-safe cache for [common.User] objects.
+// UserStore is a thread-safe cache for [discord.User] objects.
 type UserStore interface {
-	Set(user *common.User)
-	Get(id common.Snowflake) (*common.User, bool)
-	Delete(id common.Snowflake)
-	All() []*common.User
+	Set(user *discord.User)
+	Get(id discord.Snowflake) (*discord.User, bool)
+	Delete(id discord.Snowflake)
+	All() []*discord.User
 	Size() int
 }
 
-// MemberStore is a thread-safe cache for [common.GuildMember] objects,
+// MemberStore is a thread-safe cache for [discord.GuildMember] objects,
 // keyed by the composite (guildID, userID) pair.
 type MemberStore interface {
-	Set(guildID common.Snowflake, member *common.GuildMember)
-	Get(guildID, userID common.Snowflake) (*common.GuildMember, bool)
-	Delete(guildID, userID common.Snowflake)
+	Set(guildID discord.Snowflake, member *discord.GuildMember)
+	Get(guildID, userID discord.Snowflake) (*discord.GuildMember, bool)
+	Delete(guildID, userID discord.Snowflake)
 	// DeleteGuild removes every member entry for guildID. Call on GUILD_DELETE.
-	DeleteGuild(guildID common.Snowflake)
-	AllInGuild(guildID common.Snowflake) []*common.GuildMember
+	DeleteGuild(guildID discord.Snowflake)
+	AllInGuild(guildID discord.Snowflake) []*discord.GuildMember
 	Size() int
 }
 
-// RoleStore is a thread-safe cache for [common.Role] objects, keyed by role ID.
+// RoleStore is a thread-safe cache for [discord.Role] objects, keyed by role ID.
 // Roles can also be looked up or deleted by guild ID.
 type RoleStore interface {
-	Set(guildID common.Snowflake, role *common.Role)
-	Get(roleID common.Snowflake) (*common.Role, bool)
-	GetByGuild(guildID common.Snowflake) []*common.Role
-	Delete(roleID common.Snowflake)
+	Set(guildID discord.Snowflake, role *discord.Role)
+	Get(roleID discord.Snowflake) (*discord.Role, bool)
+	GetByGuild(guildID discord.Snowflake) []*discord.Role
+	Delete(roleID discord.Snowflake)
 	// DeleteGuild removes every role entry for guildID. Call on GUILD_DELETE.
-	DeleteGuild(guildID common.Snowflake)
-	All() []*common.Role
+	DeleteGuild(guildID discord.Snowflake)
+	All() []*discord.Role
 	Size() int
 }
 
 // MessageStore caches per-channel message history in bounded ring buffers.
 // Each channel is bounded by Options.Messages.MaxPerChannel.
 type MessageStore interface {
-	Add(msg *common.Message)
-	Get(channelID, messageID common.Snowflake) (*common.Message, bool)
-	Update(msg *common.Message)
-	Delete(channelID, messageID common.Snowflake)
-	DeleteBulk(channelID common.Snowflake, ids []common.Snowflake)
+	Add(msg *discord.Message)
+	Get(channelID, messageID discord.Snowflake) (*discord.Message, bool)
+	Update(msg *discord.Message)
+	Delete(channelID, messageID discord.Snowflake)
+	DeleteBulk(channelID discord.Snowflake, ids []discord.Snowflake)
 	// Channel returns cached messages for channelID newest-first,
 	// excluding TTL-expired entries. Returns nil for unknown channels.
-	Channel(channelID common.Snowflake) []*common.Message
+	Channel(channelID discord.Snowflake) []*discord.Message
 	// DeleteChannel drops the entire ring for channelID. Call on CHANNEL_DELETE.
-	DeleteChannel(channelID common.Snowflake)
+	DeleteChannel(channelID discord.Snowflake)
 	Size() int
 }
 
-// VoiceStateStore is a thread-safe cache for [common.VoiceState] objects,
+// VoiceStateStore is a thread-safe cache for [discord.VoiceState] objects,
 // keyed by the composite (guildID, userID) pair.
 type VoiceStateStore interface {
-	Set(guildID common.Snowflake, state *common.VoiceState)
-	Get(guildID, userID common.Snowflake) (*common.VoiceState, bool)
-	Delete(guildID, userID common.Snowflake)
+	Set(guildID discord.Snowflake, state *discord.VoiceState)
+	Get(guildID, userID discord.Snowflake) (*discord.VoiceState, bool)
+	Delete(guildID, userID discord.Snowflake)
 	// DeleteGuild removes every voice state entry for guildID. Call on GUILD_DELETE.
-	DeleteGuild(guildID common.Snowflake)
-	AllInGuild(guildID common.Snowflake) []*common.VoiceState
+	DeleteGuild(guildID discord.Snowflake)
+	AllInGuild(guildID discord.Snowflake) []*discord.VoiceState
 	Size() int
 }
 
-// SoundboardStore is a thread-safe cache for [common.SoundboardSound] objects.
+// SoundboardStore is a thread-safe cache for [discord.SoundboardSound] objects.
 type SoundboardStore interface {
-	Set(guildID common.Snowflake, sound *common.SoundboardSound)
-	Get(soundID common.Snowflake) (*common.SoundboardSound, bool)
-	GetByGuild(guildID common.Snowflake) []*common.SoundboardSound
-	SetAll(guildID common.Snowflake, sounds []*common.SoundboardSound)
-	Delete(soundID common.Snowflake)
+	Set(guildID discord.Snowflake, sound *discord.SoundboardSound)
+	Get(soundID discord.Snowflake) (*discord.SoundboardSound, bool)
+	GetByGuild(guildID discord.Snowflake) []*discord.SoundboardSound
+	SetAll(guildID discord.Snowflake, sounds []*discord.SoundboardSound)
+	Delete(soundID discord.Snowflake)
 	// DeleteGuild removes every soundboard sound for guildID. Call on GUILD_DELETE.
-	DeleteGuild(guildID common.Snowflake)
+	DeleteGuild(guildID discord.Snowflake)
 	Size() int
 }
 
-// ScheduledEventStore is a thread-safe cache for [common.GuildScheduledEvent] objects.
+// ScheduledEventStore is a thread-safe cache for [discord.GuildScheduledEvent] objects.
 type ScheduledEventStore interface {
-	Set(event *common.GuildScheduledEvent)
-	Get(eventID common.Snowflake) (*common.GuildScheduledEvent, bool)
-	GetByGuild(guildID common.Snowflake) []*common.GuildScheduledEvent
-	Delete(eventID common.Snowflake)
+	Set(event *discord.GuildScheduledEvent)
+	Get(eventID discord.Snowflake) (*discord.GuildScheduledEvent, bool)
+	GetByGuild(guildID discord.Snowflake) []*discord.GuildScheduledEvent
+	Delete(eventID discord.Snowflake)
 	// DeleteGuild removes every scheduled event for guildID. Call on GUILD_DELETE.
-	DeleteGuild(guildID common.Snowflake)
+	DeleteGuild(guildID discord.Snowflake)
 	Size() int
 }
 
-// StageInstanceStore is a thread-safe cache for [common.StageInstance] objects.
+// StageInstanceStore is a thread-safe cache for [discord.StageInstance] objects.
 type StageInstanceStore interface {
-	Set(instance *common.StageInstance)
-	Get(instanceID common.Snowflake) (*common.StageInstance, bool)
-	GetByGuild(guildID common.Snowflake) []*common.StageInstance
-	Delete(instanceID common.Snowflake)
+	Set(instance *discord.StageInstance)
+	Get(instanceID discord.Snowflake) (*discord.StageInstance, bool)
+	GetByGuild(guildID discord.Snowflake) []*discord.StageInstance
+	Delete(instanceID discord.Snowflake)
 	// DeleteGuild removes every stage instance for guildID. Call on GUILD_DELETE.
-	DeleteGuild(guildID common.Snowflake)
+	DeleteGuild(guildID discord.Snowflake)
 	Size() int
 }
 
-// EmojiStore is a thread-safe cache for [common.Emoji] objects.
+// EmojiStore is a thread-safe cache for [discord.Emoji] objects.
 type EmojiStore interface {
-	Set(guildID common.Snowflake, emoji *common.Emoji)
-	Get(emojiID common.Snowflake) (*common.Emoji, bool)
-	GetByGuild(guildID common.Snowflake) []*common.Emoji
-	SetAll(guildID common.Snowflake, emojis []*common.Emoji)
-	Delete(emojiID common.Snowflake)
+	Set(guildID discord.Snowflake, emoji *discord.Emoji)
+	Get(emojiID discord.Snowflake) (*discord.Emoji, bool)
+	GetByGuild(guildID discord.Snowflake) []*discord.Emoji
+	SetAll(guildID discord.Snowflake, emojis []*discord.Emoji)
+	Delete(emojiID discord.Snowflake)
 	// DeleteGuild removes every emoji for guildID. Call on GUILD_DELETE.
-	DeleteGuild(guildID common.Snowflake)
+	DeleteGuild(guildID discord.Snowflake)
 	Size() int
 }
 
-// StickerStore is a thread-safe cache for [common.Sticker] objects.
+// StickerStore is a thread-safe cache for [discord.Sticker] objects.
 type StickerStore interface {
-	Set(guildID common.Snowflake, sticker *common.Sticker)
-	Get(stickerID common.Snowflake) (*common.Sticker, bool)
-	GetByGuild(guildID common.Snowflake) []*common.Sticker
-	SetAll(guildID common.Snowflake, stickers []*common.Sticker)
-	Delete(stickerID common.Snowflake)
+	Set(guildID discord.Snowflake, sticker *discord.Sticker)
+	Get(stickerID discord.Snowflake) (*discord.Sticker, bool)
+	GetByGuild(guildID discord.Snowflake) []*discord.Sticker
+	SetAll(guildID discord.Snowflake, stickers []*discord.Sticker)
+	Delete(stickerID discord.Snowflake)
 	// DeleteGuild removes every sticker for guildID. Call on GUILD_DELETE.
-	DeleteGuild(guildID common.Snowflake)
+	DeleteGuild(guildID discord.Snowflake)
 	Size() int
 }
 
-// PresenceStore is a thread-safe cache for [common.Presence] objects.
+// PresenceStore is a thread-safe cache for [discord.Presence] objects.
 type PresenceStore interface {
-	Set(presence *common.Presence)
-	Get(guildID, userID common.Snowflake) (*common.Presence, bool)
-	GetByGuild(guildID common.Snowflake) []*common.Presence
-	Delete(guildID, userID common.Snowflake)
+	Set(presence *discord.Presence)
+	Get(guildID, userID discord.Snowflake) (*discord.Presence, bool)
+	GetByGuild(guildID discord.Snowflake) []*discord.Presence
+	Delete(guildID, userID discord.Snowflake)
 	// DeleteGuild removes every presence entry for guildID. Call on GUILD_DELETE.
-	DeleteGuild(guildID common.Snowflake)
+	DeleteGuild(guildID discord.Snowflake)
 	Size() int
 }
 

@@ -1,8 +1,8 @@
 package builder
 
 import (
-	"github.com/streame-gg/go-discord-wrapper/types/common"
 	"github.com/streame-gg/go-discord-wrapper/types/components"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // SelectOptionBuilder builds a single StringSelectMenuComponentOption.
@@ -21,7 +21,7 @@ func (b *SelectOptionBuilder) SetDescription(desc string) *SelectOptionBuilder {
 	return b
 }
 
-func (b *SelectOptionBuilder) SetEmoji(emoji *common.Emoji) *SelectOptionBuilder {
+func (b *SelectOptionBuilder) SetEmoji(emoji *discord.Emoji) *SelectOptionBuilder {
 	b.opt.Emoji = emoji
 	return b
 }

@@ -1,29 +1,31 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type GuildScheduledEventCreateEvent struct {
-	common.GuildScheduledEvent
+	discord.GuildScheduledEvent
 }
 
 type GuildScheduledEventUpdateEvent struct {
-	common.GuildScheduledEvent
+	discord.GuildScheduledEvent
 }
 
 type GuildScheduledEventDeleteEvent struct {
-	common.GuildScheduledEvent
+	discord.GuildScheduledEvent
 }
 
 type GuildScheduledEventUserAddEvent struct {
-	GuildScheduledEventID common.Snowflake `json:"guild_scheduled_event_id"`
-	UserID                common.Snowflake `json:"user_id"`
-	GuildID               common.Snowflake `json:"guild_id"`
+	GuildScheduledEventID discord.Snowflake `json:"guild_scheduled_event_id"`
+	UserID                discord.Snowflake `json:"user_id"`
+	GuildID               discord.Snowflake `json:"guild_id"`
 }
 
 type GuildScheduledEventUserRemoveEvent struct {
-	GuildScheduledEventID common.Snowflake `json:"guild_scheduled_event_id"`
-	UserID                common.Snowflake `json:"user_id"`
-	GuildID               common.Snowflake `json:"guild_id"`
+	GuildScheduledEventID discord.Snowflake `json:"guild_scheduled_event_id"`
+	UserID                discord.Snowflake `json:"user_id"`
+	GuildID               discord.Snowflake `json:"guild_id"`
 }
 
 func init() {

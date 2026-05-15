@@ -9,7 +9,7 @@ import (
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/options"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 )
 
@@ -20,7 +20,7 @@ func newClientWithCache(t *testing.T) *Client {
 	mc := cache.NewMemoryCache(cache.Options{
 		Messages: cache.MessageOptions{MaxPerChannel: 100},
 	})
-	c, err := NewClient("test-token", common.IntentGuilds,
+	c, err := NewClient("test-token", discord.IntentGuilds,
 		options.WithCache(mc),
 	)
 	require.NoError(t, err)
@@ -29,7 +29,7 @@ func newClientWithCache(t *testing.T) *Client {
 
 // dispatchGuildDelete fires internalEventHandler with a GUILD_DELETE payload
 // for guildID, simulating the gateway receiving the event.
-func dispatchGuildDelete(t *testing.T, c *Client, guildID common.Snowflake) {
+func dispatchGuildDelete(t *testing.T, c *Client, guildID discord.Snowflake) {
 	t.Helper()
 	payload := map[string]any{"id": string(guildID)}
 	raw, err := json.Marshal(payload)
@@ -42,10 +42,10 @@ func dispatchGuildDelete(t *testing.T, c *Client, guildID common.Snowflake) {
 func TestGuildDelete_CleansCacheChannels(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := common.Snowflake("111000111000111")
-	chID := common.Snowflake("222000222000222")
+	guildID := discord.Snowflake("111000111000111")
+	chID := discord.Snowflake("222000222000222")
 
-	ch := &common.Channel{
+	ch := &discord.Channel{
 		ID:      chID,
 		GuildID: &guildID,
 	}
@@ -65,12 +65,12 @@ func TestGuildDelete_CleansCacheChannels(t *testing.T) {
 func TestGuildDelete_CleansChannelIndex(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := common.Snowflake("333000333000333")
-	ch1 := common.Snowflake("444000444000444")
-	ch2 := common.Snowflake("555000555000555")
+	guildID := discord.Snowflake("333000333000333")
+	ch1 := discord.Snowflake("444000444000444")
+	ch2 := discord.Snowflake("555000555000555")
 
-	c.trackChannel(&common.Channel{ID: ch1, GuildID: &guildID})
-	c.trackChannel(&common.Channel{ID: ch2, GuildID: &guildID})
+	c.trackChannel(&discord.Channel{ID: ch1, GuildID: &guildID})
+	c.trackChannel(&discord.Channel{ID: ch2, GuildID: &guildID})
 
 	c.channelIndexMu.RLock()
 	assert.Len(t, c.channelsByGuild[guildID], 2, "expected 2 channels before delete")
@@ -93,13 +93,13 @@ func TestGuildDelete_CleansChannelIndex(t *testing.T) {
 func TestGuildDelete_CleansMessageCache(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := common.Snowflake("666000666000666")
-	chID := common.Snowflake("777000777000777")
-	msgID := common.Snowflake("888000888000888")
+	guildID := discord.Snowflake("666000666000666")
+	chID := discord.Snowflake("777000777000777")
+	msgID := discord.Snowflake("888000888000888")
 
-	ch := &common.Channel{ID: chID, GuildID: &guildID}
+	ch := &discord.Channel{ID: chID, GuildID: &guildID}
 	c.cacheChannel(ch)
-	c.cacheMessage(&common.Message{ID: msgID, ChannelID: chID})
+	c.cacheMessage(&discord.Message{ID: msgID, ChannelID: chID})
 
 	_, ok := c.Cache.Messages().Get(chID, msgID)
 	require.True(t, ok, "message should be in cache before GUILD_DELETE")
@@ -115,12 +115,12 @@ func TestGuildDelete_CleansMessageCache(t *testing.T) {
 func TestGuildDelete_CleansGuildAndMembers(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := common.Snowflake("999000999000999")
-	userID := common.Snowflake("101010101010101")
+	guildID := discord.Snowflake("999000999000999")
+	userID := discord.Snowflake("101010101010101")
 
-	c.Cache.Guilds().Set(&common.Guild{ID: guildID})
-	c.Cache.Members().Set(guildID, &common.GuildMember{
-		User: &common.User{ID: userID},
+	c.Cache.Guilds().Set(&discord.Guild{ID: guildID})
+	c.Cache.Members().Set(guildID, &discord.GuildMember{
+		User: &discord.User{ID: userID},
 	})
 
 	_, guildOK := c.Cache.Guilds().Get(guildID)
@@ -140,9 +140,9 @@ func TestGuildDelete_CleansGuildAndMembers(t *testing.T) {
 func TestGuildDelete_UnavailableIsNoop(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := common.Snowflake("121212121212121")
+	guildID := discord.Snowflake("121212121212121")
 
-	c.Cache.Guilds().Set(&common.Guild{ID: guildID})
+	c.Cache.Guilds().Set(&discord.Guild{ID: guildID})
 
 	unavailable := true
 	payload := map[string]any{"id": string(guildID), "unavailable": unavailable}

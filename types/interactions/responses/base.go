@@ -2,7 +2,8 @@ package responses
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type AnyInteractionResponseData interface {
@@ -11,14 +12,14 @@ type AnyInteractionResponseData interface {
 }
 
 type InteractionResponseDataDefault struct {
-	TTS             bool                    `json:"tts,omitempty"`
-	Content         string                  `json:"content,omitempty"`
-	Embeds          *[]common.Embed         `json:"embeds,omitempty"`
-	AllowedMentions *common.AllowedMentions `json:"allowed_mentions,omitempty"`
-	Flags           common.MessageFlag      `json:"flags,omitempty"`
-	Components      *[]common.AnyComponent  `json:"components,omitempty"`
-	Attachments     *[]common.Attachment    `json:"attachments,omitempty"`
-	Poll            *common.PollRequest     `json:"poll,omitempty"`
+	TTS             bool                     `json:"tts,omitempty"`
+	Content         string                   `json:"content,omitempty"`
+	Embeds          *[]discord.Embed         `json:"embeds,omitempty"`
+	AllowedMentions *discord.AllowedMentions `json:"allowed_mentions,omitempty"`
+	Flags           discord.MessageFlag      `json:"flags,omitempty"`
+	Components      *[]discord.AnyComponent  `json:"components,omitempty"`
+	Attachments     *[]discord.Attachment    `json:"attachments,omitempty"`
+	Poll            *discord.PollRequest     `json:"poll,omitempty"`
 }
 
 func (d *InteractionResponseDataDefault) IsInteractionResponseData() bool {
@@ -31,17 +32,17 @@ func (d *InteractionResponseDataDefault) MarshalJSON() ([]byte, error) {
 }
 
 type InteractionResponse struct {
-	Type common.InteractionCallbackType `json:"type"`
-	Data AnyInteractionResponseData     `json:"data,omitempty"`
+	Type discord.InteractionCallbackType `json:"type"`
+	Data AnyInteractionResponseData      `json:"data,omitempty"`
 }
 
 type InteractionCallback struct {
-	ID                       common.Snowflake       `json:"id"`
-	Type                     common.InteractionType `json:"type"`
-	ActivityInstanceID       *common.Snowflake      `json:"activity_instance_id,omitempty"`
-	ResponseMessageID        *common.Snowflake      `json:"response_message_id,omitempty"`
-	ResponseMessageLoading   *bool                  `json:"response_message_loading,omitempty"`
-	ResponseMessageEphemeral *bool                  `json:"response_message_ephemeral,omitempty"`
+	ID                       discord.Snowflake       `json:"id"`
+	Type                     discord.InteractionType `json:"type"`
+	ActivityInstanceID       *discord.Snowflake      `json:"activity_instance_id,omitempty"`
+	ResponseMessageID        *discord.Snowflake      `json:"response_message_id,omitempty"`
+	ResponseMessageLoading   *bool                   `json:"response_message_loading,omitempty"`
+	ResponseMessageEphemeral *bool                   `json:"response_message_ephemeral,omitempty"`
 }
 
 type InteractionCallbackActivityInstance struct {
@@ -49,9 +50,9 @@ type InteractionCallbackActivityInstance struct {
 }
 
 type InteractionCallbackResource struct {
-	Type             common.InteractionCallbackType       `json:"type"`
+	Type             discord.InteractionCallbackType      `json:"type"`
 	ActivityInstance *InteractionCallbackActivityInstance `json:"activity_instance,omitempty"`
-	Message          *common.Message                      `json:"message,omitempty"`
+	Message          *discord.Message                     `json:"message,omitempty"`
 }
 
 type InteractionCallbackResponse struct {

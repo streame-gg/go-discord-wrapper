@@ -2,11 +2,12 @@ package components
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type MentionableSelectMenuComponent struct {
-	Type          common.ComponentType  `json:"type"`
+	Type          discord.ComponentType `json:"type"`
 	ID            *int                  `json:"id,omitempty"`
 	CustomID      string                `json:"custom_id"`
 	Placeholder   string                `json:"placeholder,omitempty"`
@@ -40,7 +41,7 @@ func (m *MentionableSelectMenuComponent) IsAnyLabelComponent() {
 }
 
 func (m *MentionableSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	m.Type = common.ComponentTypeMentionableMenu
+	m.Type = discord.ComponentTypeMentionableMenu
 	type Alias MentionableSelectMenuComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -49,25 +50,25 @@ func (m *MentionableSelectMenuComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (m *MentionableSelectMenuComponent) GetType() common.ComponentType {
-	return common.ComponentTypeMentionableMenu
+func (m *MentionableSelectMenuComponent) GetType() discord.ComponentType {
+	return discord.ComponentTypeMentionableMenu
 }
 
 type MentionableComponentInteractionResponse struct {
-	Type          common.ComponentType `json:"type"`
-	Values        []common.Snowflake   `json:"values"`
-	ID            *int                 `json:"id,omitempty"`
-	CustomID      string               `json:"custom_id,omitempty"`
-	ComponentType common.ComponentType `json:"component_type"`
-	Resolved      *common.ResolvedData `json:"resolved,omitempty"`
+	Type          discord.ComponentType `json:"type"`
+	Values        []discord.Snowflake   `json:"values"`
+	ID            *int                  `json:"id,omitempty"`
+	CustomID      string                `json:"custom_id,omitempty"`
+	ComponentType discord.ComponentType `json:"component_type"`
+	Resolved      *discord.ResolvedData `json:"resolved,omitempty"`
 }
 
 func (m *MentionableComponentInteractionResponse) IsInteractionResponseDataComponent() {
 }
 
 func (m *MentionableComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	m.ComponentType = common.ComponentTypeMentionableMenu
-	m.Type = common.ComponentTypeMentionableMenu
+	m.ComponentType = discord.ComponentTypeMentionableMenu
+	m.Type = discord.ComponentTypeMentionableMenu
 
 	type Alias MentionableComponentInteractionResponse
 

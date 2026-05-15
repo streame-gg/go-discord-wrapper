@@ -3,11 +3,11 @@ package components
 import (
 	"encoding/json"
 	"errors"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type Container struct {
-	Type        common.ComponentType     `json:"type"`
+	Type        discord.ComponentType    `json:"type"`
 	ID          *int                     `json:"id,omitempty"`
 	Components  *[]AnyContainerComponent `json:"components"`
 	AccentColor int                      `json:"accent_color,omitempty"`
@@ -30,7 +30,7 @@ func (c *Container) UnmarshalJSON(data []byte) error {
 
 	for _, comp := range raw.Components {
 		var probe struct {
-			Type common.ComponentType `json:"type"`
+			Type discord.ComponentType `json:"type"`
 		}
 
 		if err := json.Unmarshal(comp, &probe); err != nil {
@@ -38,43 +38,43 @@ func (c *Container) UnmarshalJSON(data []byte) error {
 		}
 
 		switch probe.Type {
-		case common.ComponentTypeMediaGallery:
+		case discord.ComponentTypeMediaGallery:
 			var m *MediaGalleryComponent
 			if err := json.Unmarshal(comp, &m); err != nil {
 				return err
 			}
 			*c.Components = append(*c.Components, m)
-		case common.ComponentTypeFileDisplay:
+		case discord.ComponentTypeFileDisplay:
 			var f *FileComponent
 			if err := json.Unmarshal(comp, &f); err != nil {
 				return err
 			}
 			*c.Components = append(*c.Components, f)
-		case common.ComponentTypeSeparator:
+		case discord.ComponentTypeSeparator:
 			var s *SeparatorComponent
 			if err := json.Unmarshal(comp, &s); err != nil {
 				return err
 			}
 			*c.Components = append(*c.Components, s)
-		case common.ComponentTypeTextInput:
+		case discord.ComponentTypeTextInput:
 			var t *TextInputComponent
 			if err := json.Unmarshal(comp, &t); err != nil {
 				return err
 			}
 			*c.Components = append(*c.Components, t)
-		case common.ComponentTypeActionRow:
+		case discord.ComponentTypeActionRow:
 			var a *ActionRow
 			if err := json.Unmarshal(comp, &a); err != nil {
 				return err
 			}
 			*c.Components = append(*c.Components, a)
-		case common.ComponentTypeTextDisplay:
+		case discord.ComponentTypeTextDisplay:
 			var t *TextDisplayComponent
 			if err := json.Unmarshal(comp, &t); err != nil {
 				return err
 			}
 			*c.Components = append(*c.Components, t)
-		case common.ComponentTypeSection:
+		case discord.ComponentTypeSection:
 			var s *Section
 			if err := json.Unmarshal(comp, &s); err != nil {
 				return err
@@ -88,12 +88,12 @@ func (c *Container) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *Container) GetType() common.ComponentType {
-	return common.ComponentTypeContainer
+func (c *Container) GetType() discord.ComponentType {
+	return discord.ComponentTypeContainer
 }
 
 func (c *Container) MarshalJSON() ([]byte, error) {
-	c.Type = common.ComponentTypeContainer
+	c.Type = discord.ComponentTypeContainer
 	type Alias Container
 	return json.Marshal(&struct {
 		*Alias

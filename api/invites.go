@@ -6,12 +6,12 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type GetInviteParams struct {
 	WithCounts            *bool
-	GuildScheduledEventID *common.Snowflake
+	GuildScheduledEventID *discord.Snowflake
 }
 
 func (p GetInviteParams) toQuery() string {

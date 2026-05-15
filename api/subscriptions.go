@@ -6,16 +6,16 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
 type ListSKUSubscriptionsParams struct {
-	Before *common.Snowflake
-	After  *common.Snowflake
+	Before *discord.Snowflake
+	After  *discord.Snowflake
 	Limit  *int
-	UserID *common.Snowflake
+	UserID *discord.Snowflake
 }
 
 func (p ListSKUSubscriptionsParams) toQuery() string {
@@ -40,7 +40,7 @@ func (p ListSKUSubscriptionsParams) toQuery() string {
 
 // ── Subscription endpoints ────────────────────────────────────────────────────
 
-func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID common.Snowflake, params ListSKUSubscriptionsParams) (*[]*common.Subscription, error) {
+func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID discord.Snowflake, params ListSKUSubscriptionsParams) (*[]*discord.Subscription, error) {
 	if err := skuID.Validate(); err != nil {
 		return nil, err
 	}
@@ -51,12 +51,12 @@ func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID common.Snow
 		return nil, err
 	}
 
-	return doRequest[[]*common.Subscription](c, req, map[int]bool{
+	return doRequest[[]*discord.Subscription](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
-func (c *RestClient) GetSKUSubscription(ctx context.Context, skuID, subscriptionID common.Snowflake) (*common.Subscription, error) {
+func (c *RestClient) GetSKUSubscription(ctx context.Context, skuID, subscriptionID discord.Snowflake) (*discord.Subscription, error) {
 	if err := skuID.Validate(); err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (c *RestClient) GetSKUSubscription(ctx context.Context, skuID, subscription
 		return nil, err
 	}
 
-	return doRequest[common.Subscription](c, req, map[int]bool{
+	return doRequest[discord.Subscription](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

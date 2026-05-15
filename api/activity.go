@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-func (c *RestClient) GetActivityInstance(ctx context.Context, appID common.Snowflake, instanceID string) (*common.ActivityInstance, error) {
+func (c *RestClient) GetActivityInstance(ctx context.Context, appID discord.Snowflake, instanceID string) (*discord.ActivityInstance, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -19,7 +19,7 @@ func (c *RestClient) GetActivityInstance(ctx context.Context, appID common.Snowf
 		return nil, err
 	}
 
-	return doRequest[common.ActivityInstance](c, req, map[int]bool{
+	return doRequest[discord.ActivityInstance](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

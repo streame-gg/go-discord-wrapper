@@ -1,13 +1,13 @@
 package events
 
 import (
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type InviteDeleteEvent struct {
-	ChannelID common.Snowflake  `json:"channel_id"`
-	Code      string            `json:"code"`
-	GuildID   *common.Snowflake `json:"guild_id,omitempty"`
+	ChannelID discord.Snowflake  `json:"channel_id"`
+	Code      string             `json:"code"`
+	GuildID   *discord.Snowflake `json:"guild_id,omitempty"`
 }
 
 func init() { RegisterEvent(InviteDeleteEvent{}) }

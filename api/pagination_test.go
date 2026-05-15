@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/streame-gg/go-discord-wrapper/options"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 func newPaginationClient(ts *httptest.Server) *RestClient {
@@ -33,14 +33,14 @@ func newPaginationClient(ts *httptest.Server) *RestClient {
 	return rc
 }
 
-func makeMembersPage(n int, startID int) []*common.GuildMember {
-	members := make([]*common.GuildMember, n)
+func makeMembersPage(n int, startID int) []*discord.GuildMember {
+	members := make([]*discord.GuildMember, n)
 	for i := 0; i < n; i++ {
-		id := common.Snowflake(string(rune('0' + startID + i))) // simple unique IDs
+		id := discord.Snowflake(string(rune('0' + startID + i))) // simple unique IDs
 		// Use a proper string-based snowflake
-		idStr := common.Snowflake(jsonIntStr(startID + i))
-		members[i] = &common.GuildMember{
-			User: &common.User{ID: idStr},
+		idStr := discord.Snowflake(jsonIntStr(startID + i))
+		members[i] = &discord.GuildMember{
+			User: &discord.User{ID: idStr},
 		}
 		_ = id
 	}
@@ -48,17 +48,17 @@ func makeMembersPage(n int, startID int) []*common.GuildMember {
 }
 
 // jsonIntStr formats an int as a string Snowflake.
-func jsonIntStr(n int) common.Snowflake {
+func jsonIntStr(n int) discord.Snowflake {
 	b, _ := json.Marshal(n)
 	s := string(b)
-	return common.Snowflake(s)
+	return discord.Snowflake(s)
 }
 
-func makeMembersPageWithIDs(ids []string) []*common.GuildMember {
-	members := make([]*common.GuildMember, len(ids))
+func makeMembersPageWithIDs(ids []string) []*discord.GuildMember {
+	members := make([]*discord.GuildMember, len(ids))
 	for i, id := range ids {
-		members[i] = &common.GuildMember{
-			User: &common.User{ID: common.Snowflake(id)},
+		members[i] = &discord.GuildMember{
+			User: &discord.User{ID: discord.Snowflake(id)},
 		}
 	}
 	return members
@@ -68,18 +68,18 @@ func makeBanPage(userIDs []string) []*Ban {
 	bans := make([]*Ban, len(userIDs))
 	for i, id := range userIDs {
 		bans[i] = &Ban{
-			User: common.User{ID: common.Snowflake(id)},
+			User: discord.User{ID: discord.Snowflake(id)},
 		}
 	}
 	return bans
 }
 
-func makeMessagePage(ids []string, channelID string) []*common.Message {
-	msgs := make([]*common.Message, len(ids))
+func makeMessagePage(ids []string, channelID string) []*discord.Message {
+	msgs := make([]*discord.Message, len(ids))
 	for i, id := range ids {
-		msgs[i] = &common.Message{
-			ID:        common.Snowflake(id),
-			ChannelID: common.Snowflake(channelID),
+		msgs[i] = &discord.Message{
+			ID:        discord.Snowflake(id),
+			ChannelID: discord.Snowflake(channelID),
 		}
 	}
 	return msgs
@@ -89,10 +89,10 @@ func TestFetchAllGuildMembersOnePage(t *testing.T) {
 	var reqCount int32
 
 	// Build 5 members
-	page := make([]*common.GuildMember, 5)
+	page := make([]*discord.GuildMember, 5)
 	for i := range page {
-		page[i] = &common.GuildMember{
-			User: &common.User{ID: common.Snowflake(string(rune('a' + i)))},
+		page[i] = &discord.GuildMember{
+			User: &discord.User{ID: discord.Snowflake(string(rune('a' + i)))},
 		}
 	}
 
@@ -114,19 +114,19 @@ func TestFetchAllGuildMembersOnePage(t *testing.T) {
 
 func TestFetchAllGuildMembersMultiplePages(t *testing.T) {
 	// Build page 1: exactly 1000 members with IDs "1" through "1000"
-	page1 := make([]*common.GuildMember, 1000)
+	page1 := make([]*discord.GuildMember, 1000)
 	for i := range page1 {
-		page1[i] = &common.GuildMember{
-			User: &common.User{ID: common.Snowflake(intToSnowflake(i + 1))},
+		page1[i] = &discord.GuildMember{
+			User: &discord.User{ID: discord.Snowflake(intToSnowflake(i + 1))},
 		}
 	}
 	lastPage1ID := page1[999].User.ID
 
 	// Build page 2: 5 members
-	page2 := make([]*common.GuildMember, 5)
+	page2 := make([]*discord.GuildMember, 5)
 	for i := range page2 {
-		page2[i] = &common.GuildMember{
-			User: &common.User{ID: common.Snowflake(intToSnowflake(1001 + i))},
+		page2[i] = &discord.GuildMember{
+			User: &discord.User{ID: discord.Snowflake(intToSnowflake(1001 + i))},
 		}
 	}
 
@@ -165,23 +165,23 @@ func intToSnowflake(n int) string {
 
 func TestFetchAllMessagesMultiplePages(t *testing.T) {
 	// Page 1: 100 messages with IDs "100" down to "1" (newest-first)
-	page1 := make([]*common.Message, 100)
+	page1 := make([]*discord.Message, 100)
 	for i := range page1 {
-		page1[i] = &common.Message{
-			ID:        common.Snowflake(intToSnowflake(100 - i)),
+		page1[i] = &discord.Message{
+			ID:        discord.Snowflake(intToSnowflake(100 - i)),
 			ChannelID: "1234567890123456789",
-			Author:    &common.User{},
+			Author:    &discord.User{},
 		}
 	}
 	oldestPage1ID := page1[99].ID // "1"
 
 	// Page 2: 10 messages
-	page2 := make([]*common.Message, 10)
+	page2 := make([]*discord.Message, 10)
 	for i := range page2 {
-		page2[i] = &common.Message{
-			ID:        common.Snowflake(intToSnowflake(-(i + 1))),
+		page2[i] = &discord.Message{
+			ID:        discord.Snowflake(intToSnowflake(-(i + 1))),
 			ChannelID: "1234567890123456789",
-			Author:    &common.User{},
+			Author:    &discord.User{},
 		}
 	}
 
@@ -217,8 +217,8 @@ func TestFetchAllGuildBansOnePage(t *testing.T) {
 	bans := make([]*Ban, 7)
 	for i := range bans {
 		bans[i] = &Ban{
-			User: common.User{
-				ID:            common.Snowflake(intToSnowflake(i + 1)),
+			User: discord.User{
+				ID:            discord.Snowflake(intToSnowflake(i + 1)),
 				Discriminator: "0",
 			},
 		}
@@ -241,7 +241,7 @@ func TestFetchAllGuildBansOnePage(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount), "expected single page request")
 
 	// verify IDs round-trip
-	assert.Equal(t, common.Snowflake("1"), result[0].User.ID)
+	assert.Equal(t, discord.Snowflake("1"), result[0].User.ID)
 
 	// suppress unused import
 	_ = time.Second
@@ -250,9 +250,9 @@ func TestFetchAllGuildBansOnePage(t *testing.T) {
 // ── FetchAllAuditLogEntries ───────────────────────────────────────────────────
 
 func makeAuditLogPage(ids []string) *AuditLog {
-	entries := make([]common.AuditLogEntry, len(ids))
+	entries := make([]discord.AuditLogEntry, len(ids))
 	for i, id := range ids {
-		entries[i] = common.AuditLogEntry{ID: common.Snowflake(id)}
+		entries[i] = discord.AuditLogEntry{ID: discord.Snowflake(id)}
 	}
 	return &AuditLog{AuditLogEntries: entries}
 }
@@ -317,10 +317,10 @@ func TestFetchAllAuditLogEntriesMultiplePages(t *testing.T) {
 
 // ── FetchAllEntitlements ──────────────────────────────────────────────────────
 
-func makeEntitlementPage(ids []string) []*common.Entitlement {
-	page := make([]*common.Entitlement, len(ids))
+func makeEntitlementPage(ids []string) []*discord.Entitlement {
+	page := make([]*discord.Entitlement, len(ids))
 	for i, id := range ids {
-		page[i] = &common.Entitlement{ID: common.Snowflake(id)}
+		page[i] = &discord.Entitlement{ID: discord.Snowflake(id)}
 	}
 	return page
 }
@@ -386,7 +386,7 @@ func makeScheduledEventUsersPage(userIDs []string) []*GuildScheduledEventUser {
 	page := make([]*GuildScheduledEventUser, len(userIDs))
 	for i, id := range userIDs {
 		page[i] = &GuildScheduledEventUser{
-			User: common.User{ID: common.Snowflake(id)},
+			User: discord.User{ID: discord.Snowflake(id)},
 		}
 	}
 	return page

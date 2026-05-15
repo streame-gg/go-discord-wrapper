@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Param / response types ────────────────────────────────────────────────────
@@ -20,8 +20,8 @@ type ModifyCurrentUserParams struct {
 }
 
 type GetCurrentUserGuildsParams struct {
-	Before     *common.Snowflake
-	After      *common.Snowflake
+	Before     *discord.Snowflake
+	After      *discord.Snowflake
 	Limit      *int
 	WithCounts *bool
 
@@ -50,20 +50,20 @@ func (p GetCurrentUserGuildsParams) toQuery() string {
 
 // CurrentUserGuild is the partial guild object returned by GetCurrentUserGuilds.
 type CurrentUserGuild struct {
-	ID                       common.Snowflake       `json:"id"`
-	Name                     string                 `json:"name"`
-	IconHash                 *string                `json:"icon,omitempty"`
-	Owner                    bool                   `json:"owner"`
-	Permissions              string                 `json:"permissions"`
-	Features                 []common.GuildFeatures `json:"features"`
-	ApproximateMemberCount   *int                   `json:"approximate_member_count,omitempty"`
-	ApproximatePresenceCount *int                   `json:"approximate_presence_count,omitempty"`
+	ID                       discord.Snowflake       `json:"id"`
+	Name                     string                  `json:"name"`
+	IconHash                 *string                 `json:"icon,omitempty"`
+	Owner                    bool                    `json:"owner"`
+	Permissions              string                  `json:"permissions"`
+	Features                 []discord.GuildFeatures `json:"features"`
+	ApproximateMemberCount   *int                    `json:"approximate_member_count,omitempty"`
+	ApproximatePresenceCount *int                    `json:"approximate_presence_count,omitempty"`
 }
 
 // ── User endpoints ────────────────────────────────────────────────────────────
 
 // GetCurrentUser returns the bot user associated with the current token.
-func (c *RestClient) GetCurrentUser(ctx context.Context, userToken *string) (*common.User, error) {
+func (c *RestClient) GetCurrentUser(ctx context.Context, userToken *string) (*discord.User, error) {
 	var authOption func(req *http.Request)
 	if userToken != nil {
 		authOption = WithUserAuthorization(*userToken)
@@ -76,13 +76,13 @@ func (c *RestClient) GetCurrentUser(ctx context.Context, userToken *string) (*co
 		return nil, err
 	}
 
-	return doRequest[common.User](c, req, map[int]bool{
+	return doRequest[discord.User](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetUser returns the user object for the given user ID.
-func (c *RestClient) GetUser(ctx context.Context, userID common.Snowflake) (*common.User, error) {
+func (c *RestClient) GetUser(ctx context.Context, userID discord.Snowflake) (*discord.User, error) {
 	if err := userID.Validate(); err != nil {
 		return nil, err
 	}
@@ -92,13 +92,13 @@ func (c *RestClient) GetUser(ctx context.Context, userID common.Snowflake) (*com
 		return nil, err
 	}
 
-	return doRequest[common.User](c, req, map[int]bool{
+	return doRequest[discord.User](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // ModifyCurrentUser updates the bot user's username or avatar.
-func (c *RestClient) ModifyCurrentUser(ctx context.Context, params ModifyCurrentUserParams) (*common.User, error) {
+func (c *RestClient) ModifyCurrentUser(ctx context.Context, params ModifyCurrentUserParams) (*discord.User, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func (c *RestClient) ModifyCurrentUser(ctx context.Context, params ModifyCurrent
 		return nil, err
 	}
 
-	return doRequest[common.User](c, req, map[int]bool{
+	return doRequest[discord.User](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -135,7 +135,7 @@ func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrent
 }
 
 // GetCurrentUserGuildMember returns the guild member object for the current user in the given guild.
-func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID common.Snowflake, userAccessToken *string) (*common.GuildMember, error) {
+func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID discord.Snowflake, userAccessToken *string) (*discord.GuildMember, error) {
 	var authOption func(req *http.Request)
 	if userAccessToken != nil {
 		authOption = WithUserAuthorization(*userAccessToken)
@@ -149,13 +149,13 @@ func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID comm
 		return nil, err
 	}
 
-	return doRequest[common.GuildMember](c, req, map[int]bool{
+	return doRequest[discord.GuildMember](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // LeaveGuild makes the current user leave the given guild.
-func (c *RestClient) LeaveGuild(ctx context.Context, guildID common.Snowflake) error {
+func (c *RestClient) LeaveGuild(ctx context.Context, guildID discord.Snowflake) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func (c *RestClient) LeaveGuild(ctx context.Context, guildID common.Snowflake) e
 }
 
 // CreateDM opens a DM channel with the given user and returns it.
-func (c *RestClient) CreateDM(ctx context.Context, recipientID common.Snowflake) (*common.Channel, error) {
+func (c *RestClient) CreateDM(ctx context.Context, recipientID discord.Snowflake) (*discord.Channel, error) {
 	if err := recipientID.Validate(); err != nil {
 		return nil, err
 	}
@@ -184,23 +184,23 @@ func (c *RestClient) CreateDM(ctx context.Context, recipientID common.Snowflake)
 		return nil, err
 	}
 
-	return doRequest[common.Channel](c, req, map[int]bool{
+	return doRequest[discord.Channel](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // UserConnection represents an external account linked to a Discord user.
 type UserConnection struct {
-	ID           string                `json:"id"`
-	Name         string                `json:"name"`
-	Type         string                `json:"type"`
-	Revoked      *bool                 `json:"revoked,omitempty"`
-	Integrations []*common.Integration `json:"integrations,omitempty"`
-	Verified     bool                  `json:"verified"`
-	FriendSync   bool                  `json:"friend_sync"`
-	ShowActivity bool                  `json:"show_activity"`
-	TwoWayLink   bool                  `json:"two_way_link"`
-	Visibility   int                   `json:"visibility"`
+	ID           string                 `json:"id"`
+	Name         string                 `json:"name"`
+	Type         string                 `json:"type"`
+	Revoked      *bool                  `json:"revoked,omitempty"`
+	Integrations []*discord.Integration `json:"integrations,omitempty"`
+	Verified     bool                   `json:"verified"`
+	FriendSync   bool                   `json:"friend_sync"`
+	ShowActivity bool                   `json:"show_activity"`
+	TwoWayLink   bool                   `json:"two_way_link"`
+	Visibility   int                    `json:"visibility"`
 }
 
 // ApplicationRoleConnection represents the user's role connection for an application.
@@ -219,7 +219,7 @@ type CreateGroupDMParams struct {
 }
 
 // CreateGroupDM creates a new Group DM channel.
-func (c *RestClient) CreateGroupDM(ctx context.Context, params CreateGroupDMParams) (*common.Channel, error) {
+func (c *RestClient) CreateGroupDM(ctx context.Context, params CreateGroupDMParams) (*discord.Channel, error) {
 	var authOption func(req *http.Request)
 	if params.UserAccessToken != nil {
 		authOption = WithUserAuthorization(*params.UserAccessToken)
@@ -237,7 +237,7 @@ func (c *RestClient) CreateGroupDM(ctx context.Context, params CreateGroupDMPara
 		return nil, err
 	}
 
-	return doRequest[common.Channel](c, req, map[int]bool{
+	return doRequest[discord.Channel](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

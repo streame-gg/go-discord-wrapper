@@ -1,6 +1,8 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type ReactionType int
 
@@ -10,39 +12,39 @@ const (
 )
 
 type MessageReactionAddEvent struct {
-	UserID          common.Snowflake    `json:"user_id"`
-	ChannelID       common.Snowflake    `json:"channel_id"`
-	MessageID       common.Snowflake    `json:"message_id"`
-	GuildID         *common.Snowflake   `json:"guild_id,omitempty"`
-	Member          *common.GuildMember `json:"member,omitempty"`
-	Emoji           common.Emoji        `json:"emoji"`
-	MessageAuthorID *common.Snowflake   `json:"message_author_id,omitempty"`
-	Burst           bool                `json:"burst"`
-	BurstColors     []string            `json:"burst_colors,omitempty"`
-	Type            ReactionType        `json:"type"`
+	UserID          discord.Snowflake    `json:"user_id"`
+	ChannelID       discord.Snowflake    `json:"channel_id"`
+	MessageID       discord.Snowflake    `json:"message_id"`
+	GuildID         *discord.Snowflake   `json:"guild_id,omitempty"`
+	Member          *discord.GuildMember `json:"member,omitempty"`
+	Emoji           discord.Emoji        `json:"emoji"`
+	MessageAuthorID *discord.Snowflake   `json:"message_author_id,omitempty"`
+	Burst           bool                 `json:"burst"`
+	BurstColors     []string             `json:"burst_colors,omitempty"`
+	Type            ReactionType         `json:"type"`
 }
 
 type MessageReactionRemoveEvent struct {
-	UserID    common.Snowflake  `json:"user_id"`
-	ChannelID common.Snowflake  `json:"channel_id"`
-	MessageID common.Snowflake  `json:"message_id"`
-	GuildID   *common.Snowflake `json:"guild_id,omitempty"`
-	Emoji     common.Emoji      `json:"emoji"`
-	Burst     bool              `json:"burst"`
-	Type      ReactionType      `json:"type"`
+	UserID    discord.Snowflake  `json:"user_id"`
+	ChannelID discord.Snowflake  `json:"channel_id"`
+	MessageID discord.Snowflake  `json:"message_id"`
+	GuildID   *discord.Snowflake `json:"guild_id,omitempty"`
+	Emoji     discord.Emoji      `json:"emoji"`
+	Burst     bool               `json:"burst"`
+	Type      ReactionType       `json:"type"`
 }
 
 type MessageReactionRemoveAllEvent struct {
-	ChannelID common.Snowflake  `json:"channel_id"`
-	MessageID common.Snowflake  `json:"message_id"`
-	GuildID   *common.Snowflake `json:"guild_id,omitempty"`
+	ChannelID discord.Snowflake  `json:"channel_id"`
+	MessageID discord.Snowflake  `json:"message_id"`
+	GuildID   *discord.Snowflake `json:"guild_id,omitempty"`
 }
 
 type MessageReactionRemoveEmojiEvent struct {
-	ChannelID common.Snowflake  `json:"channel_id"`
-	GuildID   *common.Snowflake `json:"guild_id,omitempty"`
-	MessageID common.Snowflake  `json:"message_id"`
-	Emoji     common.Emoji      `json:"emoji"`
+	ChannelID discord.Snowflake  `json:"channel_id"`
+	GuildID   *discord.Snowflake `json:"guild_id,omitempty"`
+	MessageID discord.Snowflake  `json:"message_id"`
+	Emoji     discord.Emoji      `json:"emoji"`
 }
 
 func init() {

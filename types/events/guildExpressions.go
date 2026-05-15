@@ -1,15 +1,17 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type GuildEmojisUpdateEvent struct {
-	GuildID common.Snowflake `json:"guild_id"`
-	Emojis  []common.Emoji   `json:"emojis"`
+	GuildID discord.Snowflake `json:"guild_id"`
+	Emojis  []discord.Emoji   `json:"emojis"`
 }
 
 type GuildStickersUpdateEvent struct {
-	GuildID  common.Snowflake `json:"guild_id"`
-	Stickers []common.Sticker `json:"stickers"`
+	GuildID  discord.Snowflake `json:"guild_id"`
+	Stickers []discord.Sticker `json:"stickers"`
 }
 
 func init() {

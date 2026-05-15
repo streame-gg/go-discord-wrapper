@@ -1,31 +1,33 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type AutoModerationRuleCreateEvent struct {
-	common.AutoModerationRule
+	discord.AutoModerationRule
 }
 
 type AutoModerationRuleUpdateEvent struct {
-	common.AutoModerationRule
+	discord.AutoModerationRule
 }
 
 type AutoModerationRuleDeleteEvent struct {
-	common.AutoModerationRule
+	discord.AutoModerationRule
 }
 
 type AutoModerationActionExecutionEvent struct {
-	GuildID              common.Snowflake                 `json:"guild_id"`
-	Action               common.AutoModerationAction      `json:"action"`
-	RuleID               common.Snowflake                 `json:"rule_id"`
-	RuleTriggerType      common.AutoModerationTriggerType `json:"rule_trigger_type"`
-	UserID               common.Snowflake                 `json:"user_id"`
-	ChannelID            *common.Snowflake                `json:"channel_id,omitempty"`
-	MessageID            *common.Snowflake                `json:"message_id,omitempty"`
-	AlertSystemMessageID *common.Snowflake                `json:"alert_system_message_id,omitempty"`
-	Content              string                           `json:"content"`
-	MatchedKeyword       *string                          `json:"matched_keyword"`
-	MatchedContent       *string                          `json:"matched_content"`
+	GuildID              discord.Snowflake                 `json:"guild_id"`
+	Action               discord.AutoModerationAction      `json:"action"`
+	RuleID               discord.Snowflake                 `json:"rule_id"`
+	RuleTriggerType      discord.AutoModerationTriggerType `json:"rule_trigger_type"`
+	UserID               discord.Snowflake                 `json:"user_id"`
+	ChannelID            *discord.Snowflake                `json:"channel_id,omitempty"`
+	MessageID            *discord.Snowflake                `json:"message_id,omitempty"`
+	AlertSystemMessageID *discord.Snowflake                `json:"alert_system_message_id,omitempty"`
+	Content              string                            `json:"content"`
+	MatchedKeyword       *string                           `json:"matched_keyword"`
+	MatchedContent       *string                           `json:"matched_content"`
 }
 
 func init() {

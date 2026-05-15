@@ -54,7 +54,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/streame-gg/go-discord-wrapper/cache"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // RedisCache implements [cache.Cache] using a Redis backend.
@@ -177,16 +177,16 @@ func (c *RedisCache) Close() error {
 
 type redisGuildStore struct{ c *RedisCache }
 
-func (s *redisGuildStore) Set(guild *common.Guild) {
+func (s *redisGuildStore) Set(guild *discord.Guild) {
 	key := s.c.k("guild", string(guild.ID))
 	idx := s.c.k("guild", "index")
 	_ = s.c.setJSON(key, guild, s.c.opts.TTL)
 	_ = s.c.client.SAdd(s.c.ctx, idx, string(guild.ID)).Err()
 }
 
-func (s *redisGuildStore) Get(id common.Snowflake) (*common.Guild, bool) {
+func (s *redisGuildStore) Get(id discord.Snowflake) (*discord.Guild, bool) {
 	key := s.c.k("guild", string(id))
-	var g common.Guild
+	var g discord.Guild
 	ok, err := s.c.getJSON(key, &g)
 	if err != nil || !ok {
 		if !ok && err == nil {
@@ -198,12 +198,12 @@ func (s *redisGuildStore) Get(id common.Snowflake) (*common.Guild, bool) {
 	return &g, true
 }
 
-func (s *redisGuildStore) Delete(id common.Snowflake) {
+func (s *redisGuildStore) Delete(id discord.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, s.c.k("guild", string(id))).Err()
 	_ = s.c.client.SRem(s.c.ctx, s.c.k("guild", "index"), string(id)).Err()
 }
 
-func (s *redisGuildStore) All() []*common.Guild {
+func (s *redisGuildStore) All() []*discord.Guild {
 	idx := s.c.k("guild", "index")
 	ids, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(ids) == 0 {
@@ -217,14 +217,14 @@ func (s *redisGuildStore) All() []*common.Guild {
 	if err != nil {
 		return nil
 	}
-	out := make([]*common.Guild, 0, len(vals))
+	out := make([]*discord.Guild, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
 			stale = append(stale, ids[i])
 			continue
 		}
-		var g common.Guild
+		var g discord.Guild
 		if json.Unmarshal([]byte(v.(string)), &g) == nil {
 			out = append(out, &g)
 		}
@@ -244,16 +244,16 @@ func (s *redisGuildStore) Size() int {
 
 type redisChannelStore struct{ c *RedisCache }
 
-func (s *redisChannelStore) Set(ch *common.Channel) {
+func (s *redisChannelStore) Set(ch *discord.Channel) {
 	key := s.c.k("channel", string(ch.ID))
 	idx := s.c.k("channel", "index")
 	_ = s.c.setJSON(key, ch, s.c.opts.TTL)
 	_ = s.c.client.SAdd(s.c.ctx, idx, string(ch.ID)).Err()
 }
 
-func (s *redisChannelStore) Get(id common.Snowflake) (*common.Channel, bool) {
+func (s *redisChannelStore) Get(id discord.Snowflake) (*discord.Channel, bool) {
 	key := s.c.k("channel", string(id))
-	var ch common.Channel
+	var ch discord.Channel
 	ok, err := s.c.getJSON(key, &ch)
 	if err != nil || !ok {
 		if !ok && err == nil {
@@ -264,12 +264,12 @@ func (s *redisChannelStore) Get(id common.Snowflake) (*common.Channel, bool) {
 	return &ch, true
 }
 
-func (s *redisChannelStore) Delete(id common.Snowflake) {
+func (s *redisChannelStore) Delete(id discord.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, s.c.k("channel", string(id))).Err()
 	_ = s.c.client.SRem(s.c.ctx, s.c.k("channel", "index"), string(id)).Err()
 }
 
-func (s *redisChannelStore) All() []*common.Channel {
+func (s *redisChannelStore) All() []*discord.Channel {
 	idx := s.c.k("channel", "index")
 	ids, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(ids) == 0 {
@@ -283,14 +283,14 @@ func (s *redisChannelStore) All() []*common.Channel {
 	if err != nil {
 		return nil
 	}
-	out := make([]*common.Channel, 0, len(vals))
+	out := make([]*discord.Channel, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
 			stale = append(stale, ids[i])
 			continue
 		}
-		var ch common.Channel
+		var ch discord.Channel
 		if json.Unmarshal([]byte(v.(string)), &ch) == nil {
 			out = append(out, &ch)
 		}
@@ -310,16 +310,16 @@ func (s *redisChannelStore) Size() int {
 
 type redisUserStore struct{ c *RedisCache }
 
-func (s *redisUserStore) Set(user *common.User) {
+func (s *redisUserStore) Set(user *discord.User) {
 	key := s.c.k("user", string(user.ID))
 	idx := s.c.k("user", "index")
 	_ = s.c.setJSON(key, user, s.c.opts.TTL)
 	_ = s.c.client.SAdd(s.c.ctx, idx, string(user.ID)).Err()
 }
 
-func (s *redisUserStore) Get(id common.Snowflake) (*common.User, bool) {
+func (s *redisUserStore) Get(id discord.Snowflake) (*discord.User, bool) {
 	key := s.c.k("user", string(id))
-	var u common.User
+	var u discord.User
 	ok, err := s.c.getJSON(key, &u)
 	if err != nil || !ok {
 		if !ok && err == nil {
@@ -330,12 +330,12 @@ func (s *redisUserStore) Get(id common.Snowflake) (*common.User, bool) {
 	return &u, true
 }
 
-func (s *redisUserStore) Delete(id common.Snowflake) {
+func (s *redisUserStore) Delete(id discord.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, s.c.k("user", string(id))).Err()
 	_ = s.c.client.SRem(s.c.ctx, s.c.k("user", "index"), string(id)).Err()
 }
 
-func (s *redisUserStore) All() []*common.User {
+func (s *redisUserStore) All() []*discord.User {
 	idx := s.c.k("user", "index")
 	ids, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(ids) == 0 {
@@ -349,14 +349,14 @@ func (s *redisUserStore) All() []*common.User {
 	if err != nil {
 		return nil
 	}
-	out := make([]*common.User, 0, len(vals))
+	out := make([]*discord.User, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
 			stale = append(stale, ids[i])
 			continue
 		}
-		var u common.User
+		var u discord.User
 		if json.Unmarshal([]byte(v.(string)), &u) == nil {
 			out = append(out, &u)
 		}
@@ -376,7 +376,7 @@ func (s *redisUserStore) Size() int {
 
 type redisMemberStore struct{ c *RedisCache }
 
-func (s *redisMemberStore) Set(guildID common.Snowflake, member *common.GuildMember) {
+func (s *redisMemberStore) Set(guildID discord.Snowflake, member *discord.GuildMember) {
 	if member.User == nil {
 		return
 	}
@@ -386,9 +386,9 @@ func (s *redisMemberStore) Set(guildID common.Snowflake, member *common.GuildMem
 	_ = s.c.client.SAdd(s.c.ctx, gIdx, string(member.User.ID)).Err()
 }
 
-func (s *redisMemberStore) Get(guildID, userID common.Snowflake) (*common.GuildMember, bool) {
+func (s *redisMemberStore) Get(guildID, userID discord.Snowflake) (*discord.GuildMember, bool) {
 	key := s.c.k("member", string(guildID), string(userID))
-	var m common.GuildMember
+	var m discord.GuildMember
 	ok, err := s.c.getJSON(key, &m)
 	if err != nil || !ok {
 		if !ok && err == nil {
@@ -399,12 +399,12 @@ func (s *redisMemberStore) Get(guildID, userID common.Snowflake) (*common.GuildM
 	return &m, true
 }
 
-func (s *redisMemberStore) Delete(guildID, userID common.Snowflake) {
+func (s *redisMemberStore) Delete(guildID, userID discord.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, s.c.k("member", string(guildID), string(userID))).Err()
 	_ = s.c.client.SRem(s.c.ctx, s.c.k("member", "guild", string(guildID)), string(userID)).Err()
 }
 
-func (s *redisMemberStore) DeleteGuild(guildID common.Snowflake) {
+func (s *redisMemberStore) DeleteGuild(guildID discord.Snowflake) {
 	gIdx := s.c.k("member", "guild", string(guildID))
 	userIDs, err := s.c.client.SMembers(s.c.ctx, gIdx).Result()
 	if err == nil && len(userIDs) > 0 {
@@ -417,7 +417,7 @@ func (s *redisMemberStore) DeleteGuild(guildID common.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, gIdx).Err()
 }
 
-func (s *redisMemberStore) AllInGuild(guildID common.Snowflake) []*common.GuildMember {
+func (s *redisMemberStore) AllInGuild(guildID discord.Snowflake) []*discord.GuildMember {
 	gIdx := s.c.k("member", "guild", string(guildID))
 	userIDs, err := s.c.client.SMembers(s.c.ctx, gIdx).Result()
 	if err != nil || len(userIDs) == 0 {
@@ -431,14 +431,14 @@ func (s *redisMemberStore) AllInGuild(guildID common.Snowflake) []*common.GuildM
 	if err != nil {
 		return nil
 	}
-	out := make([]*common.GuildMember, 0, len(vals))
+	out := make([]*discord.GuildMember, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
 			stale = append(stale, userIDs[i])
 			continue
 		}
-		var m common.GuildMember
+		var m discord.GuildMember
 		if json.Unmarshal([]byte(v.(string)), &m) == nil {
 			out = append(out, &m)
 		}
@@ -476,7 +476,7 @@ func (s *redisMemberStore) Size() int {
 
 type redisRoleStore struct{ c *RedisCache }
 
-func (s *redisRoleStore) Set(guildID common.Snowflake, role *common.Role) {
+func (s *redisRoleStore) Set(guildID discord.Snowflake, role *discord.Role) {
 	key := s.c.k("role", string(role.ID))
 	idx := s.c.k("role", "guild", string(guildID))
 	mapKey := s.c.k("role", "map", string(role.ID))
@@ -485,9 +485,9 @@ func (s *redisRoleStore) Set(guildID common.Snowflake, role *common.Role) {
 	_ = s.c.client.Set(s.c.ctx, mapKey, string(guildID), s.c.opts.TTL).Err()
 }
 
-func (s *redisRoleStore) Get(roleID common.Snowflake) (*common.Role, bool) {
+func (s *redisRoleStore) Get(roleID discord.Snowflake) (*discord.Role, bool) {
 	key := s.c.k("role", string(roleID))
-	var role common.Role
+	var role discord.Role
 	ok, err := s.c.getJSON(key, &role)
 	if err != nil || !ok {
 		if !ok && err == nil {
@@ -503,7 +503,7 @@ func (s *redisRoleStore) Get(roleID common.Snowflake) (*common.Role, bool) {
 	return &role, true
 }
 
-func (s *redisRoleStore) GetByGuild(guildID common.Snowflake) []*common.Role {
+func (s *redisRoleStore) GetByGuild(guildID discord.Snowflake) []*discord.Role {
 	idx := s.c.k("role", "guild", string(guildID))
 	roleIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(roleIDs) == 0 {
@@ -517,14 +517,14 @@ func (s *redisRoleStore) GetByGuild(guildID common.Snowflake) []*common.Role {
 	if err != nil {
 		return nil
 	}
-	out := make([]*common.Role, 0, len(vals))
+	out := make([]*discord.Role, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
 			stale = append(stale, roleIDs[i])
 			continue
 		}
-		var role common.Role
+		var role discord.Role
 		if json.Unmarshal([]byte(v.(string)), &role) == nil {
 			out = append(out, &role)
 		}
@@ -538,7 +538,7 @@ func (s *redisRoleStore) GetByGuild(guildID common.Snowflake) []*common.Role {
 	return out
 }
 
-func (s *redisRoleStore) Delete(roleID common.Snowflake) {
+func (s *redisRoleStore) Delete(roleID discord.Snowflake) {
 	mapKey := s.c.k("role", "map", string(roleID))
 	guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 	if err == nil {
@@ -547,7 +547,7 @@ func (s *redisRoleStore) Delete(roleID common.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, s.c.k("role", string(roleID)), mapKey).Err()
 }
 
-func (s *redisRoleStore) DeleteGuild(guildID common.Snowflake) {
+func (s *redisRoleStore) DeleteGuild(guildID discord.Snowflake) {
 	idx := s.c.k("role", "guild", string(guildID))
 	roleIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err == nil && len(roleIDs) > 0 {
@@ -560,9 +560,9 @@ func (s *redisRoleStore) DeleteGuild(guildID common.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, idx).Err()
 }
 
-func (s *redisRoleStore) All() []*common.Role {
+func (s *redisRoleStore) All() []*discord.Role {
 	pattern := s.c.k("role", "guild", "*")
-	var out []*common.Role
+	var out []*discord.Role
 	var cursor uint64
 	for {
 		keys, next, err := s.c.client.Scan(s.c.ctx, cursor, pattern, 100).Result()
@@ -586,7 +586,7 @@ func (s *redisRoleStore) All() []*common.Role {
 				if v == nil {
 					continue
 				}
-				var role common.Role
+				var role discord.Role
 				if json.Unmarshal([]byte(v.(string)), &role) == nil {
 					out = append(out, &role)
 				}
@@ -625,16 +625,16 @@ func (s *redisRoleStore) Size() int {
 
 type redisVoiceStateStore struct{ c *RedisCache }
 
-func (s *redisVoiceStateStore) Set(guildID common.Snowflake, state *common.VoiceState) {
+func (s *redisVoiceStateStore) Set(guildID discord.Snowflake, state *discord.VoiceState) {
 	key := s.c.k("voice_state", string(guildID), string(state.UserID))
 	idx := s.c.k("voice_state", "guild", string(guildID))
 	_ = s.c.setJSON(key, state, s.c.opts.TTL)
 	_ = s.c.client.SAdd(s.c.ctx, idx, string(state.UserID)).Err()
 }
 
-func (s *redisVoiceStateStore) Get(guildID, userID common.Snowflake) (*common.VoiceState, bool) {
+func (s *redisVoiceStateStore) Get(guildID, userID discord.Snowflake) (*discord.VoiceState, bool) {
 	key := s.c.k("voice_state", string(guildID), string(userID))
-	var state common.VoiceState
+	var state discord.VoiceState
 	ok, err := s.c.getJSON(key, &state)
 	if err != nil || !ok {
 		if !ok && err == nil {
@@ -645,12 +645,12 @@ func (s *redisVoiceStateStore) Get(guildID, userID common.Snowflake) (*common.Vo
 	return &state, true
 }
 
-func (s *redisVoiceStateStore) Delete(guildID, userID common.Snowflake) {
+func (s *redisVoiceStateStore) Delete(guildID, userID discord.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, s.c.k("voice_state", string(guildID), string(userID))).Err()
 	_ = s.c.client.SRem(s.c.ctx, s.c.k("voice_state", "guild", string(guildID)), string(userID)).Err()
 }
 
-func (s *redisVoiceStateStore) DeleteGuild(guildID common.Snowflake) {
+func (s *redisVoiceStateStore) DeleteGuild(guildID discord.Snowflake) {
 	gIdx := s.c.k("voice_state", "guild", string(guildID))
 	userIDs, err := s.c.client.SMembers(s.c.ctx, gIdx).Result()
 	if err == nil && len(userIDs) > 0 {
@@ -663,7 +663,7 @@ func (s *redisVoiceStateStore) DeleteGuild(guildID common.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, gIdx).Err()
 }
 
-func (s *redisVoiceStateStore) AllInGuild(guildID common.Snowflake) []*common.VoiceState {
+func (s *redisVoiceStateStore) AllInGuild(guildID discord.Snowflake) []*discord.VoiceState {
 	gIdx := s.c.k("voice_state", "guild", string(guildID))
 	userIDs, err := s.c.client.SMembers(s.c.ctx, gIdx).Result()
 	if err != nil || len(userIDs) == 0 {
@@ -677,14 +677,14 @@ func (s *redisVoiceStateStore) AllInGuild(guildID common.Snowflake) []*common.Vo
 	if err != nil {
 		return nil
 	}
-	out := make([]*common.VoiceState, 0, len(vals))
+	out := make([]*discord.VoiceState, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
 			stale = append(stale, userIDs[i])
 			continue
 		}
-		var state common.VoiceState
+		var state discord.VoiceState
 		if json.Unmarshal([]byte(v.(string)), &state) == nil {
 			out = append(out, &state)
 		}
@@ -766,7 +766,7 @@ return 1
 
 type redisSoundboardStore struct{ c *RedisCache }
 
-func (s *redisSoundboardStore) Set(guildID common.Snowflake, sound *common.SoundboardSound) {
+func (s *redisSoundboardStore) Set(guildID discord.Snowflake, sound *discord.SoundboardSound) {
 	key := s.c.k("soundboard", string(sound.SoundID))
 	idx := s.c.k("soundboard", "guild", string(guildID))
 	mapKey := s.c.k("soundboard", "map", string(sound.SoundID))
@@ -775,9 +775,9 @@ func (s *redisSoundboardStore) Set(guildID common.Snowflake, sound *common.Sound
 	_ = s.c.client.Set(s.c.ctx, mapKey, string(guildID), s.c.opts.TTL).Err()
 }
 
-func (s *redisSoundboardStore) Get(soundID common.Snowflake) (*common.SoundboardSound, bool) {
+func (s *redisSoundboardStore) Get(soundID discord.Snowflake) (*discord.SoundboardSound, bool) {
 	key := s.c.k("soundboard", string(soundID))
-	var sound common.SoundboardSound
+	var sound discord.SoundboardSound
 	ok, err := s.c.getJSON(key, &sound)
 	if err != nil || !ok {
 		if !ok && err == nil {
@@ -793,7 +793,7 @@ func (s *redisSoundboardStore) Get(soundID common.Snowflake) (*common.Soundboard
 	return &sound, true
 }
 
-func (s *redisSoundboardStore) GetByGuild(guildID common.Snowflake) []*common.SoundboardSound {
+func (s *redisSoundboardStore) GetByGuild(guildID discord.Snowflake) []*discord.SoundboardSound {
 	idx := s.c.k("soundboard", "guild", string(guildID))
 	soundIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(soundIDs) == 0 {
@@ -807,14 +807,14 @@ func (s *redisSoundboardStore) GetByGuild(guildID common.Snowflake) []*common.So
 	if err != nil {
 		return nil
 	}
-	out := make([]*common.SoundboardSound, 0, len(vals))
+	out := make([]*discord.SoundboardSound, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
 			stale = append(stale, soundIDs[i])
 			continue
 		}
-		var sound common.SoundboardSound
+		var sound discord.SoundboardSound
 		if json.Unmarshal([]byte(v.(string)), &sound) == nil {
 			out = append(out, &sound)
 		}
@@ -828,7 +828,7 @@ func (s *redisSoundboardStore) GetByGuild(guildID common.Snowflake) []*common.So
 	return out
 }
 
-func (s *redisSoundboardStore) SetAll(guildID common.Snowflake, sounds []*common.SoundboardSound) {
+func (s *redisSoundboardStore) SetAll(guildID discord.Snowflake, sounds []*discord.SoundboardSound) {
 	idx := s.c.k("soundboard", "guild", string(guildID))
 	iPfx := s.c.k("soundboard") + ":"
 	mPfx := s.c.k("soundboard", "map") + ":"
@@ -847,7 +847,7 @@ func (s *redisSoundboardStore) SetAll(guildID common.Snowflake, sounds []*common
 	_ = setAllScript.Run(s.c.ctx, s.c.client, []string{idx}, args...).Err()
 }
 
-func (s *redisSoundboardStore) Delete(soundID common.Snowflake) {
+func (s *redisSoundboardStore) Delete(soundID discord.Snowflake) {
 	mapKey := s.c.k("soundboard", "map", string(soundID))
 	guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 	if err == nil {
@@ -856,7 +856,7 @@ func (s *redisSoundboardStore) Delete(soundID common.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, s.c.k("soundboard", string(soundID)), mapKey).Err()
 }
 
-func (s *redisSoundboardStore) DeleteGuild(guildID common.Snowflake) {
+func (s *redisSoundboardStore) DeleteGuild(guildID discord.Snowflake) {
 	idx := s.c.k("soundboard", "guild", string(guildID))
 	soundIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err == nil && len(soundIDs) > 0 {
@@ -894,7 +894,7 @@ func (s *redisSoundboardStore) Size() int {
 
 type redisScheduledEventStore struct{ c *RedisCache }
 
-func (s *redisScheduledEventStore) Set(event *common.GuildScheduledEvent) {
+func (s *redisScheduledEventStore) Set(event *discord.GuildScheduledEvent) {
 	key := s.c.k("scheduled_event", string(event.ID))
 	idx := s.c.k("scheduled_event", "guild", string(event.GuildID))
 	mapKey := s.c.k("scheduled_event", "map", string(event.ID))
@@ -903,9 +903,9 @@ func (s *redisScheduledEventStore) Set(event *common.GuildScheduledEvent) {
 	_ = s.c.client.Set(s.c.ctx, mapKey, string(event.GuildID), s.c.opts.TTL).Err()
 }
 
-func (s *redisScheduledEventStore) Get(eventID common.Snowflake) (*common.GuildScheduledEvent, bool) {
+func (s *redisScheduledEventStore) Get(eventID discord.Snowflake) (*discord.GuildScheduledEvent, bool) {
 	key := s.c.k("scheduled_event", string(eventID))
-	var event common.GuildScheduledEvent
+	var event discord.GuildScheduledEvent
 	ok, err := s.c.getJSON(key, &event)
 	if err != nil || !ok {
 		if !ok && err == nil {
@@ -921,7 +921,7 @@ func (s *redisScheduledEventStore) Get(eventID common.Snowflake) (*common.GuildS
 	return &event, true
 }
 
-func (s *redisScheduledEventStore) GetByGuild(guildID common.Snowflake) []*common.GuildScheduledEvent {
+func (s *redisScheduledEventStore) GetByGuild(guildID discord.Snowflake) []*discord.GuildScheduledEvent {
 	idx := s.c.k("scheduled_event", "guild", string(guildID))
 	eventIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(eventIDs) == 0 {
@@ -935,14 +935,14 @@ func (s *redisScheduledEventStore) GetByGuild(guildID common.Snowflake) []*commo
 	if err != nil {
 		return nil
 	}
-	out := make([]*common.GuildScheduledEvent, 0, len(vals))
+	out := make([]*discord.GuildScheduledEvent, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
 			stale = append(stale, eventIDs[i])
 			continue
 		}
-		var event common.GuildScheduledEvent
+		var event discord.GuildScheduledEvent
 		if json.Unmarshal([]byte(v.(string)), &event) == nil {
 			out = append(out, &event)
 		}
@@ -956,7 +956,7 @@ func (s *redisScheduledEventStore) GetByGuild(guildID common.Snowflake) []*commo
 	return out
 }
 
-func (s *redisScheduledEventStore) Delete(eventID common.Snowflake) {
+func (s *redisScheduledEventStore) Delete(eventID discord.Snowflake) {
 	mapKey := s.c.k("scheduled_event", "map", string(eventID))
 	guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 	if err == nil {
@@ -965,7 +965,7 @@ func (s *redisScheduledEventStore) Delete(eventID common.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, s.c.k("scheduled_event", string(eventID)), mapKey).Err()
 }
 
-func (s *redisScheduledEventStore) DeleteGuild(guildID common.Snowflake) {
+func (s *redisScheduledEventStore) DeleteGuild(guildID discord.Snowflake) {
 	idx := s.c.k("scheduled_event", "guild", string(guildID))
 	eventIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err == nil && len(eventIDs) > 0 {
@@ -1003,7 +1003,7 @@ func (s *redisScheduledEventStore) Size() int {
 
 type redisStageInstanceStore struct{ c *RedisCache }
 
-func (s *redisStageInstanceStore) Set(instance *common.StageInstance) {
+func (s *redisStageInstanceStore) Set(instance *discord.StageInstance) {
 	key := s.c.k("stage_instance", string(instance.ID))
 	idx := s.c.k("stage_instance", "guild", string(instance.GuildID))
 	mapKey := s.c.k("stage_instance", "map", string(instance.ID))
@@ -1012,9 +1012,9 @@ func (s *redisStageInstanceStore) Set(instance *common.StageInstance) {
 	_ = s.c.client.Set(s.c.ctx, mapKey, string(instance.GuildID), s.c.opts.TTL).Err()
 }
 
-func (s *redisStageInstanceStore) Get(instanceID common.Snowflake) (*common.StageInstance, bool) {
+func (s *redisStageInstanceStore) Get(instanceID discord.Snowflake) (*discord.StageInstance, bool) {
 	key := s.c.k("stage_instance", string(instanceID))
-	var instance common.StageInstance
+	var instance discord.StageInstance
 	ok, err := s.c.getJSON(key, &instance)
 	if err != nil || !ok {
 		if !ok && err == nil {
@@ -1030,7 +1030,7 @@ func (s *redisStageInstanceStore) Get(instanceID common.Snowflake) (*common.Stag
 	return &instance, true
 }
 
-func (s *redisStageInstanceStore) GetByGuild(guildID common.Snowflake) []*common.StageInstance {
+func (s *redisStageInstanceStore) GetByGuild(guildID discord.Snowflake) []*discord.StageInstance {
 	idx := s.c.k("stage_instance", "guild", string(guildID))
 	instanceIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(instanceIDs) == 0 {
@@ -1044,14 +1044,14 @@ func (s *redisStageInstanceStore) GetByGuild(guildID common.Snowflake) []*common
 	if err != nil {
 		return nil
 	}
-	out := make([]*common.StageInstance, 0, len(vals))
+	out := make([]*discord.StageInstance, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
 			stale = append(stale, instanceIDs[i])
 			continue
 		}
-		var instance common.StageInstance
+		var instance discord.StageInstance
 		if json.Unmarshal([]byte(v.(string)), &instance) == nil {
 			out = append(out, &instance)
 		}
@@ -1065,7 +1065,7 @@ func (s *redisStageInstanceStore) GetByGuild(guildID common.Snowflake) []*common
 	return out
 }
 
-func (s *redisStageInstanceStore) Delete(instanceID common.Snowflake) {
+func (s *redisStageInstanceStore) Delete(instanceID discord.Snowflake) {
 	mapKey := s.c.k("stage_instance", "map", string(instanceID))
 	guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 	if err == nil {
@@ -1074,7 +1074,7 @@ func (s *redisStageInstanceStore) Delete(instanceID common.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, s.c.k("stage_instance", string(instanceID)), mapKey).Err()
 }
 
-func (s *redisStageInstanceStore) DeleteGuild(guildID common.Snowflake) {
+func (s *redisStageInstanceStore) DeleteGuild(guildID discord.Snowflake) {
 	idx := s.c.k("stage_instance", "guild", string(guildID))
 	instanceIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err == nil && len(instanceIDs) > 0 {
@@ -1112,7 +1112,7 @@ func (s *redisStageInstanceStore) Size() int {
 
 type redisEmojiStore struct{ c *RedisCache }
 
-func (s *redisEmojiStore) Set(guildID common.Snowflake, emoji *common.Emoji) {
+func (s *redisEmojiStore) Set(guildID discord.Snowflake, emoji *discord.Emoji) {
 	key := s.c.k("emoji", string(emoji.ID))
 	idx := s.c.k("emoji", "guild", string(guildID))
 	mapKey := s.c.k("emoji", "map", string(emoji.ID))
@@ -1121,9 +1121,9 @@ func (s *redisEmojiStore) Set(guildID common.Snowflake, emoji *common.Emoji) {
 	_ = s.c.client.Set(s.c.ctx, mapKey, string(guildID), s.c.opts.TTL).Err()
 }
 
-func (s *redisEmojiStore) Get(emojiID common.Snowflake) (*common.Emoji, bool) {
+func (s *redisEmojiStore) Get(emojiID discord.Snowflake) (*discord.Emoji, bool) {
 	key := s.c.k("emoji", string(emojiID))
-	var emoji common.Emoji
+	var emoji discord.Emoji
 	ok, err := s.c.getJSON(key, &emoji)
 	if err != nil || !ok {
 		if !ok && err == nil {
@@ -1139,7 +1139,7 @@ func (s *redisEmojiStore) Get(emojiID common.Snowflake) (*common.Emoji, bool) {
 	return &emoji, true
 }
 
-func (s *redisEmojiStore) GetByGuild(guildID common.Snowflake) []*common.Emoji {
+func (s *redisEmojiStore) GetByGuild(guildID discord.Snowflake) []*discord.Emoji {
 	idx := s.c.k("emoji", "guild", string(guildID))
 	emojiIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(emojiIDs) == 0 {
@@ -1153,14 +1153,14 @@ func (s *redisEmojiStore) GetByGuild(guildID common.Snowflake) []*common.Emoji {
 	if err != nil {
 		return nil
 	}
-	out := make([]*common.Emoji, 0, len(vals))
+	out := make([]*discord.Emoji, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
 			stale = append(stale, emojiIDs[i])
 			continue
 		}
-		var emoji common.Emoji
+		var emoji discord.Emoji
 		if json.Unmarshal([]byte(v.(string)), &emoji) == nil {
 			out = append(out, &emoji)
 		}
@@ -1174,7 +1174,7 @@ func (s *redisEmojiStore) GetByGuild(guildID common.Snowflake) []*common.Emoji {
 	return out
 }
 
-func (s *redisEmojiStore) SetAll(guildID common.Snowflake, emojis []*common.Emoji) {
+func (s *redisEmojiStore) SetAll(guildID discord.Snowflake, emojis []*discord.Emoji) {
 	idx := s.c.k("emoji", "guild", string(guildID))
 	iPfx := s.c.k("emoji") + ":"
 	mPfx := s.c.k("emoji", "map") + ":"
@@ -1193,7 +1193,7 @@ func (s *redisEmojiStore) SetAll(guildID common.Snowflake, emojis []*common.Emoj
 	_ = setAllScript.Run(s.c.ctx, s.c.client, []string{idx}, args...).Err()
 }
 
-func (s *redisEmojiStore) Delete(emojiID common.Snowflake) {
+func (s *redisEmojiStore) Delete(emojiID discord.Snowflake) {
 	mapKey := s.c.k("emoji", "map", string(emojiID))
 	guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 	if err == nil {
@@ -1202,7 +1202,7 @@ func (s *redisEmojiStore) Delete(emojiID common.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, s.c.k("emoji", string(emojiID)), mapKey).Err()
 }
 
-func (s *redisEmojiStore) DeleteGuild(guildID common.Snowflake) {
+func (s *redisEmojiStore) DeleteGuild(guildID discord.Snowflake) {
 	idx := s.c.k("emoji", "guild", string(guildID))
 	emojiIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err == nil && len(emojiIDs) > 0 {
@@ -1240,7 +1240,7 @@ func (s *redisEmojiStore) Size() int {
 
 type redisStickerStore struct{ c *RedisCache }
 
-func (s *redisStickerStore) Set(guildID common.Snowflake, sticker *common.Sticker) {
+func (s *redisStickerStore) Set(guildID discord.Snowflake, sticker *discord.Sticker) {
 	key := s.c.k("sticker", string(sticker.ID))
 	idx := s.c.k("sticker", "guild", string(guildID))
 	mapKey := s.c.k("sticker", "map", string(sticker.ID))
@@ -1249,9 +1249,9 @@ func (s *redisStickerStore) Set(guildID common.Snowflake, sticker *common.Sticke
 	_ = s.c.client.Set(s.c.ctx, mapKey, string(guildID), s.c.opts.TTL).Err()
 }
 
-func (s *redisStickerStore) Get(stickerID common.Snowflake) (*common.Sticker, bool) {
+func (s *redisStickerStore) Get(stickerID discord.Snowflake) (*discord.Sticker, bool) {
 	key := s.c.k("sticker", string(stickerID))
-	var sticker common.Sticker
+	var sticker discord.Sticker
 	ok, err := s.c.getJSON(key, &sticker)
 	if err != nil || !ok {
 		if !ok && err == nil {
@@ -1267,7 +1267,7 @@ func (s *redisStickerStore) Get(stickerID common.Snowflake) (*common.Sticker, bo
 	return &sticker, true
 }
 
-func (s *redisStickerStore) GetByGuild(guildID common.Snowflake) []*common.Sticker {
+func (s *redisStickerStore) GetByGuild(guildID discord.Snowflake) []*discord.Sticker {
 	idx := s.c.k("sticker", "guild", string(guildID))
 	stickerIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(stickerIDs) == 0 {
@@ -1281,14 +1281,14 @@ func (s *redisStickerStore) GetByGuild(guildID common.Snowflake) []*common.Stick
 	if err != nil {
 		return nil
 	}
-	out := make([]*common.Sticker, 0, len(vals))
+	out := make([]*discord.Sticker, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
 			stale = append(stale, stickerIDs[i])
 			continue
 		}
-		var sticker common.Sticker
+		var sticker discord.Sticker
 		if json.Unmarshal([]byte(v.(string)), &sticker) == nil {
 			out = append(out, &sticker)
 		}
@@ -1302,7 +1302,7 @@ func (s *redisStickerStore) GetByGuild(guildID common.Snowflake) []*common.Stick
 	return out
 }
 
-func (s *redisStickerStore) SetAll(guildID common.Snowflake, stickers []*common.Sticker) {
+func (s *redisStickerStore) SetAll(guildID discord.Snowflake, stickers []*discord.Sticker) {
 	idx := s.c.k("sticker", "guild", string(guildID))
 	iPfx := s.c.k("sticker") + ":"
 	mPfx := s.c.k("sticker", "map") + ":"
@@ -1321,7 +1321,7 @@ func (s *redisStickerStore) SetAll(guildID common.Snowflake, stickers []*common.
 	_ = setAllScript.Run(s.c.ctx, s.c.client, []string{idx}, args...).Err()
 }
 
-func (s *redisStickerStore) Delete(stickerID common.Snowflake) {
+func (s *redisStickerStore) Delete(stickerID discord.Snowflake) {
 	mapKey := s.c.k("sticker", "map", string(stickerID))
 	guildID, err := s.c.client.Get(s.c.ctx, mapKey).Result()
 	if err == nil {
@@ -1330,7 +1330,7 @@ func (s *redisStickerStore) Delete(stickerID common.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, s.c.k("sticker", string(stickerID)), mapKey).Err()
 }
 
-func (s *redisStickerStore) DeleteGuild(guildID common.Snowflake) {
+func (s *redisStickerStore) DeleteGuild(guildID discord.Snowflake) {
 	idx := s.c.k("sticker", "guild", string(guildID))
 	stickerIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err == nil && len(stickerIDs) > 0 {
@@ -1368,16 +1368,16 @@ func (s *redisStickerStore) Size() int {
 
 type redisPresenceStore struct{ c *RedisCache }
 
-func (s *redisPresenceStore) Set(presence *common.Presence) {
+func (s *redisPresenceStore) Set(presence *discord.Presence) {
 	key := s.c.k("presence", string(presence.GuildID), string(presence.User.ID))
 	idx := s.c.k("presence", "guild", string(presence.GuildID))
 	_ = s.c.setJSON(key, presence, s.c.opts.TTL)
 	_ = s.c.client.SAdd(s.c.ctx, idx, string(presence.User.ID)).Err()
 }
 
-func (s *redisPresenceStore) Get(guildID, userID common.Snowflake) (*common.Presence, bool) {
+func (s *redisPresenceStore) Get(guildID, userID discord.Snowflake) (*discord.Presence, bool) {
 	key := s.c.k("presence", string(guildID), string(userID))
-	var presence common.Presence
+	var presence discord.Presence
 	ok, err := s.c.getJSON(key, &presence)
 	if err != nil || !ok {
 		if !ok && err == nil {
@@ -1388,7 +1388,7 @@ func (s *redisPresenceStore) Get(guildID, userID common.Snowflake) (*common.Pres
 	return &presence, true
 }
 
-func (s *redisPresenceStore) GetByGuild(guildID common.Snowflake) []*common.Presence {
+func (s *redisPresenceStore) GetByGuild(guildID discord.Snowflake) []*discord.Presence {
 	idx := s.c.k("presence", "guild", string(guildID))
 	userIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(userIDs) == 0 {
@@ -1402,14 +1402,14 @@ func (s *redisPresenceStore) GetByGuild(guildID common.Snowflake) []*common.Pres
 	if err != nil {
 		return nil
 	}
-	out := make([]*common.Presence, 0, len(vals))
+	out := make([]*discord.Presence, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
 			stale = append(stale, userIDs[i])
 			continue
 		}
-		var presence common.Presence
+		var presence discord.Presence
 		if json.Unmarshal([]byte(v.(string)), &presence) == nil {
 			out = append(out, &presence)
 		}
@@ -1420,12 +1420,12 @@ func (s *redisPresenceStore) GetByGuild(guildID common.Snowflake) []*common.Pres
 	return out
 }
 
-func (s *redisPresenceStore) Delete(guildID, userID common.Snowflake) {
+func (s *redisPresenceStore) Delete(guildID, userID discord.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, s.c.k("presence", string(guildID), string(userID))).Err()
 	_ = s.c.client.SRem(s.c.ctx, s.c.k("presence", "guild", string(guildID)), string(userID)).Err()
 }
 
-func (s *redisPresenceStore) DeleteGuild(guildID common.Snowflake) {
+func (s *redisPresenceStore) DeleteGuild(guildID discord.Snowflake) {
 	gIdx := s.c.k("presence", "guild", string(guildID))
 	userIDs, err := s.c.client.SMembers(s.c.ctx, gIdx).Result()
 	if err == nil && len(userIDs) > 0 {
@@ -1491,7 +1491,7 @@ return 1
 
 type redisMessageStore struct{ c *RedisCache }
 
-func (s *redisMessageStore) Add(msg *common.Message) {
+func (s *redisMessageStore) Add(msg *discord.Message) {
 	if s.c.opts.Messages.MaxPerChannel == 0 {
 		return
 	}
@@ -1514,9 +1514,9 @@ func (s *redisMessageStore) Add(msg *common.Message) {
 	).Err()
 }
 
-func (s *redisMessageStore) Get(channelID, messageID common.Snowflake) (*common.Message, bool) {
+func (s *redisMessageStore) Get(channelID, messageID discord.Snowflake) (*discord.Message, bool) {
 	key := s.c.k("msg", string(channelID), string(messageID))
-	var msg common.Message
+	var msg discord.Message
 	ok, err := s.c.getJSON(key, &msg)
 	if err != nil || !ok {
 		if !ok && err == nil {
@@ -1528,7 +1528,7 @@ func (s *redisMessageStore) Get(channelID, messageID common.Snowflake) (*common.
 	return &msg, true
 }
 
-func (s *redisMessageStore) Update(msg *common.Message) {
+func (s *redisMessageStore) Update(msg *discord.Message) {
 	key := s.c.k("msg", string(msg.ChannelID), string(msg.ID))
 	b, err := json.Marshal(msg)
 	if err != nil {
@@ -1539,12 +1539,12 @@ func (s *redisMessageStore) Update(msg *common.Message) {
 	_ = s.c.client.SetXX(s.c.ctx, key, b, s.c.opts.Messages.TTL).Err()
 }
 
-func (s *redisMessageStore) Delete(channelID, messageID common.Snowflake) {
+func (s *redisMessageStore) Delete(channelID, messageID discord.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, s.c.k("msg", string(channelID), string(messageID))).Err()
 	_ = s.c.client.ZRem(s.c.ctx, s.c.k("msg", "ch", string(channelID)), string(messageID)).Err()
 }
 
-func (s *redisMessageStore) DeleteBulk(channelID common.Snowflake, ids []common.Snowflake) {
+func (s *redisMessageStore) DeleteBulk(channelID discord.Snowflake, ids []discord.Snowflake) {
 	if len(ids) == 0 {
 		return
 	}
@@ -1561,7 +1561,7 @@ func (s *redisMessageStore) DeleteBulk(channelID common.Snowflake, ids []common.
 
 // Channel returns cached messages for channelID newest-first.
 // Entries whose JSON keys have expired are silently pruned from the index.
-func (s *redisMessageStore) Channel(channelID common.Snowflake) []*common.Message {
+func (s *redisMessageStore) Channel(channelID discord.Snowflake) []*discord.Message {
 	chKey := s.c.k("msg", "ch", string(channelID))
 	// ZREVRANGE: highest score (most recent insertedAt) first.
 	members, err := s.c.client.ZRangeArgs(s.c.ctx, redis.ZRangeArgs{
@@ -1581,14 +1581,14 @@ func (s *redisMessageStore) Channel(channelID common.Snowflake) []*common.Messag
 	if err != nil {
 		return nil
 	}
-	out := make([]*common.Message, 0, len(vals))
+	out := make([]*discord.Message, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
 			stale = append(stale, members[i])
 			continue
 		}
-		var msg common.Message
+		var msg discord.Message
 		if json.Unmarshal([]byte(v.(string)), &msg) == nil {
 			out = append(out, &msg)
 		}
@@ -1599,7 +1599,7 @@ func (s *redisMessageStore) Channel(channelID common.Snowflake) []*common.Messag
 	return out
 }
 
-func (s *redisMessageStore) DeleteChannel(channelID common.Snowflake) {
+func (s *redisMessageStore) DeleteChannel(channelID discord.Snowflake) {
 	chKey := s.c.k("msg", "ch", string(channelID))
 	members, err := s.c.client.ZRange(s.c.ctx, chKey, 0, -1).Result()
 	if err == nil && len(members) > 0 {

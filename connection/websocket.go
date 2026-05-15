@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 
 	"github.com/gorilla/websocket"
@@ -69,12 +69,12 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 		return nil, err
 	}
 
-	var payload common.Payload
+	var payload discord.Payload
 	if err := json.Unmarshal(message, &payload); err != nil {
 		return nil, err
 	}
 
-	var hello common.HelloPayloadData
+	var hello discord.HelloPayloadData
 	if err := json.Unmarshal(payload.D, &hello); err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 				heartbeatData = json.RawMessage("null")
 			}
 
-			if err := ws.writeJSONDeadline(common.Payload{Op: 1, D: heartbeatData}, 10*time.Second); err != nil {
+			if err := ws.writeJSONDeadline(discord.Payload{Op: 1, D: heartbeatData}, 10*time.Second); err != nil {
 				bot.Logger.Error("Failed to send heartbeat", slog.Any("err", err))
 				if websocket.IsUnexpectedCloseError(err) {
 					bot.Logger.Warn("Heartbeat failed due to closed connection, stopping heartbeat loop")
@@ -257,7 +257,7 @@ func (d *Client) reconnect(freshConnect bool) error {
 	// who joined or left voice channels while the bot was disconnected.
 	if freshConnect {
 		d.voiceStatesMu.Lock()
-		d.voiceStates = make(map[string]*common.VoiceState)
+		d.voiceStates = make(map[string]*discord.VoiceState)
 		d.voiceStatesMu.Unlock()
 	}
 
@@ -365,7 +365,7 @@ func (d *Client) listenWebsocket() error {
 			return err
 		}
 
-		var payload common.Payload
+		var payload discord.Payload
 		if err := json.Unmarshal(message, &payload); err != nil {
 			return err
 		}

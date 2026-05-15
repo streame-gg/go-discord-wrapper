@@ -2,11 +2,12 @@ package components
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type UserSelectMenuComponent struct {
-	Type          common.ComponentType  `json:"type"`
+	Type          discord.ComponentType `json:"type"`
 	ID            *int                  `json:"id,omitempty"`
 	CustomID      string                `json:"custom_id"`
 	Placeholder   string                `json:"placeholder,omitempty"`
@@ -22,7 +23,7 @@ func (u *UserSelectMenuComponent) IsAnyContainerAccessory() bool {
 }
 
 func (u *UserSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	u.Type = common.ComponentTypeUserSelectMenu
+	u.Type = discord.ComponentTypeUserSelectMenu
 	type Alias UserSelectMenuComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -45,20 +46,20 @@ func (u *UserSelectMenuComponent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (u *UserSelectMenuComponent) GetType() common.ComponentType {
-	return common.ComponentTypeUserSelectMenu
+func (u *UserSelectMenuComponent) GetType() discord.ComponentType {
+	return discord.ComponentTypeUserSelectMenu
 }
 
 func (u *UserSelectMenuComponent) IsAnyLabelComponent() {
 }
 
 type UserSelectComponentInteractionResponse struct {
-	Type          common.ComponentType `json:"type"`
-	Values        []common.Snowflake   `json:"values"`
-	ID            *int                 `json:"id,omitempty"`
-	CustomID      string               `json:"custom_id,omitempty"`
-	ComponentType common.ComponentType `json:"component_type"`
-	Resolved      *common.ResolvedData `json:"resolved,omitempty"`
+	Type          discord.ComponentType `json:"type"`
+	Values        []discord.Snowflake   `json:"values"`
+	ID            *int                  `json:"id,omitempty"`
+	CustomID      string                `json:"custom_id,omitempty"`
+	ComponentType discord.ComponentType `json:"component_type"`
+	Resolved      *discord.ResolvedData `json:"resolved,omitempty"`
 }
 
 func (u *UserSelectComponentInteractionResponse) IsInteractionResponseDataComponent() {
@@ -66,8 +67,8 @@ func (u *UserSelectComponentInteractionResponse) IsInteractionResponseDataCompon
 }
 
 func (u *UserSelectComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	u.ComponentType = common.ComponentTypeRoleSelectMenu
-	u.Type = common.ComponentTypeRoleSelectMenu
+	u.ComponentType = discord.ComponentTypeRoleSelectMenu
+	u.Type = discord.ComponentTypeRoleSelectMenu
 
 	type Alias UserSelectComponentInteractionResponse
 

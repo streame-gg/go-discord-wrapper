@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Request / query-param types ───────────────────────────────────────────────
@@ -19,9 +19,9 @@ import (
 // GetMessagesParams are query parameters for listing channel messages.
 // At most one of Around / Before / After may be set.
 type GetMessagesParams struct {
-	Around *common.Snowflake
-	Before *common.Snowflake
-	After  *common.Snowflake
+	Around *discord.Snowflake
+	Before *discord.Snowflake
+	After  *discord.Snowflake
 	Limit  *int // 1–100, default 50
 }
 
@@ -96,22 +96,22 @@ func buildMultipartMessage(payload []byte, files []MessageFile) (*bytes.Buffer, 
 
 // CreateMessageParams are the parameters for sending a new message.
 type CreateMessageParams struct {
-	Content          string                          `json:"content,omitempty"`
-	TTS              bool                            `json:"tts,omitempty"`
-	Embeds           []common.Embed                  `json:"embeds,omitempty"`
-	AllowedMentions  *common.AllowedMentions         `json:"allowed_mentions,omitempty"`
-	MessageReference *common.MessageMessageReference `json:"message_reference,omitempty"`
+	Content          string                           `json:"content,omitempty"`
+	TTS              bool                             `json:"tts,omitempty"`
+	Embeds           []discord.Embed                  `json:"embeds,omitempty"`
+	AllowedMentions  *discord.AllowedMentions         `json:"allowed_mentions,omitempty"`
+	MessageReference *discord.MessageMessageReference `json:"message_reference,omitempty"`
 	// Components holds message components (action rows, buttons, etc.).
-	Components   []common.AnyComponent `json:"-"`
-	StickerIDs   []common.Snowflake    `json:"sticker_ids,omitempty"`
-	Flags        common.MessageFlag    `json:"flags,omitempty"`
-	Nonce        interface{}           `json:"nonce,omitempty"`
-	EnforceNonce bool                  `json:"enforce_nonce,omitempty"`
+	Components   []discord.AnyComponent `json:"-"`
+	StickerIDs   []discord.Snowflake    `json:"sticker_ids,omitempty"`
+	Flags        discord.MessageFlag    `json:"flags,omitempty"`
+	Nonce        interface{}            `json:"nonce,omitempty"`
+	EnforceNonce bool                   `json:"enforce_nonce,omitempty"`
 	// Files are binary attachments sent via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
-	Files             []MessageFile      `json:"-"`
-	Poll              common.PollRequest `json:"poll_request,omitempty"`
-	SharedClientTheme SharedClientTheme  `json:"shared_client_theme,omitempty"`
+	Files             []MessageFile       `json:"-"`
+	Poll              discord.PollRequest `json:"poll_request,omitempty"`
+	SharedClientTheme SharedClientTheme   `json:"shared_client_theme,omitempty"`
 }
 
 // SharedClientTheme https://docs.discord.com/developers/resources/message#shared-client-theme-object
@@ -137,7 +137,7 @@ const (
 func (p CreateMessageParams) MarshalJSON() ([]byte, error) {
 	type Alias CreateMessageParams
 	return json.Marshal(&struct {
-		Components []common.AnyComponent `json:"components,omitempty"`
+		Components []discord.AnyComponent `json:"components,omitempty"`
 		Alias
 	}{
 		Components: p.Components,
@@ -149,14 +149,14 @@ func (p CreateMessageParams) MarshalJSON() ([]byte, error) {
 // Nil pointer fields are omitted from the request body (the field is left unchanged).
 // Set Content to a pointer to "" to clear the message content.
 type EditMessageParams struct {
-	Content         *string                 `json:"content,omitempty"`
-	Embeds          *[]common.Embed         `json:"embeds,omitempty"`
-	Flags           *common.MessageFlag     `json:"flags,omitempty"`
-	AllowedMentions *common.AllowedMentions `json:"allowed_mentions,omitempty"`
+	Content         *string                  `json:"content,omitempty"`
+	Embeds          *[]discord.Embed         `json:"embeds,omitempty"`
+	Flags           *discord.MessageFlag     `json:"flags,omitempty"`
+	AllowedMentions *discord.AllowedMentions `json:"allowed_mentions,omitempty"`
 	// Components replaces the message's component list.
 	// Set to an empty (non-nil) slice to remove all components.
-	Components  []common.AnyComponent `json:"-"`
-	Attachments *[]common.Attachment  `json:"attachments,omitempty"`
+	Components  []discord.AnyComponent `json:"-"`
+	Attachments *[]discord.Attachment  `json:"attachments,omitempty"`
 	// Files are binary attachments added via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
 	Files []MessageFile `json:"-"`
@@ -165,7 +165,7 @@ type EditMessageParams struct {
 func (p EditMessageParams) MarshalJSON() ([]byte, error) {
 	type Alias EditMessageParams
 	return json.Marshal(&struct {
-		Components []common.AnyComponent `json:"components,omitempty"`
+		Components []discord.AnyComponent `json:"components,omitempty"`
 		Alias
 	}{
 		Components: p.Components,
@@ -175,7 +175,7 @@ func (p EditMessageParams) MarshalJSON() ([]byte, error) {
 
 // GetReactionsParams are optional query parameters for listing reaction users.
 type GetReactionsParams struct {
-	After *common.Snowflake
+	After *discord.Snowflake
 	Limit *int // 1–100, default 25
 	Type  *int // 0 = normal, 1 = burst (super-reaction)
 }
@@ -206,7 +206,7 @@ func encodeEmoji(emoji string) string {
 // ── Message endpoints ─────────────────────────────────────────────────────────
 
 // GetMessages returns up to 100 messages from a channel.
-func (c *RestClient) GetMessages(ctx context.Context, channelID common.Snowflake, params GetMessagesParams) (*[]*common.Message, error) {
+func (c *RestClient) GetMessages(ctx context.Context, channelID discord.Snowflake, params GetMessagesParams) (*[]*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -217,13 +217,13 @@ func (c *RestClient) GetMessages(ctx context.Context, channelID common.Snowflake
 		return nil, err
 	}
 
-	return doRequest[[]*common.Message](c, req, map[int]bool{
+	return doRequest[[]*discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetMessage returns a single message by ID.
-func (c *RestClient) GetMessage(ctx context.Context, channelID, messageID common.Snowflake) (*common.Message, error) {
+func (c *RestClient) GetMessage(ctx context.Context, channelID, messageID discord.Snowflake) (*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -238,14 +238,14 @@ func (c *RestClient) GetMessage(ctx context.Context, channelID, messageID common
 		return nil, err
 	}
 
-	return doRequest[common.Message](c, req, map[int]bool{
+	return doRequest[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // CreateMessage sends a new message to a channel.
 // When params.Files is non-empty the request is sent as multipart/form-data.
-func (c *RestClient) CreateMessage(ctx context.Context, channelID common.Snowflake, params CreateMessageParams) (*common.Message, error) {
+func (c *RestClient) CreateMessage(ctx context.Context, channelID discord.Snowflake, params CreateMessageParams) (*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -275,14 +275,14 @@ func (c *RestClient) CreateMessage(ctx context.Context, channelID common.Snowfla
 		}
 	}
 
-	return doRequest[common.Message](c, req, map[int]bool{
+	return doRequest[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // EditMessage edits a previously sent message. Only fields set in params are changed.
 // When params.Files is non-empty the request is sent as multipart/form-data.
-func (c *RestClient) EditMessage(ctx context.Context, channelID, messageID common.Snowflake, params EditMessageParams) (*common.Message, error) {
+func (c *RestClient) EditMessage(ctx context.Context, channelID, messageID discord.Snowflake, params EditMessageParams) (*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -316,13 +316,13 @@ func (c *RestClient) EditMessage(ctx context.Context, channelID, messageID commo
 		}
 	}
 
-	return doRequest[common.Message](c, req, map[int]bool{
+	return doRequest[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // DeleteMessage deletes a message.
-func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID common.Snowflake) error {
+func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -342,7 +342,7 @@ func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID com
 
 // BulkDeleteMessages deletes 2–100 messages at once.
 // Messages older than 14 days cannot be bulk-deleted and will cause a Discord API error.
-func (c *RestClient) BulkDeleteMessages(ctx context.Context, channelID common.Snowflake, messageIDs []common.Snowflake) error {
+func (c *RestClient) BulkDeleteMessages(ctx context.Context, channelID discord.Snowflake, messageIDs []discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -372,7 +372,7 @@ func (c *RestClient) BulkDeleteMessages(ctx context.Context, channelID common.Sn
 }
 
 // CrosspostMessage publishes a message in an announcement channel to all following channels.
-func (c *RestClient) CrosspostMessage(ctx context.Context, channelID, messageID common.Snowflake) (*common.Message, error) {
+func (c *RestClient) CrosspostMessage(ctx context.Context, channelID, messageID discord.Snowflake) (*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -387,7 +387,7 @@ func (c *RestClient) CrosspostMessage(ctx context.Context, channelID, messageID 
 		return nil, err
 	}
 
-	return doRequest[common.Message](c, req, map[int]bool{
+	return doRequest[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -395,7 +395,7 @@ func (c *RestClient) CrosspostMessage(ctx context.Context, channelID, messageID 
 // ── Pin endpoints ─────────────────────────────────────────────────────────────
 
 // GetPinnedMessages returns all pinned messages in a channel (max 50).
-func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID common.Snowflake) (*[]*common.Message, error) {
+func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) (*[]*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -405,13 +405,13 @@ func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID common.Sno
 		return nil, err
 	}
 
-	return doRequest[[]*common.Message](c, req, map[int]bool{
+	return doRequest[[]*discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // PinMessage pins a message in a channel. Requires MANAGE_MESSAGES.
-func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID common.Snowflake) error {
+func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -430,7 +430,7 @@ func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID common
 }
 
 // UnpinMessage unpins a message from a channel. Requires MANAGE_MESSAGES.
-func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID common.Snowflake) error {
+func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -452,7 +452,7 @@ func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID comm
 
 // AddReaction adds a reaction to a message.
 // emoji is a raw Unicode character (e.g. "👍") or a custom emoji in "name:id" form.
-func (c *RestClient) AddReaction(ctx context.Context, channelID, messageID common.Snowflake, emoji string) error {
+func (c *RestClient) AddReaction(ctx context.Context, channelID, messageID discord.Snowflake, emoji string) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -471,7 +471,7 @@ func (c *RestClient) AddReaction(ctx context.Context, channelID, messageID commo
 }
 
 // DeleteOwnReaction removes the bot's own reaction from a message.
-func (c *RestClient) DeleteOwnReaction(ctx context.Context, channelID, messageID common.Snowflake, emoji string) error {
+func (c *RestClient) DeleteOwnReaction(ctx context.Context, channelID, messageID discord.Snowflake, emoji string) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -490,7 +490,7 @@ func (c *RestClient) DeleteOwnReaction(ctx context.Context, channelID, messageID
 }
 
 // DeleteUserReaction removes another user's reaction from a message. Requires MANAGE_MESSAGES.
-func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageID common.Snowflake, emoji string, userID common.Snowflake) error {
+func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, userID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -513,7 +513,7 @@ func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageI
 }
 
 // GetReactions returns the users who reacted to a message with the given emoji.
-func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID common.Snowflake, emoji string, params GetReactionsParams) (*[]*common.User, error) {
+func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params GetReactionsParams) (*[]*discord.User, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -528,13 +528,13 @@ func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID comm
 		return nil, err
 	}
 
-	return doRequest[[]*common.User](c, req, map[int]bool{
+	return doRequest[[]*discord.User](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // DeleteAllReactions removes every reaction from a message. Requires MANAGE_MESSAGES.
-func (c *RestClient) DeleteAllReactions(ctx context.Context, channelID, messageID common.Snowflake) error {
+func (c *RestClient) DeleteAllReactions(ctx context.Context, channelID, messageID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -553,7 +553,7 @@ func (c *RestClient) DeleteAllReactions(ctx context.Context, channelID, messageI
 }
 
 // DeleteAllReactionsForEmoji removes all reactions for a specific emoji. Requires MANAGE_MESSAGES.
-func (c *RestClient) DeleteAllReactionsForEmoji(ctx context.Context, channelID, messageID common.Snowflake, emoji string) error {
+func (c *RestClient) DeleteAllReactionsForEmoji(ctx context.Context, channelID, messageID discord.Snowflake, emoji string) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}

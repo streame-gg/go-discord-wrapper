@@ -17,14 +17,14 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/api"
 	"github.com/streame-gg/go-discord-wrapper/connection"
 	"github.com/streame-gg/go-discord-wrapper/types/commands"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 )
 
 func main() {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
 
-	bot, clientErr := connection.NewClient("EXAMPLE_TOKEN", common.IntentGuilds|common.IntentGuildMessages)
+	bot, clientErr := connection.NewClient("EXAMPLE_TOKEN", discord.IntentGuilds|discord.IntentGuildMessages)
 	if clientErr != nil {
 		slog.Error("Failed to create client", slog.Any("err", clientErr))
 		os.Exit(1)
@@ -90,7 +90,7 @@ func main() {
 		}
 
 		// Pretend we extracted the target user ID from the command options.
-		targetID := common.Snowflake("123456789")
+		targetID := discord.Snowflake("123456789")
 
 		go func() {
 			err := c.CreateGuildBan(context.Background(), *ev.GuildID, targetID, api.CreateGuildBanParams{})
@@ -116,8 +116,8 @@ func main() {
 	}
 
 	_, err := bot.BulkRegisterCommands(context.Background(), []*commands.ApplicationCommand{
-		{Name: "slow", Description: "Simulate a slow operation with DeferAndFollowup", Type: common.ApplicationCommandTypeChatInput},
-		{Name: "ban", Description: "Ban a member (typed-error example)", Type: common.ApplicationCommandTypeChatInput},
+		{Name: "slow", Description: "Simulate a slow operation with DeferAndFollowup", Type: discord.ApplicationCommandTypeChatInput},
+		{Name: "ban", Description: "Ban a member (typed-error example)", Type: discord.ApplicationCommandTypeChatInput},
 	})
 	if err != nil {
 		bot.Logger.Error("failed to register commands", slog.Any("err", err))

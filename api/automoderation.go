@@ -6,36 +6,36 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
 type CreateAutoModerationRuleParams struct {
-	Name            string                                `json:"name"`
-	EventType       common.AutoModerationEventType        `json:"event_type"`
-	TriggerType     common.AutoModerationTriggerType      `json:"trigger_type"`
-	TriggerMetadata *common.AutoModerationTriggerMetadata `json:"trigger_metadata,omitempty"`
-	Actions         []common.AutoModerationAction         `json:"actions"`
-	Enabled         *bool                                 `json:"enabled,omitempty"`
-	ExemptRoles     []common.Snowflake                    `json:"exempt_roles,omitempty"`
-	ExemptChannels  []common.Snowflake                    `json:"exempt_channels,omitempty"`
+	Name            string                                 `json:"name"`
+	EventType       discord.AutoModerationEventType        `json:"event_type"`
+	TriggerType     discord.AutoModerationTriggerType      `json:"trigger_type"`
+	TriggerMetadata *discord.AutoModerationTriggerMetadata `json:"trigger_metadata,omitempty"`
+	Actions         []discord.AutoModerationAction         `json:"actions"`
+	Enabled         *bool                                  `json:"enabled,omitempty"`
+	ExemptRoles     []discord.Snowflake                    `json:"exempt_roles,omitempty"`
+	ExemptChannels  []discord.Snowflake                    `json:"exempt_channels,omitempty"`
 }
 
 type ModifyAutoModerationRuleParams struct {
-	Name            *string                               `json:"name,omitempty"`
-	EventType       *common.AutoModerationEventType       `json:"event_type,omitempty"`
-	TriggerMetadata *common.AutoModerationTriggerMetadata `json:"trigger_metadata,omitempty"`
-	Actions         []common.AutoModerationAction         `json:"actions,omitempty"`
-	Enabled         *bool                                 `json:"enabled,omitempty"`
-	ExemptRoles     []common.Snowflake                    `json:"exempt_roles,omitempty"`
-	ExemptChannels  []common.Snowflake                    `json:"exempt_channels,omitempty"`
+	Name            *string                                `json:"name,omitempty"`
+	EventType       *discord.AutoModerationEventType       `json:"event_type,omitempty"`
+	TriggerMetadata *discord.AutoModerationTriggerMetadata `json:"trigger_metadata,omitempty"`
+	Actions         []discord.AutoModerationAction         `json:"actions,omitempty"`
+	Enabled         *bool                                  `json:"enabled,omitempty"`
+	ExemptRoles     []discord.Snowflake                    `json:"exempt_roles,omitempty"`
+	ExemptChannels  []discord.Snowflake                    `json:"exempt_channels,omitempty"`
 }
 
 // ── Auto moderation endpoints ─────────────────────────────────────────────────
 
 // ListAutoModerationRules returns all auto moderation rules for a guild.
-func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID common.Snowflake) (*[]*common.AutoModerationRule, error) {
+func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID discord.Snowflake) (*[]*discord.AutoModerationRule, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -45,13 +45,13 @@ func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID common
 		return nil, err
 	}
 
-	return doRequest[[]*common.AutoModerationRule](c, req, map[int]bool{
+	return doRequest[[]*discord.AutoModerationRule](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetAutoModerationRule returns a single auto moderation rule.
-func (c *RestClient) GetAutoModerationRule(ctx context.Context, guildID, ruleID common.Snowflake) (*common.AutoModerationRule, error) {
+func (c *RestClient) GetAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake) (*discord.AutoModerationRule, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -66,13 +66,13 @@ func (c *RestClient) GetAutoModerationRule(ctx context.Context, guildID, ruleID 
 		return nil, err
 	}
 
-	return doRequest[common.AutoModerationRule](c, req, map[int]bool{
+	return doRequest[discord.AutoModerationRule](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // CreateAutoModerationRule creates a new auto moderation rule in a guild.
-func (c *RestClient) CreateAutoModerationRule(ctx context.Context, guildID common.Snowflake, params CreateAutoModerationRuleParams) (*common.AutoModerationRule, error) {
+func (c *RestClient) CreateAutoModerationRule(ctx context.Context, guildID discord.Snowflake, params CreateAutoModerationRuleParams) (*discord.AutoModerationRule, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -87,13 +87,13 @@ func (c *RestClient) CreateAutoModerationRule(ctx context.Context, guildID commo
 		return nil, err
 	}
 
-	return doRequest[common.AutoModerationRule](c, req, map[int]bool{
+	return doRequest[discord.AutoModerationRule](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // ModifyAutoModerationRule updates an existing auto moderation rule.
-func (c *RestClient) ModifyAutoModerationRule(ctx context.Context, guildID, ruleID common.Snowflake, params ModifyAutoModerationRuleParams) (*common.AutoModerationRule, error) {
+func (c *RestClient) ModifyAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake, params ModifyAutoModerationRuleParams) (*discord.AutoModerationRule, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -113,13 +113,13 @@ func (c *RestClient) ModifyAutoModerationRule(ctx context.Context, guildID, rule
 		return nil, err
 	}
 
-	return doRequest[common.AutoModerationRule](c, req, map[int]bool{
+	return doRequest[discord.AutoModerationRule](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // DeleteAutoModerationRule deletes an auto moderation rule.
-func (c *RestClient) DeleteAutoModerationRule(ctx context.Context, guildID, ruleID common.Snowflake) error {
+func (c *RestClient) DeleteAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}

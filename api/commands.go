@@ -7,11 +7,11 @@ import (
 	"net/http"
 
 	"github.com/streame-gg/go-discord-wrapper/types/commands"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // RegisterCommand registers a single application command for the given application ID.
-func (c *RestClient) RegisterCommand(ctx context.Context, appID common.Snowflake, cmd *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+func (c *RestClient) RegisterCommand(ctx context.Context, appID discord.Snowflake, cmd *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func (c *RestClient) RegisterCommand(ctx context.Context, appID common.Snowflake
 
 // BulkRegisterCommands overwrites all global application commands for the given application ID.
 // Any commands not included in cmds are deleted.
-func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID common.Snowflake, cmds []*commands.ApplicationCommand) (*[]*commands.ApplicationCommand, error) {
+func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID discord.Snowflake, cmds []*commands.ApplicationCommand) (*[]*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID common.Snow
 
 // GetGlobalApplicationCommands returns all global application commands for the given application ID.
 // Set withLocalizations to true to include localization dictionaries.
-func (c *RestClient) GetGlobalApplicationCommands(ctx context.Context, appID common.Snowflake, withLocalizations bool) (*[]*commands.ApplicationCommand, error) {
+func (c *RestClient) GetGlobalApplicationCommands(ctx context.Context, appID discord.Snowflake, withLocalizations bool) (*[]*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (c *RestClient) GetGlobalApplicationCommands(ctx context.Context, appID com
 }
 
 // GetGlobalApplicationCommand returns a single global application command.
-func (c *RestClient) GetGlobalApplicationCommand(ctx context.Context, appID, cmdID common.Snowflake) (*commands.ApplicationCommand, error) {
+func (c *RestClient) GetGlobalApplicationCommand(ctx context.Context, appID, cmdID discord.Snowflake) (*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (c *RestClient) GetGlobalApplicationCommand(ctx context.Context, appID, cmd
 }
 
 // EditGlobalApplicationCommand updates a global application command.
-func (c *RestClient) EditGlobalApplicationCommand(ctx context.Context, appID, cmdID common.Snowflake, params *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+func (c *RestClient) EditGlobalApplicationCommand(ctx context.Context, appID, cmdID discord.Snowflake, params *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (c *RestClient) EditGlobalApplicationCommand(ctx context.Context, appID, cm
 }
 
 // DeleteGlobalApplicationCommand deletes a global application command.
-func (c *RestClient) DeleteGlobalApplicationCommand(ctx context.Context, appID, cmdID common.Snowflake) error {
+func (c *RestClient) DeleteGlobalApplicationCommand(ctx context.Context, appID, cmdID discord.Snowflake) error {
 	if err := appID.Validate(); err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func (c *RestClient) DeleteGlobalApplicationCommand(ctx context.Context, appID, 
 // ── Guild command management ──────────────────────────────────────────────────
 
 // GetGuildApplicationCommands returns all application commands registered to a specific guild.
-func (c *RestClient) GetGuildApplicationCommands(ctx context.Context, appID, guildID common.Snowflake, withLocalizations bool) (*[]*commands.ApplicationCommand, error) {
+func (c *RestClient) GetGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, withLocalizations bool) (*[]*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (c *RestClient) GetGuildApplicationCommands(ctx context.Context, appID, gui
 }
 
 // CreateGuildApplicationCommand registers a command in a specific guild.
-func (c *RestClient) CreateGuildApplicationCommand(ctx context.Context, appID, guildID common.Snowflake, cmd *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+func (c *RestClient) CreateGuildApplicationCommand(ctx context.Context, appID, guildID discord.Snowflake, cmd *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func (c *RestClient) CreateGuildApplicationCommand(ctx context.Context, appID, g
 }
 
 // GetGuildApplicationCommand returns a single guild-specific application command.
-func (c *RestClient) GetGuildApplicationCommand(ctx context.Context, appID, guildID, cmdID common.Snowflake) (*commands.ApplicationCommand, error) {
+func (c *RestClient) GetGuildApplicationCommand(ctx context.Context, appID, guildID, cmdID discord.Snowflake) (*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -222,7 +222,7 @@ func (c *RestClient) GetGuildApplicationCommand(ctx context.Context, appID, guil
 }
 
 // EditGuildApplicationCommand updates a guild-specific application command.
-func (c *RestClient) EditGuildApplicationCommand(ctx context.Context, appID, guildID, cmdID common.Snowflake, params *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+func (c *RestClient) EditGuildApplicationCommand(ctx context.Context, appID, guildID, cmdID discord.Snowflake, params *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func (c *RestClient) EditGuildApplicationCommand(ctx context.Context, appID, gui
 }
 
 // DeleteGuildApplicationCommand deletes a guild-specific application command.
-func (c *RestClient) DeleteGuildApplicationCommand(ctx context.Context, appID, guildID, cmdID common.Snowflake) error {
+func (c *RestClient) DeleteGuildApplicationCommand(ctx context.Context, appID, guildID, cmdID discord.Snowflake) error {
 	if err := appID.Validate(); err != nil {
 		return err
 	}
@@ -276,7 +276,7 @@ func (c *RestClient) DeleteGuildApplicationCommand(ctx context.Context, appID, g
 
 // BulkOverwriteGuildApplicationCommands overwrites all guild-specific commands for the given guild.
 // Any commands not included in cmds are deleted.
-func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, appID, guildID common.Snowflake, cmds []*commands.ApplicationCommand) (*[]*commands.ApplicationCommand, error) {
+func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, cmds []*commands.ApplicationCommand) (*[]*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -304,7 +304,7 @@ func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, 
 // ── Command permissions ───────────────────────────────────────────────────────
 
 // GetGuildApplicationCommandPermissions returns all permission overrides for every command in a guild.
-func (c *RestClient) GetGuildApplicationCommandPermissions(ctx context.Context, appID, guildID common.Snowflake) (*[]*common.GuildApplicationCommandPermissions, error) {
+func (c *RestClient) GetGuildApplicationCommandPermissions(ctx context.Context, appID, guildID discord.Snowflake) (*[]*discord.GuildApplicationCommandPermissions, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -319,13 +319,13 @@ func (c *RestClient) GetGuildApplicationCommandPermissions(ctx context.Context, 
 		return nil, err
 	}
 
-	return doRequest[[]*common.GuildApplicationCommandPermissions](c, req, map[int]bool{
+	return doRequest[[]*discord.GuildApplicationCommandPermissions](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetApplicationCommandPermissions returns the permission overrides for a specific command in a guild.
-func (c *RestClient) GetApplicationCommandPermissions(ctx context.Context, appID, guildID, cmdID common.Snowflake) (*common.GuildApplicationCommandPermissions, error) {
+func (c *RestClient) GetApplicationCommandPermissions(ctx context.Context, appID, guildID, cmdID discord.Snowflake) (*discord.GuildApplicationCommandPermissions, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -344,14 +344,14 @@ func (c *RestClient) GetApplicationCommandPermissions(ctx context.Context, appID
 		return nil, err
 	}
 
-	return doRequest[common.GuildApplicationCommandPermissions](c, req, map[int]bool{
+	return doRequest[discord.GuildApplicationCommandPermissions](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // EditApplicationCommandPermissions overwrites the permission overrides for a specific command in a guild.
 // Requires a Bearer token with applications.commands.permissions.update scope; bot tokens cannot use this endpoint.
-func (c *RestClient) EditApplicationCommandPermissions(ctx context.Context, appID, guildID, cmdID common.Snowflake, permissions []common.ApplicationCommandPermission) (*common.GuildApplicationCommandPermissions, error) {
+func (c *RestClient) EditApplicationCommandPermissions(ctx context.Context, appID, guildID, cmdID discord.Snowflake, permissions []discord.ApplicationCommandPermission) (*discord.GuildApplicationCommandPermissions, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -375,7 +375,7 @@ func (c *RestClient) EditApplicationCommandPermissions(ctx context.Context, appI
 		return nil, err
 	}
 
-	return doRequest[common.GuildApplicationCommandPermissions](c, req, map[int]bool{
+	return doRequest[discord.GuildApplicationCommandPermissions](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
