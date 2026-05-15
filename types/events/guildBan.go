@@ -1,15 +1,17 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type GuildBanAddEvent struct {
-	GuildID common.Snowflake `json:"guild_id"`
-	User    common.User      `json:"user"`
+	GuildID discord.Snowflake `json:"guild_id"`
+	User    discord.User      `json:"user"`
 }
 
 type GuildBanRemoveEvent struct {
-	GuildID common.Snowflake `json:"guild_id"`
-	User    common.User      `json:"user"`
+	GuildID discord.Snowflake `json:"guild_id"`
+	User    discord.User      `json:"user"`
 }
 
 func init() {

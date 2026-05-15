@@ -5,15 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
 
 // CreateInteractionResponse sends a response to an interaction. Must be called within 3 seconds.
 // Set withResponse=true to receive the created message back; returns nil otherwise.
 // Pass optional files to send attachments; when present the request is encoded as multipart/form-data.
-func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionID common.Snowflake, token string, response responses.InteractionResponse, withResponse bool, files ...MessageFile) (*responses.InteractionCallbackResponse, error) {
+func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionID discord.Snowflake, token string, response responses.InteractionResponse, withResponse bool, files ...MessageFile) (*responses.InteractionCallbackResponse, error) {
 	if err := interactionID.Validate(); err != nil {
 		return nil, err
 	}
@@ -23,7 +24,7 @@ func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionI
 		return nil, err
 	}
 
-	path := "/interactions/" + interactionID.String() + "/" + token + "/callback"
+	path := "/interactions/" + interactionID.String() + "/" + url.PathEscape(token) + "/callback"
 	if withResponse {
 		path += "?with_response=true"
 	}
@@ -34,54 +35,47 @@ func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionI
 		if err != nil {
 			return nil, err
 		}
-		req, err = c.generateRequest(ctx, http.MethodPost, path, buf)
+		req, err = c.generateRequest(ctx, http.MethodPost, path, buf, c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", ct)
 	} else {
-		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
+		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if !withResponse {
-		_, err = c.do(req, http.StatusNoContent, nil)
-		return nil, err
+		return nil, doRequestWithoutResponse(c, req)
 	}
 
-	var result responses.InteractionCallbackResponse
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[responses.InteractionCallbackResponse](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetOriginalInteractionResponse fetches the initial response message for an interaction.
-func (c *RestClient) GetOriginalInteractionResponse(ctx context.Context, webhookID common.Snowflake, token string) (*common.Message, error) {
+func (c *RestClient) GetOriginalInteractionResponse(ctx context.Context, webhookID discord.Snowflake, token string) (*discord.Message, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
 	}
 
-	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/@original"
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/@original"
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[discord.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // EditOriginalInteractionResponse edits the initial response message for an interaction.
 // When params.Files is non-empty the request is sent as multipart/form-data.
-func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, webhookID common.Snowflake, token string, params EditMessageParams) (*common.Message, error) {
+func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, webhookID discord.Snowflake, token string, params EditMessageParams) (*discord.Message, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
 	}
@@ -91,7 +85,7 @@ func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, webhoo
 		return nil, err
 	}
 
-	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/@original"
+	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/@original"
 
 	var req *http.Request
 	if len(params.Files) > 0 {
@@ -99,45 +93,41 @@ func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, webhoo
 		if err != nil {
 			return nil, err
 		}
-		req, err = c.generateRequest(ctx, http.MethodPatch, path, buf)
+		req, err = c.generateRequest(ctx, http.MethodPatch, path, buf, c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", ct)
 	} else {
-		req, err = c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(jsonBody))
+		req, err = c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(jsonBody), c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[discord.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteOriginalInteractionResponse deletes the initial response message for an interaction.
-func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, webhookID common.Snowflake, token string) error {
+func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, webhookID discord.Snowflake, token string) error {
 	if err := webhookID.Validate(); err != nil {
 		return err
 	}
 
-	path := "/webhooks/" + webhookID.String() + "/" + token + "/messages/@original"
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/@original"
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
-	return err
+	return doRequestWithoutResponse(c, req)
 }
 
 // CreateFollowupMessage sends a follow-up message to an interaction (usable up to 15 minutes after the initial response).
 // When params.Files is non-empty the request is sent as multipart/form-data.
-func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID common.Snowflake, token string, params CreateMessageParams) (*common.Message, error) {
+func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID discord.Snowflake, token string, params CreateMessageParams) (*discord.Message, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -147,7 +137,7 @@ func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID common.Sno
 		return nil, err
 	}
 
-	path := "/webhooks/" + appID.String() + "/" + token
+	path := "/webhooks/" + appID.String() + "/" + url.PathEscape(token)
 
 	var req *http.Request
 	if len(params.Files) > 0 {
@@ -155,28 +145,25 @@ func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID common.Sno
 		if err != nil {
 			return nil, err
 		}
-		req, err = c.generateRequest(ctx, http.MethodPost, path, buf)
+		req, err = c.generateRequest(ctx, http.MethodPost, path, buf, c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", ct)
 	} else {
-		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(jsonBody))
+		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(jsonBody), c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[discord.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // GetFollowupMessage fetches a follow-up message sent for an interaction.
-func (c *RestClient) GetFollowupMessage(ctx context.Context, appID common.Snowflake, token string, messageID common.Snowflake) (*common.Message, error) {
+func (c *RestClient) GetFollowupMessage(ctx context.Context, appID discord.Snowflake, token string, messageID discord.Snowflake) (*discord.Message, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -185,23 +172,20 @@ func (c *RestClient) GetFollowupMessage(ctx context.Context, appID common.Snowfl
 		return nil, err
 	}
 
-	path := "/webhooks/" + appID.String() + "/" + token + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	path := "/webhooks/" + appID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[discord.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // EditFollowupMessage edits a follow-up message sent for an interaction.
 // When params.Files is non-empty the request is sent as multipart/form-data.
-func (c *RestClient) EditFollowupMessage(ctx context.Context, appID common.Snowflake, token string, messageID common.Snowflake, params EditMessageParams) (*common.Message, error) {
+func (c *RestClient) EditFollowupMessage(ctx context.Context, appID discord.Snowflake, token string, messageID discord.Snowflake, params EditMessageParams) (*discord.Message, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -215,7 +199,7 @@ func (c *RestClient) EditFollowupMessage(ctx context.Context, appID common.Snowf
 		return nil, err
 	}
 
-	path := "/webhooks/" + appID.String() + "/" + token + "/messages/" + messageID.String()
+	path := "/webhooks/" + appID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
 
 	var req *http.Request
 	if len(params.Files) > 0 {
@@ -223,28 +207,25 @@ func (c *RestClient) EditFollowupMessage(ctx context.Context, appID common.Snowf
 		if err != nil {
 			return nil, err
 		}
-		req, err = c.generateRequest(ctx, http.MethodPatch, path, buf)
+		req, err = c.generateRequest(ctx, http.MethodPatch, path, buf, c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", ct)
 	} else {
-		req, err = c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(jsonBody))
+		req, err = c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(jsonBody), c.WithBotAuthorization())
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	var msg common.Message
-	if _, err := c.do(req, http.StatusOK, &msg); err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
+	return doRequest[discord.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteFollowupMessage deletes a follow-up message sent for an interaction.
-func (c *RestClient) DeleteFollowupMessage(ctx context.Context, appID common.Snowflake, token string, messageID common.Snowflake) error {
+func (c *RestClient) DeleteFollowupMessage(ctx context.Context, appID discord.Snowflake, token string, messageID discord.Snowflake) error {
 	if err := appID.Validate(); err != nil {
 		return err
 	}
@@ -253,12 +234,11 @@ func (c *RestClient) DeleteFollowupMessage(ctx context.Context, appID common.Sno
 		return err
 	}
 
-	path := "/webhooks/" + appID.String() + "/" + token + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
+	path := "/webhooks/" + appID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
-	return err
+	return doRequestWithoutResponse(c, req)
 }

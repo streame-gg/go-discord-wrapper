@@ -1,10 +1,12 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type GuildAuditLogEntryCreateEvent struct {
-	*common.AuditLogEntry
-	GuildID common.Snowflake `json:"guild_id"`
+	*discord.AuditLogEntry
+	GuildID discord.Snowflake `json:"guild_id"`
 }
 
 func init() { RegisterEvent(GuildAuditLogEntryCreateEvent{}) }

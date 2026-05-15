@@ -13,7 +13,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/connection"
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/sharding"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -480,14 +480,14 @@ func TestBug29RequestAllMalformedResponseDoesNotConsumeSlot(t *testing.T) {
 	const total = 2
 	coord := sharding.NewLocalCoordinator(total)
 
-	c0, err := connection.NewClient("Bot fake-token", common.IntentGuilds,
+	c0, err := connection.NewClient("Bot fake-token", discord.IntentGuilds,
 		options.WithSharding(total, 0),
 		options.WithCoordinator(coord),
 	)
 	require.NoError(t, err)
 	defer c0.Shutdown()
 
-	c1, err := connection.NewClient("Bot fake-token", common.IntentGuilds,
+	c1, err := connection.NewClient("Bot fake-token", discord.IntentGuilds,
 		options.WithSharding(total, 1),
 		options.WithCoordinator(coord),
 	)

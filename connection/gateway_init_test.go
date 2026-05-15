@@ -12,12 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // gatewayBotResponse is the minimal /gateway/bot JSON Discord returns.
-var gatewayBotResponse = common.BotRegisterResponse{
-	Url:    "wss://gateway.discord.gg",
+var gatewayBotResponse = discord.BotRegisterResponse{
+	URL:    "wss://gateway.discord.gg",
 	Shards: 1,
 }
 
@@ -32,12 +32,12 @@ func TestBug38UserAgentSent(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 	// Point the client's httpClient at the test server.
 	c.httpClient = &http.Client{Timeout: 5 * time.Second}
 
-	// Override the URL by temporarily patching common.APIBaseString — we can't
+	// Override the URL by temporarily patching discord.APIBaseString — we can't
 	// easily do that, so instead exercise through a wrapper that calls the real
 	// function but the server URL is injected via a custom RoundTripper.
 	c.httpClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
@@ -61,7 +61,7 @@ func TestBug37ContextCancelledAbortsRequest(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 	c.httpClient = &http.Client{Timeout: 5 * time.Second}
 	c.httpClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
@@ -95,7 +95,7 @@ func TestBug39RateLimitRetry(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 	c.httpClient = &http.Client{Timeout: 5 * time.Second}
 	c.httpClient.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
@@ -107,13 +107,13 @@ func TestBug39RateLimitRetry(t *testing.T) {
 	resp, err := c.initializeGatewayConnection(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, int32(2), calls.Load(), "must retry exactly once after 429 (Bug 39)")
-	assert.Equal(t, gatewayBotResponse.Url, resp.Url)
+	assert.Equal(t, gatewayBotResponse.URL, resp.URL)
 }
 
 // TestBug40HttpClientReused verifies that the Client field httpClient is the
 // same pointer across multiple calls (Bug 40).
 func TestBug40HttpClientReused(t *testing.T) {
-	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 	first := c.httpClient
 	require.NotNil(t, first, "httpClient must be initialized by NewClient (Bug 40)")

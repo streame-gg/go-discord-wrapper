@@ -1,8 +1,8 @@
 package builder
 
 import (
-	"github.com/streame-gg/go-discord-wrapper/types/common"
 	"github.com/streame-gg/go-discord-wrapper/types/components"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ActionRowBuilder builds an ActionRow using a fluent API.
@@ -16,7 +16,7 @@ type ActionRowBuilder struct {
 
 func NewActionRow() *ActionRowBuilder { return &ActionRowBuilder{} }
 
-func (b *ActionRowBuilder) AddComponents(c ...common.AnyComponent) *ActionRowBuilder {
+func (b *ActionRowBuilder) AddComponents(c ...discord.AnyComponent) *ActionRowBuilder {
 	b.row.Components = append(b.row.Components, c...)
 	return b
 }

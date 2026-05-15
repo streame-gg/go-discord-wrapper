@@ -2,18 +2,18 @@ package components
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type CheckboxComponent struct {
-	Type     common.ComponentType `json:"type"`
-	ID       *int                 `json:"id,omitempty"`
-	CustomID string               `json:"custom_id"`
-	Default  *bool                `json:"default,omitempty"`
+	Type     discord.ComponentType `json:"type"`
+	ID       *int                  `json:"id,omitempty"`
+	CustomID string                `json:"custom_id"`
+	Default  *bool                 `json:"default,omitempty"`
 }
 
 func (c *CheckboxComponent) MarshalJSON() ([]byte, error) {
-	c.Type = common.ComponentTypeCheckbox
+	c.Type = discord.ComponentTypeCheckbox
 	type Alias CheckboxComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -36,8 +36,8 @@ func (c *CheckboxComponent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (c *CheckboxComponent) GetType() common.ComponentType {
-	return common.ComponentTypeCheckbox
+func (c *CheckboxComponent) GetType() discord.ComponentType {
+	return discord.ComponentTypeCheckbox
 }
 
 func (c *CheckboxComponent) IsAnyLabelComponent() {
@@ -45,16 +45,16 @@ func (c *CheckboxComponent) IsAnyLabelComponent() {
 }
 
 type CheckboxComponentInteractionResponse struct {
-	Type     common.ComponentType `json:"type"`
-	Value    bool                 `json:"value"`
-	ID       *int                 `json:"id,omitempty"`
-	CustomID string               `json:"custom_id,omitempty"`
+	Type     discord.ComponentType `json:"type"`
+	Value    bool                  `json:"value"`
+	ID       *int                  `json:"id,omitempty"`
+	CustomID string                `json:"custom_id,omitempty"`
 }
 
 func (c *CheckboxComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (c *CheckboxComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	c.Type = common.ComponentTypeCheckbox
+	c.Type = discord.ComponentTypeCheckbox
 	type Alias CheckboxComponentInteractionResponse
 	return json.Marshal(&struct {
 		*Alias

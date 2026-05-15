@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // TestBug4EvictNZeroIsNoOp verifies that evictN(0) on a genericStore removes
@@ -12,8 +12,8 @@ import (
 // relies on: stores whose proportional allocation rounds to zero floor entries
 // and that don't receive an extra slot must not be touched (Bug 4).
 func TestBug4EvictNZeroIsNoOp(t *testing.T) {
-	s := newGenericStore[string, *common.Guild](storeCfg{trackBytes: true})
-	s.set("a", &common.Guild{ID: "a"})
+	s := newGenericStore[string, *discord.Guild](storeCfg{trackBytes: true})
+	s.set("a", &discord.Guild{ID: "a"})
 	before := s.size()
 	freed := s.evictN(0, ClearByLastUsed)
 	after := s.size()
@@ -29,11 +29,11 @@ func TestBug10SetAllEnforcesMaxItemsAfterUnlock(t *testing.T) {
 	// StickerStore uses MaxStickers which wires into storeCfg.maxItems.
 	// Wire a cap of 2 and call SetAll with 4 stickers.
 	ss := &memStickerStore{
-		s: newGenericStore[common.Snowflake, stickerValue](storeCfg{maxItems: 2, clearBy: ClearByLastUsed}),
+		s: newGenericStore[discord.Snowflake, stickerValue](storeCfg{maxItems: 2, clearBy: ClearByLastUsed}),
 	}
 
-	guildID := common.Snowflake("g1")
-	stickers := []*common.Sticker{
+	guildID := discord.Snowflake("g1")
+	stickers := []*discord.Sticker{
 		{ID: "s1", Name: "a"},
 		{ID: "s2", Name: "b"},
 		{ID: "s3", Name: "c"},
@@ -53,13 +53,13 @@ func TestBug10SetAllEnforcesMaxItemsAfterUnlock(t *testing.T) {
 // where GetByGuild returns an empty slice.
 func TestBug10SetAllIsAtomicNoEmptyWindowForReaders(t *testing.T) {
 	es := &memEmojiStore{
-		s: newGenericStore[common.Snowflake, emojiValue](storeCfg{}),
+		s: newGenericStore[discord.Snowflake, emojiValue](storeCfg{}),
 	}
 
-	guildID := common.Snowflake("123456789012345")
+	guildID := discord.Snowflake("123456789012345")
 	// Seed two emojis.
-	es.s.set("e1", emojiValue{GuildID: guildID, Emoji: &common.Emoji{ID: "e1"}})
-	es.s.set("e2", emojiValue{GuildID: guildID, Emoji: &common.Emoji{ID: "e2"}})
+	es.s.set("e1", emojiValue{GuildID: guildID, Emoji: &discord.Emoji{ID: "e1"}})
+	es.s.set("e2", emojiValue{GuildID: guildID, Emoji: &discord.Emoji{ID: "e2"}})
 
 	sawEmpty := make(chan struct{}, 1)
 	stop := make(chan struct{})
@@ -88,7 +88,7 @@ func TestBug10SetAllIsAtomicNoEmptyWindowForReaders(t *testing.T) {
 	for i := 0; i < iters; i++ {
 		go func() {
 			defer wg.Done()
-			es.SetAll(guildID, []*common.Emoji{
+			es.SetAll(guildID, []*discord.Emoji{
 				{ID: "e1"},
 				{ID: "e2"},
 			})
@@ -108,10 +108,10 @@ func TestBug10SetAllIsAtomicNoEmptyWindowForReaders(t *testing.T) {
 // operations on totalBytes happen inside the same lock, so no concurrent reader
 // can observe a transient undercount between the two ops.
 func TestBug11TotalBytesNeverNegative(t *testing.T) {
-	s := newGenericStore[string, *common.Guild](storeCfg{trackBytes: true})
+	s := newGenericStore[string, *discord.Guild](storeCfg{trackBytes: true})
 
 	// Seed one entry so every subsequent Set is an update (subtract+add path).
-	s.set("1", &common.Guild{ID: "1", Name: "initial"})
+	s.set("1", &discord.Guild{ID: "1", Name: "initial"})
 
 	negative := make(chan int64, 1)
 	stop := make(chan struct{})
@@ -138,7 +138,7 @@ func TestBug11TotalBytesNeverNegative(t *testing.T) {
 	for i := 0; i < goroutines; i++ {
 		go func() {
 			defer wg.Done()
-			s.set("1", &common.Guild{ID: "1", Name: "updated"})
+			s.set("1", &discord.Guild{ID: "1", Name: "updated"})
 		}()
 	}
 	wg.Wait()

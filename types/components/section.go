@@ -2,11 +2,11 @@ package components
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type Section struct {
-	Type       common.ComponentType   `json:"type"`
+	Type       discord.ComponentType  `json:"type"`
 	ID         *int                   `json:"id,omitempty"`
 	Components *[]AnySectionComponent `json:"components"`
 	Accessory  AnySectionAccessory    `json:"accessory,omitempty"`
@@ -32,7 +32,7 @@ func (s *Section) UnmarshalJSON(data []byte) error {
 
 	for _, c := range raw.Components {
 		var probe struct {
-			Type common.ComponentType `json:"type"`
+			Type discord.ComponentType `json:"type"`
 		}
 
 		if err := json.Unmarshal(c, &probe); err != nil {
@@ -40,7 +40,7 @@ func (s *Section) UnmarshalJSON(data []byte) error {
 		}
 
 		switch probe.Type {
-		case common.ComponentTypeTextDisplay:
+		case discord.ComponentTypeTextDisplay:
 			var t *TextDisplayComponent
 			if err := json.Unmarshal(c, &t); err != nil {
 				return err
@@ -53,7 +53,7 @@ func (s *Section) UnmarshalJSON(data []byte) error {
 }
 
 func (s *Section) MarshalJSON() ([]byte, error) {
-	s.Type = common.ComponentTypeSection
+	s.Type = discord.ComponentTypeSection
 	type Alias Section
 	return json.Marshal(&struct {
 		*Alias
@@ -62,6 +62,6 @@ func (s *Section) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (s *Section) GetType() common.ComponentType {
-	return common.ComponentTypeSection
+func (s *Section) GetType() discord.ComponentType {
+	return discord.ComponentTypeSection
 }

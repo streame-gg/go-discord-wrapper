@@ -1,21 +1,23 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type MessagePollVoteAddEvent struct {
-	UserID    common.Snowflake  `json:"user_id"`
-	ChannelID common.Snowflake  `json:"channel_id"`
-	MessageID common.Snowflake  `json:"message_id"`
-	GuildID   *common.Snowflake `json:"guild_id,omitempty"`
-	AnswerID  int               `json:"answer_id"`
+	UserID    discord.Snowflake  `json:"user_id"`
+	ChannelID discord.Snowflake  `json:"channel_id"`
+	MessageID discord.Snowflake  `json:"message_id"`
+	GuildID   *discord.Snowflake `json:"guild_id,omitempty"`
+	AnswerID  int                `json:"answer_id"`
 }
 
 type MessagePollVoteRemoveEvent struct {
-	UserID    common.Snowflake  `json:"user_id"`
-	ChannelID common.Snowflake  `json:"channel_id"`
-	MessageID common.Snowflake  `json:"message_id"`
-	GuildID   *common.Snowflake `json:"guild_id,omitempty"`
-	AnswerID  int               `json:"answer_id"`
+	UserID    discord.Snowflake  `json:"user_id"`
+	ChannelID discord.Snowflake  `json:"channel_id"`
+	MessageID discord.Snowflake  `json:"message_id"`
+	GuildID   *discord.Snowflake `json:"guild_id,omitempty"`
+	AnswerID  int                `json:"answer_id"`
 }
 
 func init() {

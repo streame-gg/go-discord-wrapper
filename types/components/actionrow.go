@@ -2,21 +2,21 @@ package components
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type ActionRow struct {
-	Type       common.ComponentType  `json:"type"`
-	ID         *int                  `json:"id"`
-	Components []common.AnyComponent `json:"components"`
+	Type       discord.ComponentType  `json:"type"`
+	ID         *int                   `json:"id"`
+	Components []discord.AnyComponent `json:"components"`
 }
 
-func (a *ActionRow) GetType() common.ComponentType {
-	return common.ComponentTypeActionRow
+func (a *ActionRow) GetType() discord.ComponentType {
+	return discord.ComponentTypeActionRow
 }
 
 func (a *ActionRow) MarshalJSON() ([]byte, error) {
-	a.Type = common.ComponentTypeActionRow
+	a.Type = discord.ComponentTypeActionRow
 	type Alias ActionRow
 	return json.Marshal(&struct {
 		*Alias
@@ -45,7 +45,7 @@ func (a *ActionRow) UnmarshalJSON(data []byte) error {
 
 	for _, c := range raw.Components {
 		var probe struct {
-			Type common.ComponentType `json:"type"`
+			Type discord.ComponentType `json:"type"`
 		}
 
 		if err := json.Unmarshal(c, &probe); err != nil {
@@ -53,7 +53,7 @@ func (a *ActionRow) UnmarshalJSON(data []byte) error {
 		}
 
 		switch probe.Type {
-		case common.ComponentTypeButton:
+		case discord.ComponentTypeButton:
 			var b *ButtonComponent
 			if err := json.Unmarshal(c, &b); err != nil {
 				return err

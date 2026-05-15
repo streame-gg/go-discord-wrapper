@@ -2,11 +2,11 @@ package components
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type StringSelectMenuComponent struct {
-	Type        common.ComponentType               `json:"type"`
+	Type        discord.ComponentType              `json:"type"`
 	ID          *int                               `json:"id,omitempty"`
 	CustomID    string                             `json:"custom_id"`
 	Placeholder string                             `json:"placeholder,omitempty"`
@@ -22,7 +22,7 @@ func (s *StringSelectMenuComponent) IsAnyContainerAccessory() bool {
 }
 
 func (s *StringSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	s.Type = common.ComponentTypeStringSelectMenu
+	s.Type = discord.ComponentTypeStringSelectMenu
 	type Alias StringSelectMenuComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -31,8 +31,8 @@ func (s *StringSelectMenuComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (s *StringSelectMenuComponent) GetType() common.ComponentType {
-	return common.ComponentTypeStringSelectMenu
+func (s *StringSelectMenuComponent) GetType() discord.ComponentType {
+	return discord.ComponentTypeStringSelectMenu
 }
 
 func (s *StringSelectMenuComponent) UnmarshalJSON(data []byte) error {
@@ -50,11 +50,11 @@ func (s *StringSelectMenuComponent) UnmarshalJSON(data []byte) error {
 }
 
 type StringSelectMenuComponentOption struct {
-	Label       string        `json:"label"`
-	Value       string        `json:"value"`
-	Description string        `json:"description,omitempty"`
-	Emoji       *common.Emoji `json:"emoji,omitempty"`
-	Default     bool          `json:"default,omitempty"`
+	Label       string         `json:"label"`
+	Value       string         `json:"value"`
+	Description string         `json:"description,omitempty"`
+	Emoji       *discord.Emoji `json:"emoji,omitempty"`
+	Default     bool           `json:"default,omitempty"`
 }
 
 func (s *StringSelectMenuComponent) IsAnyLabelComponent() {
@@ -62,11 +62,11 @@ func (s *StringSelectMenuComponent) IsAnyLabelComponent() {
 }
 
 type StringSelectComponentInteractionResponse struct {
-	Type          common.ComponentType `json:"type"`
-	Values        []string             `json:"values"`
-	ID            *int                 `json:"id,omitempty"`
-	CustomID      string               `json:"custom_id,omitempty"`
-	ComponentType common.ComponentType `json:"component_type"`
+	Type          discord.ComponentType `json:"type"`
+	Values        []string              `json:"values"`
+	ID            *int                  `json:"id,omitempty"`
+	CustomID      string                `json:"custom_id,omitempty"`
+	ComponentType discord.ComponentType `json:"component_type"`
 }
 
 func (s *StringSelectComponentInteractionResponse) IsInteractionResponseDataComponent() {
@@ -74,8 +74,8 @@ func (s *StringSelectComponentInteractionResponse) IsInteractionResponseDataComp
 }
 
 func (s *StringSelectComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	s.ComponentType = common.ComponentTypeStringSelectMenu
-	s.Type = common.ComponentTypeStringSelectMenu
+	s.ComponentType = discord.ComponentTypeStringSelectMenu
+	s.Type = discord.ComponentTypeStringSelectMenu
 
 	type Alias StringSelectComponentInteractionResponse
 

@@ -18,7 +18,7 @@ import (
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/cache/mongocache"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── container setup ───────────────────────────────────────────────────────────
@@ -77,30 +77,30 @@ func newCache(t *testing.T, opts cache.Options) *mongocache.MongoDBCache {
 	return c
 }
 
-func guild(id string) *common.Guild {
-	return &common.Guild{ID: common.Snowflake(id), Name: "guild-" + id}
+func guild(id string) *discord.Guild {
+	return &discord.Guild{ID: discord.Snowflake(id), Name: "guild-" + id}
 }
 
-func channel(id string) *common.Channel {
-	return &common.Channel{ID: common.Snowflake(id), Name: "chan-" + id}
+func channel(id string) *discord.Channel {
+	return &discord.Channel{ID: discord.Snowflake(id), Name: "chan-" + id}
 }
 
-func user(id string) *common.User {
-	return &common.User{ID: common.Snowflake(id), Username: "user-" + id}
+func user(id string) *discord.User {
+	return &discord.User{ID: discord.Snowflake(id), Username: "user-" + id}
 }
 
-func member(userID string) *common.GuildMember {
-	return &common.GuildMember{User: user(userID)}
+func member(userID string) *discord.GuildMember {
+	return &discord.GuildMember{User: user(userID)}
 }
 
-func sticker(id string) *common.Sticker {
-	return &common.Sticker{ID: common.Snowflake(id), Name: "sticker-" + id}
+func sticker(id string) *discord.Sticker {
+	return &discord.Sticker{ID: discord.Snowflake(id), Name: "sticker-" + id}
 }
 
-func message(id, channelID string) *common.Message {
-	return &common.Message{
-		ID:        common.Snowflake(id),
-		ChannelID: common.Snowflake(channelID),
+func message(id, channelID string) *discord.Message {
+	return &discord.Message{
+		ID:        discord.Snowflake(id),
+		ChannelID: discord.Snowflake(channelID),
 		Content:   "msg-" + id,
 	}
 }
@@ -155,8 +155,8 @@ func TestGuildStore_Size(t *testing.T) {
 func TestGuildStore_Overwrite(t *testing.T) {
 	c := newCache(t, cache.Options{})
 
-	c.Guilds().Set(&common.Guild{ID: "1", Name: "old"})
-	c.Guilds().Set(&common.Guild{ID: "1", Name: "new"})
+	c.Guilds().Set(&discord.Guild{ID: "1", Name: "old"})
+	c.Guilds().Set(&discord.Guild{ID: "1", Name: "new"})
 
 	got, ok := c.Guilds().Get("1")
 	if !ok || got.Name != "new" {
@@ -311,7 +311,7 @@ func TestMemberStore_AllInGuild(t *testing.T) {
 func TestMemberStore_NilUser(t *testing.T) {
 	c := newCache(t, cache.Options{})
 
-	c.Members().Set("g1", &common.GuildMember{})
+	c.Members().Set("g1", &discord.GuildMember{})
 	if c.Members().Size() != 0 {
 		t.Fatal("expected size 0 when member.User is nil")
 	}
@@ -338,7 +338,7 @@ func TestStickerStore_CRUDAndSetAll(t *testing.T) {
 		t.Fatalf("expected sticker s1, ok=%v", ok)
 	}
 
-	c.Stickers().SetAll("guild1", []*common.Sticker{sticker("s2"), sticker("s3")})
+	c.Stickers().SetAll("guild1", []*discord.Sticker{sticker("s2"), sticker("s3")})
 	if _, ok := c.Stickers().Get("s1"); ok {
 		t.Fatal("expected old guild stickers replaced by SetAll")
 	}
@@ -427,14 +427,14 @@ func TestMessageStore_DeleteBulk(t *testing.T) {
 	for i := 1; i <= 5; i++ {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
 	}
-	c.Messages().DeleteBulk("c1", []common.Snowflake{"m1", "m3", "m5"})
+	c.Messages().DeleteBulk("c1", []discord.Snowflake{"m1", "m3", "m5"})
 
-	for _, id := range []common.Snowflake{"m1", "m3", "m5"} {
+	for _, id := range []discord.Snowflake{"m1", "m3", "m5"} {
 		if _, ok := c.Messages().Get("c1", id); ok {
 			t.Fatalf("expected message %s deleted", id)
 		}
 	}
-	for _, id := range []common.Snowflake{"m2", "m4"} {
+	for _, id := range []discord.Snowflake{"m2", "m4"} {
 		if _, ok := c.Messages().Get("c1", id); !ok {
 			t.Fatalf("expected message %s present", id)
 		}
@@ -565,10 +565,10 @@ func TestConcurrent_NoRace(t *testing.T) {
 		g := g
 		go func() {
 			defer wg.Done()
-			gid := common.Snowflake(fmt.Sprintf("g%d", g%3))
-			uid := common.Snowflake(fmt.Sprintf("u%d", g%4))
-			cid := common.Snowflake(fmt.Sprintf("c%d", g%2))
-			mid := common.Snowflake(fmt.Sprintf("msg%d", g))
+			gid := discord.Snowflake(fmt.Sprintf("g%d", g%3))
+			uid := discord.Snowflake(fmt.Sprintf("u%d", g%4))
+			cid := discord.Snowflake(fmt.Sprintf("c%d", g%2))
+			mid := discord.Snowflake(fmt.Sprintf("msg%d", g))
 			for i := 0; i < ops; i++ {
 				c.Guilds().Set(guild(string(gid)))
 				c.Guilds().Get(gid)
@@ -590,10 +590,10 @@ func TestConcurrent_NoRace(t *testing.T) {
 func TestBug50SetAllIsAtomic(t *testing.T) {
 	c := newCache(t, cache.Options{})
 
-	const guildID = common.Snowflake("g1")
+	const guildID = discord.Snowflake("g1")
 	const workers = 50
 
-	initial := []*common.Emoji{
+	initial := []*discord.Emoji{
 		{ID: "e1", Name: "emoji1"},
 		{ID: "e2", Name: "emoji2"},
 		{ID: "e3", Name: "emoji3"},
@@ -623,7 +623,7 @@ func TestBug50SetAllIsAtomic(t *testing.T) {
 		}()
 	}
 
-	newSet := []*common.Emoji{
+	newSet := []*discord.Emoji{
 		{ID: "n1", Name: "new1"}, {ID: "n2", Name: "new2"},
 		{ID: "n3", Name: "new3"}, {ID: "n4", Name: "new4"},
 		{ID: "n5", Name: "new5"},

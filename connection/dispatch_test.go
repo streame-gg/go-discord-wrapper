@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 )
 
@@ -95,7 +95,7 @@ func dispatchPacket(eventType string, data interface{}) map[string]interface{} {
 
 // launchClient connects to wsURL, starts the listener goroutine, and waits
 // for the READY event before returning.  Call stop() to clean up.
-func launchClient(t *testing.T, wsURL string, intents common.Intent) (c *Client, stop func()) {
+func launchClient(t *testing.T, wsURL string, intents discord.Intent) (c *Client, stop func()) {
 	t.Helper()
 
 	var err error
@@ -131,7 +131,7 @@ func TestDispatchFiresRegisteredHandler(t *testing.T) {
 	wsURL, closeServer := mockGateway(t, msgPacket)
 	defer closeServer()
 
-	client, stop := launchClient(t, wsURL, common.IntentGuilds)
+	client, stop := launchClient(t, wsURL, discord.IntentGuilds)
 	defer stop()
 
 	var called atomic.Bool
@@ -162,7 +162,7 @@ func TestDispatchCallsAllRegisteredHandlers(t *testing.T) {
 	wsURL, closeServer := mockGateway(t, msgPacket)
 	defer closeServer()
 
-	client, stop := launchClient(t, wsURL, common.IntentGuilds)
+	client, stop := launchClient(t, wsURL, discord.IntentGuilds)
 	defer stop()
 
 	var count atomic.Int32
@@ -203,7 +203,7 @@ func TestMiddlewareWrapsHandler(t *testing.T) {
 	wsURL, closeServer := mockGateway(t, msgPacket)
 	defer closeServer()
 
-	client, stop := launchClient(t, wsURL, common.IntentGuilds)
+	client, stop := launchClient(t, wsURL, discord.IntentGuilds)
 	defer stop()
 
 	var mu sync.Mutex
@@ -255,7 +255,7 @@ func TestMiddlewareCanShortCircuit(t *testing.T) {
 	wsURL, closeServer := mockGateway(t, msgPacket)
 	defer closeServer()
 
-	client, stop := launchClient(t, wsURL, common.IntentGuilds)
+	client, stop := launchClient(t, wsURL, discord.IntentGuilds)
 	defer stop()
 
 	var handlerCalled atomic.Bool
@@ -293,7 +293,7 @@ func TestHandlerRegisteredBeforeUseIsNotWrapped(t *testing.T) {
 	wsURL, closeServer := mockGateway(t, msgPacket)
 	defer closeServer()
 
-	client, stop := launchClient(t, wsURL, common.IntentGuilds)
+	client, stop := launchClient(t, wsURL, discord.IntentGuilds)
 	defer stop()
 
 	var mwCalled atomic.Bool
@@ -326,7 +326,7 @@ func TestHandlerRegisteredBeforeUseIsNotWrapped(t *testing.T) {
 // BenchmarkDispatch measures raw event throughput through the dispatch loop,
 // bypassing the WebSocket layer.
 func BenchmarkDispatch(b *testing.B) {
-	client, err := NewClient("Bot fake-token", common.IntentGuilds)
+	client, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -360,7 +360,7 @@ func BenchmarkDispatch(b *testing.B) {
 
 // BenchmarkDispatchWithMiddleware measures the overhead of a single pass-through middleware.
 func BenchmarkDispatchWithMiddleware(b *testing.B) {
-	client, err := NewClient("Bot fake-token", common.IntentGuilds)
+	client, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	if err != nil {
 		b.Fatal(err)
 	}

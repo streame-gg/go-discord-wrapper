@@ -1,7 +1,7 @@
 package events
 
 import (
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
@@ -21,11 +21,11 @@ func (e InteractionCreateEvent) Event() EventType {
 }
 
 func (e InteractionCreateEvent) IsCommand() bool {
-	return e.Type == common.InteractionTypeApplicationCommand
+	return e.Type == discord.InteractionTypeApplicationCommand
 }
 
 func (e InteractionCreateEvent) IsButton() bool {
-	if e.Type != common.InteractionTypeMessageComponent {
+	if e.Type != discord.InteractionTypeMessageComponent {
 		return false
 	}
 
@@ -33,11 +33,11 @@ func (e InteractionCreateEvent) IsButton() bool {
 	if !ok {
 		return false
 	}
-	return comp.ComponentType == common.ComponentTypeButton
+	return comp.ComponentType == discord.ComponentTypeButton
 }
 
 func (e InteractionCreateEvent) IsAnySelectMenu() bool {
-	if e.Type != common.InteractionTypeMessageComponent {
+	if e.Type != discord.InteractionTypeMessageComponent {
 		return false
 	}
 
@@ -49,9 +49,9 @@ func (e InteractionCreateEvent) IsAnySelectMenu() bool {
 }
 
 func (e InteractionCreateEvent) IsAutocomplete() bool {
-	return e.Type == common.InteractionTypeApplicationCommandAutocomplete
+	return e.Type == discord.InteractionTypeApplicationCommandAutocomplete
 }
 
 func (e InteractionCreateEvent) IsModalSubmit() bool {
-	return e.Type == common.InteractionTypeModalSubmit
+	return e.Type == discord.InteractionTypeModalSubmit
 }

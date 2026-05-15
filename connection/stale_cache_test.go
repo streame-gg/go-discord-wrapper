@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // TestBug25GetGuildRolesEvictsStaleRoles verifies that GetGuildRoles removes
@@ -16,9 +16,9 @@ import (
 func TestBug25GetGuildRolesEvictsStaleRoles(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := common.Snowflake("111222333444555")
-	roleA := &common.Role{ID: "aaa111222333444"}
-	roleB := &common.Role{ID: "bbb111222333444"}
+	guildID := discord.Snowflake("111222333444555")
+	roleA := &discord.Role{ID: "aaa111222333444"}
+	roleB := &discord.Role{ID: "bbb111222333444"}
 
 	c.cacheRole(guildID, roleA)
 	c.cacheRole(guildID, roleB)
@@ -29,7 +29,7 @@ func TestBug25GetGuildRolesEvictsStaleRoles(t *testing.T) {
 	// Simulate what the fixed GetGuildRoles does: remove all guild roles first,
 	// then cache only the roles returned by the API (roleA only).
 	c.Cache.Roles().DeleteGuild(guildID)
-	c.cacheRoles(guildID, []*common.Role{roleA})
+	c.cacheRoles(guildID, &[]*discord.Role{roleA})
 
 	_, okB = c.Cache.Roles().Get(roleB.ID)
 	assert.False(t, okB, "stale roleB must be evicted by GetGuildRoles refresh (Bug 25)")
@@ -43,12 +43,12 @@ func TestBug25GetGuildRolesEvictsStaleRoles(t *testing.T) {
 func TestBug25GetGuildChannelsEvictsStaleChannels(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := common.Snowflake("222333444555666")
-	chA := common.Snowflake("aaa222333444555")
-	chB := common.Snowflake("bbb222333444555")
+	guildID := discord.Snowflake("222333444555666")
+	chA := discord.Snowflake("aaa222333444555")
+	chB := discord.Snowflake("bbb222333444555")
 
-	c.cacheChannel(&common.Channel{ID: chA, GuildID: &guildID})
-	c.cacheChannel(&common.Channel{ID: chB, GuildID: &guildID})
+	c.cacheChannel(&discord.Channel{ID: chA, GuildID: &guildID})
+	c.cacheChannel(&discord.Channel{ID: chB, GuildID: &guildID})
 
 	_, okB := c.Cache.Channels().Get(chB)
 	require.True(t, okB, "channelB must be in cache before the refresh")
@@ -60,7 +60,7 @@ func TestBug25GetGuildChannelsEvictsStaleChannels(t *testing.T) {
 		c.Cache.Messages().DeleteChannel(oldID)
 	}
 	// Only chA is returned by the API this time.
-	c.cacheChannels([]*common.Channel{{ID: chA, GuildID: &guildID}})
+	c.cacheChannels(&[]*discord.Channel{{ID: chA, GuildID: &guildID}})
 
 	_, okB = c.Cache.Channels().Get(chB)
 	assert.False(t, okB, "stale channelB must be evicted by GetGuildChannels refresh (Bug 25)")

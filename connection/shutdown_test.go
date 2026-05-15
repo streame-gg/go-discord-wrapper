@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 )
 
@@ -19,7 +19,7 @@ func TestBug51ShutdownIdempotent(t *testing.T) {
 	wsURL, closeServer := mockGateway(t)
 	defer closeServer()
 
-	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
 	require.NoError(t, c.connectWebsocket(wsURL, false, nil, nil))
@@ -65,7 +65,7 @@ func TestBug48EventChSendRace(t *testing.T) {
 	for iter := 0; iter < 100; iter++ {
 		wsURL, closeServer := mockGateway(t, packets...)
 
-		c, err := NewClient("Bot fake-token", common.IntentGuilds)
+		c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 		require.NoError(t, err)
 
 		require.NoError(t, c.connectWebsocket(wsURL, false, nil, nil))
@@ -100,7 +100,7 @@ func TestBug49UnlimitedModeHandlersComplete(t *testing.T) {
 	wsURL, closeServer := mockGateway(t, packets...)
 	defer closeServer()
 
-	c, err := NewClient("Bot fake-token", common.IntentGuilds)
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
 	var handledCount atomic.Int64

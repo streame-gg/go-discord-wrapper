@@ -1,20 +1,22 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type GuildRoleCreateEvent struct {
-	GuildID common.Snowflake `json:"guild_id"`
-	Role    common.Role      `json:"role"`
+	GuildID discord.Snowflake `json:"guild_id"`
+	Role    discord.Role      `json:"role"`
 }
 
 type GuildRoleUpdateEvent struct {
-	GuildID common.Snowflake `json:"guild_id"`
-	Role    common.Role      `json:"role"`
+	GuildID discord.Snowflake `json:"guild_id"`
+	Role    discord.Role      `json:"role"`
 }
 
 type GuildRoleDeleteEvent struct {
-	GuildID common.Snowflake `json:"guild_id"`
-	RoleID  common.Snowflake `json:"role_id"`
+	GuildID discord.Snowflake `json:"guild_id"`
+	RoleID  discord.Snowflake `json:"role_id"`
 }
 
 func init() {

@@ -10,12 +10,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/options"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/util"
 )
 
@@ -24,6 +25,8 @@ import (
 type routePathKey struct{}
 
 type RestEventType string
+
+type NoReturnData struct{}
 
 const (
 	RestEventRequest   RestEventType = "REQUEST"
@@ -47,7 +50,7 @@ type RestEventHandler func(*RestClient, RestEvent)
 type RestClient struct {
 	BaseURL string
 	token   string
-	Version common.APIVersion
+	Version discord.APIVersion
 
 	httpClient *http.Client
 
@@ -76,7 +79,7 @@ type RestClient struct {
 func NewRestClient(token string, opts ...options.Option) (*RestClient, error) {
 	cfg := options.Build(options.Config{
 		BaseURL:    "https://discord.com/api",
-		APIVersion: common.APIVersion10,
+		APIVersion: discord.APIVersion10,
 		Retry: options.RetryOptions{
 			MaxRetries:          3,
 			BaseBackoff:         500 * time.Millisecond,
@@ -200,7 +203,7 @@ func (c *RestClient) emitEvent(event RestEvent) {
 }
 
 // validateAPIPath rejects any digit-only path segment that is not a valid Discord Snowflake
-// (15–20 decimal digits). This stops the most common URL-injection pattern where user-supplied
+// (15–20 decimal digits). This stops the most discord URL-injection pattern where user-supplied
 // short numeric input (e.g. "123") is concatenated directly into a path without sanitisation.
 // Slash-injection (e.g. Snowflake("123456789012345/evil")) is caught earlier by Snowflake.String(),
 // which panics when the value contains a '/'.
@@ -229,14 +232,34 @@ func isAllDigits(s string) bool {
 	return true
 }
 
+func (c *RestClient) WithBotAuthorization() func(req *http.Request) {
+	return func(req *http.Request) {
+		req.Header.Set("Authorization", "Bot "+c.token)
+	}
+}
+
+func WithUserAuthorization(token string) func(req *http.Request) {
+	return func(req *http.Request) {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+}
+
+func WithAuditLogReason(reason string) func(req *http.Request) {
+	return func(req *http.Request) {
+		if reason != "" {
+			req.Header.Set("X-Audit-Log-Reason", reason)
+		}
+	}
+}
+
 // generateRequest builds an authenticated HTTP request and embeds the relative
 // route path into the request context for the rate limiter to consume.
-func (c *RestClient) generateRequest(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
+func (c *RestClient) generateRequest(ctx context.Context, method, path string, body io.Reader, options ...func(req *http.Request)) (*http.Request, error) {
 	if err := validateAPIPath(path); err != nil {
 		return nil, err
 	}
 	// Store the relative path (e.g. "/channels/111/messages") so that the
-	// rate limiter can normalise it into a bucket key without re-parsing the URL.
+	// rate limiter can normalize it into a bucket key without reparsing the URL.
 	ctx = context.WithValue(ctx, routePathKey{}, path)
 
 	req, err := http.NewRequestWithContext(ctx, method, c.buildURL()+path, body)
@@ -244,19 +267,62 @@ func (c *RestClient) generateRequest(ctx context.Context, method, path string, b
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", "Bot "+c.token)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", fmt.Sprintf("GoDiscordWrapper (%s@%s)", common.RepositoryURL, common.RepositoryVersion))
+	req.Header.Set("User-Agent", fmt.Sprintf("GoDiscordWrapper (%s@%s)", discord.RepositoryURL, discord.RepositoryVersion))
+
+	for _, option := range options {
+		option(req)
+	}
 
 	return req, nil
 }
 
-// do executes req and decodes a successful response into v (when v != nil).
+func DoesIntExistInList(actual int, list []int) bool {
+	for _, code := range list {
+		if code == actual {
+			return true
+		}
+	}
+
+	return false
+}
+
+// doRequest executes req and decodes a successful response into v (when v != nil).
 // The returned *http.Response has its Body already closed; callers must not
 // read from it. Inspect headers and status codes via the returned value, but
-// do not call resp.Body.Read or resp.Body.Close again.
-func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{}) (*http.Response, error) {
+// doRequest not call resp.Body.Read or resp.Body.Close again.
+
+// successResponseCodeData is based on map[statusCode]returnRequestBody
+// if statusCode is 204 (No Content), no request body will be returned, so you do not have to set it to false
+
+// Waiting for Go 1.27 to implement this in the RestClient;
+// https://github.com/golang/go/issues/77273
+
+func doRequestWithoutResponse(c *RestClient, req *http.Request, enforceStatusCodes ...int) error {
+	if len(enforceStatusCodes) == 0 {
+		_, err := doRequest[NoReturnData](c, req, map[int]bool{
+			http.StatusOK:        false,
+			http.StatusCreated:   false,
+			http.StatusAccepted:  false,
+			http.StatusNoContent: false,
+		})
+
+		return err
+	}
+
+	statusCodes := map[int]bool{}
+
+	for _, code := range enforceStatusCodes {
+		statusCodes[code] = false
+	}
+
+	_, err := doRequest[NoReturnData](c, req, statusCodes)
+
+	return err
+}
+
+func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData map[int]bool) (*T, error) {
 	if req == nil {
 		return nil, errors.New("request must not be nil")
 	}
@@ -318,16 +384,26 @@ func (c *RestClient) do(req *http.Request, successResponseCode int, v interface{
 
 		c.emitEvent(RestEvent{Type: RestEventResponse, Request: safeReq, Response: resp, Attempt: attempt})
 
-		if resp.StatusCode == successResponseCode {
-			if v != nil && resp.StatusCode != http.StatusNoContent {
-				if decodeErr := json.NewDecoder(resp.Body).Decode(v); decodeErr != nil {
-					_ = resp.Body.Close()
-					return nil, decodeErr
-				}
+		if entry, ok := successResponseCodeData[resp.StatusCode]; ok {
+			var returnType T
+
+			if resp.StatusCode == http.StatusNoContent || reflect.TypeOf(returnType) == reflect.TypeOf(NoReturnData{}) || !entry {
+				_ = resp.Body.Close()
+				return nil, nil
+			}
+
+			if reflect.TypeOf(returnType) == reflect.TypeOf(NoReturnData{}) {
+				_ = resp.Body.Close()
+				return nil, nil
+			}
+
+			if json.NewDecoder(resp.Body).Decode(&returnType) != nil {
+				return nil, err
 			}
 
 			_ = resp.Body.Close()
-			return resp, nil
+
+			return &returnType, nil
 		}
 
 		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode) {
@@ -415,11 +491,11 @@ func (c *RestClient) waitForMinInterval(ctx context.Context) error {
 }
 
 func decodeGatewayError(resp *http.Response) error {
-	var body common.GatewayError
+	var body discord.GatewayError
 	_ = json.NewDecoder(resp.Body).Decode(&body)
 	return &Error{
 		HTTPStatus: resp.StatusCode,
-		Code:       common.GatewayErrorCode(body.Code),
+		Code:       discord.GatewayErrorCode(body.Code),
 		Message:    body.Message,
 		Errors:     body.Errors,
 	}

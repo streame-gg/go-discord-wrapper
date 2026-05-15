@@ -3,25 +3,23 @@ package api
 import (
 	"context"
 	"net/http"
+	"net/url"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-func (c *RestClient) GetActivityInstance(ctx context.Context, appID common.Snowflake, instanceID string) (*common.ActivityInstance, error) {
+func (c *RestClient) GetActivityInstance(ctx context.Context, appID discord.Snowflake, instanceID string) (*discord.ActivityInstance, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
 
-	path := "/applications/" + appID.String() + "/activity-instances/" + instanceID
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	path := "/applications/" + appID.String() + "/activity-instances/" + url.PathEscape(instanceID)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	var result common.ActivityInstance
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[discord.ActivityInstance](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

@@ -1,21 +1,23 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type IntegrationCreateEvent struct {
-	common.Integration
-	GuildID common.Snowflake `json:"guild_id"`
+	discord.Integration
+	GuildID discord.Snowflake `json:"guild_id"`
 }
 
 type IntegrationUpdateEvent struct {
-	common.Integration
-	GuildID common.Snowflake `json:"guild_id"`
+	discord.Integration
+	GuildID discord.Snowflake `json:"guild_id"`
 }
 
 type IntegrationDeleteEvent struct {
-	ID            common.Snowflake  `json:"id"`
-	GuildID       common.Snowflake  `json:"guild_id"`
-	ApplicationID *common.Snowflake `json:"application_id,omitempty"`
+	ID            discord.Snowflake  `json:"id"`
+	GuildID       discord.Snowflake  `json:"guild_id"`
+	ApplicationID *discord.Snowflake `json:"application_id,omitempty"`
 }
 
 func init() {

@@ -7,36 +7,36 @@ import (
 	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/stretchr/testify/suite"
 )
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-func guild(id string) *common.Guild {
-	return &common.Guild{ID: common.Snowflake(id), Name: "guild-" + id}
+func guild(id string) *discord.Guild {
+	return &discord.Guild{ID: discord.Snowflake(id), Name: "guild-" + id}
 }
 
-func channel(id string) *common.Channel {
-	return &common.Channel{ID: common.Snowflake(id), Name: "chan-" + id}
+func channel(id string) *discord.Channel {
+	return &discord.Channel{ID: discord.Snowflake(id), Name: "chan-" + id}
 }
 
-func user(id string) *common.User {
-	return &common.User{ID: common.Snowflake(id), Username: "user-" + id}
+func user(id string) *discord.User {
+	return &discord.User{ID: discord.Snowflake(id), Username: "user-" + id}
 }
 
-func member(userID string) *common.GuildMember {
-	return &common.GuildMember{User: user(userID)}
+func member(userID string) *discord.GuildMember {
+	return &discord.GuildMember{User: user(userID)}
 }
 
-func sticker(id string) *common.Sticker {
-	return &common.Sticker{ID: common.Snowflake(id), Name: "sticker-" + id}
+func sticker(id string) *discord.Sticker {
+	return &discord.Sticker{ID: discord.Snowflake(id), Name: "sticker-" + id}
 }
 
-func message(id, channelID string) *common.Message {
-	return &common.Message{
-		ID:        common.Snowflake(id),
-		ChannelID: common.Snowflake(channelID),
+func message(id, channelID string) *discord.Message {
+	return &discord.Message{
+		ID:        discord.Snowflake(id),
+		ChannelID: discord.Snowflake(channelID),
 		Content:   "msg-" + id,
 	}
 }
@@ -160,7 +160,7 @@ func (s *memoryTestSuite) TestMemberStore_NilUser() {
 	c := newCache(cache.Options{})
 	defer c.Close()
 
-	c.Members().Set("guild1", &common.GuildMember{})
+	c.Members().Set("guild1", &discord.GuildMember{})
 	s.Equalf(0, c.Members().Size(), "expected size 0 when member.User is nil")
 }
 
@@ -174,7 +174,7 @@ func (s *memoryTestSuite) TestStickerStore_CRUDAndSetAll() {
 	got, ok := c.Stickers().Get("s1")
 	s.Truef(ok && got.ID == "s1", "expected sticker s1, ok=%v", ok)
 
-	c.Stickers().SetAll("guild1", []*common.Sticker{sticker("s2"), sticker("s3")})
+	c.Stickers().SetAll("guild1", []*discord.Sticker{sticker("s2"), sticker("s3")})
 	_, ok = c.Stickers().Get("s1")
 	s.False(ok, "expected old guild stickers replaced by SetAll")
 	s.Lenf(c.Stickers().GetByGuild("guild1"), 2, "expected 2 stickers after SetAll")
@@ -220,13 +220,13 @@ func (s *memoryTestSuite) TestMessageStore_DeleteBulk() {
 	for i := 1; i <= 5; i++ {
 		c.Messages().Add(message(fmt.Sprintf("msg%d", i), "chan1"))
 	}
-	c.Messages().DeleteBulk("chan1", []common.Snowflake{"msg1", "msg3", "msg5"})
+	c.Messages().DeleteBulk("chan1", []discord.Snowflake{"msg1", "msg3", "msg5"})
 
-	for _, id := range []common.Snowflake{"msg1", "msg3", "msg5"} {
+	for _, id := range []discord.Snowflake{"msg1", "msg3", "msg5"} {
 		_, ok := c.Messages().Get("chan1", id)
 		s.Falsef(ok, "expected %s deleted", id)
 	}
-	for _, id := range []common.Snowflake{"msg2", "msg4"} {
+	for _, id := range []discord.Snowflake{"msg2", "msg4"} {
 		_, ok := c.Messages().Get("chan1", id)
 		s.Truef(ok, "expected %s present", id)
 	}
@@ -241,7 +241,7 @@ func (s *memoryTestSuite) TestMessageStore_Channel_NewestFirst() {
 	}
 	msgs := c.Messages().Channel("chan1")
 	s.Require().Lenf(msgs, 5, "expected 5 messages, got %d", len(msgs))
-	s.Equalf(common.Snowflake("msg5"), msgs[0].ID, "expected newest first (msg5), got %s", msgs[0].ID)
+	s.Equalf(discord.Snowflake("msg5"), msgs[0].ID, "expected newest first (msg5), got %s", msgs[0].ID)
 }
 
 func (s *memoryTestSuite) TestMessageStore_DeleteChannel() {
@@ -269,7 +269,7 @@ func (s *memoryTestSuite) TestMessageStore_RingEvictsOldest() {
 	msgs := c.Messages().Channel("chan1")
 	s.Require().Lenf(msgs, 3, "expected ring cap of 3, got %d", len(msgs))
 	for _, m := range msgs {
-		s.NotEqualf(common.Snowflake("msg1"), m.ID, "msg1 (oldest) should have been evicted")
+		s.NotEqualf(discord.Snowflake("msg1"), m.ID, "msg1 (oldest) should have been evicted")
 	}
 }
 
@@ -506,8 +506,8 @@ func (s *memoryTestSuite) TestLimits_MaxSizeMB() {
 
 	// Add enough entries to exceed 1 KB of JSON.
 	for i := 0; i < 50; i++ {
-		c.Guilds().Set(&common.Guild{
-			ID:   common.Snowflake(fmt.Sprintf("%d", i)),
+		c.Guilds().Set(&discord.Guild{
+			ID:   discord.Snowflake(fmt.Sprintf("%d", i)),
 			Name: fmt.Sprintf("a-rather-long-guild-name-number-%d", i),
 		})
 	}
@@ -555,12 +555,12 @@ func (s *memoryTestSuite) TestConcurrentAccess_NoRace() {
 			mid := fmt.Sprintf("msg%d", g)
 			for i := 0; i < ops; i++ {
 				c.Guilds().Set(guild(gid))
-				c.Guilds().Get(common.Snowflake(gid))
+				c.Guilds().Get(discord.Snowflake(gid))
 				c.Users().Set(user(uid))
 				c.Channels().Set(channel(cid))
 				c.Messages().Add(message(mid, cid))
-				c.Messages().Get(common.Snowflake(cid), common.Snowflake(mid))
-				c.Members().Set(common.Snowflake(gid), member(uid))
+				c.Messages().Get(discord.Snowflake(cid), discord.Snowflake(mid))
+				c.Members().Set(discord.Snowflake(gid), member(uid))
 			}
 		}()
 	}
@@ -609,7 +609,7 @@ func TestBug12EmptyRingRemovedAfterTTLExpiry(t *testing.T) {
 	})
 
 	// Add one message with a 20 ms TTL.
-	c.Messages().Add(&common.Message{ID: "m1", ChannelID: "ch1"})
+	c.Messages().Add(&discord.Message{ID: "m1", ChannelID: "ch1"})
 
 	// Wait for TTL expiry + a couple of sweep intervals.
 	time.Sleep(60 * time.Millisecond)
@@ -678,7 +678,7 @@ func TestBug9CountBasedEvictionDoesNotOverEvict(t *testing.T) {
 	c.Guilds().Set(guild("trigger"))
 	time.Sleep(50 * time.Millisecond) // wait for sweeper
 
-	_, userStillPresent := c.Users().Get(common.Snowflake("1"))
+	_, userStillPresent := c.Users().Get(discord.Snowflake("1"))
 	if !userStillPresent {
 		t.Error("lone user was evicted when need=1 — over-eviction from small store (Bug 9)")
 	}
@@ -714,13 +714,13 @@ func TestBug4ByteBasedEvictionDistribution(t *testing.T) {
 
 	// Seed store A: many small guilds.
 	for i := 0; i < 2000; i++ {
-		c.Guilds().Set(&common.Guild{ID: common.Snowflake(fmt.Sprintf("g%d", i)), Name: "g"})
+		c.Guilds().Set(&discord.Guild{ID: discord.Snowflake(fmt.Sprintf("g%d", i)), Name: "g"})
 	}
 
 	// Seed store B: 10 users each with a ~100KB username.
 	for i := 0; i < 10; i++ {
-		c.Users().Set(&common.User{
-			ID:       common.Snowflake(fmt.Sprintf("u%d", i)),
+		c.Users().Set(&discord.User{
+			ID:       discord.Snowflake(fmt.Sprintf("u%d", i)),
 			Username: bigName,
 		})
 	}
@@ -764,7 +764,7 @@ func TestBug3ConcurrentAddDeleteChannelNoCounterDrift(t *testing.T) {
 
 	const goroutines = 20
 	const ops = 500
-	chanID := common.Snowflake("ch1")
+	chanID := discord.Snowflake("ch1")
 
 	var wg sync.WaitGroup
 	wg.Add(goroutines * 2)
@@ -774,8 +774,8 @@ func TestBug3ConcurrentAddDeleteChannelNoCounterDrift(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for i := 0; i < ops; i++ {
-				c.Messages().Add(&common.Message{
-					ID:        common.Snowflake(fmt.Sprintf("g%d-m%d", g, i)),
+				c.Messages().Add(&discord.Message{
+					ID:        discord.Snowflake(fmt.Sprintf("g%d-m%d", g, i)),
 					ChannelID: chanID,
 					Content:   "x",
 				})
@@ -834,12 +834,12 @@ func TestBug2HitCountPreservedOnUpdate(t *testing.T) {
 	})
 	defer c.Close()
 
-	hotID := common.Snowflake("100")
-	coldID := common.Snowflake("200")
+	hotID := discord.Snowflake("100")
+	coldID := discord.Snowflake("200")
 
 	// Seed both guilds.
-	c.Guilds().Set(&common.Guild{ID: hotID, Name: "hot"})
-	c.Guilds().Set(&common.Guild{ID: coldID, Name: "cold"})
+	c.Guilds().Set(&discord.Guild{ID: hotID, Name: "hot"})
+	c.Guilds().Set(&discord.Guild{ID: coldID, Name: "cold"})
 
 	// Access hotGuild 100 times to build up its hitCount.
 	for i := 0; i < 100; i++ {
@@ -847,11 +847,11 @@ func TestBug2HitCountPreservedOnUpdate(t *testing.T) {
 	}
 
 	// Update hotGuild (simulating a GUILD_UPDATE event). The fix must preserve hitCount.
-	c.Guilds().Set(&common.Guild{ID: hotID, Name: "hot-updated"})
+	c.Guilds().Set(&discord.Guild{ID: hotID, Name: "hot-updated"})
 
 	// Trigger an overflow by adding a third guild (cap is 2); one of the two
 	// existing guilds must be evicted. ClearByFrequency evicts the lowest hitCount.
-	c.Guilds().Set(&common.Guild{ID: "300", Name: "trigger"})
+	c.Guilds().Set(&discord.Guild{ID: "300", Name: "trigger"})
 
 	_, hotStillCached := c.Guilds().Get(hotID)
 	if !hotStillCached {
@@ -893,7 +893,7 @@ func TestBug11ConcurrentUpdatesSameKeySweepStability(t *testing.T) {
 	wg.Wait()
 
 	// After all concurrent updates the single guild must still be present.
-	if _, ok := c.Guilds().Get(common.Snowflake("1")); !ok {
+	if _, ok := c.Guilds().Get(discord.Snowflake("1")); !ok {
 		t.Error("guild was spuriously evicted during concurrent same-key updates (Bug 11)")
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // TestBug21MsgChannelMuCleanedOnDeleteChannel verifies that per-channel mutexes
@@ -27,7 +27,7 @@ func TestBug21MsgChannelMuCleanedOnDeleteChannel(t *testing.T) {
 		i := i
 		go func() {
 			defer wg.Done()
-			cid := common.Snowflake(fmt.Sprintf("ch%d", i))
+			cid := discord.Snowflake(fmt.Sprintf("ch%d", i))
 			// LoadOrStore directly, mimicking Add().
 			c.msgChannelMu.LoadOrStore(string(cid), &sync.Mutex{})
 			// Then DeleteChannel removes it.

@@ -1,11 +1,11 @@
 package events
 
 import (
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type GuildDeleteEvent struct {
-	common.UnavailableGuild
+	discord.UnavailableGuild
 }
 
 func init() { RegisterEvent(GuildDeleteEvent{}) }

@@ -1,17 +1,17 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import "github.com/streame-gg/go-discord-wrapper/types/discord"
 
 type SubscriptionCreateEvent struct {
-	common.Subscription
+	discord.Subscription
 }
 
 type SubscriptionUpdateEvent struct {
-	common.Subscription
+	discord.Subscription
 }
 
 type SubscriptionDeleteEvent struct {
-	common.Subscription
+	discord.Subscription
 }
 
 func init() {

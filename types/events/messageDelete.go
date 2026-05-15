@@ -1,11 +1,13 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type MessageDeleteEvent struct {
-	ID        common.Snowflake  `json:"id"`
-	ChannelID common.Snowflake  `json:"channel_id"`
-	GuildID   *common.Snowflake `json:"guild_id,omitempty"`
+	ID        discord.Snowflake  `json:"id"`
+	ChannelID discord.Snowflake  `json:"channel_id"`
+	GuildID   *discord.Snowflake `json:"guild_id,omitempty"`
 }
 
 func init() { RegisterEvent(MessageDeleteEvent{}) }

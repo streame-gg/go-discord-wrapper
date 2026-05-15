@@ -3,11 +3,11 @@ package components
 import (
 	"encoding/json"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type RadioGroupComponent struct {
-	Type     common.ComponentType         `json:"type"`
+	Type     discord.ComponentType        `json:"type"`
 	ID       *int                         `json:"id,omitempty"`
 	CustomID string                       `json:"custom_id"`
 	Options  *[]RadioGroupComponentOption `json:"options"`
@@ -22,7 +22,7 @@ type RadioGroupComponentOption struct {
 }
 
 func (r *RadioGroupComponent) MarshalJSON() ([]byte, error) {
-	r.Type = common.ComponentTypeRadioGroup
+	r.Type = discord.ComponentTypeRadioGroup
 	type Alias RadioGroupComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -45,8 +45,8 @@ func (r *RadioGroupComponent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (r *RadioGroupComponent) GetType() common.ComponentType {
-	return common.ComponentTypeRadioGroup
+func (r *RadioGroupComponent) GetType() discord.ComponentType {
+	return discord.ComponentTypeRadioGroup
 }
 
 func (r *RadioGroupComponent) IsAnyLabelComponent() {
@@ -54,16 +54,16 @@ func (r *RadioGroupComponent) IsAnyLabelComponent() {
 }
 
 type RadioGroupComponentInteractionResponse struct {
-	Type     common.ComponentType `json:"type"`
-	ID       *int                 `json:"id,omitempty"`
-	CustomID string               `json:"custom_id,omitempty"`
-	Value    *string              `json:"value"`
+	Type     discord.ComponentType `json:"type"`
+	ID       *int                  `json:"id,omitempty"`
+	CustomID string                `json:"custom_id,omitempty"`
+	Value    *string               `json:"value"`
 }
 
 func (r *RadioGroupComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (r *RadioGroupComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	r.Type = common.ComponentTypeRadioGroup
+	r.Type = discord.ComponentTypeRadioGroup
 
 	type Alias RadioGroupComponentInteractionResponse
 	return json.Marshal(&struct {

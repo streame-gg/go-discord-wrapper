@@ -1,9 +1,9 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import "github.com/streame-gg/go-discord-wrapper/types/discord"
 
 type UserUpdateEvent struct {
-	common.User
+	discord.User
 }
 
 func init() { RegisterEvent(UserUpdateEvent{}) }

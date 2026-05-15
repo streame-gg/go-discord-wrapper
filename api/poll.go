@@ -6,13 +6,13 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
 type GetPollAnswerVotersParams struct {
-	After *common.Snowflake
+	After *discord.Snowflake
 	Limit *int
 }
 
@@ -33,7 +33,7 @@ func (p GetPollAnswerVotersParams) toQuery() string {
 // ── Poll endpoints ────────────────────────────────────────────────────────────
 
 // CreatePoll creates a poll in a channel. Basically a wrapper for CreateMessage.
-func (c *RestClient) CreatePoll(ctx context.Context, channelID common.Snowflake, poll common.PollRequest) (*common.Message, error) {
+func (c *RestClient) CreatePoll(ctx context.Context, channelID discord.Snowflake, poll discord.PollRequest) (*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -43,7 +43,11 @@ func (c *RestClient) CreatePoll(ctx context.Context, channelID common.Snowflake,
 	})
 }
 
-func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, messageID common.Snowflake, answerID int, params GetPollAnswerVotersParams) ([]*common.User, error) {
+type GetPollAnswerVotersResponse struct {
+	Users []*discord.User `json:"users"`
+}
+
+func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, messageID discord.Snowflake, answerID int, params GetPollAnswerVotersParams) (*GetPollAnswerVotersResponse, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -53,32 +57,30 @@ func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, message
 	}
 
 	path := "/channels/" + channelID.String() + "/polls/" + messageID.String() + "/answers/" + strconv.Itoa(answerID) + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	var result struct {
-		Users []*common.User `json:"users"`
-	}
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
-		return nil, err
-	}
-
-	return result.Users, nil
+	return doRequest[GetPollAnswerVotersResponse](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
-func (c *RestClient) EndPoll(ctx context.Context, channelID, messageID common.Snowflake) (*common.Message, error) {
+func (c *RestClient) EndPoll(ctx context.Context, channelID, messageID discord.Snowflake) (*discord.Message, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+	if err := messageID.Validate(); err != nil {
+		return nil, err
+	}
 	path := "/channels/" + channelID.String() + "/polls/" + messageID.String() + "/expire"
-	req, err := c.generateRequest(ctx, http.MethodPost, path, nil)
+	req, err := c.generateRequest(ctx, http.MethodPost, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	var result common.Message
-	if _, err := c.do(req, http.StatusOK, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return doRequest[discord.Message](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

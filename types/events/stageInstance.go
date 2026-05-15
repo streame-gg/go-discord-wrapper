@@ -1,17 +1,17 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import "github.com/streame-gg/go-discord-wrapper/types/discord"
 
 type StageInstanceCreateEvent struct {
-	common.StageInstance
+	discord.StageInstance
 }
 
 type StageInstanceUpdateEvent struct {
-	common.StageInstance
+	discord.StageInstance
 }
 
 type StageInstanceDeleteEvent struct {
-	common.StageInstance
+	discord.StageInstance
 }
 
 func init() {

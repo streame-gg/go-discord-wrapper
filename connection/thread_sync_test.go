@@ -7,18 +7,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 )
 
 // seedThread adds a thread to both the channel cache and the threadsByParent index.
-func seedThread(t *testing.T, c *Client, guildID, parentID, threadID common.Snowflake) {
+func seedThread(t *testing.T, c *Client, guildID, parentID, threadID discord.Snowflake) {
 	t.Helper()
-	ch := &common.Channel{
+	ch := &discord.Channel{
 		ID:       threadID,
 		GuildID:  &guildID,
 		ParentID: &parentID,
-		Type:     common.ChannelTypePublicThread,
+		Type:     discord.ChannelTypePublicThread,
 	}
 	c.cacheChannel(ch)
 	c.trackThread(ch)
@@ -30,13 +30,13 @@ func seedThread(t *testing.T, c *Client, guildID, parentID, threadID common.Snow
 func TestBug43ThreadListSync_EvictsStaleThreads(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := common.Snowflake("1000")
-	parentA := common.Snowflake("2000")
-	parentB := common.Snowflake("3000")
+	guildID := discord.Snowflake("1000")
+	parentA := discord.Snowflake("2000")
+	parentB := discord.Snowflake("3000")
 
-	staleA := common.Snowflake("4000") // should be evicted — not in the sync list
-	keepA := common.Snowflake("4001")  // should be kept — included in the sync list
-	keepB := common.Snowflake("5000")  // should be untouched — different parent, not in scope
+	staleA := discord.Snowflake("4000") // should be evicted — not in the sync list
+	keepA := discord.Snowflake("4001")  // should be kept — included in the sync list
+	keepB := discord.Snowflake("5000")  // should be untouched — different parent, not in scope
 
 	// Seed the cache.
 	seedThread(t, c, guildID, parentA, staleA)
@@ -46,9 +46,9 @@ func TestBug43ThreadListSync_EvictsStaleThreads(t *testing.T) {
 	// Dispatch THREAD_LIST_SYNC scoped to parentA only; keepA is included but staleA is not.
 	ev := events.ThreadListSyncEvent{
 		GuildID:    guildID,
-		ChannelIDs: []common.Snowflake{parentA},
-		Threads: []common.Channel{
-			{ID: keepA, GuildID: &guildID, ParentID: &parentA, Type: common.ChannelTypePublicThread},
+		ChannelIDs: []discord.Snowflake{parentA},
+		Threads: []discord.Channel{
+			{ID: keepA, GuildID: &guildID, ParentID: &parentA, Type: discord.ChannelTypePublicThread},
 		},
 	}
 	raw, err := json.Marshal(ev)
@@ -70,17 +70,17 @@ func TestBug43ThreadListSync_EvictsStaleThreads(t *testing.T) {
 func TestBug43ThreadListSync_NoChannelIDsEvictsGuild(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := common.Snowflake("1001")
-	parentA := common.Snowflake("2001")
-	parentB := common.Snowflake("3001")
+	guildID := discord.Snowflake("1001")
+	parentA := discord.Snowflake("2001")
+	parentB := discord.Snowflake("3001")
 
-	staleA := common.Snowflake("4100")
-	staleB := common.Snowflake("5100")
-	keep := common.Snowflake("4101")
+	staleA := discord.Snowflake("4100")
+	staleB := discord.Snowflake("5100")
+	keep := discord.Snowflake("4101")
 
 	// Seed parents and threads.
-	c.cacheChannel(&common.Channel{ID: parentA, GuildID: &guildID})
-	c.cacheChannel(&common.Channel{ID: parentB, GuildID: &guildID})
+	c.cacheChannel(&discord.Channel{ID: parentA, GuildID: &guildID})
+	c.cacheChannel(&discord.Channel{ID: parentB, GuildID: &guildID})
 	seedThread(t, c, guildID, parentA, staleA)
 	seedThread(t, c, guildID, parentB, staleB)
 	seedThread(t, c, guildID, parentA, keep)
@@ -88,8 +88,8 @@ func TestBug43ThreadListSync_NoChannelIDsEvictsGuild(t *testing.T) {
 	// Dispatch a guild-wide THREAD_LIST_SYNC with only `keep` in the list.
 	ev := events.ThreadListSyncEvent{
 		GuildID: guildID, // no ChannelIDs → guild-wide
-		Threads: []common.Channel{
-			{ID: keep, GuildID: &guildID, ParentID: &parentA, Type: common.ChannelTypePublicThread},
+		Threads: []discord.Channel{
+			{ID: keep, GuildID: &guildID, ParentID: &parentA, Type: discord.ChannelTypePublicThread},
 		},
 	}
 	raw, err := json.Marshal(ev)
@@ -111,14 +111,14 @@ func TestBug43ThreadListSync_NoChannelIDsEvictsGuild(t *testing.T) {
 func TestBug43ThreadIndexUpdatesOnCreateAndDelete(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := common.Snowflake("1002")
-	parentID := common.Snowflake("2002")
-	threadID := common.Snowflake("3002")
+	guildID := discord.Snowflake("1002")
+	parentID := discord.Snowflake("2002")
+	threadID := discord.Snowflake("3002")
 
 	// THREAD_CREATE: thread should appear in threadsByParent.
 	createPayload := map[string]any{
 		"id": string(threadID), "guild_id": string(guildID),
-		"parent_id": string(parentID), "type": common.ChannelTypePublicThread,
+		"parent_id": string(parentID), "type": discord.ChannelTypePublicThread,
 	}
 	raw, err := json.Marshal(createPayload)
 	require.NoError(t, err)
@@ -132,7 +132,7 @@ func TestBug43ThreadIndexUpdatesOnCreateAndDelete(t *testing.T) {
 	// THREAD_DELETE: thread must be removed from the index.
 	deletePayload := map[string]any{
 		"id": string(threadID), "guild_id": string(guildID),
-		"parent_id": string(parentID), "type": common.ChannelTypePublicThread,
+		"parent_id": string(parentID), "type": discord.ChannelTypePublicThread,
 	}
 	raw, err = json.Marshal(deletePayload)
 	require.NoError(t, err)
@@ -150,13 +150,13 @@ func TestBug43ThreadIndexUpdatesOnCreateAndDelete(t *testing.T) {
 func TestBug52ThreadUpdateTracksIndex(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := common.Snowflake("6000")
-	parentID := common.Snowflake("6001")
-	threadID := common.Snowflake("6002")
+	guildID := discord.Snowflake("6000")
+	parentID := discord.Snowflake("6001")
+	threadID := discord.Snowflake("6002")
 
 	updatePayload := map[string]any{
 		"id": string(threadID), "guild_id": string(guildID),
-		"parent_id": string(parentID), "type": common.ChannelTypePublicThread,
+		"parent_id": string(parentID), "type": discord.ChannelTypePublicThread,
 	}
 	raw, err := json.Marshal(updatePayload)
 	require.NoError(t, err)
@@ -174,9 +174,9 @@ func TestBug52ThreadUpdateTracksIndex(t *testing.T) {
 func TestBug52GuildCreateThreadsTracksIndex(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := common.Snowflake("7000")
-	parentID := common.Snowflake("7001")
-	threadID := common.Snowflake("7002")
+	guildID := discord.Snowflake("7000")
+	parentID := discord.Snowflake("7001")
+	threadID := discord.Snowflake("7002")
 
 	// Minimal GUILD_CREATE payload with a thread in the threads array.
 	guildPayload := map[string]any{
@@ -189,7 +189,7 @@ func TestBug52GuildCreateThreadsTracksIndex(t *testing.T) {
 		"threads": []any{
 			map[string]any{
 				"id": string(threadID), "guild_id": string(guildID),
-				"parent_id": string(parentID), "type": int(common.ChannelTypePublicThread),
+				"parent_id": string(parentID), "type": int(discord.ChannelTypePublicThread),
 			},
 		},
 	}

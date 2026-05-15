@@ -3,7 +3,7 @@ package responses
 import (
 	"encoding/json"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // AutocompleteChoice is a single option shown in an autocomplete dropdown.
@@ -26,15 +26,15 @@ func (d *InteractionResponseDataAutocomplete) MarshalJSON() ([]byte, error) {
 }
 
 type InteractionDataAutocomplete struct {
-	ID          common.Snowflake                                        `json:"id"`
+	ID          discord.Snowflake                                       `json:"id"`
 	CommandName string                                                  `json:"name"`
-	Type        common.ApplicationCommandType                           `json:"type"`
-	GuildID     *common.Snowflake                                       `json:"guild_id,omitempty"`
-	TargetID    *common.Snowflake                                       `json:"target_id,omitempty"`
-	Resolved    *common.ResolvedData                                    `json:"resolved,omitempty"`
+	Type        discord.ApplicationCommandType                          `json:"type"`
+	GuildID     *discord.Snowflake                                      `json:"guild_id,omitempty"`
+	TargetID    *discord.Snowflake                                      `json:"target_id,omitempty"`
+	Resolved    *discord.ResolvedData                                   `json:"resolved,omitempty"`
 	Options     *[]ApplicationCommandInteractionDataOption[interface{}] `json:"options,omitempty"`
 }
 
-func (d *InteractionDataAutocomplete) GetType() common.InteractionDataType {
-	return common.InteractionDataTypeApplicationCommandAutocomplete
+func (d *InteractionDataAutocomplete) GetType() discord.InteractionDataType {
+	return discord.InteractionDataTypeApplicationCommandAutocomplete
 }

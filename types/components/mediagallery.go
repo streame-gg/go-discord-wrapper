@@ -2,13 +2,13 @@ package components
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type MediaGalleryComponent struct {
-	Type  common.ComponentType `json:"type"`
-	ID    *int                 `json:"id,omitempty"`
-	Items *[]MediaGalleryItem  `json:"items"`
+	Type  discord.ComponentType `json:"type"`
+	ID    *int                  `json:"id,omitempty"`
+	Items *[]MediaGalleryItem   `json:"items"`
 }
 
 func (m *MediaGalleryComponent) UnmarshalJSON(data []byte) error {
@@ -26,7 +26,7 @@ func (m *MediaGalleryComponent) UnmarshalJSON(data []byte) error {
 }
 
 func (m *MediaGalleryComponent) MarshalJSON() ([]byte, error) {
-	m.Type = common.ComponentTypeMediaGallery
+	m.Type = discord.ComponentTypeMediaGallery
 	type Alias MediaGalleryComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -35,8 +35,8 @@ func (m *MediaGalleryComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (m *MediaGalleryComponent) GetType() common.ComponentType {
-	return common.ComponentTypeMediaGallery
+func (m *MediaGalleryComponent) GetType() discord.ComponentType {
+	return discord.ComponentTypeMediaGallery
 }
 
 func (m *MediaGalleryComponent) IsAnyContainerComponent() {

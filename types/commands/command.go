@@ -3,30 +3,31 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type ApplicationCommand struct {
-	ID                       *common.Snowflake                              `json:"id,omitempty"`
-	Type                     common.ApplicationCommandType                  `json:"type"`
-	ApplicationID            common.Snowflake                               `json:"application_id"`
-	GuildID                  *common.Snowflake                              `json:"guild_id,omitempty"`
-	Name                     string                                         `json:"name"`
-	NameLocalizations        map[common.Locale]string                       `json:"name_localizations,omitempty"`
-	Description              string                                         `json:"description"`
-	DescriptionLocalizations map[common.Locale]string                       `json:"description_localizations,omitempty"`
-	DefaultMemberPermissions *string                                        `json:"default_member_permissions,omitempty"`
-	NSFW                     *bool                                          `json:"nsfw,omitempty"`
-	IntegrationTypes         []common.InteractionApplicationIntegrationType `json:"integration_types,omitempty"`
-	Contexts                 []common.InteractionContextType                `json:"contexts,omitempty"`
-	Version                  common.Snowflake                               `json:"version"`
-	Handler                  CommandHandlerType                             `json:"handler_type,omitempty"`
-	Options                  *[]AnyApplicationCommandOption                 `json:"options,omitempty"`
+	ID                       *discord.Snowflake                              `json:"id,omitempty"`
+	Type                     discord.ApplicationCommandType                  `json:"type"`
+	ApplicationID            discord.Snowflake                               `json:"application_id"`
+	GuildID                  *discord.Snowflake                              `json:"guild_id,omitempty"`
+	Name                     string                                          `json:"name"`
+	NameLocalizations        map[discord.Locale]string                       `json:"name_localizations,omitempty"`
+	Description              string                                          `json:"description"`
+	DescriptionLocalizations map[discord.Locale]string                       `json:"description_localizations,omitempty"`
+	DefaultMemberPermissions *string                                         `json:"default_member_permissions,omitempty"`
+	NSFW                     *bool                                           `json:"nsfw,omitempty"`
+	IntegrationTypes         []discord.InteractionApplicationIntegrationType `json:"integration_types,omitempty"`
+	Contexts                 []discord.InteractionContextType                `json:"contexts,omitempty"`
+	Version                  discord.Snowflake                               `json:"version"`
+	Handler                  CommandHandlerType                              `json:"handler_type,omitempty"`
+	Options                  *[]AnyApplicationCommandOption                  `json:"options,omitempty"`
 }
 
 func unmarshalApplicationCommandOption(data []byte) (AnyApplicationCommandOption, error) {
 	var meta struct {
-		Type common.ApplicationCommandOptionType `json:"type"`
+		Type discord.ApplicationCommandOptionType `json:"type"`
 	}
 
 	if err := json.Unmarshal(data, &meta); err != nil {
@@ -36,27 +37,27 @@ func unmarshalApplicationCommandOption(data []byte) (AnyApplicationCommandOption
 	var opt AnyApplicationCommandOption
 
 	switch meta.Type {
-	case common.ApplicationCommandOptionTypeString:
+	case discord.ApplicationCommandOptionTypeString:
 		opt = &ApplicationCommandOptionString{}
-	case common.ApplicationCommandOptionTypeInteger:
+	case discord.ApplicationCommandOptionTypeInteger:
 		opt = &ApplicationCommandOptionInteger{}
-	case common.ApplicationCommandOptionTypeNumber:
+	case discord.ApplicationCommandOptionTypeNumber:
 		opt = &ApplicationCommandOptionNumber{}
-	case common.ApplicationCommandOptionTypeBoolean:
+	case discord.ApplicationCommandOptionTypeBoolean:
 		opt = &ApplicationCommandOptionBoolean{}
-	case common.ApplicationCommandOptionTypeUser:
+	case discord.ApplicationCommandOptionTypeUser:
 		opt = &ApplicationCommandOptionUser{}
-	case common.ApplicationCommandOptionTypeChannel:
+	case discord.ApplicationCommandOptionTypeChannel:
 		opt = &ApplicationCommandOptionChannel{}
-	case common.ApplicationCommandOptionTypeRole:
+	case discord.ApplicationCommandOptionTypeRole:
 		opt = &ApplicationCommandOptionRole{}
-	case common.ApplicationCommandOptionTypeMentionable:
+	case discord.ApplicationCommandOptionTypeMentionable:
 		opt = &ApplicationCommandOptionMentionable{}
-	case common.ApplicationCommandOptionTypeAttachment:
+	case discord.ApplicationCommandOptionTypeAttachment:
 		opt = &ApplicationCommandOptionAttachment{}
-	case common.ApplicationCommandOptionTypeSubCommand:
+	case discord.ApplicationCommandOptionTypeSubCommand:
 		opt = &ApplicationCommandOptionSubCommand{}
-	case common.ApplicationCommandOptionTypeSubCommandGroup:
+	case discord.ApplicationCommandOptionTypeSubCommandGroup:
 		opt = &ApplicationCommandOptionSubCommandGroup{}
 	default:
 		return nil, fmt.Errorf("unknown ApplicationCommandOptionType: %d", meta.Type)

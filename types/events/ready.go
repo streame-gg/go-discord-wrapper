@@ -1,15 +1,15 @@
 package events
 
 import (
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type ReadyEvent struct {
-	User             common.User              `json:"user"`
-	SessionID        string                   `json:"session_id"`
-	ResumeGatewayURL string                   `json:"resume_gateway_url"`
-	Shard            []int                    `json:"shard,omitempty"`
-	Guilds           []common.AnyGuildWrapper `json:"guilds"`
+	User             discord.User              `json:"user"`
+	SessionID        string                    `json:"session_id"`
+	ResumeGatewayURL string                    `json:"resume_gateway_url"`
+	Shard            []int                     `json:"shard,omitempty"`
+	Guilds           []discord.AnyGuildWrapper `json:"guilds"`
 }
 
 // ResumedEvent is dispatched when a session is successfully resumed.

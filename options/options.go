@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // Option is a functional option for configuring a Client or RestClient.
@@ -48,7 +48,7 @@ type Config struct {
 	CacheStores cache.OverflowCategory
 
 	// Shared between Client and its embedded RestClient
-	APIVersion common.APIVersion
+	APIVersion discord.APIVersion
 
 	// REST client options
 	BaseURL            string
@@ -143,7 +143,7 @@ func WithSharding(totalShards, shardID int) Option {
 }
 
 // WithAPIVersion sets the Discord API version (default: APIVersion10).
-func WithAPIVersion(v common.APIVersion) Option {
+func WithAPIVersion(v discord.APIVersion) Option {
 	return func(c *Config) { c.APIVersion = v }
 }
 

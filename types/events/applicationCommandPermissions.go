@@ -1,10 +1,10 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import "github.com/streame-gg/go-discord-wrapper/types/discord"
 
 // ApplicationCommandPermissionsUpdateEvent is dispatched when command permissions are updated in a guild.
 type ApplicationCommandPermissionsUpdateEvent struct {
-	common.GuildApplicationCommandPermissions
+	discord.GuildApplicationCommandPermissions
 }
 
 func init() { RegisterEvent(ApplicationCommandPermissionsUpdateEvent{}) }

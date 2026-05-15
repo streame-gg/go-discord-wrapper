@@ -1,8 +1,8 @@
 package builder
 
 import (
-	"github.com/streame-gg/go-discord-wrapper/types/common"
 	"github.com/streame-gg/go-discord-wrapper/types/components"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ButtonBuilder builds a ButtonComponent using a fluent API.
@@ -39,13 +39,13 @@ func (b *ButtonBuilder) SetURL(url string) *ButtonBuilder {
 	return b
 }
 
-func (b *ButtonBuilder) SetEmoji(emoji *common.Emoji) *ButtonBuilder {
+func (b *ButtonBuilder) SetEmoji(emoji *discord.Emoji) *ButtonBuilder {
 	b.btn.Emoji = emoji
 	return b
 }
 
 // SetSKUID sets the SKU ID for premium-style buttons (ButtonStylePremium).
-func (b *ButtonBuilder) SetSKUID(id common.Snowflake) *ButtonBuilder {
+func (b *ButtonBuilder) SetSKUID(id discord.Snowflake) *ButtonBuilder {
 	b.btn.SkuID = &id
 	return b
 }

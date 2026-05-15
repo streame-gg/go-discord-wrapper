@@ -6,24 +6,22 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
-
-// ── Param types ───────────────────────────────────────────────────────────────
 
 type GetInviteParams struct {
 	WithCounts            *bool
-	WithExpiration        *bool
-	GuildScheduledEventID *common.Snowflake
+	GuildScheduledEventID *discord.Snowflake
+}
+
+type DeleteInviteOptions struct {
+	Reason string
 }
 
 func (p GetInviteParams) toQuery() string {
 	q := url.Values{}
 	if p.WithCounts != nil {
 		q.Set("with_counts", strconv.FormatBool(*p.WithCounts))
-	}
-	if p.WithExpiration != nil {
-		q.Set("with_expiration", strconv.FormatBool(*p.WithExpiration))
 	}
 	if p.GuildScheduledEventID != nil {
 		q.Set("guild_scheduled_event_id", (*p.GuildScheduledEventID).String())
@@ -34,35 +32,37 @@ func (p GetInviteParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
-// ── Invite endpoints ──────────────────────────────────────────────────────────
-
 // GetInvite returns the invite object for the given invite code.
-func (c *RestClient) GetInvite(ctx context.Context, code string, params GetInviteParams) (*Invite, error) {
-	path := "/invites/" + code + params.toQuery()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
+func (c *RestClient) GetInvite(ctx context.Context, code string, params GetInviteParams) (*discord.Invite, error) {
+	path := "/invites/" + url.PathEscape(code) + params.toQuery()
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	var invite Invite
-	if _, err := c.do(req, http.StatusOK, &invite); err != nil {
-		return nil, err
-	}
-
-	return &invite, nil
+	return doRequest[discord.Invite](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteInvite deletes an invite by its code. Requires MANAGE_CHANNELS or MANAGE_GUILD.
-func (c *RestClient) DeleteInvite(ctx context.Context, code string) (*Invite, error) {
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/invites/"+code, nil)
+func (c *RestClient) DeleteInvite(ctx context.Context, code string, opts *DeleteInviteOptions) (*discord.Invite, error) {
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodDelete, "/invites/"+url.PathEscape(code), nil, c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.Invite](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/invites/"+url.PathEscape(code), nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
 
-	var invite Invite
-	if _, err := c.do(req, http.StatusOK, &invite); err != nil {
-		return nil, err
-	}
-
-	return &invite, nil
+	return doRequest[discord.Invite](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

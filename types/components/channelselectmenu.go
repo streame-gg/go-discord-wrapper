@@ -2,11 +2,12 @@ package components
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type ChannelSelectMenuComponent struct {
-	Type          common.ComponentType  `json:"type"`
+	Type          discord.ComponentType `json:"type"`
 	ID            *int                  `json:"id,omitempty"`
 	CustomID      string                `json:"custom_id"`
 	Placeholder   string                `json:"placeholder,omitempty"`
@@ -36,7 +37,7 @@ func (c *ChannelSelectMenuComponent) UnmarshalJSON(data []byte) error {
 }
 
 func (c *ChannelSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	c.Type = common.ComponentTypeChannelSelect
+	c.Type = discord.ComponentTypeChannelSelect
 	type Alias ChannelSelectMenuComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -45,8 +46,8 @@ func (c *ChannelSelectMenuComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (c *ChannelSelectMenuComponent) GetType() common.ComponentType {
-	return common.ComponentTypeChannelSelect
+func (c *ChannelSelectMenuComponent) GetType() discord.ComponentType {
+	return discord.ComponentTypeChannelSelect
 }
 
 func (c *ChannelSelectMenuComponent) IsAnyLabelComponent() {
@@ -54,19 +55,19 @@ func (c *ChannelSelectMenuComponent) IsAnyLabelComponent() {
 }
 
 type ChannelComponentInteractionResponse struct {
-	Type          common.ComponentType `json:"type"`
-	Values        []common.Snowflake   `json:"values"`
-	ID            *int                 `json:"id,omitempty"`
-	CustomID      string               `json:"custom_id,omitempty"`
-	ComponentType common.ComponentType `json:"component_type"`
-	Resolved      *common.ResolvedData `json:"resolved,omitempty"`
+	Type          discord.ComponentType `json:"type"`
+	Values        []discord.Snowflake   `json:"values"`
+	ID            *int                  `json:"id,omitempty"`
+	CustomID      string                `json:"custom_id,omitempty"`
+	ComponentType discord.ComponentType `json:"component_type"`
+	Resolved      *discord.ResolvedData `json:"resolved,omitempty"`
 }
 
 func (c *ChannelComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (c *ChannelComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	c.ComponentType = common.ComponentTypeChannelSelect
-	c.Type = common.ComponentTypeChannelSelect
+	c.ComponentType = discord.ComponentTypeChannelSelect
+	c.Type = discord.ComponentTypeChannelSelect
 
 	type Alias ChannelComponentInteractionResponse
 

@@ -1,11 +1,11 @@
 package events
 
 import (
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type GuildCreateEvent struct {
-	common.GatewayGuildWrapper
+	discord.GatewayGuildWrapper
 	Large       bool  `json:"large"`
 	Unavailable *bool `json:"unavailable"`
 	MemberCount int   `json:"member_count"`

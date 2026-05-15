@@ -3,12 +3,12 @@ package responses
 import (
 	"encoding/json"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type ApplicationCommandInteractionDataOption[T string | int | bool | interface{}] struct {
 	Name    string                                                 `json:"name"`
-	Type    common.ApplicationCommandOptionType                    `json:"type"`
+	Type    discord.ApplicationCommandOptionType                   `json:"type"`
 	Value   *T                                                     `json:"value"`
 	Options []ApplicationCommandInteractionDataOption[interface{}] `json:"options,omitempty"`
 	Focused *bool                                                  `json:"focused,omitempty"`
@@ -34,22 +34,22 @@ func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) 
 
 	if raw.Value != nil {
 		switch t.Type {
-		case common.ApplicationCommandOptionTypeString:
+		case discord.ApplicationCommandOptionTypeString:
 			if strVal, ok := raw.Value.(string); ok {
 				v := any(strVal).(T)
 				t.Value = &v
 			}
-		case common.ApplicationCommandOptionTypeInteger:
+		case discord.ApplicationCommandOptionTypeInteger:
 			if floatVal, ok := raw.Value.(float64); ok {
 				v := any(int(floatVal)).(T)
 				t.Value = &v
 			}
-		case common.ApplicationCommandOptionTypeNumber:
+		case discord.ApplicationCommandOptionTypeNumber:
 			if floatVal, ok := raw.Value.(float64); ok {
 				v := any(floatVal).(T)
 				t.Value = &v
 			}
-		case common.ApplicationCommandOptionTypeBoolean:
+		case discord.ApplicationCommandOptionTypeBoolean:
 			if boolVal, ok := raw.Value.(bool); ok {
 				v := any(boolVal).(T)
 				t.Value = &v

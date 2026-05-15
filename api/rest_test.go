@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/streame-gg/go-discord-wrapper/options"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // newTestClient creates a RestClient pointed at ts with rate limiting disabled.
@@ -39,7 +39,7 @@ func TestGetChannel(t *testing.T) {
 		name       string
 		statusCode int
 		body       string
-		wantID     common.Snowflake
+		wantID     discord.Snowflake
 		wantName   string
 		wantErr    error
 	}{
@@ -112,7 +112,7 @@ func TestCreateMessage(t *testing.T) {
 			_, err = r.Body.Read(receivedBody)
 			_ = err
 
-			resp := common.Message{
+			resp := discord.Message{
 				ID:        "987654321",
 				ChannelID: "111222333",
 				Content:   "hello world",
@@ -129,7 +129,7 @@ func TestCreateMessage(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, msg)
-		assert.Equal(t, common.Snowflake("987654321"), msg.ID)
+		assert.Equal(t, discord.Snowflake("987654321"), msg.ID)
 		assert.Equal(t, "hello world", msg.Content)
 
 		var decoded map[string]interface{}
@@ -159,7 +159,7 @@ func TestCreateMessage(t *testing.T) {
 
 func TestGetGuild(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := common.Guild{
+		resp := discord.Guild{
 			ID:   "777888999",
 			Name: "Test Server",
 		}
@@ -174,7 +174,7 @@ func TestGetGuild(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, guild)
-	assert.Equal(t, common.Snowflake("777888999"), guild.ID)
+	assert.Equal(t, discord.Snowflake("777888999"), guild.ID)
 	assert.Equal(t, "Test Server", guild.Name)
 }
 

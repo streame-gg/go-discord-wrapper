@@ -1,12 +1,12 @@
 package components
 
 import (
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type AnyContainerComponent interface {
 	MarshalJSON() ([]byte, error)
-	GetType() common.ComponentType
+	GetType() discord.ComponentType
 	IsAnyContainerComponent()
 }
 
@@ -29,7 +29,7 @@ type AnySectionAccessory interface {
 }
 
 type SelectDefaultValue struct {
-	ID   common.Snowflake       `json:"id"`
+	ID   discord.Snowflake      `json:"id"`
 	Type SelectDefaultValueType `json:"type"`
 }
 
@@ -58,10 +58,10 @@ const (
 )
 
 type UnfurledMediaItem struct {
-	URL          string            `json:"url"`
-	ProxyURL     string            `json:"proxy_url,omitempty"`
-	Height       int               `json:"height,omitempty"`
-	Width        int               `json:"width,omitempty"`
-	ContentType  string            `json:"content_type,omitempty"`
-	AttachmentID *common.Snowflake `json:"attachment_id,omitempty"`
+	URL          string             `json:"url"`
+	ProxyURL     string             `json:"proxy_url,omitempty"`
+	Height       int                `json:"height,omitempty"`
+	Width        int                `json:"width,omitempty"`
+	ContentType  string             `json:"content_type,omitempty"`
+	AttachmentID *discord.Snowflake `json:"attachment_id,omitempty"`
 }

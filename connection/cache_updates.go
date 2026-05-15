@@ -1,8 +1,10 @@
 package connection
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
-func (d *Client) cacheChannel(channel *common.Channel) {
+func (d *Client) cacheChannel(channel *discord.Channel) {
 	if d.Cache == nil || channel == nil {
 		return
 	}
@@ -20,13 +22,13 @@ func (d *Client) cacheChannel(channel *common.Channel) {
 	}
 }
 
-func (d *Client) cacheChannels(channels []*common.Channel) {
-	for _, channel := range channels {
+func (d *Client) cacheChannels(channels *[]*discord.Channel) {
+	for _, channel := range *channels {
 		d.cacheChannel(channel)
 	}
 }
 
-func (d *Client) cacheGuild(guild *common.Guild) {
+func (d *Client) cacheGuild(guild *discord.Guild) {
 	if d.Cache == nil || guild == nil {
 		return
 	}
@@ -38,7 +40,7 @@ func (d *Client) cacheGuild(guild *common.Guild) {
 	}
 }
 
-func (d *Client) cacheMember(guildID common.Snowflake, member *common.GuildMember) {
+func (d *Client) cacheMember(guildID discord.Snowflake, member *discord.GuildMember) {
 	if d.Cache == nil || member == nil || member.User == nil {
 		return
 	}
@@ -47,13 +49,13 @@ func (d *Client) cacheMember(guildID common.Snowflake, member *common.GuildMembe
 	d.cacheUser(member.User)
 }
 
-func (d *Client) cacheMembers(guildID common.Snowflake, members []*common.GuildMember) {
-	for _, member := range members {
+func (d *Client) cacheMembers(guildID discord.Snowflake, members *[]*discord.GuildMember) {
+	for _, member := range *members {
 		d.cacheMember(guildID, member)
 	}
 }
 
-func (d *Client) cacheMessage(msg *common.Message) {
+func (d *Client) cacheMessage(msg *discord.Message) {
 	if d.Cache == nil || msg == nil {
 		return
 	}
@@ -64,13 +66,13 @@ func (d *Client) cacheMessage(msg *common.Message) {
 	}
 }
 
-func (d *Client) cacheMessages(messages []*common.Message) {
-	for _, msg := range messages {
+func (d *Client) cacheMessages(messages *[]*discord.Message) {
+	for _, msg := range *messages {
 		d.cacheMessage(msg)
 	}
 }
 
-func (d *Client) cacheRole(guildID common.Snowflake, role *common.Role) {
+func (d *Client) cacheRole(guildID discord.Snowflake, role *discord.Role) {
 	if d.Cache == nil || role == nil {
 		return
 	}
@@ -78,13 +80,13 @@ func (d *Client) cacheRole(guildID common.Snowflake, role *common.Role) {
 	d.Cache.Roles().Set(guildID, role)
 }
 
-func (d *Client) cacheRoles(guildID common.Snowflake, roles []*common.Role) {
-	for _, role := range roles {
+func (d *Client) cacheRoles(guildID discord.Snowflake, roles *[]*discord.Role) {
+	for _, role := range *roles {
 		d.cacheRole(guildID, role)
 	}
 }
 
-func (d *Client) cacheUser(user *common.User) {
+func (d *Client) cacheUser(user *discord.User) {
 	if d.Cache == nil || user == nil {
 		return
 	}
@@ -92,13 +94,13 @@ func (d *Client) cacheUser(user *common.User) {
 	d.Cache.Users().Set(user)
 }
 
-func (d *Client) cacheUsers(users []*common.User) {
+func (d *Client) cacheUsers(users []*discord.User) {
 	for _, user := range users {
 		d.cacheUser(user)
 	}
 }
 
-func (d *Client) removeChannelFromCache(channelID common.Snowflake) {
+func (d *Client) removeChannelFromCache(channelID discord.Snowflake) {
 	if d.Cache == nil {
 		return
 	}
@@ -115,7 +117,7 @@ func (d *Client) removeChannelFromCache(channelID common.Snowflake) {
 	}
 }
 
-func (d *Client) removeGuildFromCache(guildID common.Snowflake) {
+func (d *Client) removeGuildFromCache(guildID discord.Snowflake) {
 	if d.Cache == nil {
 		return
 	}
@@ -137,7 +139,7 @@ func (d *Client) removeGuildFromCache(guildID common.Snowflake) {
 	}
 }
 
-func (d *Client) removeGuildMemberFromCache(guildID, userID common.Snowflake) {
+func (d *Client) removeGuildMemberFromCache(guildID, userID discord.Snowflake) {
 	if d.Cache == nil {
 		return
 	}
@@ -145,7 +147,7 @@ func (d *Client) removeGuildMemberFromCache(guildID, userID common.Snowflake) {
 	d.Cache.Members().Delete(guildID, userID)
 }
 
-func (d *Client) removeMessageFromCache(channelID, messageID common.Snowflake) {
+func (d *Client) removeMessageFromCache(channelID, messageID discord.Snowflake) {
 	if d.Cache == nil {
 		return
 	}
@@ -153,7 +155,7 @@ func (d *Client) removeMessageFromCache(channelID, messageID common.Snowflake) {
 	d.Cache.Messages().Delete(channelID, messageID)
 }
 
-func (d *Client) removeMessagesFromCache(channelID common.Snowflake, messageIDs []common.Snowflake) {
+func (d *Client) removeMessagesFromCache(channelID discord.Snowflake, messageIDs []discord.Snowflake) {
 	if d.Cache == nil {
 		return
 	}
@@ -161,7 +163,7 @@ func (d *Client) removeMessagesFromCache(channelID common.Snowflake, messageIDs 
 	d.Cache.Messages().DeleteBulk(channelID, messageIDs)
 }
 
-func (d *Client) removeRoleFromCache(roleID common.Snowflake) {
+func (d *Client) removeRoleFromCache(roleID discord.Snowflake) {
 	if d.Cache == nil {
 		return
 	}
@@ -173,7 +175,7 @@ func (d *Client) removeRoleFromCache(roleID common.Snowflake) {
 // index so that all channels belonging to a guild can be found efficiently.
 // If the channel has no GuildID it is a DM channel and is not indexed.
 // Safe for concurrent use; acquires channelIndexMu internally.
-func (d *Client) trackChannel(channel *common.Channel) {
+func (d *Client) trackChannel(channel *discord.Channel) {
 	if channel == nil {
 		return
 	}
@@ -200,7 +202,7 @@ func (d *Client) trackChannel(channel *common.Channel) {
 	guildID := *channel.GuildID
 	set := d.channelsByGuild[guildID]
 	if set == nil {
-		set = make(map[common.Snowflake]struct{})
+		set = make(map[discord.Snowflake]struct{})
 		d.channelsByGuild[guildID] = set
 	}
 	set[channel.ID] = struct{}{}
@@ -211,7 +213,7 @@ func (d *Client) trackChannel(channel *common.Channel) {
 // when a channel is deleted (CHANNEL_DELETE) or when the entire guild is
 // evicted from the cache.
 // Safe for concurrent use; acquires channelIndexMu internally.
-func (d *Client) untrackChannel(channelID common.Snowflake) {
+func (d *Client) untrackChannel(channelID discord.Snowflake) {
 	d.channelIndexMu.Lock()
 	defer d.channelIndexMu.Unlock()
 
@@ -234,7 +236,7 @@ func (d *Client) untrackChannel(channelID common.Snowflake) {
 // GUILD_DELETE processing to collect every channel that must be evicted from
 // the cache.
 // Safe for concurrent use; acquires channelIndexMu internally.
-func (d *Client) drainGuildChannelIDs(guildID common.Snowflake) []common.Snowflake {
+func (d *Client) drainGuildChannelIDs(guildID discord.Snowflake) []discord.Snowflake {
 	d.channelIndexMu.Lock()
 	defer d.channelIndexMu.Unlock()
 
@@ -244,7 +246,7 @@ func (d *Client) drainGuildChannelIDs(guildID common.Snowflake) []common.Snowfla
 		return nil
 	}
 
-	ids := make([]common.Snowflake, 0, len(set))
+	ids := make([]discord.Snowflake, 0, len(set))
 	for channelID := range set {
 		ids = append(ids, channelID)
 		delete(d.guildByChannel, channelID)
@@ -256,7 +258,7 @@ func (d *Client) drainGuildChannelIDs(guildID common.Snowflake) []common.Snowfla
 
 // trackThread records a thread's ID under its parent channel in threadsByParent.
 // Safe for concurrent use; acquires threadIndexMu internally.
-func (d *Client) trackThread(thread *common.Channel) {
+func (d *Client) trackThread(thread *discord.Channel) {
 	if thread == nil || thread.ParentID == nil {
 		return
 	}
@@ -265,7 +267,7 @@ func (d *Client) trackThread(thread *common.Channel) {
 	parentID := *thread.ParentID
 	set := d.threadsByParent[parentID]
 	if set == nil {
-		set = make(map[common.Snowflake]struct{})
+		set = make(map[discord.Snowflake]struct{})
 		d.threadsByParent[parentID] = set
 	}
 	set[thread.ID] = struct{}{}
@@ -273,7 +275,7 @@ func (d *Client) trackThread(thread *common.Channel) {
 
 // untrackThread removes a thread from threadsByParent.
 // Safe for concurrent use; acquires threadIndexMu internally.
-func (d *Client) untrackThread(threadID, parentID common.Snowflake) {
+func (d *Client) untrackThread(threadID, parentID discord.Snowflake) {
 	d.threadIndexMu.Lock()
 	defer d.threadIndexMu.Unlock()
 	set := d.threadsByParent[parentID]
@@ -289,7 +291,7 @@ func (d *Client) untrackThread(threadID, parentID common.Snowflake) {
 // drainParentThreadIDs atomically removes and returns all thread IDs associated
 // with parentID from the threadsByParent index.
 // Safe for concurrent use; acquires threadIndexMu internally.
-func (d *Client) drainParentThreadIDs(parentID common.Snowflake) []common.Snowflake {
+func (d *Client) drainParentThreadIDs(parentID discord.Snowflake) []discord.Snowflake {
 	d.threadIndexMu.Lock()
 	defer d.threadIndexMu.Unlock()
 	set := d.threadsByParent[parentID]
@@ -297,7 +299,7 @@ func (d *Client) drainParentThreadIDs(parentID common.Snowflake) []common.Snowfl
 		delete(d.threadsByParent, parentID)
 		return nil
 	}
-	ids := make([]common.Snowflake, 0, len(set))
+	ids := make([]discord.Snowflake, 0, len(set))
 	for threadID := range set {
 		ids = append(ids, threadID)
 	}

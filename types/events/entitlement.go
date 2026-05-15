@@ -1,17 +1,17 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/common"
+import "github.com/streame-gg/go-discord-wrapper/types/discord"
 
 type EntitlementCreateEvent struct {
-	common.Entitlement
+	discord.Entitlement
 }
 
 type EntitlementUpdateEvent struct {
-	common.Entitlement
+	discord.Entitlement
 }
 
 type EntitlementDeleteEvent struct {
-	common.Entitlement
+	discord.Entitlement
 }
 
 func init() {

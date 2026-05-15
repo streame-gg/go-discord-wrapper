@@ -2,21 +2,21 @@ package commands
 
 import (
 	"encoding/json"
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type ApplicationCommandOptionChannel struct {
-	Type                     common.ApplicationCommandOptionType `json:"type"`
-	Name                     string                              `json:"name"`
-	NameLocalizations        map[common.Locale]string            `json:"name_localizations,omitempty"`
-	Description              string                              `json:"description"`
-	DescriptionLocalizations map[common.Locale]string            `json:"description_localizations,omitempty"`
-	Required                 *bool                               `json:"required,omitempty"`
-	ChannelTypes             []common.ChannelType                `json:"channel_types,omitempty"`
+	Type                     discord.ApplicationCommandOptionType `json:"type"`
+	Name                     string                               `json:"name"`
+	NameLocalizations        map[discord.Locale]string            `json:"name_localizations,omitempty"`
+	Description              string                               `json:"description"`
+	DescriptionLocalizations map[discord.Locale]string            `json:"description_localizations,omitempty"`
+	Required                 *bool                                `json:"required,omitempty"`
+	ChannelTypes             []discord.ChannelType                `json:"channel_types,omitempty"`
 }
 
-func (o *ApplicationCommandOptionChannel) ApplicationCommandOptionType() common.ApplicationCommandOptionType {
-	return common.ApplicationCommandOptionTypeChannel
+func (o *ApplicationCommandOptionChannel) ApplicationCommandOptionType() discord.ApplicationCommandOptionType {
+	return discord.ApplicationCommandOptionTypeChannel
 }
 
 func (o *ApplicationCommandOptionChannel) MarshalJSON() ([]byte, error) {

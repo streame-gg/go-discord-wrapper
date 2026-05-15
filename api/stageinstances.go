@@ -6,28 +6,40 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/streame-gg/go-discord-wrapper/types/common"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
 type CreateStageInstanceParams struct {
-	ChannelID             common.Snowflake                  `json:"channel_id"`
-	Topic                 string                            `json:"topic"`
-	PrivacyLevel          *common.StageInstancePrivacyLevel `json:"privacy_level,omitempty"`
-	SendStartNotification *bool                             `json:"send_start_notification,omitempty"`
-	GuildScheduledEventID *common.Snowflake                 `json:"guild_scheduled_event_id,omitempty"`
+	ChannelID             discord.Snowflake                  `json:"channel_id"`
+	Topic                 string                             `json:"topic"`
+	PrivacyLevel          *discord.StageInstancePrivacyLevel `json:"privacy_level,omitempty"`
+	SendStartNotification *bool                              `json:"send_start_notification,omitempty"`
+	GuildScheduledEventID *discord.Snowflake                 `json:"guild_scheduled_event_id,omitempty"`
+}
+
+type CreateStageInstanceOptions struct {
+	Reason string
 }
 
 type ModifyStageInstanceParams struct {
-	Topic        *string                           `json:"topic,omitempty"`
-	PrivacyLevel *common.StageInstancePrivacyLevel `json:"privacy_level,omitempty"`
+	Topic        *string                            `json:"topic,omitempty"`
+	PrivacyLevel *discord.StageInstancePrivacyLevel `json:"privacy_level,omitempty"`
+}
+
+type ModifyStageInstanceOptions struct {
+	Reason string
+}
+
+type DeleteStageInstanceOptions struct {
+	Reason string
 }
 
 // ── Stage instance endpoints ──────────────────────────────────────────────────
 
 // CreateStageInstance creates a new stage instance in a stage voice channel.
-func (c *RestClient) CreateStageInstance(ctx context.Context, params CreateStageInstanceParams) (*common.StageInstance, error) {
+func (c *RestClient) CreateStageInstance(ctx context.Context, params CreateStageInstanceParams, opts *CreateStageInstanceOptions) (*discord.StageInstance, error) {
 	if err := params.ChannelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -37,36 +49,44 @@ func (c *RestClient) CreateStageInstance(ctx context.Context, params CreateStage
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/stage-instances", bytes.NewReader(body))
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPost, "/stage-instances", bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.StageInstance](c, req, map[int]bool{
+			http.StatusCreated: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPost, "/stage-instances", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
 
-	var instance common.StageInstance
-	if _, err := c.do(req, http.StatusCreated, &instance); err != nil {
-		return nil, err
-	}
-
-	return &instance, nil
+	return doRequest[discord.StageInstance](c, req, map[int]bool{
+		http.StatusCreated: true,
+	})
 }
 
 // GetStageInstance returns the stage instance for the given stage channel.
-func (c *RestClient) GetStageInstance(ctx context.Context, channelID common.Snowflake) (*common.StageInstance, error) {
-	req, err := c.generateRequest(ctx, http.MethodGet, "/stage-instances/"+channelID.String(), nil)
+func (c *RestClient) GetStageInstance(ctx context.Context, channelID discord.Snowflake) (*discord.StageInstance, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodGet, "/stage-instances/"+channelID.String(), nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	var instance common.StageInstance
-	if _, err := c.do(req, http.StatusOK, &instance); err != nil {
-		return nil, err
-	}
-
-	return &instance, nil
+	return doRequest[discord.StageInstance](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // ModifyStageInstance updates fields on an existing stage instance.
-func (c *RestClient) ModifyStageInstance(ctx context.Context, channelID common.Snowflake, params ModifyStageInstanceParams) (*common.StageInstance, error) {
+func (c *RestClient) ModifyStageInstance(ctx context.Context, channelID discord.Snowflake, params ModifyStageInstanceParams, opts *ModifyStageInstanceOptions) (*discord.StageInstance, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -76,30 +96,44 @@ func (c *RestClient) ModifyStageInstance(ctx context.Context, channelID common.S
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/stage-instances/"+channelID.String(), bytes.NewReader(body))
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPatch, "/stage-instances/"+channelID.String(), bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.StageInstance](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/stage-instances/"+channelID.String(), bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
 
-	var instance common.StageInstance
-	if _, err := c.do(req, http.StatusOK, &instance); err != nil {
-		return nil, err
-	}
-
-	return &instance, nil
+	return doRequest[discord.StageInstance](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }
 
 // DeleteStageInstance deletes the stage instance for the given stage channel.
-func (c *RestClient) DeleteStageInstance(ctx context.Context, channelID common.Snowflake) error {
+func (c *RestClient) DeleteStageInstance(ctx context.Context, channelID discord.Snowflake, opts *DeleteStageInstanceOptions) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/stage-instances/"+channelID.String(), nil)
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodDelete, "/stage-instances/"+channelID.String(), nil, c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/stage-instances/"+channelID.String(), nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}
 
-	_, err = c.do(req, http.StatusNoContent, nil)
-	return err
+	return doRequestWithoutResponse(c, req)
 }
