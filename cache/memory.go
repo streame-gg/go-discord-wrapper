@@ -309,7 +309,12 @@ type memGuildStore struct {
 	s *genericStore[discord.Snowflake, *discord.Guild]
 }
 
-func (g *memGuildStore) Set(guild *discord.Guild) { g.s.set(guild.ID, guild) }
+func (g *memGuildStore) Set(guild *discord.Guild) {
+	if guild == nil {
+		return
+	}
+	g.s.set(guild.ID, guild)
+}
 func (g *memGuildStore) Get(id discord.Snowflake) (*discord.Guild, bool) {
 	v, ok := g.s.get(id)
 	if !ok {
@@ -326,7 +331,12 @@ type memChannelStore struct {
 	s *genericStore[discord.Snowflake, *discord.Channel]
 }
 
-func (c *memChannelStore) Set(ch *discord.Channel) { c.s.set(ch.ID, ch) }
+func (c *memChannelStore) Set(ch *discord.Channel) {
+	if ch == nil {
+		return
+	}
+	c.s.set(ch.ID, ch)
+}
 func (c *memChannelStore) Get(id discord.Snowflake) (*discord.Channel, bool) {
 	v, ok := c.s.get(id)
 	if !ok {
@@ -343,7 +353,12 @@ type memUserStore struct {
 	s *genericStore[discord.Snowflake, *discord.User]
 }
 
-func (u *memUserStore) Set(user *discord.User) { u.s.set(user.ID, user) }
+func (u *memUserStore) Set(user *discord.User) {
+	if user == nil {
+		return
+	}
+	u.s.set(user.ID, user)
+}
 func (u *memUserStore) Get(id discord.Snowflake) (*discord.User, bool) {
 	v, ok := u.s.get(id)
 	if !ok {
@@ -425,6 +440,9 @@ type memRoleStore struct {
 }
 
 func (r *memRoleStore) Set(guildID discord.Snowflake, role *discord.Role) {
+	if role == nil {
+		return
+	}
 	r.s.set(role.ID, roleValue{GuildID: guildID, Role: role})
 }
 
@@ -735,13 +753,12 @@ func (s *memMessageStore) Add(msg *discord.Message) {
 }
 
 func (s *memMessageStore) Get(channelID, messageID discord.Snowflake) (*discord.Message, bool) {
-	s.mu.RLock()
+	s.mu.Lock()
 	r := s.channels[channelID]
-	s.mu.RUnlock()
 	if r == nil {
+		s.mu.Unlock()
 		return nil, false
 	}
-	s.mu.Lock()
 	msg, ok := r.get(messageID, s.opts.TTL)
 	s.mu.Unlock()
 	if !ok {
@@ -752,26 +769,24 @@ func (s *memMessageStore) Get(channelID, messageID discord.Snowflake) (*discord.
 }
 
 func (s *memMessageStore) Update(msg *discord.Message) {
-	s.mu.RLock()
+	s.mu.Lock()
 	r := s.channels[msg.ChannelID]
-	s.mu.RUnlock()
 	if r == nil {
+		s.mu.Unlock()
 		return
 	}
-	s.mu.Lock()
 	delta := r.update(msg, s.trackBytes)
 	s.mu.Unlock()
 	s.totalBytes.Add(delta)
 }
 
 func (s *memMessageStore) Delete(channelID, messageID discord.Snowflake) {
-	s.mu.RLock()
+	s.mu.Lock()
 	r := s.channels[channelID]
-	s.mu.RUnlock()
 	if r == nil {
+		s.mu.Unlock()
 		return
 	}
-	s.mu.Lock()
 	delta := r.delete(messageID)
 	s.mu.Unlock()
 	if delta != 0 {
@@ -781,13 +796,12 @@ func (s *memMessageStore) Delete(channelID, messageID discord.Snowflake) {
 }
 
 func (s *memMessageStore) DeleteBulk(channelID discord.Snowflake, ids []discord.Snowflake) {
-	s.mu.RLock()
+	s.mu.Lock()
 	r := s.channels[channelID]
-	s.mu.RUnlock()
 	if r == nil {
+		s.mu.Unlock()
 		return
 	}
-	s.mu.Lock()
 	prevLen := len(r.msgs)
 	delta := r.deleteBulk(ids)
 	removed := prevLen - len(r.msgs)
@@ -797,13 +811,12 @@ func (s *memMessageStore) DeleteBulk(channelID discord.Snowflake, ids []discord.
 }
 
 func (s *memMessageStore) Channel(channelID discord.Snowflake) []*discord.Message {
-	s.mu.RLock()
+	s.mu.Lock()
 	r := s.channels[channelID]
-	s.mu.RUnlock()
 	if r == nil {
+		s.mu.Unlock()
 		return nil
 	}
-	s.mu.Lock()
 	msgs := r.all(s.opts.TTL)
 	s.mu.Unlock()
 	return msgs
@@ -1394,6 +1407,9 @@ type memVoiceStateStore struct {
 }
 
 func (v *memVoiceStateStore) Set(guildID discord.Snowflake, vs *discord.VoiceState) {
+	if vs == nil {
+		return
+	}
 	v.s.set(memberKey{guildID, vs.UserID}, vs)
 }
 
@@ -1518,6 +1534,9 @@ type memScheduledEventStore struct {
 }
 
 func (se *memScheduledEventStore) Set(event *discord.GuildScheduledEvent) {
+	if event == nil {
+		return
+	}
 	se.s.set(event.ID, event)
 }
 
@@ -1565,6 +1584,9 @@ type memStageInstanceStore struct {
 }
 
 func (si *memStageInstanceStore) Set(instance *discord.StageInstance) {
+	if instance == nil {
+		return
+	}
 	si.s.set(instance.ID, instance)
 }
 
@@ -1617,6 +1639,9 @@ type memEmojiStore struct {
 }
 
 func (es *memEmojiStore) Set(guildID discord.Snowflake, emoji *discord.Emoji) {
+	if emoji == nil {
+		return
+	}
 	es.s.set(emoji.ID, emojiValue{GuildID: guildID, Emoji: emoji})
 }
 
@@ -1689,6 +1714,9 @@ type memStickerStore struct {
 }
 
 func (ss *memStickerStore) Set(guildID discord.Snowflake, sticker *discord.Sticker) {
+	if sticker == nil {
+		return
+	}
 	ss.s.set(sticker.ID, stickerValue{GuildID: guildID, Sticker: sticker})
 }
 
