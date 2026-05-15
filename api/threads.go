@@ -357,6 +357,65 @@ func (c *RestClient) ListJoinedPrivateArchivedThreads(ctx context.Context, chann
 	})
 }
 
+// SearchThreadsParams holds the query parameters for searching threads in a channel.
+type SearchThreadsParams struct {
+	Name     *string
+	Archived *bool
+	Tag      *discord.Snowflake
+	MinID    *discord.Snowflake
+	MaxID    *discord.Snowflake
+	Limit    *int
+	Offset   *int
+}
+
+func (p SearchThreadsParams) toQuery() string {
+	q := url.Values{}
+	if p.Name != nil {
+		q.Set("name", *p.Name)
+	}
+	if p.Archived != nil {
+		q.Set("archived", strconv.FormatBool(*p.Archived))
+	}
+	if p.Tag != nil {
+		q.Set("tag", p.Tag.String())
+	}
+	if p.MinID != nil {
+		q.Set("min_id", p.MinID.String())
+	}
+	if p.MaxID != nil {
+		q.Set("max_id", p.MaxID.String())
+	}
+	if p.Limit != nil {
+		q.Set("limit", strconv.Itoa(*p.Limit))
+	}
+	if p.Offset != nil {
+		q.Set("offset", strconv.Itoa(*p.Offset))
+	}
+	if len(q) == 0 {
+		return ""
+	}
+	return "?" + q.Encode()
+}
+
+// SearchThreads searches for threads in a forum or media channel. Returns 202 while the index
+// is still being built (result will be empty).
+func (c *RestClient) SearchThreads(ctx context.Context, channelID discord.Snowflake, params SearchThreadsParams) (*discord.ThreadSearchResponse, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
+	path := "/channels/" + channelID.String() + "/threads/search" + params.toQuery()
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
+	if err != nil {
+		return nil, err
+	}
+
+	return doRequest[discord.ThreadSearchResponse](c, req, map[int]bool{
+		http.StatusOK:       true,
+		http.StatusAccepted: true,
+	})
+}
+
 // ListActiveGuildThreads returns all active threads in the guild that the current user can access.
 func (c *RestClient) ListActiveGuildThreads(ctx context.Context, guildID discord.Snowflake) (*ActiveThreadsResponse, error) {
 	if err := guildID.Validate(); err != nil {

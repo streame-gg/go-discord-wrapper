@@ -17,7 +17,7 @@ import (
 
 // gatewayBotResponse is the minimal /gateway/bot JSON Discord returns.
 var gatewayBotResponse = discord.BotRegisterResponse{
-	Url:    "wss://gateway.discord.gg",
+	URL:    "wss://gateway.discord.gg",
 	Shards: 1,
 }
 
@@ -107,7 +107,7 @@ func TestBug39RateLimitRetry(t *testing.T) {
 	resp, err := c.initializeGatewayConnection(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, int32(2), calls.Load(), "must retry exactly once after 429 (Bug 39)")
-	assert.Equal(t, gatewayBotResponse.Url, resp.Url)
+	assert.Equal(t, gatewayBotResponse.URL, resp.URL)
 }
 
 // TestBug40HttpClientReused verifies that the Client field httpClient is the

@@ -92,7 +92,7 @@ func (c *RestClient) CreateGuildEmoji(ctx context.Context, guildID discord.Snowf
 			return nil, err
 		}
 		return doRequest[discord.Emoji](c, req, map[int]bool{
-			http.StatusOK: true,
+			http.StatusCreated: true,
 		})
 	}
 
@@ -102,7 +102,7 @@ func (c *RestClient) CreateGuildEmoji(ctx context.Context, guildID discord.Snowf
 	}
 
 	return doRequest[discord.Emoji](c, req, map[int]bool{
-		http.StatusOK: true,
+		http.StatusCreated: true,
 	})
 }
 
@@ -242,7 +242,7 @@ func (c *RestClient) CreateApplicationEmoji(ctx context.Context, appID discord.S
 	}
 
 	return doRequest[discord.Emoji](c, req, map[int]bool{
-		http.StatusOK: true,
+		http.StatusCreated: true,
 	})
 }
 

@@ -107,14 +107,21 @@ const (
 		IntentGuildModerationExecution | IntentMessagePolls
 )
 
+type GatewayResponse struct {
+	URL string `json:"url"`
+}
+
+type SessionStartLimit struct {
+	MaxConcurrency int `json:"max_concurrency"`
+	Total          int `json:"total"`
+	Remaining      int `json:"remaining"`
+	ResetAfter     int `json:"reset_after"`
+}
+
 type BotRegisterResponse struct {
-	Url               string `json:"url"`
-	Shards            int    `json:"shards"`
-	SessionStartLimit struct {
-		Total      int `json:"total"`
-		Remaining  int `json:"remaining"`
-		ResetAfter int `json:"reset_after"`
-	} `json:"session_start_limit"`
+	URL               string            `json:"url"`
+	Shards            int               `json:"shards"`
+	SessionStartLimit SessionStartLimit `json:"session_start_limit"`
 }
 
 type GatewayError struct {

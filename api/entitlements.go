@@ -139,6 +139,47 @@ func (c *RestClient) ConsumeEntitlement(ctx context.Context, appID, entitlementI
 	return doRequestWithoutResponse(c, req)
 }
 
+type GetCurrentUserApplicationEntitlementsParams struct {
+	SkuIDs          []discord.Snowflake
+	ExcludeConsumed *bool
+}
+
+func (p GetCurrentUserApplicationEntitlementsParams) toQuery() string {
+	q := url.Values{}
+	if len(p.SkuIDs) > 0 {
+		ids := make([]string, len(p.SkuIDs))
+		for i, id := range p.SkuIDs {
+			ids[i] = id.String()
+		}
+		q.Set("sku_ids", strings.Join(ids, ","))
+	}
+	if p.ExcludeConsumed != nil {
+		q.Set("exclude_consumed", strconv.FormatBool(*p.ExcludeConsumed))
+	}
+	if len(q) == 0 {
+		return ""
+	}
+	return "?" + q.Encode()
+}
+
+// GetCurrentUserApplicationEntitlements returns entitlements for the current user for the given
+// application. Requires an OAuth2 bearer token.
+func (c *RestClient) GetCurrentUserApplicationEntitlements(ctx context.Context, appID discord.Snowflake, params GetCurrentUserApplicationEntitlementsParams, userToken string) (*[]*discord.Entitlement, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
+	path := "/users/@me/applications/" + appID.String() + "/entitlements" + params.toQuery()
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, WithUserAuthorization(userToken))
+	if err != nil {
+		return nil, err
+	}
+
+	return doRequest[[]*discord.Entitlement](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
+}
+
 func (c *RestClient) DeleteTestEntitlement(ctx context.Context, appID, entitlementID discord.Snowflake) error {
 	if err := appID.Validate(); err != nil {
 		return err

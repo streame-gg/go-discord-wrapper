@@ -27,6 +27,7 @@ func (c *RestClient) RegisterCommand(ctx context.Context, appID discord.Snowflak
 	}
 
 	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
+		http.StatusOK:      true,
 		http.StatusCreated: true,
 	})
 }
@@ -192,7 +193,8 @@ func (c *RestClient) CreateGuildApplicationCommand(ctx context.Context, appID, g
 	}
 
 	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
-		http.StatusOK: true,
+		http.StatusOK:      true,
+		http.StatusCreated: true,
 	})
 }
 
@@ -350,7 +352,7 @@ func (c *RestClient) GetApplicationCommandPermissions(ctx context.Context, appID
 }
 
 // EditApplicationCommandPermissions overwrites the permission overrides for a specific command in a guild.
-// Requires a Bearer token with applications.commands.permissions.update scope; bot tokens cannot use this endpoint.
+// Accepts either a bot token or an OAuth2 Bearer token with the applications.commands.permissions.update scope.
 func (c *RestClient) EditApplicationCommandPermissions(ctx context.Context, appID, guildID, cmdID discord.Snowflake, permissions []discord.ApplicationCommandPermission) (*discord.GuildApplicationCommandPermissions, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err

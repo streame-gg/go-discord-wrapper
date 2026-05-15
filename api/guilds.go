@@ -365,7 +365,7 @@ func (c *RestClient) CreateGuildChannel(ctx context.Context, guildID discord.Sno
 			return nil, err
 		}
 		return doRequest[discord.Channel](c, req, map[int]bool{
-			http.StatusOK: true,
+			http.StatusCreated: true,
 		})
 	}
 
@@ -375,7 +375,7 @@ func (c *RestClient) CreateGuildChannel(ctx context.Context, guildID discord.Sno
 	}
 
 	return doRequest[discord.Channel](c, req, map[int]bool{
-		http.StatusOK: true,
+		http.StatusCreated: true,
 	})
 }
 
@@ -1048,7 +1048,8 @@ func (c *RestClient) BulkBanGuildMembers(ctx context.Context, guildID discord.Sn
 			return nil, err
 		}
 		return doRequest[BulkBanResult](c, req, map[int]bool{
-			http.StatusOK: true,
+			http.StatusOK:        true,
+			http.StatusNoContent: false,
 		})
 	}
 
@@ -1058,7 +1059,108 @@ func (c *RestClient) BulkBanGuildMembers(ctx context.Context, guildID discord.Sn
 	}
 
 	return doRequest[BulkBanResult](c, req, map[int]bool{
+		http.StatusOK:        true,
+		http.StatusNoContent: false,
+	})
+}
+
+// ── Join requests ─────────────────────────────────────────────────────────────
+
+type GetGuildJoinRequestsParams struct {
+	Status *discord.GuildJoinRequestApplicationStatus
+	Limit  *int
+	Before *discord.Snowflake
+	After  *discord.Snowflake
+}
+
+func (p GetGuildJoinRequestsParams) toQuery() string {
+	q := url.Values{}
+	if p.Status != nil {
+		q.Set("status", string(*p.Status))
+	}
+	if p.Limit != nil {
+		q.Set("limit", strconv.Itoa(*p.Limit))
+	}
+	if p.Before != nil {
+		q.Set("before", p.Before.String())
+	}
+	if p.After != nil {
+		q.Set("after", p.After.String())
+	}
+	if len(q) == 0 {
+		return ""
+	}
+	return "?" + q.Encode()
+}
+
+type GuildJoinRequestsResponse struct {
+	Total             int                         `json:"total"`
+	GuildJoinRequests []*discord.GuildJoinRequest `json:"guild_join_requests"`
+}
+
+type ActionGuildJoinRequestParams struct {
+	Action          discord.GuildJoinRequestApplicationStatus `json:"action"`
+	RejectionReason *string                                   `json:"rejection_reason,omitempty"`
+}
+
+// GetGuildJoinRequests returns the pending join requests for a guild. Requires MANAGE_GUILD.
+func (c *RestClient) GetGuildJoinRequests(ctx context.Context, guildID discord.Snowflake, params GetGuildJoinRequestsParams) (*GuildJoinRequestsResponse, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	path := "/guilds/" + guildID.String() + "/requests" + params.toQuery()
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
+	if err != nil {
+		return nil, err
+	}
+
+	return doRequest[GuildJoinRequestsResponse](c, req, map[int]bool{
 		http.StatusOK: true,
+	})
+}
+
+// ActionGuildJoinRequest approves or rejects a guild join request. Requires MANAGE_GUILD.
+func (c *RestClient) ActionGuildJoinRequest(ctx context.Context, guildID, requestID discord.Snowflake, params ActionGuildJoinRequestParams) (*discord.GuildJoinRequest, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := requestID.Validate(); err != nil {
+		return nil, err
+	}
+
+	body, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+
+	path := "/guilds/" + guildID.String() + "/requests/" + requestID.String()
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
+	if err != nil {
+		return nil, err
+	}
+
+	return doRequest[discord.GuildJoinRequest](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
+}
+
+// GetGuildNewMemberWelcome returns the new member welcome configuration for a guild.
+func (c *RestClient) GetGuildNewMemberWelcome(ctx context.Context, guildID discord.Snowflake) (*discord.GuildNewMemberWelcome, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	path := "/guilds/" + guildID.String() + "/new-member-welcome"
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
+	if err != nil {
+		return nil, err
+	}
+
+	return doRequest[discord.GuildNewMemberWelcome](c, req, map[int]bool{
+		http.StatusOK:        true,
+		http.StatusNoContent: false,
 	})
 }
 

@@ -407,3 +407,35 @@ func (ag *GatewayGuildWrapper) UnmarshalJSON(data []byte) error {
 	ag.Guild = g
 	return nil
 }
+
+type GuildJoinRequestApplicationStatus string
+
+const (
+	GuildJoinRequestStatusStarted   GuildJoinRequestApplicationStatus = "STARTED"
+	GuildJoinRequestStatusSubmitted GuildJoinRequestApplicationStatus = "SUBMITTED"
+	GuildJoinRequestStatusRejected  GuildJoinRequestApplicationStatus = "REJECTED"
+	GuildJoinRequestStatusApproved  GuildJoinRequestApplicationStatus = "APPROVED"
+)
+
+type GuildJoinRequest struct {
+	ID                Snowflake                         `json:"id"`
+	CreatedAt         string                            `json:"created_at"`
+	ReviewedAt        *string                           `json:"reviewed_at,omitempty"`
+	ApplicationStatus GuildJoinRequestApplicationStatus `json:"application_status"`
+	RejectionReason   *string                           `json:"rejection_reason,omitempty"`
+	GuildID           Snowflake                         `json:"guild_id"`
+	UserID            Snowflake                         `json:"user_id"`
+	User              *User                             `json:"user,omitempty"`
+}
+
+type GuildNewMemberWelcomeChannel struct {
+	ChannelID   Snowflake `json:"channel_id"`
+	Title       string    `json:"title"`
+	Description *string   `json:"description,omitempty"`
+}
+
+type GuildNewMemberWelcome struct {
+	GuildID          Snowflake                      `json:"guild_id"`
+	Enabled          bool                           `json:"enabled"`
+	ResourceChannels []GuildNewMemberWelcomeChannel `json:"resource_channels"`
+}

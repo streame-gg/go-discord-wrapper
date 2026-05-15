@@ -596,3 +596,82 @@ func (c *RestClient) DeleteAllReactionsForEmoji(ctx context.Context, channelID, 
 
 	return doRequestWithoutResponse(c, req)
 }
+
+// SearchGuildMessagesParams holds the query parameters for searching guild messages.
+type SearchGuildMessagesParams struct {
+	Content        *string
+	AuthorID       []discord.Snowflake
+	ChannelID      []discord.Snowflake
+	MentionsUserID []discord.Snowflake
+	MentionsRoleID []discord.Snowflake
+	Has            []string
+	MinID          *discord.Snowflake
+	MaxID          *discord.Snowflake
+	Pinned         *bool
+	IncludeNSFW    *bool
+	Limit          *int
+	Offset         *int
+}
+
+func (p SearchGuildMessagesParams) toQuery() string {
+	q := url.Values{}
+	if p.Content != nil {
+		q.Set("content", *p.Content)
+	}
+	for _, id := range p.AuthorID {
+		q.Add("author_id", id.String())
+	}
+	for _, id := range p.ChannelID {
+		q.Add("channel_id", id.String())
+	}
+	for _, id := range p.MentionsUserID {
+		q.Add("mentions", id.String())
+	}
+	for _, id := range p.MentionsRoleID {
+		q.Add("mentions_role_id", id.String())
+	}
+	for _, h := range p.Has {
+		q.Add("has", h)
+	}
+	if p.MinID != nil {
+		q.Set("min_id", p.MinID.String())
+	}
+	if p.MaxID != nil {
+		q.Set("max_id", p.MaxID.String())
+	}
+	if p.Pinned != nil {
+		q.Set("pinned", strconv.FormatBool(*p.Pinned))
+	}
+	if p.IncludeNSFW != nil {
+		q.Set("include_nsfw", strconv.FormatBool(*p.IncludeNSFW))
+	}
+	if p.Limit != nil {
+		q.Set("limit", strconv.Itoa(*p.Limit))
+	}
+	if p.Offset != nil {
+		q.Set("offset", strconv.Itoa(*p.Offset))
+	}
+	if len(q) == 0 {
+		return ""
+	}
+	return "?" + q.Encode()
+}
+
+// SearchGuildMessages searches for messages in a guild. Returns 202 while the index is still
+// being built (result will be empty). Requires READ_MESSAGE_HISTORY.
+func (c *RestClient) SearchGuildMessages(ctx context.Context, guildID discord.Snowflake, params SearchGuildMessagesParams) (*discord.GuildSearchResponse, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	path := "/guilds/" + guildID.String() + "/messages/search" + params.toQuery()
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
+	if err != nil {
+		return nil, err
+	}
+
+	return doRequest[discord.GuildSearchResponse](c, req, map[int]bool{
+		http.StatusOK:       true,
+		http.StatusAccepted: true,
+	})
+}

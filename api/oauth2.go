@@ -16,6 +16,35 @@ type UpdateRoleConnectionParams struct {
 	Metadata         map[string]string `json:"metadata,omitempty"`
 }
 
+// GetCurrentAuthorizationInformation returns the authorization info for the given bearer token.
+// Requires an OAuth2 bearer token; bot tokens will receive a 401.
+func (c *RestClient) GetCurrentAuthorizationInformation(ctx context.Context, userToken string) (*discord.OAuth2Authorization, error) {
+	req, err := c.generateRequest(ctx, http.MethodGet, "/oauth2/@me", nil, WithUserAuthorization(userToken))
+	if err != nil {
+		return nil, err
+	}
+
+	return doRequest[discord.OAuth2Authorization](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
+}
+
+// DeleteCurrentUserApplicationRoleConnection removes the role connection for the current user.
+// Requires an OAuth2 bearer token with the role_connections.write scope.
+func (c *RestClient) DeleteCurrentUserApplicationRoleConnection(ctx context.Context, appID discord.Snowflake, userToken string) error {
+	if err := appID.Validate(); err != nil {
+		return err
+	}
+
+	path := "/users/@me/applications/" + appID.String() + "/role-connection"
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, WithUserAuthorization(userToken))
+	if err != nil {
+		return err
+	}
+
+	return doRequestWithoutResponse(c, req)
+}
+
 // GetCurrentUserConnections returns the connections linked to the current user's account.
 // Requires an OAuth2 bearer token with the connections scope; bot tokens will receive a 401.
 func (c *RestClient) GetCurrentUserConnections(ctx context.Context, userToken string) (*[]*discord.UserConnection, error) {

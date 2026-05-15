@@ -52,6 +52,14 @@ type UserConnection struct {
 	Visibility   int            `json:"visibility"`
 }
 
+// OAuth2Authorization represents the current OAuth2 authorization info for a bearer token.
+type OAuth2Authorization struct {
+	Application Application `json:"application"`
+	Expires     string      `json:"expires"`
+	Scopes      []string    `json:"scopes"`
+	User        *User       `json:"user,omitempty"`
+}
+
 // ApplicationRoleConnection represents the user's role connection for an application.
 type ApplicationRoleConnection struct {
 	PlatformName     *string           `json:"platform_name,omitempty"`

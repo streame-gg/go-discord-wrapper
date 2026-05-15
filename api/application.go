@@ -36,6 +36,47 @@ func (c *RestClient) GetCurrentApplication(ctx context.Context) (*discord.Applic
 	})
 }
 
+// GetApplicationRoleConnectionsMetadata returns the role connection metadata records for the
+// given application. Returns up to 5 records.
+func (c *RestClient) GetApplicationRoleConnectionsMetadata(ctx context.Context, appID discord.Snowflake) (*[]*discord.ApplicationRoleConnectionsMetadata, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
+	path := "/applications/" + appID.String() + "/role-connections/metadata"
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
+	if err != nil {
+		return nil, err
+	}
+
+	return doRequest[[]*discord.ApplicationRoleConnectionsMetadata](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
+}
+
+// UpdateApplicationRoleConnectionsMetadata overwrites the role connection metadata records for
+// the given application. Accepts up to 5 records; omitting a record deletes it.
+func (c *RestClient) UpdateApplicationRoleConnectionsMetadata(ctx context.Context, appID discord.Snowflake, records []*discord.ApplicationRoleConnectionsMetadata) (*[]*discord.ApplicationRoleConnectionsMetadata, error) {
+	if err := appID.Validate(); err != nil {
+		return nil, err
+	}
+
+	body, err := json.Marshal(records)
+	if err != nil {
+		return nil, err
+	}
+
+	path := "/applications/" + appID.String() + "/role-connections/metadata"
+	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization())
+	if err != nil {
+		return nil, err
+	}
+
+	return doRequest[[]*discord.ApplicationRoleConnectionsMetadata](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
+}
+
 // ModifyCurrentApplication updates the current application. Returns the updated application.
 func (c *RestClient) ModifyCurrentApplication(ctx context.Context, params ModifyCurrentApplicationParams) (*discord.Application, error) {
 	body, err := json.Marshal(params)

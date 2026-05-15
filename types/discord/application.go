@@ -35,6 +35,28 @@ type ApplicationInstallParams struct {
 	Permissions string   `json:"permissions"`
 }
 
+type ApplicationRoleConnectionsMetadataType int
+
+const (
+	ApplicationRoleConnectionsMetadataTypeIntegerLessThanOrEqual     ApplicationRoleConnectionsMetadataType = 1
+	ApplicationRoleConnectionsMetadataTypeIntegerGreaterThanOrEqual  ApplicationRoleConnectionsMetadataType = 2
+	ApplicationRoleConnectionsMetadataTypeIntegerEqual               ApplicationRoleConnectionsMetadataType = 3
+	ApplicationRoleConnectionsMetadataTypeIntegerNotEqual            ApplicationRoleConnectionsMetadataType = 4
+	ApplicationRoleConnectionsMetadataTypeDatetimeLessThanOrEqual    ApplicationRoleConnectionsMetadataType = 5
+	ApplicationRoleConnectionsMetadataTypeDatetimeGreaterThanOrEqual ApplicationRoleConnectionsMetadataType = 6
+	ApplicationRoleConnectionsMetadataTypeBooleanEqual               ApplicationRoleConnectionsMetadataType = 7
+	ApplicationRoleConnectionsMetadataTypeBooleanNotEqual            ApplicationRoleConnectionsMetadataType = 8
+)
+
+type ApplicationRoleConnectionsMetadata struct {
+	Type                     ApplicationRoleConnectionsMetadataType `json:"type"`
+	Key                      string                                 `json:"key"`
+	Name                     string                                 `json:"name"`
+	NameLocalizations        map[string]string                      `json:"name_localizations,omitempty"`
+	Description              string                                 `json:"description"`
+	DescriptionLocalizations map[string]string                      `json:"description_localizations,omitempty"`
+}
+
 type Application struct {
 	ID                                Snowflake                     `json:"id"`
 	Name                              string                        `json:"name"`

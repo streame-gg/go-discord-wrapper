@@ -347,3 +347,23 @@ const (
 	BaseThemeDarker
 	BaseThemeMidnight
 )
+
+// GuildSearchResponse is returned by the guild message search endpoint.
+// Messages is a list of context windows; each window is a list of adjacent messages.
+type GuildSearchResponse struct {
+	Messages                 [][]*Message   `json:"messages"`
+	DoingDeepHistoricalIndex bool           `json:"doing_deep_historical_index"`
+	TotalResults             int            `json:"total_results"`
+	Threads                  []*Channel     `json:"threads,omitempty"`
+	Members                  []*GuildMember `json:"members,omitempty"`
+	DocumentsIndexed         *int           `json:"documents_indexed,omitempty"`
+}
+
+// ThreadSearchResponse is returned by the thread search endpoint.
+type ThreadSearchResponse struct {
+	Threads       []*Channel      `json:"threads"`
+	Members       []*ThreadMember `json:"members"`
+	HasMore       bool            `json:"has_more"`
+	FirstMessages []*Message      `json:"first_messages"`
+	TotalResults  int             `json:"total_results"`
+}

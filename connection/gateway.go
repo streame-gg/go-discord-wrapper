@@ -518,9 +518,9 @@ func (d *Client) Login(ctx context.Context) error {
 		return err
 	}
 
-	d.Logger.Debug("Connecting to gateway websocket", slog.String("url", gatewayResp.Url), slog.Int("shards", gatewayResp.Shards))
+	d.Logger.Debug("Connecting to gateway websocket", slog.String("url", gatewayResp.URL), slog.Int("shards", gatewayResp.Shards))
 
-	if err := d.connectWebsocket(gatewayResp.Url, false, nil, nil); err != nil {
+	if err := d.connectWebsocket(gatewayResp.URL, false, nil, nil); err != nil {
 		return err
 	}
 
