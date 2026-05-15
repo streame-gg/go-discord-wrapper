@@ -148,3 +148,15 @@ func TestBug31MaxReconnectRetriesBelowMinus1IsRejected(t *testing.T) {
 	err = Config{MaxReconnectRetries: 10}.Validate()
 	assert.NoError(t, err, "MaxReconnectRetries=10 must be valid")
 }
+
+// Bug 11: MaxConcurrentEvents must be rejected when negative.
+func TestBug11_NegativeMaxConcurrentEventsRejected(t *testing.T) {
+	err := Config{MaxConcurrentEvents: -1}.Validate()
+	assert.Error(t, err, "MaxConcurrentEvents=-1 must fail Validate (Bug 11)")
+
+	err = Config{MaxConcurrentEvents: 0}.Validate()
+	assert.NoError(t, err, "MaxConcurrentEvents=0 (use default) must be valid")
+
+	err = Config{MaxConcurrentEvents: 64}.Validate()
+	assert.NoError(t, err, "MaxConcurrentEvents=64 must be valid")
+}
