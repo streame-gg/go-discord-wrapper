@@ -402,3 +402,26 @@ func (s *ratelimitTestSuite) TestBug22PurgeStaleBucketsAlsoClearsRouteMapping() 
 	rl.routeToBucket.Range(func(_, _ any) bool { routeCount++; return true })
 	s.Zerof(routeCount, "routeToBucket must be empty after purge — found %d entries (Bug 22)", routeCount)
 }
+
+// Bug 4: routeKey must strip query string and fragment so different query
+// parameters on the same route share one bucket.
+func (s *ratelimitTestSuite) TestRouteKey_QueryStringStripped() {
+	got1 := routeKey("GET", "/channels/123456789012345678/messages?before=999&limit=50")
+	got2 := routeKey("GET", "/channels/123456789012345678/messages?after=111&limit=10")
+	s.Equalf(got1, got2, "routeKey with different query strings must be equal (Bug 4): %q vs %q", got1, got2)
+}
+
+func (s *ratelimitTestSuite) TestRouteKey_FragmentStripped() {
+	withFragment := routeKey("GET", "/channels/111/messages#anchor")
+	withoutFragment := routeKey("GET", "/channels/111/messages")
+	s.Equalf(withFragment, withoutFragment, "routeKey must strip fragment (Bug 4): %q vs %q", withFragment, withoutFragment)
+}
+
+// Bug 6: rateLimiter.close() must be idempotent; a second call must not panic.
+func (s *ratelimitTestSuite) TestRateLimiter_CloseIdempotent() {
+	rl := newRateLimiter(0)
+	s.NotPanics(func() {
+		rl.close()
+		rl.close() // must not panic
+	})
+}
