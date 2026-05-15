@@ -29,7 +29,7 @@ func TestBug25GetGuildRolesEvictsStaleRoles(t *testing.T) {
 	// Simulate what the fixed GetGuildRoles does: remove all guild roles first,
 	// then cache only the roles returned by the API (roleA only).
 	c.Cache.Roles().DeleteGuild(guildID)
-	c.cacheRoles(guildID, []*discord.Role{roleA})
+	c.cacheRoles(guildID, &[]*discord.Role{roleA})
 
 	_, okB = c.Cache.Roles().Get(roleB.ID)
 	assert.False(t, okB, "stale roleB must be evicted by GetGuildRoles refresh (Bug 25)")
@@ -60,7 +60,7 @@ func TestBug25GetGuildChannelsEvictsStaleChannels(t *testing.T) {
 		c.Cache.Messages().DeleteChannel(oldID)
 	}
 	// Only chA is returned by the API this time.
-	c.cacheChannels([]*discord.Channel{{ID: chA, GuildID: &guildID}})
+	c.cacheChannels(&[]*discord.Channel{{ID: chA, GuildID: &guildID}})
 
 	_, okB = c.Cache.Channels().Get(chB)
 	assert.False(t, okB, "stale channelB must be evicted by GetGuildChannels refresh (Bug 25)")

@@ -231,8 +231,6 @@ func (c *RestClient) SetVoiceChannelStatus(ctx context.Context, channelID discor
 		return err
 	}
 
-	_, err = doRequest[NoReturnData](c, req, map[int]bool{})
-
 	return doRequestWithoutResponse(c, req)
 }
 
