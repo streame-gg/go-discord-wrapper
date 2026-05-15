@@ -194,10 +194,6 @@ func (c *RestClient) EditFollowupMessage(ctx context.Context, appID discord.Snow
 		return nil, err
 	}
 
-	if err := messageID.Validate(); err != nil {
-		return nil, err
-	}
-
 	jsonBody, err := json.Marshal(params)
 	if err != nil {
 		return nil, err

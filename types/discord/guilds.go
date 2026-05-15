@@ -333,6 +333,41 @@ type GatewayGuild struct {
 func (g GatewayGuild) IsAvailable() bool { return true }
 func (g GatewayGuild) GetID() Snowflake  { return g.ID }
 
+type Ban struct {
+	Reason *string `json:"reason"`
+	User   User    `json:"user"`
+}
+
+type GuildVanityURL struct {
+	Code *string `json:"code"`
+	Uses int     `json:"uses"`
+}
+
+type GuildPruneCountResult struct {
+	Pruned *int `json:"pruned"`
+}
+
+type StickerPack struct {
+	ID             Snowflake  `json:"id"`
+	Stickers       []Sticker  `json:"stickers"`
+	Name           string     `json:"name"`
+	SKUId          Snowflake  `json:"sku_id"`
+	CoverStickerID *Snowflake `json:"cover_sticker_id,omitempty"`
+	Description    string     `json:"description"`
+	BannerAssetID  *Snowflake `json:"banner_asset_id,omitempty"`
+}
+
+type CurrentUserGuild struct {
+	ID                       Snowflake       `json:"id"`
+	Name                     string          `json:"name"`
+	IconHash                 *string         `json:"icon,omitempty"`
+	Owner                    bool            `json:"owner"`
+	Permissions              string          `json:"permissions"`
+	Features                 []GuildFeatures `json:"features"`
+	ApproximateMemberCount   *int            `json:"approximate_member_count,omitempty"`
+	ApproximatePresenceCount *int            `json:"approximate_presence_count,omitempty"`
+}
+
 // GatewayPresence is a stripped-down presence record as sent inside the
 // GUILD_CREATE payload. It has no guild_id field; the enclosing guild provides
 // that context.

@@ -18,20 +18,20 @@ type UpdateRoleConnectionParams struct {
 
 // GetCurrentUserConnections returns the connections linked to the current user's account.
 // Requires an OAuth2 bearer token with the connections scope; bot tokens will receive a 401.
-func (c *RestClient) GetCurrentUserConnections(ctx context.Context, userToken string) (*[]*UserConnection, error) {
+func (c *RestClient) GetCurrentUserConnections(ctx context.Context, userToken string) (*[]*discord.UserConnection, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/users/@me/connections", nil, WithUserAuthorization(userToken))
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequest[[]*UserConnection](c, req, map[int]bool{
+	return doRequest[[]*discord.UserConnection](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetCurrentUserApplicationRoleConnection returns the application role connection for the current user.
 // Requires an OAuth2 bearer token with the role_connections.write scope; bot tokens will receive a 401.
-func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context, appID discord.Snowflake, userToken string) (*ApplicationRoleConnection, error) {
+func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context, appID discord.Snowflake, userToken string) (*discord.ApplicationRoleConnection, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -42,14 +42,14 @@ func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context
 		return nil, err
 	}
 
-	return doRequest[ApplicationRoleConnection](c, req, map[int]bool{
+	return doRequest[discord.ApplicationRoleConnection](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // UpdateCurrentUserApplicationRoleConnection updates the application role connection for the current user.
 // Requires an OAuth2 bearer token with the role_connections.write scope; bot tokens will receive a 401.
-func (c *RestClient) UpdateCurrentUserApplicationRoleConnection(ctx context.Context, appID discord.Snowflake, userToken string, params UpdateRoleConnectionParams) (*ApplicationRoleConnection, error) {
+func (c *RestClient) UpdateCurrentUserApplicationRoleConnection(ctx context.Context, appID discord.Snowflake, userToken string, params UpdateRoleConnectionParams) (*discord.ApplicationRoleConnection, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (c *RestClient) UpdateCurrentUserApplicationRoleConnection(ctx context.Cont
 		return nil, err
 	}
 
-	return doRequest[ApplicationRoleConnection](c, req, map[int]bool{
+	return doRequest[discord.ApplicationRoleConnection](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -92,6 +92,7 @@ func (c *RestClient) AddGuildMember(ctx context.Context, guildID, userID discord
 	}
 
 	return doRequest[discord.GuildMember](c, req, map[int]bool{
-		http.StatusOK: true,
+		http.StatusCreated:   true,
+		http.StatusNoContent: false,
 	})
 }

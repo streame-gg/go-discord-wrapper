@@ -1,5 +1,17 @@
 package discord
 
+// AuditLog is the response wrapper returned by the Get Guild Audit Log endpoint.
+type AuditLog struct {
+	ApplicationCommands  []any           `json:"application_commands"`
+	AuditLogEntries      []AuditLogEntry `json:"audit_log_entries"`
+	AutoModerationRules  []any           `json:"auto_moderation_rules"`
+	GuildScheduledEvents []any           `json:"guild_scheduled_events"`
+	Integrations         []any           `json:"integrations"`
+	Threads              []Channel       `json:"threads"`
+	Users                []User          `json:"users"`
+	Webhooks             []any           `json:"webhooks"`
+}
+
 // AuditLogEntry // https://docs.discord.com/developers/resources/audit-log#audit-log-entry-object
 type AuditLogEntry struct {
 	TargetID   Snowflake             `json:"target_id"`

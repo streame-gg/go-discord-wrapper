@@ -327,3 +327,23 @@ type MessageInteractionMetadataModalSubmit struct {
 	OriginalResponseMessageID     *Snowflake                                            `json:"original_response_message_id,omitempty"`
 	TriggeringInteractionMetadata *MessageInteractionMetadataModalSubmitTriggering      `json:"triggering_interaction_metadata,omitempty"`
 }
+
+// SharedClientTheme https://docs.discord.com/developers/resources/message#shared-client-theme-object
+type SharedClientTheme struct {
+	Colors        []string  `json:"colors"`
+	GradientAngle int       `json:"gradient_angle"`
+	BaseMix       int       `json:"base_mix"`
+	BaseTheme     BaseTheme `json:"base_theme,omitempty"`
+}
+
+// BaseTheme https://docs.discord.com/developers/resources/message#base-theme-types
+// BaseThemeUnset is equal to BaseThemeDark.
+type BaseTheme int
+
+const (
+	BaseThemeUnset BaseTheme = iota
+	BaseThemeDark
+	BaseThemeLight
+	BaseThemeDarker
+	BaseThemeMidnight
+)

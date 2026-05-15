@@ -246,7 +246,9 @@ func WithUserAuthorization(token string) func(req *http.Request) {
 
 func WithAuditLogReason(reason string) func(req *http.Request) {
 	return func(req *http.Request) {
-		req.Header.Set("X-Audit-Log-Reason", reason)
+		if reason != "" {
+			req.Header.Set("X-Audit-Log-Reason", reason)
+		}
 	}
 }
 

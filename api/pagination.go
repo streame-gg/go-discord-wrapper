@@ -71,14 +71,14 @@ func (c *RestClient) FetchAllMessages(ctx context.Context, channelID discord.Sno
 
 // FetchAllGuildBans fetches every ban in a guild across as many pages as needed
 // (max 1000 per request).
-func (c *RestClient) FetchAllGuildBans(ctx context.Context, guildID discord.Snowflake) (*[]*Ban, error) {
+func (c *RestClient) FetchAllGuildBans(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Ban, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
 
 	const pageSize = 1000
 
-	var all []*Ban
+	var all []*discord.Ban
 	params := GetGuildBansParams{Limit: util.PointerOf(pageSize)}
 
 	for {
@@ -164,7 +164,7 @@ func (c *RestClient) FetchAllEntitlements(ctx context.Context, appID discord.Sno
 // FetchAllScheduledEventUsers fetches every subscriber for a scheduled event by
 // paginating forward (max 100 per request). Set withMember=true to include the
 // full GuildMember object alongside each user.
-func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, withMember bool) (*[]*GuildScheduledEventUser, error) {
+func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, withMember bool) (*[]*discord.GuildScheduledEventUser, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, e
 
 	const pageSize = 100
 
-	var all []*GuildScheduledEventUser
+	var all []*discord.GuildScheduledEventUser
 	params := GetGuildScheduledEventUsersParams{
 		Limit:      util.PointerOf(pageSize),
 		WithMember: util.PointerOf(withMember),

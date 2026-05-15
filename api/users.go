@@ -48,18 +48,6 @@ func (p GetCurrentUserGuildsParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
-// CurrentUserGuild is the partial guild object returned by GetCurrentUserGuilds.
-type CurrentUserGuild struct {
-	ID                       discord.Snowflake       `json:"id"`
-	Name                     string                  `json:"name"`
-	IconHash                 *string                 `json:"icon,omitempty"`
-	Owner                    bool                    `json:"owner"`
-	Permissions              string                  `json:"permissions"`
-	Features                 []discord.GuildFeatures `json:"features"`
-	ApproximateMemberCount   *int                    `json:"approximate_member_count,omitempty"`
-	ApproximatePresenceCount *int                    `json:"approximate_presence_count,omitempty"`
-}
-
 // ── User endpoints ────────────────────────────────────────────────────────────
 
 // GetCurrentUser returns the bot user associated with the current token.
@@ -115,7 +103,7 @@ func (c *RestClient) ModifyCurrentUser(ctx context.Context, params ModifyCurrent
 }
 
 // GetCurrentUserGuilds returns the guilds the current user is a member of.
-func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrentUserGuildsParams) (*[]*CurrentUserGuild, error) {
+func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrentUserGuildsParams) (*[]*discord.CurrentUserGuild, error) {
 	var authOption func(req *http.Request)
 	if params.UserToken != nil {
 		authOption = WithUserAuthorization(*params.UserToken)
@@ -129,7 +117,7 @@ func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrent
 		return nil, err
 	}
 
-	return doRequest[[]*CurrentUserGuild](c, req, map[int]bool{
+	return doRequest[[]*discord.CurrentUserGuild](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -187,27 +175,6 @@ func (c *RestClient) CreateDM(ctx context.Context, recipientID discord.Snowflake
 	return doRequest[discord.Channel](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
-}
-
-// UserConnection represents an external account linked to a Discord user.
-type UserConnection struct {
-	ID           string                 `json:"id"`
-	Name         string                 `json:"name"`
-	Type         string                 `json:"type"`
-	Revoked      *bool                  `json:"revoked,omitempty"`
-	Integrations []*discord.Integration `json:"integrations,omitempty"`
-	Verified     bool                   `json:"verified"`
-	FriendSync   bool                   `json:"friend_sync"`
-	ShowActivity bool                   `json:"show_activity"`
-	TwoWayLink   bool                   `json:"two_way_link"`
-	Visibility   int                    `json:"visibility"`
-}
-
-// ApplicationRoleConnection represents the user's role connection for an application.
-type ApplicationRoleConnection struct {
-	PlatformName     *string           `json:"platform_name,omitempty"`
-	PlatformUsername *string           `json:"platform_username,omitempty"`
-	Metadata         map[string]string `json:"metadata,omitempty"`
 }
 
 // CreateGroupDMParams holds params for creating a Group DM.

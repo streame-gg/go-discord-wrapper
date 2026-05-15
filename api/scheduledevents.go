@@ -67,13 +67,6 @@ func (p GetGuildScheduledEventUsersParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
-// GuildScheduledEventUser is an entry in the list returned by GetGuildScheduledEventUsers.
-type GuildScheduledEventUser struct {
-	GuildScheduledEventID discord.Snowflake    `json:"guild_scheduled_event_id"`
-	User                  discord.User         `json:"user"`
-	Member                *discord.GuildMember `json:"member,omitempty"`
-}
-
 // ── Scheduled event endpoints ─────────────────────────────────────────────────
 
 // ListGuildScheduledEvents returns all scheduled events for a guild.
@@ -191,7 +184,7 @@ func (c *RestClient) DeleteGuildScheduledEvent(ctx context.Context, guildID, eve
 }
 
 // GetGuildScheduledEventUsers returns users subscribed to a scheduled event.
-func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, params GetGuildScheduledEventUsersParams) (*[]*GuildScheduledEventUser, error) {
+func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, params GetGuildScheduledEventUsersParams) (*[]*discord.GuildScheduledEventUser, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -206,7 +199,7 @@ func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, e
 		return nil, err
 	}
 
-	return doRequest[[]*GuildScheduledEventUser](c, req, map[int]bool{
+	return doRequest[[]*discord.GuildScheduledEventUser](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

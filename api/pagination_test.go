@@ -64,10 +64,10 @@ func makeMembersPageWithIDs(ids []string) []*discord.GuildMember {
 	return members
 }
 
-func makeBanPage(userIDs []string) []*Ban {
-	bans := make([]*Ban, len(userIDs))
+func makeBanPage(userIDs []string) []*discord.Ban {
+	bans := make([]*discord.Ban, len(userIDs))
 	for i, id := range userIDs {
-		bans[i] = &Ban{
+		bans[i] = &discord.Ban{
 			User: discord.User{ID: discord.Snowflake(id)},
 		}
 	}
@@ -214,9 +214,9 @@ func TestFetchAllMessagesMultiplePages(t *testing.T) {
 }
 
 func TestFetchAllGuildBansOnePage(t *testing.T) {
-	bans := make([]*Ban, 7)
+	bans := make([]*discord.Ban, 7)
 	for i := range bans {
-		bans[i] = &Ban{
+		bans[i] = &discord.Ban{
 			User: discord.User{
 				ID:            discord.Snowflake(intToSnowflake(i + 1)),
 				Discriminator: "0",
@@ -249,12 +249,12 @@ func TestFetchAllGuildBansOnePage(t *testing.T) {
 
 // ── FetchAllAuditLogEntries ───────────────────────────────────────────────────
 
-func makeAuditLogPage(ids []string) *AuditLog {
+func makeAuditLogPage(ids []string) *discord.AuditLog {
 	entries := make([]discord.AuditLogEntry, len(ids))
 	for i, id := range ids {
 		entries[i] = discord.AuditLogEntry{ID: discord.Snowflake(id)}
 	}
-	return &AuditLog{AuditLogEntries: entries}
+	return &discord.AuditLog{AuditLogEntries: entries}
 }
 
 func TestFetchAllAuditLogEntriesOnePage(t *testing.T) {
@@ -382,10 +382,10 @@ func TestFetchAllEntitlementsMultiplePages(t *testing.T) {
 
 // ── FetchAllScheduledEventUsers ───────────────────────────────────────────────
 
-func makeScheduledEventUsersPage(userIDs []string) []*GuildScheduledEventUser {
-	page := make([]*GuildScheduledEventUser, len(userIDs))
+func makeScheduledEventUsersPage(userIDs []string) []*discord.GuildScheduledEventUser {
+	page := make([]*discord.GuildScheduledEventUser, len(userIDs))
 	for i, id := range userIDs {
-		page[i] = &GuildScheduledEventUser{
+		page[i] = &discord.GuildScheduledEventUser{
 			User: discord.User{ID: discord.Snowflake(id)},
 		}
 	}

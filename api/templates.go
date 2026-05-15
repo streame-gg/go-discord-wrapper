@@ -37,7 +37,7 @@ func (c *RestClient) GetTemplate(ctx context.Context, templateCode string) (*dis
 	}
 
 	return doRequest[discord.GuildTemplate](c, req, map[int]bool{
-		http.StatusCreated: true,
+		http.StatusOK: true,
 	})
 }
 

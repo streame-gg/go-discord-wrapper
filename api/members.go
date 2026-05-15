@@ -56,6 +56,22 @@ type ModifyGuildMemberParams struct {
 	Flags                      *int                `json:"flags,omitempty"`
 }
 
+type ModifyGuildMemberOptions struct {
+	Reason string
+}
+
+type KickGuildMemberOptions struct {
+	Reason string
+}
+
+type AddGuildMemberRoleOptions struct {
+	Reason string
+}
+
+type RemoveGuildMemberRoleOptions struct {
+	Reason string
+}
+
 type ModifyCurrentMemberParams struct {
 	Nick *string `json:"nick,omitempty"`
 }
@@ -118,7 +134,7 @@ func (c *RestClient) SearchGuildMembers(ctx context.Context, guildID discord.Sno
 }
 
 // ModifyGuildMember updates attributes of a guild member.
-func (c *RestClient) ModifyGuildMember(ctx context.Context, guildID, userID discord.Snowflake, params ModifyGuildMemberParams) (*discord.GuildMember, error) {
+func (c *RestClient) ModifyGuildMember(ctx context.Context, guildID, userID discord.Snowflake, params ModifyGuildMemberParams, opts *ModifyGuildMemberOptions) (*discord.GuildMember, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -133,7 +149,18 @@ func (c *RestClient) ModifyGuildMember(ctx context.Context, guildID, userID disc
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.GuildMember](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +193,7 @@ func (c *RestClient) ModifyCurrentMember(ctx context.Context, guildID discord.Sn
 }
 
 // AddGuildMemberRole grants a role to a guild member. Requires MANAGE_ROLES.
-func (c *RestClient) AddGuildMemberRole(ctx context.Context, guildID, userID, roleID discord.Snowflake) error {
+func (c *RestClient) AddGuildMemberRole(ctx context.Context, guildID, userID, roleID discord.Snowflake, opts *AddGuildMemberRoleOptions) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}
@@ -180,7 +207,16 @@ func (c *RestClient) AddGuildMemberRole(ctx context.Context, guildID, userID, ro
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String() + "/roles/" + roleID.String()
-	req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -189,7 +225,7 @@ func (c *RestClient) AddGuildMemberRole(ctx context.Context, guildID, userID, ro
 }
 
 // RemoveGuildMemberRole removes a role from a guild member. Requires MANAGE_ROLES.
-func (c *RestClient) RemoveGuildMemberRole(ctx context.Context, guildID, userID, roleID discord.Snowflake) error {
+func (c *RestClient) RemoveGuildMemberRole(ctx context.Context, guildID, userID, roleID discord.Snowflake, opts *RemoveGuildMemberRoleOptions) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}
@@ -203,7 +239,16 @@ func (c *RestClient) RemoveGuildMemberRole(ctx context.Context, guildID, userID,
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String() + "/roles/" + roleID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -212,7 +257,7 @@ func (c *RestClient) RemoveGuildMemberRole(ctx context.Context, guildID, userID,
 }
 
 // KickGuildMember kicks a member from a guild. Requires KICK_MEMBERS.
-func (c *RestClient) KickGuildMember(ctx context.Context, guildID, userID discord.Snowflake) error {
+func (c *RestClient) KickGuildMember(ctx context.Context, guildID, userID discord.Snowflake, opts *KickGuildMemberOptions) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}
@@ -222,7 +267,16 @@ func (c *RestClient) KickGuildMember(ctx context.Context, guildID, userID discor
 	}
 
 	path := "/guilds/" + guildID.String() + "/members/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}

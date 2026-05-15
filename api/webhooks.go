@@ -16,10 +16,22 @@ type CreateWebhookParams struct {
 	Avatar *string `json:"avatar,omitempty"`
 }
 
+type CreateWebhookOptions struct {
+	Reason string
+}
+
 type ModifyWebhookParams struct {
 	Name      *string            `json:"name,omitempty"`
 	Avatar    *string            `json:"avatar,omitempty"`
 	ChannelID *discord.Snowflake `json:"channel_id,omitempty"`
+}
+
+type ModifyWebhookOptions struct {
+	Reason string
+}
+
+type DeleteWebhookOptions struct {
+	Reason string
 }
 
 type ExecuteWebhookParams struct {
@@ -68,7 +80,7 @@ func (p ExecuteWebhookQueryParams) toQuery() string {
 }
 
 // CreateWebhook creates a new webhook for a channel. Requires MANAGE_WEBHOOKS.
-func (c *RestClient) CreateWebhook(ctx context.Context, channelID discord.Snowflake, params CreateWebhookParams) (*discord.Webhook, error) {
+func (c *RestClient) CreateWebhook(ctx context.Context, channelID discord.Snowflake, params CreateWebhookParams, opts *CreateWebhookOptions) (*discord.Webhook, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -78,7 +90,17 @@ func (c *RestClient) CreateWebhook(ctx context.Context, channelID discord.Snowfl
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/webhooks", bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/webhooks", bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.Webhook](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/webhooks", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +175,7 @@ func (c *RestClient) GetWebhookWithToken(ctx context.Context, webhookID discord.
 }
 
 // ModifyWebhook updates a webhook's name, avatar, or channel.
-func (c *RestClient) ModifyWebhook(ctx context.Context, webhookID discord.Snowflake, params ModifyWebhookParams) (*discord.Webhook, error) {
+func (c *RestClient) ModifyWebhook(ctx context.Context, webhookID discord.Snowflake, params ModifyWebhookParams, opts *ModifyWebhookOptions) (*discord.Webhook, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
 	}
@@ -163,7 +185,17 @@ func (c *RestClient) ModifyWebhook(ctx context.Context, webhookID discord.Snowfl
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/webhooks/"+webhookID.String(), bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPatch, "/webhooks/"+webhookID.String(), bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.Webhook](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/webhooks/"+webhookID.String(), bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -195,12 +227,20 @@ func (c *RestClient) ModifyWebhookWithToken(ctx context.Context, webhookID disco
 }
 
 // DeleteWebhook deletes a webhook permanently.
-func (c *RestClient) DeleteWebhook(ctx context.Context, webhookID discord.Snowflake) error {
+func (c *RestClient) DeleteWebhook(ctx context.Context, webhookID discord.Snowflake, opts *DeleteWebhookOptions) error {
 	if err := webhookID.Validate(); err != nil {
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/webhooks/"+webhookID.String(), nil, c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodDelete, "/webhooks/"+webhookID.String(), nil, c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/webhooks/"+webhookID.String(), nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}

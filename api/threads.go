@@ -20,12 +20,20 @@ type CreateThreadFromMessageParams struct {
 	RateLimitPerUser    *int   `json:"rate_limit_per_user,omitempty"`
 }
 
+type CreateThreadFromMessageOptions struct {
+	Reason string
+}
+
 type CreateThreadParams struct {
 	Name                string               `json:"name"`
 	AutoArchiveDuration *int                 `json:"auto_archive_duration,omitempty"`
 	Type                *discord.ChannelType `json:"type,omitempty"`
 	Invitable           *bool                `json:"invitable,omitempty"`
 	RateLimitPerUser    *int                 `json:"rate_limit_per_user,omitempty"`
+}
+
+type CreateThreadOptions struct {
+	Reason string
 }
 
 // CreateForumThreadParams is used to start a thread in a forum or media channel.
@@ -35,6 +43,10 @@ type CreateForumThreadParams struct {
 	RateLimitPerUser    *int                `json:"rate_limit_per_user,omitempty"`
 	Message             CreateMessageParams `json:"message"`
 	AppliedTags         []discord.Snowflake `json:"applied_tags,omitempty"`
+}
+
+type CreateForumThreadOptions struct {
+	Reason string
 }
 
 type ListThreadMembersParams struct {
@@ -95,7 +107,7 @@ type ActiveThreadsResponse struct {
 // ── Thread endpoints ──────────────────────────────────────────────────────────
 
 // CreateThreadFromMessage starts a public thread from an existing message.
-func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, messageID discord.Snowflake, params CreateThreadFromMessageParams) (*discord.Channel, error) {
+func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, messageID discord.Snowflake, params CreateThreadFromMessageParams, opts *CreateThreadFromMessageOptions) (*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -110,7 +122,18 @@ func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, mes
 	}
 
 	path := "/channels/" + channelID.String() + "/messages/" + messageID.String() + "/threads"
-	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.Channel](c, req, map[int]bool{
+			http.StatusCreated: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +144,7 @@ func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, mes
 }
 
 // CreateThread starts a thread that is not connected to an existing message.
-func (c *RestClient) CreateThread(ctx context.Context, channelID discord.Snowflake, params CreateThreadParams) (*discord.Channel, error) {
+func (c *RestClient) CreateThread(ctx context.Context, channelID discord.Snowflake, params CreateThreadParams, opts *CreateThreadOptions) (*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -131,7 +154,17 @@ func (c *RestClient) CreateThread(ctx context.Context, channelID discord.Snowfla
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.Channel](c, req, map[int]bool{
+			http.StatusCreated: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +175,7 @@ func (c *RestClient) CreateThread(ctx context.Context, channelID discord.Snowfla
 }
 
 // CreateForumThread starts a thread in a forum or media channel.
-func (c *RestClient) CreateForumThread(ctx context.Context, channelID discord.Snowflake, params CreateForumThreadParams) (*discord.Channel, error) {
+func (c *RestClient) CreateForumThread(ctx context.Context, channelID discord.Snowflake, params CreateForumThreadParams, opts *CreateForumThreadOptions) (*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -152,7 +185,17 @@ func (c *RestClient) CreateForumThread(ctx context.Context, channelID discord.Sn
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.Channel](c, req, map[int]bool{
+			http.StatusCreated: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}

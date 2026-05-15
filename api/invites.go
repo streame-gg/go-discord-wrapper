@@ -14,6 +14,10 @@ type GetInviteParams struct {
 	GuildScheduledEventID *discord.Snowflake
 }
 
+type DeleteInviteOptions struct {
+	Reason string
+}
+
 func (p GetInviteParams) toQuery() string {
 	q := url.Values{}
 	if p.WithCounts != nil {
@@ -29,26 +33,36 @@ func (p GetInviteParams) toQuery() string {
 }
 
 // GetInvite returns the invite object for the given invite code.
-func (c *RestClient) GetInvite(ctx context.Context, code string, params GetInviteParams) (*Invite, error) {
+func (c *RestClient) GetInvite(ctx context.Context, code string, params GetInviteParams) (*discord.Invite, error) {
 	path := "/invites/" + url.PathEscape(code) + params.toQuery()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequest[Invite](c, req, map[int]bool{
+	return doRequest[discord.Invite](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // DeleteInvite deletes an invite by its code. Requires MANAGE_CHANNELS or MANAGE_GUILD.
-func (c *RestClient) DeleteInvite(ctx context.Context, code string) (*Invite, error) {
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/invites/"+url.PathEscape(code), nil, c.WithBotAuthorization())
+func (c *RestClient) DeleteInvite(ctx context.Context, code string, opts *DeleteInviteOptions) (*discord.Invite, error) {
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodDelete, "/invites/"+url.PathEscape(code), nil, c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.Invite](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/invites/"+url.PathEscape(code), nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequest[Invite](c, req, map[int]bool{
+	return doRequest[discord.Invite](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

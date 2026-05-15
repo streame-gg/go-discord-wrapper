@@ -125,3 +125,9 @@ type ThreadMetadata struct {
 	Locked              *bool      `json:"locked,omitempty"`
 	Invitable           *bool      `json:"invitable,omitempty"`
 }
+
+// FollowedChannel is returned when following an announcement channel.
+type FollowedChannel struct {
+	ChannelID Snowflake `json:"channel_id"`
+	WebhookID Snowflake `json:"webhook_id"`
+}

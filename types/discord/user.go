@@ -37,3 +37,24 @@ func (u *User) DisplayName() string {
 
 	return u.Username
 }
+
+// UserConnection represents an external account linked to a Discord user.
+type UserConnection struct {
+	ID           string         `json:"id"`
+	Name         string         `json:"name"`
+	Type         string         `json:"type"`
+	Revoked      *bool          `json:"revoked,omitempty"`
+	Integrations []*Integration `json:"integrations,omitempty"`
+	Verified     bool           `json:"verified"`
+	FriendSync   bool           `json:"friend_sync"`
+	ShowActivity bool           `json:"show_activity"`
+	TwoWayLink   bool           `json:"two_way_link"`
+	Visibility   int            `json:"visibility"`
+}
+
+// ApplicationRoleConnection represents the user's role connection for an application.
+type ApplicationRoleConnection struct {
+	PlatformName     *string           `json:"platform_name,omitempty"`
+	PlatformUsername *string           `json:"platform_username,omitempty"`
+	Metadata         map[string]string `json:"metadata,omitempty"`
+}

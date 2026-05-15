@@ -68,6 +68,12 @@ func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, message
 }
 
 func (c *RestClient) EndPoll(ctx context.Context, channelID, messageID discord.Snowflake) (*discord.Message, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+	if err := messageID.Validate(); err != nil {
+		return nil, err
+	}
 	path := "/channels/" + channelID.String() + "/polls/" + messageID.String() + "/expire"
 	req, err := c.generateRequest(ctx, http.MethodPost, path, nil, c.WithBotAuthorization())
 	if err != nil {

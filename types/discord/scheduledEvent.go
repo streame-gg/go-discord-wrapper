@@ -47,3 +47,10 @@ type GuildScheduledEvent struct {
 	UserCount          *int                               `json:"user_count,omitempty"`
 	Image              *string                            `json:"image,omitempty"`
 }
+
+// GuildScheduledEventUser is an entry in the list returned by GetGuildScheduledEventUsers.
+type GuildScheduledEventUser struct {
+	GuildScheduledEventID Snowflake    `json:"guild_scheduled_event_id"`
+	User                  User         `json:"user"`
+	Member                *GuildMember `json:"member,omitempty"`
+}

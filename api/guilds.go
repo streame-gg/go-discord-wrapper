@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -39,6 +38,10 @@ type ModifyGuildParams struct {
 	SafetyAlertsChannelID       *discord.Snowflake                       `json:"safety_alerts_channel_id,omitempty"`
 }
 
+type ModifyGuildOptions struct {
+	Reason string
+}
+
 type CreateGuildChannelParams struct {
 	Name                          string                                `json:"name"`
 	Type                          *discord.ChannelType                  `json:"type,omitempty"`
@@ -60,6 +63,14 @@ type CreateGuildChannelParams struct {
 	DefaultThreadRateLimitPerUser *int                                  `json:"default_thread_rate_limit_per_user,omitempty"`
 }
 
+type CreateGuildChannelOptions struct {
+	Reason string
+}
+
+type ModifyGuildChannelPositionsOptions struct {
+	Reason string
+}
+
 type ModifyGuildChannelPositionsEntry struct {
 	ID              discord.Snowflake  `json:"id"`
 	Position        *int               `json:"position,omitempty"`
@@ -77,6 +88,10 @@ type CreateGuildRoleParams struct {
 	Mentionable  *bool   `json:"mentionable,omitempty"`
 }
 
+type CreateGuildRoleOptions struct {
+	Reason string
+}
+
 type ModifyGuildRoleParams struct {
 	Name         *string `json:"name,omitempty"`
 	Permissions  *string `json:"permissions,omitempty"`
@@ -87,9 +102,21 @@ type ModifyGuildRoleParams struct {
 	Mentionable  *bool   `json:"mentionable,omitempty"`
 }
 
+type ModifyGuildRoleOptions struct {
+	Reason string
+}
+
 type ModifyGuildRolePositionsEntry struct {
 	ID       discord.Snowflake `json:"id"`
 	Position *int              `json:"position,omitempty"`
+}
+
+type ModifyGuildRolePositionsOptions struct {
+	Reason string
+}
+
+type DeleteGuildRoleOptions struct {
+	Reason string
 }
 
 type GetGuildBansParams struct {
@@ -119,6 +146,14 @@ type CreateGuildBanParams struct {
 	DeleteMessageSeconds *int `json:"delete_message_seconds,omitempty"`
 }
 
+type CreateGuildBanOptions struct {
+	Reason string
+}
+
+type RemoveGuildBanOptions struct {
+	Reason string
+}
+
 type GetGuildPruneCountParams struct {
 	Days         *int
 	IncludeRoles []discord.Snowflake
@@ -146,6 +181,10 @@ type BeginGuildPruneParams struct {
 	Days              *int                `json:"days,omitempty"`
 	ComputePruneCount *bool               `json:"compute_prune_count,omitempty"`
 	IncludeRoles      []discord.Snowflake `json:"include_roles,omitempty"`
+}
+
+type BeginGuildPruneOptions struct {
+	Reason string
 }
 
 type GetGuildAuditLogParams struct {
@@ -179,12 +218,6 @@ func (p GetGuildAuditLogParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
-// ── Response types ────────────────────────────────────────────────────────────
-
-type GuildPruneCountResult struct {
-	Pruned *int `json:"pruned"`
-}
-
 type ModifyGuildWidgetParams struct {
 	Enabled   *bool              `json:"enabled,omitempty"`
 	ChannelID *discord.Snowflake `json:"channel_id,omitempty"`
@@ -196,6 +229,11 @@ type ModifyGuildWelcomeScreenParams struct {
 	Description     *string                             `json:"description,omitempty"`
 }
 
+type ModifyGuildWelcomeScreenOptions struct {
+	Reason string
+}
+
+// TODO: verify audit log support
 type ModifyGuildOnboardingParams struct {
 	Prompts           []discord.OnboardingPrompt `json:"prompts"`
 	DefaultChannelIDs []discord.Snowflake        `json:"default_channel_ids"`
@@ -203,43 +241,8 @@ type ModifyGuildOnboardingParams struct {
 	Mode              discord.OnboardingMode     `json:"mode"`
 }
 
-type AuditLog struct {
-	ApplicationCommands  []any                   `json:"application_commands"`
-	AuditLogEntries      []discord.AuditLogEntry `json:"audit_log_entries"`
-	AutoModerationRules  []any                   `json:"auto_moderation_rules"`
-	GuildScheduledEvents []any                   `json:"guild_scheduled_events"`
-	Integrations         []any                   `json:"integrations"`
-	Threads              []discord.Channel       `json:"threads"`
-	Users                []discord.User          `json:"users"`
-	Webhooks             []any                   `json:"webhooks"`
-}
-
-type GuildVanityURL struct {
-	Code *string `json:"code"`
-	Uses int     `json:"uses"`
-}
-
-type Ban struct {
-	Reason *string      `json:"reason"`
-	User   discord.User `json:"user"`
-}
-
-type Invite struct {
-	Code                     string                        `json:"code"`
-	Guild                    *discord.Guild                `json:"guild,omitempty"`
-	Channel                  *discord.Channel              `json:"channel,omitempty"`
-	Inviter                  *discord.User                 `json:"inviter,omitempty"`
-	TargetType               *discord.InviteTargetUserType `json:"target_type,omitempty"`
-	TargetUser               *discord.User                 `json:"target_user,omitempty"`
-	ApproximatePresenceCount *int                          `json:"approximate_presence_count,omitempty"`
-	ApproximateMemberCount   *int                          `json:"approximate_member_count,omitempty"`
-	ExpiresAt                *time.Time                    `json:"expires_at,omitempty"`
-	Flags                    *discord.InviteFlags          `json:"flags,omitempty"`
-	Uses                     *int                          `json:"uses,omitempty"`
-	MaxUses                  *int                          `json:"max_uses,omitempty"`
-	MaxAge                   *int                          `json:"max_age,omitempty"`
-	Temporary                *bool                         `json:"temporary,omitempty"`
-	CreatedAt                *time.Time                    `json:"created_at,omitempty"`
+type ModifyGuildOnboardingOptions struct {
+	Reason string
 }
 
 // ── Guild endpoints ───────────────────────────────────────────────────────────
@@ -283,7 +286,7 @@ func (c *RestClient) GetGuildPreview(ctx context.Context, guildID discord.Snowfl
 }
 
 // ModifyGuild updates settings for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) ModifyGuild(ctx context.Context, guildID discord.Snowflake, params ModifyGuildParams) (*discord.Guild, error) {
+func (c *RestClient) ModifyGuild(ctx context.Context, guildID discord.Snowflake, params ModifyGuildParams, opts *ModifyGuildOptions) (*discord.Guild, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -293,7 +296,17 @@ func (c *RestClient) ModifyGuild(ctx context.Context, guildID discord.Snowflake,
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String(), bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String(), bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.Guild](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String(), bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +349,7 @@ func (c *RestClient) GetGuildChannels(ctx context.Context, guildID discord.Snowf
 }
 
 // CreateGuildChannel creates a new channel in a guild. Requires MANAGE_CHANNELS.
-func (c *RestClient) CreateGuildChannel(ctx context.Context, guildID discord.Snowflake, params CreateGuildChannelParams) (*discord.Channel, error) {
+func (c *RestClient) CreateGuildChannel(ctx context.Context, guildID discord.Snowflake, params CreateGuildChannelParams, opts *CreateGuildChannelOptions) (*discord.Channel, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -346,7 +359,17 @@ func (c *RestClient) CreateGuildChannel(ctx context.Context, guildID discord.Sno
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/channels", bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/channels", bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.Channel](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/channels", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -357,7 +380,7 @@ func (c *RestClient) CreateGuildChannel(ctx context.Context, guildID discord.Sno
 }
 
 // ModifyGuildChannelPositions bulk-updates channel positions. Requires MANAGE_CHANNELS.
-func (c *RestClient) ModifyGuildChannelPositions(ctx context.Context, guildID discord.Snowflake, entries []ModifyGuildChannelPositionsEntry) error {
+func (c *RestClient) ModifyGuildChannelPositions(ctx context.Context, guildID discord.Snowflake, entries []ModifyGuildChannelPositionsEntry, opts *ModifyGuildChannelPositionsOptions) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}
@@ -367,7 +390,15 @@ func (c *RestClient) ModifyGuildChannelPositions(ctx context.Context, guildID di
 		return err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/channels", bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/channels", bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/channels", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -379,6 +410,10 @@ func (c *RestClient) ModifyGuildChannelPositions(ctx context.Context, guildID di
 
 // GetGuildRoles returns all roles in a guild.
 func (c *RestClient) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Role, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
 	req, err := c.generateRequest(ctx, http.MethodGet, "/guilds/"+guildID.String()+"/roles", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
@@ -428,7 +463,7 @@ func (c *RestClient) GetGuildRole(ctx context.Context, guildID, roleID discord.S
 }
 
 // CreateGuildRole creates a new role in a guild. Requires MANAGE_ROLES.
-func (c *RestClient) CreateGuildRole(ctx context.Context, guildID discord.Snowflake, params CreateGuildRoleParams) (*discord.Role, error) {
+func (c *RestClient) CreateGuildRole(ctx context.Context, guildID discord.Snowflake, params CreateGuildRoleParams, opts *CreateGuildRoleOptions) (*discord.Role, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -438,7 +473,17 @@ func (c *RestClient) CreateGuildRole(ctx context.Context, guildID discord.Snowfl
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.Role](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -449,7 +494,7 @@ func (c *RestClient) CreateGuildRole(ctx context.Context, guildID discord.Snowfl
 }
 
 // ModifyGuildRolePositions bulk-updates the positions of roles. Requires MANAGE_ROLES.
-func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID discord.Snowflake, entries []ModifyGuildRolePositionsEntry) (*[]*discord.Role, error) {
+func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID discord.Snowflake, entries []ModifyGuildRolePositionsEntry, opts *ModifyGuildRolePositionsOptions) (*[]*discord.Role, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -459,7 +504,17 @@ func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID disco
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[[]*discord.Role](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -470,7 +525,7 @@ func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID disco
 }
 
 // ModifyGuildRole updates a role's settings. Requires MANAGE_ROLES.
-func (c *RestClient) ModifyGuildRole(ctx context.Context, guildID, roleID discord.Snowflake, params ModifyGuildRoleParams) (*discord.Role, error) {
+func (c *RestClient) ModifyGuildRole(ctx context.Context, guildID, roleID discord.Snowflake, params ModifyGuildRoleParams, opts *ModifyGuildRoleOptions) (*discord.Role, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -485,7 +540,18 @@ func (c *RestClient) ModifyGuildRole(ctx context.Context, guildID, roleID discor
 	}
 
 	path := "/guilds/" + guildID.String() + "/roles/" + roleID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.Role](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -496,7 +562,7 @@ func (c *RestClient) ModifyGuildRole(ctx context.Context, guildID, roleID discor
 }
 
 // DeleteGuildRole deletes a role from a guild. Requires MANAGE_ROLES.
-func (c *RestClient) DeleteGuildRole(ctx context.Context, guildID, roleID discord.Snowflake) error {
+func (c *RestClient) DeleteGuildRole(ctx context.Context, guildID, roleID discord.Snowflake, opts *DeleteGuildRoleOptions) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}
@@ -506,7 +572,16 @@ func (c *RestClient) DeleteGuildRole(ctx context.Context, guildID, roleID discor
 	}
 
 	path := "/guilds/" + guildID.String() + "/roles/" + roleID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -515,7 +590,7 @@ func (c *RestClient) DeleteGuildRole(ctx context.Context, guildID, roleID discor
 }
 
 // GetGuildBans returns a paginated list of bans in a guild. Requires BAN_MEMBERS.
-func (c *RestClient) GetGuildBans(ctx context.Context, guildID discord.Snowflake, params GetGuildBansParams) (*[]*Ban, error) {
+func (c *RestClient) GetGuildBans(ctx context.Context, guildID discord.Snowflake, params GetGuildBansParams) (*[]*discord.Ban, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -526,13 +601,13 @@ func (c *RestClient) GetGuildBans(ctx context.Context, guildID discord.Snowflake
 		return nil, err
 	}
 
-	return doRequest[[]*Ban](c, req, map[int]bool{
+	return doRequest[[]*discord.Ban](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetGuildBan returns the ban record for a specific user. Requires BAN_MEMBERS.
-func (c *RestClient) GetGuildBan(ctx context.Context, guildID, userID discord.Snowflake) (*Ban, error) {
+func (c *RestClient) GetGuildBan(ctx context.Context, guildID, userID discord.Snowflake) (*discord.Ban, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -547,13 +622,13 @@ func (c *RestClient) GetGuildBan(ctx context.Context, guildID, userID discord.Sn
 		return nil, err
 	}
 
-	return doRequest[Ban](c, req, map[int]bool{
+	return doRequest[discord.Ban](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // CreateGuildBan bans a user from a guild. Requires BAN_MEMBERS.
-func (c *RestClient) CreateGuildBan(ctx context.Context, guildID, userID discord.Snowflake, params CreateGuildBanParams) error {
+func (c *RestClient) CreateGuildBan(ctx context.Context, guildID, userID discord.Snowflake, params CreateGuildBanParams, opts *CreateGuildBanOptions) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}
@@ -568,7 +643,16 @@ func (c *RestClient) CreateGuildBan(ctx context.Context, guildID, userID discord
 	}
 
 	path := "/guilds/" + guildID.String() + "/bans/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -577,7 +661,7 @@ func (c *RestClient) CreateGuildBan(ctx context.Context, guildID, userID discord
 }
 
 // RemoveGuildBan lifts a ban from a user. Requires BAN_MEMBERS.
-func (c *RestClient) RemoveGuildBan(ctx context.Context, guildID, userID discord.Snowflake) error {
+func (c *RestClient) RemoveGuildBan(ctx context.Context, guildID, userID discord.Snowflake, opts *RemoveGuildBanOptions) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}
@@ -587,7 +671,16 @@ func (c *RestClient) RemoveGuildBan(ctx context.Context, guildID, userID discord
 	}
 
 	path := "/guilds/" + guildID.String() + "/bans/" + userID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -596,7 +689,7 @@ func (c *RestClient) RemoveGuildBan(ctx context.Context, guildID, userID discord
 }
 
 // GetGuildPruneCount returns the number of members that would be pruned with the given criteria.
-func (c *RestClient) GetGuildPruneCount(ctx context.Context, guildID discord.Snowflake, params GetGuildPruneCountParams) (*GuildPruneCountResult, error) {
+func (c *RestClient) GetGuildPruneCount(ctx context.Context, guildID discord.Snowflake, params GetGuildPruneCountParams) (*discord.GuildPruneCountResult, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -607,13 +700,13 @@ func (c *RestClient) GetGuildPruneCount(ctx context.Context, guildID discord.Sno
 		return nil, err
 	}
 
-	return doRequest[GuildPruneCountResult](c, req, map[int]bool{
+	return doRequest[discord.GuildPruneCountResult](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // BeginGuildPrune kicks inactive members. Requires KICK_MEMBERS.
-func (c *RestClient) BeginGuildPrune(ctx context.Context, guildID discord.Snowflake, params BeginGuildPruneParams) (*GuildPruneCountResult, error) {
+func (c *RestClient) BeginGuildPrune(ctx context.Context, guildID discord.Snowflake, params BeginGuildPruneParams, opts *BeginGuildPruneOptions) (*discord.GuildPruneCountResult, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -623,12 +716,22 @@ func (c *RestClient) BeginGuildPrune(ctx context.Context, guildID discord.Snowfl
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/prune", bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/prune", bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.GuildPruneCountResult](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/prune", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequest[GuildPruneCountResult](c, req, map[int]bool{
+	return doRequest[discord.GuildPruneCountResult](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -636,7 +739,7 @@ func (c *RestClient) BeginGuildPrune(ctx context.Context, guildID discord.Snowfl
 // ── Invite and misc endpoints ─────────────────────────────────────────────────
 
 // GetGuildInvites returns all active invites for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) (*[]*Invite, error) {
+func (c *RestClient) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Invite, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -646,13 +749,13 @@ func (c *RestClient) GetGuildInvites(ctx context.Context, guildID discord.Snowfl
 		return nil, err
 	}
 
-	return doRequest[[]*Invite](c, req, map[int]bool{
+	return doRequest[[]*discord.Invite](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetGuildVanityURL returns the vanity invite code and use count for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) GetGuildVanityURL(ctx context.Context, guildID discord.Snowflake) (*GuildVanityURL, error) {
+func (c *RestClient) GetGuildVanityURL(ctx context.Context, guildID discord.Snowflake) (*discord.GuildVanityURL, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -662,13 +765,13 @@ func (c *RestClient) GetGuildVanityURL(ctx context.Context, guildID discord.Snow
 		return nil, err
 	}
 
-	return doRequest[GuildVanityURL](c, req, map[int]bool{
+	return doRequest[discord.GuildVanityURL](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetGuildAuditLog returns audit log entries for a guild. Requires VIEW_AUDIT_LOG.
-func (c *RestClient) GetGuildAuditLog(ctx context.Context, guildID discord.Snowflake, params GetGuildAuditLogParams) (*AuditLog, error) {
+func (c *RestClient) GetGuildAuditLog(ctx context.Context, guildID discord.Snowflake, params GetGuildAuditLogParams) (*discord.AuditLog, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -679,7 +782,7 @@ func (c *RestClient) GetGuildAuditLog(ctx context.Context, guildID discord.Snowf
 		return nil, err
 	}
 
-	return doRequest[AuditLog](c, req, map[int]bool{
+	return doRequest[discord.AuditLog](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -786,7 +889,7 @@ func (c *RestClient) GetGuildWelcomeScreen(ctx context.Context, guildID discord.
 }
 
 // ModifyGuildWelcomeScreen updates the welcome screen for a community guild. Requires MANAGE_GUILD.
-func (c *RestClient) ModifyGuildWelcomeScreen(ctx context.Context, guildID discord.Snowflake, params ModifyGuildWelcomeScreenParams) (*discord.GuildWelcomeScreen, error) {
+func (c *RestClient) ModifyGuildWelcomeScreen(ctx context.Context, guildID discord.Snowflake, params ModifyGuildWelcomeScreenParams, opts *ModifyGuildWelcomeScreenOptions) (*discord.GuildWelcomeScreen, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -796,7 +899,17 @@ func (c *RestClient) ModifyGuildWelcomeScreen(ctx context.Context, guildID disco
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/welcome-screen", bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/welcome-screen", bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.GuildWelcomeScreen](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/welcome-screen", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -825,7 +938,7 @@ func (c *RestClient) GetGuildOnboarding(ctx context.Context, guildID discord.Sno
 }
 
 // ModifyGuildOnboarding updates the onboarding configuration for a guild. Requires MANAGE_GUILD and MANAGE_ROLES.
-func (c *RestClient) ModifyGuildOnboarding(ctx context.Context, guildID discord.Snowflake, params ModifyGuildOnboardingParams) (*discord.GuildOnboarding, error) {
+func (c *RestClient) ModifyGuildOnboarding(ctx context.Context, guildID discord.Snowflake, params ModifyGuildOnboardingParams, opts *ModifyGuildOnboardingOptions) (*discord.GuildOnboarding, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -835,7 +948,17 @@ func (c *RestClient) ModifyGuildOnboarding(ctx context.Context, guildID discord.
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPut, "/guilds/"+guildID.String()+"/onboarding", bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPut, "/guilds/"+guildID.String()+"/onboarding", bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.GuildOnboarding](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPut, "/guilds/"+guildID.String()+"/onboarding", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -877,6 +1000,14 @@ type BulkBanParams struct {
 	DeleteMessageSeconds *int                `json:"delete_message_seconds,omitempty"`
 }
 
+type BulkBanOptions struct {
+	Reason string
+}
+
+type DeleteGuildIntegrationOptions struct {
+	Reason string
+}
+
 // BulkBanResult is the result of a bulk ban operation.
 type BulkBanResult struct {
 	BannedUsers []discord.Snowflake `json:"banned_users"`
@@ -901,7 +1032,7 @@ func (c *RestClient) CreateGuild(ctx context.Context, params CreateGuildParams) 
 }
 
 // BulkBanGuildMembers bans up to 200 members from a guild at once. Requires BAN_MEMBERS and MANAGE_GUILD.
-func (c *RestClient) BulkBanGuildMembers(ctx context.Context, guildID discord.Snowflake, params BulkBanParams) (*BulkBanResult, error) {
+func (c *RestClient) BulkBanGuildMembers(ctx context.Context, guildID discord.Snowflake, params BulkBanParams, opts *BulkBanOptions) (*BulkBanResult, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -911,7 +1042,17 @@ func (c *RestClient) BulkBanGuildMembers(ctx context.Context, guildID discord.Sn
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/bulk-ban", bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/bulk-ban", bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[BulkBanResult](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/bulk-ban", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -938,7 +1079,7 @@ func (c *RestClient) GetGuildIntegrations(ctx context.Context, guildID discord.S
 }
 
 // DeleteGuildIntegration deletes an integration from a guild. Requires MANAGE_GUILD.
-func (c *RestClient) DeleteGuildIntegration(ctx context.Context, guildID, integrationID discord.Snowflake) error {
+func (c *RestClient) DeleteGuildIntegration(ctx context.Context, guildID, integrationID discord.Snowflake, opts *DeleteGuildIntegrationOptions) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}
@@ -948,7 +1089,16 @@ func (c *RestClient) DeleteGuildIntegration(ctx context.Context, guildID, integr
 	}
 
 	path := "/guilds/" + guildID.String() + "/integrations/" + integrationID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}

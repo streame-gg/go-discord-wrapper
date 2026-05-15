@@ -18,9 +18,21 @@ type CreateGuildEmojiParams struct {
 	Roles []discord.Snowflake `json:"roles,omitempty"`
 }
 
+type CreateGuildEmojiOptions struct {
+	Reason string
+}
+
 type ModifyGuildEmojiParams struct {
 	Name  *string             `json:"name,omitempty"`
 	Roles []discord.Snowflake `json:"roles,omitempty"`
+}
+
+type ModifyGuildEmojiOptions struct {
+	Reason string
+}
+
+type DeleteGuildEmojiOptions struct {
+	Reason string
 }
 
 // ── Emoji endpoints ───────────────────────────────────────────────────────────
@@ -64,7 +76,7 @@ func (c *RestClient) GetGuildEmoji(ctx context.Context, guildID, emojiID discord
 
 // CreateGuildEmoji creates a new emoji in a guild.
 // Image must be a base64-encoded data URI, max 256 KB.
-func (c *RestClient) CreateGuildEmoji(ctx context.Context, guildID discord.Snowflake, params CreateGuildEmojiParams) (*discord.Emoji, error) {
+func (c *RestClient) CreateGuildEmoji(ctx context.Context, guildID discord.Snowflake, params CreateGuildEmojiParams, opts *CreateGuildEmojiOptions) (*discord.Emoji, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -74,7 +86,17 @@ func (c *RestClient) CreateGuildEmoji(ctx context.Context, guildID discord.Snowf
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/emojis", bytes.NewReader(body), c.WithBotAuthorization())
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/emojis", bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.Emoji](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/emojis", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +107,7 @@ func (c *RestClient) CreateGuildEmoji(ctx context.Context, guildID discord.Snowf
 }
 
 // ModifyGuildEmoji updates the name or allowed roles for a guild emoji.
-func (c *RestClient) ModifyGuildEmoji(ctx context.Context, guildID, emojiID discord.Snowflake, params ModifyGuildEmojiParams) (*discord.Emoji, error) {
+func (c *RestClient) ModifyGuildEmoji(ctx context.Context, guildID, emojiID discord.Snowflake, params ModifyGuildEmojiParams, opts *ModifyGuildEmojiOptions) (*discord.Emoji, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -100,7 +122,18 @@ func (c *RestClient) ModifyGuildEmoji(ctx context.Context, guildID, emojiID disc
 	}
 
 	path := "/guilds/" + guildID.String() + "/emojis/" + emojiID.String()
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return nil, err
+		}
+		return doRequest[discord.Emoji](c, req, map[int]bool{
+			http.StatusOK: true,
+		})
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +144,7 @@ func (c *RestClient) ModifyGuildEmoji(ctx context.Context, guildID, emojiID disc
 }
 
 // DeleteGuildEmoji deletes the given guild emoji.
-func (c *RestClient) DeleteGuildEmoji(ctx context.Context, guildID, emojiID discord.Snowflake) error {
+func (c *RestClient) DeleteGuildEmoji(ctx context.Context, guildID, emojiID discord.Snowflake, opts *DeleteGuildEmojiOptions) error {
 	if err := guildID.Validate(); err != nil {
 		return err
 	}
@@ -121,7 +154,16 @@ func (c *RestClient) DeleteGuildEmoji(ctx context.Context, guildID, emojiID disc
 	}
 
 	path := "/guilds/" + guildID.String() + "/emojis/" + emojiID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}

@@ -109,30 +109,10 @@ type CreateMessageParams struct {
 	EnforceNonce bool                   `json:"enforce_nonce,omitempty"`
 	// Files are binary attachments sent via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
-	Files             []MessageFile       `json:"-"`
-	Poll              discord.PollRequest `json:"poll_request,omitempty"`
-	SharedClientTheme SharedClientTheme   `json:"shared_client_theme,omitempty"`
+	Files             []MessageFile             `json:"-"`
+	Poll              discord.PollRequest       `json:"poll_request,omitempty"`
+	SharedClientTheme discord.SharedClientTheme `json:"shared_client_theme,omitempty"`
 }
-
-// SharedClientTheme https://docs.discord.com/developers/resources/message#shared-client-theme-object
-type SharedClientTheme struct {
-	Colors        []string  `json:"colors"`
-	GradientAngle int       `json:"gradient_angle"`
-	BaseMix       int       `json:"base_mix"`
-	BaseTheme     BaseTheme `json:"base_theme,omitempty"`
-}
-
-// BaseTheme https://docs.discord.com/developers/resources/message#base-theme-types
-// BaseThemeUnset is equal to BaseThemeDark.
-type BaseTheme int
-
-const (
-	BaseThemeUnset BaseTheme = iota
-	BaseThemeDark
-	BaseThemeLight
-	BaseThemeDarker
-	BaseThemeMidnight
-)
 
 func (p CreateMessageParams) MarshalJSON() ([]byte, error) {
 	type Alias CreateMessageParams
@@ -322,7 +302,7 @@ func (c *RestClient) EditMessage(ctx context.Context, channelID, messageID disco
 }
 
 // DeleteMessage deletes a message.
-func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID discord.Snowflake) error {
+func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID discord.Snowflake, opts *DeleteMessageOptions) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -332,7 +312,16 @@ func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID dis
 	}
 
 	path := "/channels/" + channelID.String() + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -342,7 +331,7 @@ func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID dis
 
 // BulkDeleteMessages deletes 2–100 messages at once.
 // Messages older than 14 days cannot be bulk-deleted and will cause a Discord API error.
-func (c *RestClient) BulkDeleteMessages(ctx context.Context, channelID discord.Snowflake, messageIDs []discord.Snowflake) error {
+func (c *RestClient) BulkDeleteMessages(ctx context.Context, channelID discord.Snowflake, messageIDs []discord.Snowflake, opts *BulkDeleteMessagesOptions) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -363,7 +352,16 @@ func (c *RestClient) BulkDeleteMessages(ctx context.Context, channelID discord.S
 	}
 
 	path := "/channels/" + channelID.String() + "/messages/bulk-delete"
-	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -392,6 +390,16 @@ func (c *RestClient) CrosspostMessage(ctx context.Context, channelID, messageID 
 	})
 }
 
+// ── Options types ─────────────────────────────────────────────────────────────
+
+type DeleteMessageOptions struct {
+	Reason string
+}
+
+type BulkDeleteMessagesOptions struct {
+	Reason string
+}
+
 // ── Pin endpoints ─────────────────────────────────────────────────────────────
 
 // GetPinnedMessages returns all pinned messages in a channel (max 50).
@@ -411,7 +419,7 @@ func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID discord.Sn
 }
 
 // PinMessage pins a message in a channel. Requires MANAGE_MESSAGES.
-func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID discord.Snowflake) error {
+func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID discord.Snowflake, opts *PinMessageOptions) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -421,7 +429,16 @@ func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID discor
 	}
 
 	path := "/channels/" + channelID.String() + "/pins/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -430,7 +447,7 @@ func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID discor
 }
 
 // UnpinMessage unpins a message from a channel. Requires MANAGE_MESSAGES.
-func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID discord.Snowflake) error {
+func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID discord.Snowflake, opts *UnpinMessageOptions) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -440,7 +457,16 @@ func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID disc
 	}
 
 	path := "/channels/" + channelID.String() + "/pins/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+
+	if opts == nil {
+		req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+		if err != nil {
+			return err
+		}
+		return doRequestWithoutResponse(c, req)
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return err
 	}
