@@ -77,6 +77,13 @@ type RestClient struct {
 //	    options.WithRateLimiting(options.RateLimiterOptions{SafetyMargin: 1}),
 //	)
 func NewRestClient(token string, opts ...options.Option) (*RestClient, error) {
+	token = strings.TrimSpace(token)
+	token = strings.TrimPrefix(token, "Bot ")
+	token = strings.TrimPrefix(token, "Bearer ")
+	if token == "" {
+		return nil, errors.New("go-discord-wrapper: token must not be empty")
+	}
+
 	cfg := options.Build(options.Config{
 		BaseURL:    "https://discord.com/api",
 		APIVersion: discord.APIVersion10,
