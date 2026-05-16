@@ -417,6 +417,40 @@ func (s *ratelimitTestSuite) TestRouteKey_FragmentStripped() {
 	s.Equalf(withFragment, withoutFragment, "routeKey must strip fragment (Bug 4): %q vs %q", withFragment, withoutFragment)
 }
 
+// TestP0_5_ZeroLimitBucketDoesNotHang verifies that a bucket whose limit is
+// zero (e.g. a 429 from Cloudflare that omits X-RateLimit-Limit) does not
+// cause wait() to loop indefinitely.  Before the fix, remaining was never
+// restored because "if b.limit > 0" was always false, so the loop condition
+// stayed true after every sleep iteration.
+func (s *ratelimitTestSuite) TestP0_5_ZeroLimitBucketDoesNotHang() {
+	rl := newRateLimiter(0)
+	defer rl.close()
+
+	// Simulate a 429 response without X-RateLimit-Limit: limit stays 0,
+	// remaining = 0, resetAt is in the near future.
+	const bucketID = "cloudflare-bucket"
+	b := &rateLimitBucket{
+		limit:     0,
+		remaining: 0,
+		resetAt:   time.Now().Add(20 * time.Millisecond),
+		lastUsed:  time.Now(),
+	}
+	rl.buckets.Store(bucketID, b)
+	rl.routeToBucket.Store(routeKey("GET", "/channels/111/messages"), bucketID)
+
+	done := make(chan error, 1)
+	go func() {
+		done <- rl.wait(context.Background(), "GET", "/channels/111/messages")
+	}()
+
+	select {
+	case err := <-done:
+		s.NoError(err, "wait must return nil (not hang) when bucket.limit == 0")
+	case <-time.After(500 * time.Millisecond):
+		s.Fail("wait() hung on a bucket with limit=0 (P0-5)")
+	}
+}
+
 // Bug 6: rateLimiter.close() must be idempotent; a second call must not panic.
 func (s *ratelimitTestSuite) TestRateLimiter_CloseIdempotent() {
 	rl := newRateLimiter(0)
