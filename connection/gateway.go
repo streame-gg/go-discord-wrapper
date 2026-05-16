@@ -72,6 +72,13 @@ type Client struct {
 	shutdownCh   chan struct{}
 	shutdownOnce sync.Once
 
+	// readyCh is closed exactly once when the first READY event is received.
+	// Unlike Websocket.Ready, it lives on the Client and survives reconnects,
+	// so Login() can safely wait on it without racing against d.Websocket being
+	// replaced by a concurrent reconnect.
+	readyCh   chan struct{}
+	readyOnce sync.Once
+
 	// eventWg tracks unlimited-mode goroutines (one per event) so Shutdown can
 	// drain them before waiting on handler goroutines tracked by dispatchWg.
 	eventWg sync.WaitGroup
@@ -194,6 +201,7 @@ func NewClient(token string, intents discord.Intent, opts ...options.Option) (*C
 		cacheAutoPopulate:   cacheStores,
 		shardDispatchSem:    make(chan struct{}, 16),
 		shutdownCh:          make(chan struct{}),
+		readyCh:             make(chan struct{}),
 	}
 
 	if cfg.MaxConcurrentEvents == 0 {
@@ -229,6 +237,14 @@ func NewClient(token string, intents discord.Intent, opts ...options.Option) (*C
 	}
 
 	return c, nil
+}
+
+// Ready returns a channel that is closed once the first READY event is
+// received from the Discord gateway.  Unlike Websocket.Ready, this channel
+// lives on the Client and is never replaced, so it is safe to use across
+// reconnects.
+func (d *Client) Ready() <-chan struct{} {
+	return d.readyCh
 }
 
 // dispatchJob carries a single gateway event through the worker pool.
@@ -607,12 +623,8 @@ func (d *Client) Login(ctx context.Context) error {
 		}
 	}()
 
-	d.wsMu.RLock()
-	ready := d.Websocket.Ready
-	d.wsMu.RUnlock()
-
 	select {
-	case <-ready:
+	case <-d.readyCh:
 	case <-ctx.Done():
 		_ = d.Shutdown()
 		return ctx.Err()
@@ -718,6 +730,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			}
 
 			d.Websocket.readyOnce.Do(func() { close(d.Websocket.Ready) })
+			d.readyOnce.Do(func() { close(d.readyCh) })
 
 			return true
 		}

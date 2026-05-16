@@ -57,7 +57,7 @@ func TestP0_4_ShutdownDuringBackoff(t *testing.T) {
 
 	// Wait for READY so the Websocket struct is fully set up.
 	select {
-	case <-c.Websocket.Ready:
+	case <-c.Ready():
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for initial READY")
 	}

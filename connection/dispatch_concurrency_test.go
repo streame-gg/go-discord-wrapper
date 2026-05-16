@@ -49,7 +49,7 @@ func TestBug9_MaxConcurrentEventsLimitsHandlers(t *testing.T) {
 
 	// Wait for READY before registering handlers.
 	select {
-	case <-c.Websocket.Ready:
+	case <-c.Ready():
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for READY")
 	}

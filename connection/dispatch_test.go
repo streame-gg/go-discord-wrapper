@@ -110,7 +110,7 @@ func launchClient(t *testing.T, wsURL string, intents discord.Intent) (c *Client
 
 	// Now wait for READY to be processed.
 	select {
-	case <-c.Websocket.Ready:
+	case <-c.Ready():
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for READY")
 	}

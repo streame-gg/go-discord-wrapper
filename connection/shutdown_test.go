@@ -26,7 +26,7 @@ func TestBug51ShutdownIdempotent(t *testing.T) {
 	go func() { _ = c.listenWebsocket() }()
 
 	select {
-	case <-c.Websocket.Ready:
+	case <-c.Ready():
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for READY")
 	}
@@ -72,7 +72,7 @@ func TestBug48EventChSendRace(t *testing.T) {
 		go func() { _ = c.listenWebsocket() }()
 
 		select {
-		case <-c.Websocket.Ready:
+		case <-c.Ready():
 		case <-time.After(5 * time.Second):
 			closeServer()
 			t.Fatalf("iter %d: timeout waiting for READY", iter)
@@ -113,7 +113,7 @@ func TestBug49UnlimitedModeHandlersComplete(t *testing.T) {
 	go func() { _ = c.listenWebsocket() }()
 
 	select {
-	case <-c.Websocket.Ready:
+	case <-c.Ready():
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for READY")
 	}

@@ -86,7 +86,7 @@ func TestBug17NonRecoverableCloseCodesExitListenerLoop(t *testing.T) {
 
 			// Wait for READY before asserting.
 			select {
-			case <-c.Websocket.Ready:
+			case <-c.Ready():
 			case <-time.After(5 * time.Second):
 				t.Fatalf("code %d: timeout waiting for READY", code)
 			}
@@ -128,7 +128,7 @@ func TestBug18CorruptReadyPayloadDoesNotCloseReadyChan(t *testing.T) {
 
 	// Ready channel must NOT be closed.
 	select {
-	case <-c.Websocket.Ready:
+	case <-c.Ready():
 		t.Fatal("Ready channel was closed despite corrupt READY payload")
 	default:
 		// correct — channel is still open
@@ -333,7 +333,7 @@ func TestBug41DoubleReadyDoesNotPanic(t *testing.T) {
 	result := c.internalEventHandler(readyPayload, "READY", nil)
 	assert.True(t, result)
 	select {
-	case <-c.Websocket.Ready:
+	case <-c.Ready():
 	default:
 		t.Fatal("Ready channel not closed after first READY")
 	}
