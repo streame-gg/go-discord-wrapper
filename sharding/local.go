@@ -3,7 +3,7 @@
 // For single-machine deployments, use LocalCoordinator and ShardManager:
 //
 //	coord := sharding.NewLocalCoordinator(4)
-//	mgr := sharding.NewShardManager(coord, func(shardID, total int) *connection.Client {
+//	mgr := sharding.NewShardManager(coord, func(shardID, total int) (*connection.Client, error) {
 //	    return connection.NewClient(token, intents,
 //	        options.WithSharding(total, shardID),
 //	        options.WithCoordinator(coord),

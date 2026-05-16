@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **BREAKING — `ShardManager` factory returns `(*Client, error)`** (P0-9): The factory function passed to `NewShardManager` previously returned `*connection.Client`, making it impossible to propagate errors from `connection.NewClient`. The signature is now `func(shardID, totalShards int) (*connection.Client, error)`. `Start()` returns the factory error as `"sharding: shard N factory failed: ..."` and shuts down any already-started shards.
+
 - **BREAKING — `events.EventFactories` is now unexported** (P0-6): The global `events.EventFactories` map has been renamed to `eventFactories` (unexported). Use the new `events.GetEventFactory(t EventType) (func() Event, bool)` for read access, and the existing `events.RegisterEvent` for writes. This prevents user code from accidentally overwriting entries or racing on the map at runtime.
 
 - **BREAKING — `Client.OnEvent` now returns `error`** (P0-7): `OnEvent` previously logged a warning and silently dropped the handler when the handler had the wrong type signature. It now returns a non-nil error so the caller can surface the bug at registration time. The typed helpers (`OnMessageCreate`, `OnInteractionCreate`, etc.) are unaffected — they guarantee correct types at compile time and internally discard the (always-nil) error.
