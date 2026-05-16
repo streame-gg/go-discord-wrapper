@@ -48,7 +48,7 @@ func main() {
 	// /slow — simulates a command that needs to do async work before replying.
 	// It defers immediately so Discord shows a loading state, then sends the
 	// follow-up once the work is done.
-	bot.OnEvent(events.EventInteractionCreate, func(c *connection.Client, ev *events.InteractionCreateEvent) {
+	if err := bot.OnEvent(events.EventInteractionCreate, func(c *connection.Client, ev *events.InteractionCreateEvent) {
 		i := &ev.Interaction
 
 		if ev.GetFullCommand() != "slow" {
@@ -71,12 +71,15 @@ func main() {
 				c.Logger.Error("followup failed", slog.Any("err", err))
 			}
 		}()
-	})
+	}); err != nil {
+		slog.Error("failed to register slow handler", "err", err)
+		os.Exit(1)
+	}
 
 	// ── 3. Typed error handling ───────────────────────────────────────────────
 	//
 	// /ban — shows how to distinguish a permission error from other failures.
-	bot.OnEvent(events.EventInteractionCreate, func(c *connection.Client, ev *events.InteractionCreateEvent) {
+	if err := bot.OnEvent(events.EventInteractionCreate, func(c *connection.Client, ev *events.InteractionCreateEvent) {
 		i := &ev.Interaction
 
 		if ev.GetFullCommand() != "ban" || ev.GuildID == nil || ev.Member == nil {
@@ -109,7 +112,10 @@ func main() {
 			}
 			_, _ = send(api.CreateMessageParams{Content: "Member banned."})
 		}()
-	})
+	}); err != nil {
+		slog.Error("failed to register ban handler", "err", err)
+		os.Exit(1)
+	}
 
 	if err := bot.Login(context.Background()); err != nil {
 		panic(err)
