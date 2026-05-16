@@ -36,19 +36,22 @@ import (
     "syscall"
 
     "github.com/streame-gg/go-discord-wrapper/connection"
-    "github.com/streame-gg/go-discord-wrapper/types/common"
+    "github.com/streame-gg/go-discord-wrapper/types/discord"
     "github.com/streame-gg/go-discord-wrapper/types/events"
     "github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
 
 func main() {
-    bot, err := connection.NewClient(os.Getenv("DISCORD_TOKEN"), common.IntentGuilds|common.IntentGuildMessages)
+    bot, err := connection.NewClient(os.Getenv("DISCORD_TOKEN"), discord.IntentGuilds|discord.IntentGuildMessages)
     if err != nil {
         slog.Error("failed to create client", "err", err)
         os.Exit(1)
     }
 
-    bot.OnEvent(events.EventMessageCreate, func(c *connection.Client, e *events.MessageCreateEvent) {
+    bot.OnMessageCreate(func(c *connection.Client, e *events.MessageCreateEvent) {
+        if e.Author == nil {
+            return
+        }
         slog.Info("new message", "author", e.Author.Username, "content", e.Content)
     })
 
@@ -108,8 +111,8 @@ if ch, ok := bot.Cache.Channels().Get(channelID); ok {
 | Backend | Import |
 |---------|--------|
 | In-process memory (default) | `cache.NewMemoryCache(...)` |
-| Redis | `cache/redis` package |
-| MongoDB | `cache/mongo` package |
+| Redis | `cache/rediscache` package |
+| MongoDB | `cache/mongocache` package |
 
 ## Sharding
 
