@@ -122,6 +122,10 @@ func (d *Client) removeChannelFromCache(channelID discord.Snowflake) {
 }
 
 func (d *Client) removeGuildFromCache(guildID discord.Snowflake) {
+	d.guildMu.Lock()
+	delete(d.guildMemberCounts, guildID)
+	d.guildMu.Unlock()
+
 	if d.Cache == nil {
 		return
 	}

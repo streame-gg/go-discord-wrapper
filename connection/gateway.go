@@ -955,10 +955,6 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			}
 
 			// Bot was kicked or the guild was deleted.
-			d.guildMu.Lock()
-			delete(d.guildMemberCounts, guildDeleteEvent.ID)
-			d.guildMu.Unlock()
-
 			d.removeGuildFromCache(guildDeleteEvent.ID)
 
 			prefix := string(guildDeleteEvent.ID) + ":"
