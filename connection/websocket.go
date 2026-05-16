@@ -55,6 +55,12 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 	if err != nil {
 		return nil, err
 	}
+	var dialSucceeded bool
+	defer func() {
+		if !dialSucceeded {
+			_ = c.Close()
+		}
+	}()
 
 	_ = c.SetWriteDeadline(time.Time{})
 	c.SetReadLimit(4 * 1024 * 1024) // 4 MiB — protects against rogue/compromised endpoint flooding RAM
@@ -215,6 +221,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 		}
 	}()
 
+	dialSucceeded = true
 	return ws, nil
 }
 
