@@ -106,10 +106,9 @@ func (i *Interaction) DeleteFollowup(ctx context.Context, client Client, message
 // follow-up when called. Use this pattern for handlers that need to do async
 // work before responding.
 //
-//	send, err := i.DeferAndFollowup(client, false)
+//	send, err := i.DeferAndFollowup(ctx, client, false)
 //	if err != nil { return }
-//	result := doSlowWork()
-//	send(api.CreateMessageParams{Content: result})
+//	_ = send // invoke send(api.CreateMessageParams{Content: result}) when ready
 func (i *Interaction) DeferAndFollowup(ctx context.Context, client Client, ephemeral bool) (func(api.CreateMessageParams) (*discord.Message, error), error) {
 	if err := client.DeferReply(ctx, i, ephemeral); err != nil {
 		return nil, err
