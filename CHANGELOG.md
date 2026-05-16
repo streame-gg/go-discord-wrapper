@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **BREAKING — `events.EventFactories` is now unexported** (P0-6): The global `events.EventFactories` map has been renamed to `eventFactories` (unexported). Use the new `events.GetEventFactory(t EventType) (func() Event, bool)` for read access, and the existing `events.RegisterEvent` for writes. This prevents user code from accidentally overwriting entries or racing on the map at runtime.
+
 - **BREAKING — `Client.OnEvent` now returns `error`** (P0-7): `OnEvent` previously logged a warning and silently dropped the handler when the handler had the wrong type signature. It now returns a non-nil error so the caller can surface the bug at registration time. The typed helpers (`OnMessageCreate`, `OnInteractionCreate`, etc.) are unaffected — they guarantee correct types at compile time and internally discard the (always-nil) error.
 
 - **`WithMaxConcurrentEvents` semantics** (Bug 9): In pool mode (`MaxConcurrentEvents > 0`), event handlers now run **serially inside each worker goroutine** rather than spawning an unbounded number of goroutines per event. `MaxConcurrentEvents` is now the true upper bound on the number of handlers executing concurrently at any moment. Bots that relied on concurrent handler execution within a single event (i.e. multiple `On*` handlers firing simultaneously for the same event) will now see those handlers run in registration order, one after the other. If you need concurrent execution, register a single handler that fans out internally.

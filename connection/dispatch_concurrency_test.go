@@ -57,7 +57,7 @@ func TestBug9_MaxConcurrentEventsLimitsHandlers(t *testing.T) {
 
 	var completed atomic.Int32
 
-	factory := events.EventFactories[events.EventMessageCreate]
+	factory, _ := events.GetEventFactory(events.EventMessageCreate)
 
 	// Register a slow handler.
 	c.OnMessageCreate(func(_ *Client, _ *events.MessageCreateEvent) {

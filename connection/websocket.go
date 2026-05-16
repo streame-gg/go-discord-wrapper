@@ -435,7 +435,7 @@ func (d *Client) listenWebsocket() error {
 		}
 
 		if payload.T != "" {
-			factory, ok := events.EventFactories[events.EventType(payload.T)]
+			factory, ok := events.GetEventFactory(events.EventType(payload.T))
 			if !ok {
 				d.Logger.Warn("No factory found for event type", slog.String("type", string(payload.T)))
 				continue

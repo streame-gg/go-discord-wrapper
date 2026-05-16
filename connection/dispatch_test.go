@@ -339,7 +339,7 @@ func BenchmarkDispatch(b *testing.B) {
 		"timestamp": "2024-01-01T00:00:00Z",
 	})
 
-	factory := events.EventFactories[events.EventMessageCreate]
+	factory, _ := events.GetEventFactory(events.EventMessageCreate)
 
 	var wg sync.WaitGroup
 	b.ResetTimer()
@@ -376,7 +376,7 @@ func BenchmarkDispatchWithMiddleware(b *testing.B) {
 		"timestamp": "2024-01-01T00:00:00Z",
 	})
 
-	factory := events.EventFactories[events.EventMessageCreate]
+	factory, _ := events.GetEventFactory(events.EventMessageCreate)
 
 	var wg sync.WaitGroup
 	b.ResetTimer()
