@@ -21,6 +21,9 @@ func (t *TextDisplayComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*t = TextDisplayComponent(*raw.Alias)
 	return nil
 }
@@ -72,6 +75,9 @@ func (t *TextDisplayComponentInteractionResponse) UnmarshalJSON(data []byte) err
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*t = TextDisplayComponentInteractionResponse(*raw.Alias)
 	return nil
 }

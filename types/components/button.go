@@ -39,6 +39,9 @@ func (b *ButtonComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*b = ButtonComponent(*raw.Alias)
 	return nil
 }

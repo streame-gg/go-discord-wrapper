@@ -24,6 +24,9 @@ func (f *FileComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*f = FileComponent(*raw.Alias)
 	return nil
 }

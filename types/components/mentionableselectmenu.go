@@ -32,6 +32,9 @@ func (m *MentionableSelectMenuComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*m = MentionableSelectMenuComponent(*raw.Alias)
 	return nil
 }
@@ -89,6 +92,9 @@ func (m *MentionableComponentInteractionResponse) UnmarshalJSON(data []byte) err
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*m = MentionableComponentInteractionResponse(*raw.Alias)
 	return nil
 }

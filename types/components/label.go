@@ -26,6 +26,9 @@ func (l *LabelComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*l = LabelComponent(*raw.Alias)
 
 	if raw.Component != nil {
@@ -135,6 +138,9 @@ func (l *LabelComponentInteractionResponse) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*l = LabelComponentInteractionResponse(*raw.Alias)
 	return nil
 }

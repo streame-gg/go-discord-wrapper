@@ -42,6 +42,9 @@ func (r *RoleSelectMenuComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*r = RoleSelectMenuComponent(*raw.Alias)
 	return nil
 }
@@ -88,6 +91,9 @@ func (r *RoleComponentInteractionResponse) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*r = RoleComponentInteractionResponse(*raw.Alias)
 	return nil
 }

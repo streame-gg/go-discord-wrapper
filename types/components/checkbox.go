@@ -32,6 +32,9 @@ func (c *CheckboxComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*c = CheckboxComponent(*raw.Alias)
 	return nil
 }
@@ -73,6 +76,9 @@ func (c *CheckboxComponentInteractionResponse) UnmarshalJSON(bytes []byte) error
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*c = CheckboxComponentInteractionResponse(*raw.Alias)
 	return nil
 }

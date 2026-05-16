@@ -45,6 +45,9 @@ func (s *StringSelectMenuComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*s = StringSelectMenuComponent(*raw.Alias)
 	return nil
 }
@@ -96,6 +99,9 @@ func (s *StringSelectComponentInteractionResponse) UnmarshalJSON(data []byte) er
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*s = StringSelectComponentInteractionResponse(*raw.Alias)
 	return nil
 }

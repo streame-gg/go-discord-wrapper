@@ -41,6 +41,9 @@ func (r *RadioGroupComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*r = RadioGroupComponent(*raw.Alias)
 	return nil
 }
@@ -83,6 +86,9 @@ func (r *RadioGroupComponentInteractionResponse) UnmarshalJSON(bytes []byte) err
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*r = RadioGroupComponentInteractionResponse(*raw.Alias)
 	return nil
 }

@@ -35,6 +35,9 @@ func (f *FileUploadComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*f = FileUploadComponent(*raw.Alias)
 	return nil
 }
@@ -80,6 +83,9 @@ func (f *FileUploadComponentInteractionResponse) UnmarshalJSON(data []byte) erro
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*f = FileUploadComponentInteractionResponse(*raw.Alias)
 	return nil
 }
