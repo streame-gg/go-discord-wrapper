@@ -316,7 +316,11 @@ func (d *Client) reconnect(freshConnect bool) error {
 			} else {
 				d.Logger.Debug("Waiting before retry", slog.Duration("backoff", backoff), slog.Int("attempt", i+1), slog.Int("max", maxRetries))
 			}
-			time.Sleep(backoff)
+			select {
+			case <-time.After(backoff):
+			case <-d.shutdownCh:
+				return nil
+			}
 		}
 
 		if err := d.connectWebsocket(reconnectURL, !freshConnect, lastEventNum, sessionID); err != nil {
