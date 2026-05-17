@@ -498,24 +498,24 @@ func (s *mongoUserStore) Delete(id discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(id)})
 }
 
-func (s *mongoUserStore) All() []*discord.User {
+func (s *mongoUserStore) All() *collection.Collection[discord.Snowflake, *discord.User] {
+	coll := collection.New[discord.Snowflake, *discord.User]()
 	cursor, err := s.col().Find(s.c.ctx, liveFilter(s.c.opts.TTL))
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []entityDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.User, 0, len(docs))
 	for _, d := range docs {
 		var u discord.User
 		if json.Unmarshal([]byte(d.JSON), &u) == nil {
-			out = append(out, &u)
+			coll.Set(u.ID, &u)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoUserStore) Size() int {

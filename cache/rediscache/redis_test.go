@@ -214,7 +214,7 @@ func (s *RedisCacheTestSuite) TestUserStore_All() {
 
 	c.Users().Set(user("1"))
 	c.Users().Set(user("2"))
-	s.Require().Len(c.Users().All(), 2, "expected 2 users")
+	s.Require().Equal(2, c.Users().All().Len(), "expected 2 users")
 }
 
 // ── MemberStore ───────────────────────────────────────────────────────────────

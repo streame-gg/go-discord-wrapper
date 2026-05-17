@@ -247,8 +247,8 @@ func TestUserStore_All(t *testing.T) {
 
 	c.Users().Set(user("1"))
 	c.Users().Set(user("2"))
-	if len(c.Users().All()) != 2 {
-		t.Fatalf("expected 2 users, got %d", len(c.Users().All()))
+	if c.Users().All().Len() != 2 {
+		t.Fatalf("expected 2 users, got %d", c.Users().All().Len())
 	}
 }
 

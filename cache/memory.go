@@ -429,7 +429,14 @@ func (u *memUserStore) Get(id discord.Snowflake) (*discord.User, bool) {
 	return &cp, true
 }
 func (u *memUserStore) Delete(id discord.Snowflake) { u.s.delete(id) }
-func (u *memUserStore) All() []*discord.User        { return u.s.all() }
+func (u *memUserStore) All() *collection.Collection[discord.Snowflake, *discord.User] {
+	vals := u.s.all()
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.User](len(vals))
+	for _, v := range vals {
+		coll.Set(v.ID, v)
+	}
+	return coll
+}
 func (u *memUserStore) Size() int                   { return u.s.size() }
 
 // ── Member store ──────────────────────────────────────────────────────────────

@@ -342,11 +342,12 @@ func (s *redisUserStore) Delete(id discord.Snowflake) {
 	_ = s.c.client.SRem(s.c.ctx, s.c.k("user", "index"), string(id)).Err()
 }
 
-func (s *redisUserStore) All() []*discord.User {
+func (s *redisUserStore) All() *collection.Collection[discord.Snowflake, *discord.User] {
+	coll := collection.New[discord.Snowflake, *discord.User]()
 	idx := s.c.k("user", "index")
 	ids, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(ids) == 0 {
-		return nil
+		return coll
 	}
 	keys := make([]string, len(ids))
 	for i, id := range ids {
@@ -354,9 +355,8 @@ func (s *redisUserStore) All() []*discord.User {
 	}
 	vals, err := s.c.client.MGet(s.c.ctx, keys...).Result()
 	if err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.User, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
@@ -365,13 +365,13 @@ func (s *redisUserStore) All() []*discord.User {
 		}
 		var u discord.User
 		if json.Unmarshal([]byte(v.(string)), &u) == nil {
-			out = append(out, &u)
+			coll.Set(u.ID, &u)
 		}
 	}
 	if len(stale) > 0 {
 		_ = s.c.client.SRem(s.c.ctx, idx, stale...).Err()
 	}
-	return out
+	return coll
 }
 
 func (s *redisUserStore) Size() int {

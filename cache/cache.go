@@ -235,12 +235,13 @@ type ChannelStore interface {
 	Size() int
 }
 
-// UserStore is a thread-safe cache for [discord.User] objects.
+// UserStore is a thread-safe cache for [discord.User] objects, keyed by user ID.
 type UserStore interface {
 	Set(user *discord.User)
 	Get(id discord.Snowflake) (*discord.User, bool)
 	Delete(id discord.Snowflake)
-	All() []*discord.User
+	// All returns a snapshot Collection of every cached user, keyed by user ID.
+	All() *collection.Collection[discord.Snowflake, *discord.User]
 	Size() int
 }
 
