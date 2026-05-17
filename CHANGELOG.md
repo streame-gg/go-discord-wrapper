@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ## v0.2.0 Breaking Changes
 
+- **P2-33 — `EmbedBuilder.Build()` no longer aliases the builder's `Fields` slice**: `Build()` now returns an embed whose `Fields` slice is backed by an independent array. Calling `AddFields` after `Build()` will not mutate the previously returned `Embed`. Only `Fields` was affected; all other `Embed` pointer fields (`Title`, `Description`, `Footer`, etc.) were already independent because each setter stores a fresh pointer.
+
 - **P2-32 — `ModalBuilder.Build()` no longer aliases the builder's internal state**: `Build()` now returns a deep copy of the modal. Calling `AddComponents` after `Build()` will not mutate the previously returned `*Modal`. Code that relied on post-`Build()` mutations observing the returned value must be updated (such usage was a bug).
 
 - **P2-27 — `AutoModerationTriggerMetadata.Presets` typed enum**: `Presets []int` is now `Presets []KeywordPresetType`. Use the new constants `KeywordPresetTypeProfanity` (1), `KeywordPresetTypeSexualContent` (2), `KeywordPresetTypeSlurs` (3) instead of raw integer literals.
