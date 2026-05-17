@@ -20,6 +20,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
+	"github.com/streame-gg/go-discord-wrapper/types/interactions"
 	"github.com/streame-gg/go-discord-wrapper/util"
 
 	"github.com/gorilla/websocket"
@@ -1564,12 +1565,21 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 			}
 		}
+	case events.EventInteractionCreate:
+		if ev, ok := event.(*events.InteractionCreateEvent); ok {
+			ev.Interaction.Hydrate(d, context.Background())
+		}
+		return true
+
 	default:
 		return true
 	}
 
 	return true
 }
+
+// ensure interactions package is used (import guard)
+var _ interactions.Client = (*Client)(nil)
 
 func (d *Client) addUnavailableGuild(id discord.Snowflake) {
 	d.mu.Lock()

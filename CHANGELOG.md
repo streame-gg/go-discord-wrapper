@@ -6,6 +6,34 @@ All notable changes to this project will be documented in this file.
 
 ## v0.2.0 Breaking Changes
 
+- **P2-Add — Interaction hydration + Options-pattern**: The gateway now automatically injects the client and dispatch context into every `*Interaction` before calling user handlers. All `Interaction` methods no longer require `ctx context.Context` and `client Client` as arguments. Instead they use the hydrated state. Seven Options structs replace the raw `*responses.InteractionResponseDataDefault` and `bool` parameters.
+
+  ```go
+  // Before:
+  func handle(c *connection.Client, ev *events.InteractionCreateEvent) {
+      i := &ev.Interaction
+      _, _ = i.Reply(ctx, c, &responses.InteractionResponseDataDefault{
+          Content: "Hello!",
+      }, false)
+      send, _ := i.DeferAndFollowup(ctx, c, true)
+      send(ctx, api.CreateMessageParams{Content: "Done"})
+  }
+
+  // After:
+  func handle(c *connection.Client, ev *events.InteractionCreateEvent) {
+      i := &ev.Interaction
+      _, _ = i.Reply(interactions.ReplyOptions{Content: "Hello!"})
+      send, _ := i.DeferAndFollowup(interactions.DeferOptions{Ephemeral: true})
+      send(context.Background(), interactions.FollowUpOptions{Content: "Done"})
+  }
+  ```
+
+  New types: `ReplyOptions`, `DeferOptions`, `UpdateMessageOptions`, `FollowUpOptions`, `AutocompleteOptions`, `ModalOptions`.
+
+  Escape-hatch for goroutines with custom deadlines: `i.WithContext(ctx).Reply(...)`.
+
+  When an Interaction is constructed outside the gateway (e.g. in tests), all hydrated methods return `errNotHydrated`.
+
 - **P2-26 — REST list methods return `[]*T` instead of `*[]*T`**: All REST methods that previously returned a pointer-to-slice (`*[]*discord.Message`, `*[]*discord.GuildMember`, etc.) now return the slice directly (`[]*discord.Message`, `[]*discord.GuildMember`, etc.). The `*` dereference operators previously required in user code are no longer needed. `FetchAllAuditLogEntries` similarly changes from `*[]AuditLogEntry` to `[]AuditLogEntry`. All pagination helpers are updated accordingly.
 
   ```go
