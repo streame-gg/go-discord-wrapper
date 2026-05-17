@@ -43,24 +43,24 @@ type ModifyGuildOptions struct {
 }
 
 type CreateGuildChannelParams struct {
-	Name                          string                                `json:"name"`
-	Type                          *discord.ChannelType                  `json:"type,omitempty"`
-	Topic                         *string                               `json:"topic,omitempty"`
-	Bitrate                       *int                                  `json:"bitrate,omitempty"`
-	UserLimit                     *int                                  `json:"user_limit,omitempty"`
-	RateLimitPerUser              *int                                  `json:"rate_limit_per_user,omitempty"`
-	Position                      *int                                  `json:"position,omitempty"`
+	Name                          string                               `json:"name"`
+	Type                          *discord.ChannelType                 `json:"type,omitempty"`
+	Topic                         *string                              `json:"topic,omitempty"`
+	Bitrate                       *int                                 `json:"bitrate,omitempty"`
+	UserLimit                     *int                                 `json:"user_limit,omitempty"`
+	RateLimitPerUser              *int                                 `json:"rate_limit_per_user,omitempty"`
+	Position                      *int                                 `json:"position,omitempty"`
 	PermissionOverwrites          []discord.ChannelPermissionOverwrite `json:"permission_overwrites,omitempty"`
-	ParentID                      *discord.Snowflake                    `json:"parent_id,omitempty"`
-	NSFW                          *bool                                 `json:"nsfw,omitempty"`
-	RTCRegion                     *string                               `json:"rtc_region,omitempty"`
-	VideoQualityMode              *discord.VideoQualityMode             `json:"video_quality_mode,omitempty"`
-	DefaultAutoArchiveDuration    *int                                  `json:"default_auto_archive_duration,omitempty"`
-	DefaultReactionEmoji          *discord.DefaultReactionEmoji         `json:"default_reaction_emoji,omitempty"`
-	AvailableTags                 []discord.ChannelTag                  `json:"available_tags,omitempty"`
-	DefaultSortOrder              *discord.DefaultSortOrder             `json:"default_sort_order,omitempty"`
-	DefaultForumLayout            *discord.ChannelForumLayoutType       `json:"default_forum_layout,omitempty"`
-	DefaultThreadRateLimitPerUser *int                                  `json:"default_thread_rate_limit_per_user,omitempty"`
+	ParentID                      *discord.Snowflake                   `json:"parent_id,omitempty"`
+	NSFW                          *bool                                `json:"nsfw,omitempty"`
+	RTCRegion                     *string                              `json:"rtc_region,omitempty"`
+	VideoQualityMode              *discord.VideoQualityMode            `json:"video_quality_mode,omitempty"`
+	DefaultAutoArchiveDuration    *int                                 `json:"default_auto_archive_duration,omitempty"`
+	DefaultReactionEmoji          *discord.DefaultReactionEmoji        `json:"default_reaction_emoji,omitempty"`
+	AvailableTags                 []discord.ChannelTag                 `json:"available_tags,omitempty"`
+	DefaultSortOrder              *discord.DefaultSortOrder            `json:"default_sort_order,omitempty"`
+	DefaultForumLayout            *discord.ChannelForumLayoutType      `json:"default_forum_layout,omitempty"`
+	DefaultThreadRateLimitPerUser *int                                 `json:"default_thread_rate_limit_per_user,omitempty"`
 }
 
 type CreateGuildChannelOptions struct {

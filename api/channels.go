@@ -28,25 +28,25 @@ func (c *RestClient) GetChannel(ctx context.Context, channelID discord.Snowflake
 // ── Param types ───────────────────────────────────────────────────────────────
 
 type ModifyChannelParams struct {
-	Name                          *string                               `json:"name,omitempty"`
-	Type                          *discord.ChannelType                  `json:"type,omitempty"`
-	Position                      *int                                  `json:"position,omitempty"`
-	Topic                         *string                               `json:"topic,omitempty"`
-	NSFW                          *bool                                 `json:"nsfw,omitempty"`
-	RateLimitPerUser              *int                                  `json:"rate_limit_per_user,omitempty"`
-	Bitrate                       *int                                  `json:"bitrate,omitempty"`
-	UserLimit                     *int                                  `json:"user_limit,omitempty"`
+	Name                          *string                              `json:"name,omitempty"`
+	Type                          *discord.ChannelType                 `json:"type,omitempty"`
+	Position                      *int                                 `json:"position,omitempty"`
+	Topic                         *string                              `json:"topic,omitempty"`
+	NSFW                          *bool                                `json:"nsfw,omitempty"`
+	RateLimitPerUser              *int                                 `json:"rate_limit_per_user,omitempty"`
+	Bitrate                       *int                                 `json:"bitrate,omitempty"`
+	UserLimit                     *int                                 `json:"user_limit,omitempty"`
 	PermissionOverwrites          []discord.ChannelPermissionOverwrite `json:"permission_overwrites,omitempty"`
-	ParentID                      *discord.Snowflake                    `json:"parent_id,omitempty"`
-	RTCRegion                     *string                               `json:"rtc_region,omitempty"`
-	VideoQualityMode              *discord.VideoQualityMode             `json:"video_quality_mode,omitempty"`
-	DefaultAutoArchiveDuration    *int                                  `json:"default_auto_archive_duration,omitempty"`
-	Flags                         *discord.ChannelFlags                 `json:"flags,omitempty"`
-	AvailableTags                 []discord.ChannelTag                  `json:"available_tags,omitempty"`
-	DefaultReactionEmoji          *discord.DefaultReactionEmoji         `json:"default_reaction_emoji,omitempty"`
-	DefaultThreadRateLimitPerUser *int                                  `json:"default_thread_rate_limit_per_user,omitempty"`
-	DefaultSortOrder              *discord.DefaultSortOrder             `json:"default_sort_order,omitempty"`
-	DefaultForumLayout            *discord.ChannelForumLayoutType       `json:"default_forum_layout,omitempty"`
+	ParentID                      *discord.Snowflake                   `json:"parent_id,omitempty"`
+	RTCRegion                     *string                              `json:"rtc_region,omitempty"`
+	VideoQualityMode              *discord.VideoQualityMode            `json:"video_quality_mode,omitempty"`
+	DefaultAutoArchiveDuration    *int                                 `json:"default_auto_archive_duration,omitempty"`
+	Flags                         *discord.ChannelFlags                `json:"flags,omitempty"`
+	AvailableTags                 []discord.ChannelTag                 `json:"available_tags,omitempty"`
+	DefaultReactionEmoji          *discord.DefaultReactionEmoji        `json:"default_reaction_emoji,omitempty"`
+	DefaultThreadRateLimitPerUser *int                                 `json:"default_thread_rate_limit_per_user,omitempty"`
+	DefaultSortOrder              *discord.DefaultSortOrder            `json:"default_sort_order,omitempty"`
+	DefaultForumLayout            *discord.ChannelForumLayoutType      `json:"default_forum_layout,omitempty"`
 }
 
 type ModifyChannelOptions struct {
@@ -54,8 +54,8 @@ type ModifyChannelOptions struct {
 }
 
 type EditChannelPermissionsParams struct {
-	Allow *string                                 `json:"allow,omitempty"`
-	Deny  *string                                 `json:"deny,omitempty"`
+	Allow *string                         `json:"allow,omitempty"`
+	Deny  *string                         `json:"deny,omitempty"`
 	Type  discord.PermissionOverwriteType `json:"type"`
 }
 

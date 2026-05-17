@@ -6,14 +6,14 @@ package discord
 // lives in types/commands, which imports this package. Unmarshal elements into
 // *commands.ApplicationCommand as needed.
 type AuditLog struct {
-	ApplicationCommands  []any                  `json:"application_commands"`
-	AuditLogEntries      []AuditLogEntry        `json:"audit_log_entries"`
-	AutoModerationRules  []AutoModerationRule   `json:"auto_moderation_rules"`
-	GuildScheduledEvents []GuildScheduledEvent  `json:"guild_scheduled_events"`
-	Integrations         []Integration          `json:"integrations"`
-	Threads              []Channel              `json:"threads"`
-	Users                []User                 `json:"users"`
-	Webhooks             []Webhook              `json:"webhooks"`
+	ApplicationCommands  []any                 `json:"application_commands"`
+	AuditLogEntries      []AuditLogEntry       `json:"audit_log_entries"`
+	AutoModerationRules  []AutoModerationRule  `json:"auto_moderation_rules"`
+	GuildScheduledEvents []GuildScheduledEvent `json:"guild_scheduled_events"`
+	Integrations         []Integration         `json:"integrations"`
+	Threads              []Channel             `json:"threads"`
+	Users                []User                `json:"users"`
+	Webhooks             []Webhook             `json:"webhooks"`
 }
 
 // AuditLogEntry // https://docs.discord.com/developers/resources/audit-log#audit-log-entry-object

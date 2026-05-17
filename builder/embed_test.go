@@ -3,8 +3,8 @@ package builder
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestEmbedBuilder_BuildNoAlias verifies that AddFields after Build() does

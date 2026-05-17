@@ -39,12 +39,12 @@ type AutoModerationAction struct {
 }
 
 type AutoModerationTriggerMetadata struct {
-	KeywordFilter                []string `json:"keyword_filter,omitempty"`
-	RegexPatterns                []string `json:"regex_patterns,omitempty"`
+	KeywordFilter                []string            `json:"keyword_filter,omitempty"`
+	RegexPatterns                []string            `json:"regex_patterns,omitempty"`
 	Presets                      []KeywordPresetType `json:"presets,omitempty"`
-	AllowList                    []string `json:"allow_list,omitempty"`
-	MentionTotalLimit            *int     `json:"mention_total_limit,omitempty"`
-	MentionRaidProtectionEnabled *bool    `json:"mention_raid_protection_enabled,omitempty"`
+	AllowList                    []string            `json:"allow_list,omitempty"`
+	MentionTotalLimit            *int                `json:"mention_total_limit,omitempty"`
+	MentionRaidProtectionEnabled *bool               `json:"mention_raid_protection_enabled,omitempty"`
 }
 
 type AutoModerationEventType int

@@ -122,11 +122,11 @@ func compileStandaloneBlock(root, code, label string) error {
 // ─── GODOC ───────────────────────────────────────────────────────────────────
 
 type godocBlock struct {
-	pkgDir     string
-	pkgName    string
-	code       string
+	pkgDir  string
+	pkgName string
+	code    string
 	// stubs: "var name Type\n\t_ = name\n\t" declarations for receiver+params.
-	stubs      string
+	stubs string
 	// namedImports are imports that must be named (used in stubs).
 	namedImports []string
 	// blankImports are pass-through imports from the source file.
@@ -308,14 +308,14 @@ func funcStubs(fset *token.FileSet, d *ast.FuncDecl) (stubs string, namedImports
 // namedImportForType maps a type string to the stdlib import it requires.
 // Only stdlib packages need this (module-local types are already in scope).
 var stdlibTypeImports = map[string]string{
-	"context.":  `"context"`,
-	"http.":     `"net/http"`,
-	"slog.":     `"log/slog"`,
-	"time.":     `"time"`,
-	"sync.":     `"sync"`,
-	"io.":       `"io"`,
-	"atomic.":   `"sync/atomic"`,
-	"rand.":     `"math/rand"`,
+	"context.": `"context"`,
+	"http.":    `"net/http"`,
+	"slog.":    `"log/slog"`,
+	"time.":    `"time"`,
+	"sync.":    `"sync"`,
+	"io.":      `"io"`,
+	"atomic.":  `"sync/atomic"`,
+	"rand.":    `"math/rand"`,
 }
 
 func namedImportForType(typ string) string {

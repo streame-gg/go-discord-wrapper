@@ -1567,7 +1567,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventInteractionCreate:
 		if ev, ok := event.(*events.InteractionCreateEvent); ok {
-			ev.Interaction.Hydrate(d, context.Background())
+			ev.Hydrate(d, context.Background())
 		}
 		return true
 

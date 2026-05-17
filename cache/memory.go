@@ -230,8 +230,8 @@ func (h evictionHeap[K]) Less(i, j int) bool {
 	}
 	return h[i].insertedAt > h[j].insertedAt // tie: newer = lower priority to evict
 }
-func (h evictionHeap[K]) Swap(i, j int)       { h[i], h[j] = h[j], h[i] }
-func (h *evictionHeap[K]) Push(x any)         { *h = append(*h, x.(evictionPair[K])) }
+func (h evictionHeap[K]) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
+func (h *evictionHeap[K]) Push(x any)   { *h = append(*h, x.(evictionPair[K])) }
 func (h *evictionHeap[K]) Pop() any {
 	old := *h
 	n := len(old)
