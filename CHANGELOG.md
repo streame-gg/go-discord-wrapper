@@ -6,6 +6,21 @@ All notable changes to this project will be documented in this file.
 
 ## v0.2.0 Breaking Changes
 
+- **P2-25 — `AuditLog` fields typed**: `AutoModerationRules`, `GuildScheduledEvents`, `Integrations`, and `Webhooks` are now typed slices instead of `[]any`. `ApplicationCommands` remains `[]any` due to an import-cycle constraint (the `ApplicationCommand` struct lives in `types/commands` which imports `types/discord`); unmarshal elements into `*commands.ApplicationCommand` individually. `AuditLogEntryChange.NewValue`/`OldValue` also remain `any` because Discord audit-log change values are genuinely polymorphic.
+
+  ```go
+  // Before:
+  for _, raw := range log.AutoModerationRules {
+      rule := raw.(map[string]any) // fragile
+  }
+
+  // After:
+  for _, rule := range log.AutoModerationRules {
+      // rule is *discord.AutoModerationRule — fully typed
+      fmt.Println(rule.Name)
+  }
+  ```
+
 - **P2-28 — `ComponentType` select-menu constants renamed for consistency**: All select-menu component types now use the `...Select` suffix, matching Discord's canonical naming. Deprecated aliases with the old names are provided for one release cycle.
 
   | Old name | New name |

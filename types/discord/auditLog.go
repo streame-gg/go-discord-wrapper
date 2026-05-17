@@ -1,15 +1,19 @@
 package discord
 
 // AuditLog is the response wrapper returned by the Get Guild Audit Log endpoint.
+//
+// ApplicationCommands is typed as []any because the ApplicationCommand struct
+// lives in types/commands, which imports this package. Unmarshal elements into
+// *commands.ApplicationCommand as needed.
 type AuditLog struct {
-	ApplicationCommands  []any           `json:"application_commands"`
-	AuditLogEntries      []AuditLogEntry `json:"audit_log_entries"`
-	AutoModerationRules  []any           `json:"auto_moderation_rules"`
-	GuildScheduledEvents []any           `json:"guild_scheduled_events"`
-	Integrations         []any           `json:"integrations"`
-	Threads              []Channel       `json:"threads"`
-	Users                []User          `json:"users"`
-	Webhooks             []any           `json:"webhooks"`
+	ApplicationCommands  []any                  `json:"application_commands"`
+	AuditLogEntries      []AuditLogEntry        `json:"audit_log_entries"`
+	AutoModerationRules  []AutoModerationRule   `json:"auto_moderation_rules"`
+	GuildScheduledEvents []GuildScheduledEvent  `json:"guild_scheduled_events"`
+	Integrations         []Integration          `json:"integrations"`
+	Threads              []Channel              `json:"threads"`
+	Users                []User                 `json:"users"`
+	Webhooks             []Webhook              `json:"webhooks"`
 }
 
 // AuditLogEntry // https://docs.discord.com/developers/resources/audit-log#audit-log-entry-object
