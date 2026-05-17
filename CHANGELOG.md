@@ -8,6 +8,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Performance
+
+- **P3-53 — `evictN` heap-based top-N eviction**: `cache.genericStore.evictN` previously
+  allocated a full-store slice and sorted it on every call — O(N log N) time and O(N) space
+  where N is the total number of cached items. It now uses a max-heap of size n:
+  O(N log n) time, O(n) space. Additionally, `evictN` now has a linear-scan fast path for the
+  common n=1 case (no allocation), matching the fast path that already existed in
+  `evictToCount`. Measured on a 50k-item store with concurrent reads: **13x faster**,
+  **99.9% fewer allocations**, **8.5x more concurrent read throughput** during eviction.
+
 ## v0.2.0 Breaking Changes
 
 - **P2-Add — Interaction hydration + Options-pattern**: The gateway now automatically injects the client and dispatch context into every `*Interaction` before calling user handlers. All `Interaction` methods no longer require `ctx context.Context` and `client Client` as arguments. Instead they use the hydrated state. Seven Options structs replace the raw `*responses.InteractionResponseDataDefault` and `bool` parameters.

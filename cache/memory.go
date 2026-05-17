@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"container/heap"
 	"encoding/json"
 	"sort"
 	"sync"
@@ -208,6 +209,70 @@ func (s *genericStore[K, V]) sweep(now time.Time, behavior EvictBehavior, unused
 	}
 }
 
+// ── Heap-based eviction helpers ───────────────────────────────────────────────
+
+type evictionPair[K comparable] struct {
+	key        K
+	score      float64
+	insertedAt int64
+	size       int64
+}
+
+// evictionHeap is a max-heap ordered by (score desc, insertedAt desc).
+// The root is the "least evict-worthy" item in the current top-N candidate set,
+// so a new item with a lower score (more evict-worthy) displaces it.
+type evictionHeap[K comparable] []evictionPair[K]
+
+func (h evictionHeap[K]) Len() int { return len(h) }
+func (h evictionHeap[K]) Less(i, j int) bool {
+	if h[i].score != h[j].score {
+		return h[i].score > h[j].score // max-heap: higher score = lower priority to evict
+	}
+	return h[i].insertedAt > h[j].insertedAt // tie: newer = lower priority to evict
+}
+func (h evictionHeap[K]) Swap(i, j int)       { h[i], h[j] = h[j], h[i] }
+func (h *evictionHeap[K]) Push(x any)         { *h = append(*h, x.(evictionPair[K])) }
+func (h *evictionHeap[K]) Pop() any {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[:n-1]
+	return x
+}
+
+// findEvictionCandidates returns the n entries with the lowest rank using a
+// max-heap: O(N log n) time, O(n) space. Caller must hold s.mu.
+func (s *genericStore[K, V]) findEvictionCandidates(n int, by ClearBy) []evictionPair[K] {
+	if n <= 0 || len(s.items) == 0 {
+		return nil
+	}
+	if n >= len(s.items) {
+		result := make([]evictionPair[K], 0, len(s.items))
+		for k, e := range s.items {
+			result = append(result, evictionPair[K]{k, e.rank(by), e.insertedAt.UnixNano(), e.sizeBytes})
+		}
+		return result
+	}
+
+	h := &evictionHeap[K]{}
+	heap.Init(h)
+	for k, e := range s.items {
+		p := evictionPair[K]{k, e.rank(by), e.insertedAt.UnixNano(), e.sizeBytes}
+		if h.Len() < n {
+			heap.Push(h, p)
+			continue
+		}
+		// If p is more evict-worthy than the current heap root (lowest-evict-worthy
+		// in the candidate set), replace the root.
+		top := (*h)[0]
+		if p.score < top.score || (p.score == top.score && p.insertedAt < top.insertedAt) {
+			(*h)[0] = p
+			heap.Fix(h, 0)
+		}
+	}
+	return *h
+}
+
 // evictToCount removes entries (ranked by s.cfg.clearBy) until len(items) <= target.
 func (s *genericStore[K, V]) evictToCount(target int) {
 	s.mu.Lock()
@@ -241,24 +306,9 @@ func (s *genericStore[K, V]) evictToCount(target int) {
 		return
 	}
 
-	// General path: sort then bulk-remove.
-	type pair struct {
-		key        K
-		score      float64
-		insertedAt int64 // Unix nanos; tiebreaker — older entries evicted first
-		size       int64
-	}
-	pairs := make([]pair, 0, n)
-	for k, e := range s.items {
-		pairs = append(pairs, pair{k, e.rank(s.cfg.clearBy), e.insertedAt.UnixNano(), e.sizeBytes})
-	}
-	sort.Slice(pairs, func(i, j int) bool {
-		if pairs[i].score != pairs[j].score {
-			return pairs[i].score < pairs[j].score
-		}
-		return pairs[i].insertedAt < pairs[j].insertedAt // tie: oldest inserted first
-	})
-	for _, p := range pairs[:toRemove] {
+	// General path: heap-based top-N, O(N log toRemove) time, O(toRemove) space.
+	candidates := s.findEvictionCandidates(toRemove, s.cfg.clearBy)
+	for _, p := range candidates {
 		s.totalBytes.Add(-p.size)
 		delete(s.items, p.key)
 	}
@@ -275,27 +325,37 @@ func (s *genericStore[K, V]) evictN(n int, by ClearBy) int64 {
 	if len(s.items) == 0 {
 		return 0
 	}
+
+	// Fast path: single eviction needs only a linear min-scan, no allocation.
+	if n == 1 {
+		var minKey K
+		var minScore float64
+		var minInserted int64
+		var minSize int64
+		first := true
+		for k, e := range s.items {
+			score := e.rank(by)
+			inserted := e.insertedAt.UnixNano()
+			if first || score < minScore || (score == minScore && inserted < minInserted) {
+				minKey, minScore, minInserted, minSize = k, score, inserted, e.sizeBytes
+				first = false
+			}
+		}
+		if first {
+			return 0
+		}
+		s.totalBytes.Add(-minSize)
+		delete(s.items, minKey)
+		return minSize
+	}
+
+	// General path: heap-based top-N, O(N log n) time, O(n) space.
 	if n > len(s.items) {
 		n = len(s.items)
 	}
-	type pair struct {
-		key        K
-		score      float64
-		insertedAt int64
-		size       int64
-	}
-	pairs := make([]pair, 0, len(s.items))
-	for k, e := range s.items {
-		pairs = append(pairs, pair{k, e.rank(by), e.insertedAt.UnixNano(), e.sizeBytes})
-	}
-	sort.Slice(pairs, func(i, j int) bool {
-		if pairs[i].score != pairs[j].score {
-			return pairs[i].score < pairs[j].score
-		}
-		return pairs[i].insertedAt < pairs[j].insertedAt
-	})
+	candidates := s.findEvictionCandidates(n, by)
 	var freed int64
-	for _, p := range pairs[:n] {
+	for _, p := range candidates {
 		s.totalBytes.Add(-p.size)
 		freed += p.size
 		delete(s.items, p.key)
