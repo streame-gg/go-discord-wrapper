@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -99,8 +100,9 @@ func (c *RestClient) GetGuildMember(ctx context.Context, guildID, userID discord
 	})
 }
 
-// ListGuildMembers returns a paginated list of members in a guild (max 1000 per request).
-func (c *RestClient) ListGuildMembers(ctx context.Context, guildID discord.Snowflake, params GetGuildMembersParams) ([]*discord.GuildMember, error) {
+// ListGuildMembers returns a paginated list of members in a guild (max 1000 per request),
+// keyed by user ID.
+func (c *RestClient) ListGuildMembers(ctx context.Context, guildID discord.Snowflake, params GetGuildMembersParams) (*collection.Collection[discord.Snowflake, *discord.GuildMember], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -111,13 +113,24 @@ func (c *RestClient) ListGuildMembers(ctx context.Context, guildID discord.Snowf
 		return nil, err
 	}
 
-	return doRequestSlice[discord.GuildMember](c, req, map[int]bool{
+	members, err := doRequestSlice[discord.GuildMember](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.GuildMember](len(members))
+	for _, m := range members {
+		if m.User != nil {
+			coll.Set(m.User.ID, m)
+		}
+	}
+	return coll, nil
 }
 
-// SearchGuildMembers returns members whose username or nickname starts with the given query string.
-func (c *RestClient) SearchGuildMembers(ctx context.Context, guildID discord.Snowflake, params SearchGuildMembersParams) ([]*discord.GuildMember, error) {
+// SearchGuildMembers returns members whose username or nickname starts with the given query string,
+// keyed by user ID.
+func (c *RestClient) SearchGuildMembers(ctx context.Context, guildID discord.Snowflake, params SearchGuildMembersParams) (*collection.Collection[discord.Snowflake, *discord.GuildMember], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -128,9 +141,19 @@ func (c *RestClient) SearchGuildMembers(ctx context.Context, guildID discord.Sno
 		return nil, err
 	}
 
-	return doRequestSlice[discord.GuildMember](c, req, map[int]bool{
+	members, err := doRequestSlice[discord.GuildMember](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.GuildMember](len(members))
+	for _, m := range members {
+		if m.User != nil {
+			coll.Set(m.User.ID, m)
+		}
+	}
+	return coll, nil
 }
 
 // ModifyGuildMember updates attributes of a guild member.

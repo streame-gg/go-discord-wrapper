@@ -510,18 +510,18 @@ func (d *Client) GetGuildMember(ctx context.Context, guildID, userID discord.Sno
 	return member, err
 }
 
-func (d *Client) ListGuildMembers(ctx context.Context, guildID discord.Snowflake, params api.GetGuildMembersParams) ([]*discord.GuildMember, error) {
+func (d *Client) ListGuildMembers(ctx context.Context, guildID discord.Snowflake, params api.GetGuildMembersParams) (*collection.Collection[discord.Snowflake, *discord.GuildMember], error) {
 	members, err := d.RestClient.ListGuildMembers(ctx, guildID, params)
 	if err == nil {
-		d.cacheMembers(guildID, members)
+		d.cacheMembers(guildID, members.Values())
 	}
 	return members, err
 }
 
-func (d *Client) SearchGuildMembers(ctx context.Context, guildID discord.Snowflake, params api.SearchGuildMembersParams) ([]*discord.GuildMember, error) {
+func (d *Client) SearchGuildMembers(ctx context.Context, guildID discord.Snowflake, params api.SearchGuildMembersParams) (*collection.Collection[discord.Snowflake, *discord.GuildMember], error) {
 	members, err := d.RestClient.SearchGuildMembers(ctx, guildID, params)
 	if err == nil {
-		d.cacheMembers(guildID, members)
+		d.cacheMembers(guildID, members.Values())
 	}
 	return members, err
 }
@@ -564,10 +564,10 @@ func (d *Client) RemoveGuildMember(ctx context.Context, guildID, userID discord.
 //
 // Requires the GUILD_MEMBERS privileged intent to be enabled both in the Discord
 // developer portal and in the intents passed to NewClient.
-func (d *Client) FetchAllGuildMembers(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildMember, error) {
+func (d *Client) FetchAllGuildMembers(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.GuildMember], error) {
 	members, err := d.RestClient.FetchAllGuildMembers(ctx, guildID)
 	if err == nil {
-		d.cacheMembers(guildID, members)
+		d.cacheMembers(guildID, members.Values())
 	}
 	return members, err
 }

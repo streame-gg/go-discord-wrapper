@@ -104,7 +104,7 @@ func TestFetchAllGuildMembersOnePage(t *testing.T) {
 	members, err := client.FetchAllGuildMembers(context.Background(), "1234567890123456789")
 
 	require.NoError(t, err)
-	assert.Len(t, members, 5)
+	assert.Equal(t, 5, members.Len())
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount), "expected single request for one page")
 }
 
@@ -149,7 +149,7 @@ func TestFetchAllGuildMembersMultiplePages(t *testing.T) {
 	members, err := client.FetchAllGuildMembers(context.Background(), "1234567890123456789")
 
 	require.NoError(t, err)
-	assert.Len(t, members, 1005)
+	assert.Equal(t, 1005, members.Len())
 	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
 	assert.Equal(t, string(lastPage1ID), secondRequestAfter, "second request should advance cursor past last member of page 1")
 }

@@ -11,14 +11,15 @@ import (
 // FetchAllGuildMembers fetches every member in a guild across as many pages as
 // needed. It uses the after-cursor pattern (max 1000 per request) and stops when
 // a page returns fewer members than the page size.
-func (c *RestClient) FetchAllGuildMembers(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildMember, error) {
+// Returns a Collection keyed by user ID.
+func (c *RestClient) FetchAllGuildMembers(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.GuildMember], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
 
 	const pageSize = 1000
 
-	var all []*discord.GuildMember
+	all := collection.New[discord.Snowflake, *discord.GuildMember]()
 	params := GetGuildMembersParams{Limit: util.PointerOf(pageSize)}
 
 	for {
@@ -27,14 +28,19 @@ func (c *RestClient) FetchAllGuildMembers(ctx context.Context, guildID discord.S
 			return nil, err
 		}
 
-		all = append(all, page...)
+		for _, m := range page.Values() {
+			if m.User != nil {
+				all.Set(m.User.ID, m)
+			}
+		}
 
-		if len(page) < pageSize {
+		if page.Len() < pageSize {
 			return all, nil
 		}
 
 		// Advance the cursor past the last member on this page.
-		last := page[len(page)-1]
+		vals := page.Values()
+		last := vals[len(vals)-1]
 		params.After = &last.User.ID
 	}
 }
