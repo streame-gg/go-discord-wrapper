@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ## v0.2.0 Breaking Changes
 
+- **P2-31 — `RedisCache.WithKeyPrefix` derivative now has an independent lifecycle**: Previously, the returned `*RedisCache` shared `ctx`, `cancel`, and `stopOnce` with the original. Calling `Close()` on the derivative cancelled the original's context (and vice versa), causing all subsequent Redis operations on the surviving instance to fail. Each instance created by `WithKeyPrefix` now holds its own `context.WithCancel` root and `sync.Once`, so `Close()` affects only that instance.
+
 - **P2-36 — `WithAuditLogReason` now validates and encodes the reason**: The reason string is now URL percent-encoded (`url.PathEscape`) so non-ASCII characters (Umlauts, emoji, CJK) are transmitted safely in the `X-Audit-Log-Reason` header. Reasons longer than Discord's 512-character limit are silently truncated. Empty reasons still set no header. No API-signature change; the behaviour change is invisible to callers that only pass short ASCII reasons.
 
 - **P2-34 — `DeferAndFollowup` send-callback now takes an explicit `ctx` parameter**: The closure returned by `DeferAndFollowup` previously captured the `ctx` passed to the defer call. If that context was cancelled by the time the follow-up was ready to send, `CreateFollowup` would fail. The send-function now accepts its own `context.Context` as the first argument.

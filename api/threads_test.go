@@ -137,6 +137,6 @@ func TestP0_10_CreateForumThreadWithReason(t *testing.T) {
 	_, err := c.CreateForumThread(context.Background(), channelID, params, opts)
 	require.NoError(t, err)
 
-	assert.Equal(t, "automated thread creation", gotReason,
-		"X-Audit-Log-Reason header must be set when opts.Reason is provided")
+	assert.Equal(t, "automated%20thread%20creation", gotReason,
+		"X-Audit-Log-Reason header must be URL-encoded when opts.Reason is provided")
 }
