@@ -81,6 +81,59 @@ func main() {
 }
 ```
 
+## Working with Collections
+
+Most cache and listing operations return a `*collection.Collection[K, V]` —
+a map with insertion order, plus 30+ utility methods inspired by
+[@discordjs/collection](https://github.com/discordjs/discord.js/tree/main/packages/collection).
+
+### Basic operations
+
+```go
+import "github.com/streame-gg/go-discord-wrapper/collection"
+
+users := bot.Cache.Users().All()  // returns *Collection[Snowflake, *User]
+
+count := users.Len()
+admin, ok := users.Get(adminID)
+humanCount := users.Filter(func(u *discord.User) bool { return !u.Bot }).Len()
+```
+
+### Search and partition
+
+```go
+bots, humans := users.Partition(func(u *discord.User) bool { return u.Bot })
+recent := messages.Filter(func(m *discord.Message) bool {
+    return time.Since(m.Created()) < time.Hour
+})
+
+oldest, _ := messages.Sorted(func(a, b *discord.Message) bool {
+    return a.Created().Before(b.Created())
+}).First()
+```
+
+### Transform
+
+```go
+// Method-based: returns a new Collection
+sorted := users.Sorted(func(a, b *discord.User) bool {
+    return a.Username < b.Username
+})
+
+// Top-level: transforms to a different value-type
+names := collection.Map(users, func(u *discord.User) string {
+    return u.Username
+})
+// names is []string
+
+// Iterate (Go 1.23+ range-over-func)
+for id, user := range users.All() {
+    fmt.Printf("%s -> %s\n", id, user.Username)
+}
+```
+
+Full API: see [godoc](https://pkg.go.dev/github.com/streame-gg/go-discord-wrapper/collection).
+
 ## Cache
 
 Pass a cache to `NewClient` and the gateway will populate it automatically:
