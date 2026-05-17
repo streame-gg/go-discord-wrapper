@@ -9,21 +9,21 @@ import (
 
 // ReplyOptions configures an immediate message response to an interaction.
 type ReplyOptions struct {
-	Content               string
-	Embeds                []discord.Embed
-	Components            []discord.AnyComponent
-	Files                 []discord.MessageFile
-	AllowedMentions       *discord.AllowedMentions
-	Ephemeral             bool
-	SuppressEmbeds        bool
-	SuppressNotifications bool
+	Content         string
+	Embeds          []discord.Embed
+	Components      []discord.AnyComponent
+	Files           []discord.MessageFile
+	AllowedMentions *discord.AllowedMentions
+	Flags           discord.MessageFlag
 	// WithResponse requests the created message in the response body.
 	WithResponse bool
 	Poll         *discord.PollRequest
 }
 
 func (o ReplyOptions) toResponseData() *responses.InteractionResponseDataDefault {
-	data := &responses.InteractionResponseDataDefault{}
+	data := &responses.InteractionResponseDataDefault{
+		Flags: o.Flags,
+	}
 	if o.Content != "" {
 		data.Content = o.Content
 	}
@@ -41,17 +41,7 @@ func (o ReplyOptions) toResponseData() *responses.InteractionResponseDataDefault
 	if o.Poll != nil {
 		data.Poll = o.Poll
 	}
-	var flags discord.MessageFlag
-	if o.Ephemeral {
-		flags |= discord.MessageFlagEphemeral
-	}
-	if o.SuppressEmbeds {
-		flags |= discord.MessageFlagSuppressEmbeds
-	}
-	if o.SuppressNotifications {
-		flags |= discord.MessageFlagSuppressNotification
-	}
-	data.Flags = flags
+
 	return data
 }
 
