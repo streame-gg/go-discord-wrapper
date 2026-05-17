@@ -1,5 +1,17 @@
 # Bug Fix Session Notes
 
+## Discovered (P2b)
+
+### P2-29 already done as P0-9
+
+P2-29 (ShardManager factory returns error) was listed in the Phase 2b plan but
+was already implemented during the P0 sprint as P0-9. No additional work needed.
+
+### `doc-check` binary stale in repository root (see below)
+
+Still present as an untracked file. Update via `go build -o doc-check ./cmd/doc-check`
+after any changes to `cmd/doc-check/`, or add to `.gitignore`.
+
 ## Discovered (not fixed — not in P0 list)
 
 ### Pre-existing uncommitted change in `connection/websocket.go`
