@@ -51,6 +51,43 @@ func TestReconnect_CleansStaleGuildMemberCount(t *testing.T) {
 		"GuildCount must be 1 after reconnect; guild2 was dropped from READY (P1-16)")
 }
 
+// TestReconnect_CleansStaleGuildMemberCount_NoCache verifies stale reconnect
+// state is pruned from guildMemberCounts even when cache is disabled.
+func TestReconnect_CleansStaleGuildMemberCount_NoCache(t *testing.T) {
+	c, err := NewClient("test-token", discord.IntentGuilds)
+	require.NoError(t, err)
+
+	guild1 := discord.Snowflake("111111111111111")
+	guild2 := discord.Snowflake("222222222222222") // will be absent from the reconnect READY
+
+	c.guildMu.Lock()
+	c.guildMemberCounts[guild1] = 5
+	c.guildMemberCounts[guild2] = 3
+	c.guildMu.Unlock()
+
+	require.Equal(t, 2, c.GuildCount(), "setup: expected 2 guilds before reconnect")
+
+	// The READY handler writes to d.Websocket — init a minimal stub.
+	c.Websocket = &Websocket{
+		Closed: make(chan struct{}),
+		Ready:  make(chan struct{}),
+	}
+
+	// Simulate a reconnect READY that only lists guild1 (bot was kicked from guild2 while offline).
+	readyPayload := map[string]any{
+		"user":               map[string]any{"id": "1"},
+		"session_id":         "sess-reconnect",
+		"resume_gateway_url": "wss://fake.discord.gg",
+		"guilds":             []map[string]any{{"id": string(guild1)}},
+	}
+	raw, err := json.Marshal(readyPayload)
+	require.NoError(t, err)
+	c.internalEventHandler(json.RawMessage(raw), events.EventReady, nil)
+
+	assert.Equal(t, 1, c.GuildCount(),
+		"GuildCount must be 1 after reconnect with cache disabled; guild2 was dropped from READY")
+}
+
 // TestGuildDelete_CleansGuildMemberCount verifies that a GUILD_DELETE kick
 // removes the entry from guildMemberCounts so GuildCount() is accurate.
 func TestGuildDelete_CleansGuildMemberCount(t *testing.T) {

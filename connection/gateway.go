@@ -711,6 +711,15 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				currentGuildIDs[g.Guild.GetID()] = struct{}{}
 			}
 
+			// Prune stale member-count entries even when cache is disabled.
+			d.guildMu.Lock()
+			for guildID := range d.guildMemberCounts {
+				if _, present := currentGuildIDs[guildID]; !present {
+					delete(d.guildMemberCounts, guildID)
+				}
+			}
+			d.guildMu.Unlock()
+
 			// Remove cached guilds that are no longer present (bot was kicked while offline).
 			if d.cacheEnabled() {
 				for _, cachedGuild := range d.Cache.Guilds().All() {
