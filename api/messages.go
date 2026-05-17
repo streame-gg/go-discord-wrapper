@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -189,8 +190,8 @@ func encodeEmoji(emoji string) string {
 
 // ── Message endpoints ─────────────────────────────────────────────────────────
 
-// GetMessages returns up to 100 messages from a channel.
-func (c *RestClient) GetMessages(ctx context.Context, channelID discord.Snowflake, params GetMessagesParams) ([]*discord.Message, error) {
+// GetMessages returns up to 100 messages from a channel, keyed by message ID.
+func (c *RestClient) GetMessages(ctx context.Context, channelID discord.Snowflake, params GetMessagesParams) (*collection.Collection[discord.Snowflake, *discord.Message], error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -201,9 +202,17 @@ func (c *RestClient) GetMessages(ctx context.Context, channelID discord.Snowflak
 		return nil, err
 	}
 
-	return doRequestSlice[discord.Message](c, req, map[int]bool{
+	msgs, err := doRequestSlice[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Message](len(msgs))
+	for _, m := range msgs {
+		coll.Set(m.ID, m)
+	}
+	return coll, nil
 }
 
 // GetMessage returns a single message by ID.
@@ -406,8 +415,8 @@ type BulkDeleteMessagesOptions struct {
 
 // ── Pin endpoints ─────────────────────────────────────────────────────────────
 
-// GetPinnedMessages returns all pinned messages in a channel (max 50).
-func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
+// GetPinnedMessages returns all pinned messages in a channel (max 50), keyed by message ID.
+func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Message], error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -417,9 +426,17 @@ func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID discord.Sn
 		return nil, err
 	}
 
-	return doRequestSlice[discord.Message](c, req, map[int]bool{
+	msgs, err := doRequestSlice[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Message](len(msgs))
+	for _, m := range msgs {
+		coll.Set(m.ID, m)
+	}
+	return coll, nil
 }
 
 // PinMessage pins a message in a channel. Requires MANAGE_MESSAGES.
@@ -542,8 +559,8 @@ func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageI
 	return doRequestWithoutResponse(c, req)
 }
 
-// GetReactions returns the users who reacted to a message with the given emoji.
-func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params GetReactionsParams) ([]*discord.User, error) {
+// GetReactions returns the users who reacted to a message with the given emoji, keyed by user ID.
+func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params GetReactionsParams) (*collection.Collection[discord.Snowflake, *discord.User], error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -558,9 +575,17 @@ func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID disc
 		return nil, err
 	}
 
-	return doRequestSlice[discord.User](c, req, map[int]bool{
+	users, err := doRequestSlice[discord.User](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.User](len(users))
+	for _, u := range users {
+		coll.Set(u.ID, u)
+	}
+	return coll, nil
 }
 
 // DeleteAllReactions removes every reaction from a message. Requires MANAGE_MESSAGES.

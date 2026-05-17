@@ -204,7 +204,7 @@ func TestFetchAllMessagesMultiplePages(t *testing.T) {
 	msgs, err := client.FetchAllMessages(context.Background(), "1234567890123456789")
 
 	require.NoError(t, err)
-	assert.Len(t, msgs, 110)
+	assert.Equal(t, 110, msgs.Len())
 	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
 	assert.Equal(t, string(oldestPage1ID), secondRequestBefore, "second request should use before=last_id_of_page1")
 }

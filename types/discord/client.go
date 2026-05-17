@@ -1,5 +1,7 @@
 package discord
 
+import "github.com/streame-gg/go-discord-wrapper/collection"
+
 // RestClient is the subset of *connection.Client needed by Guild, Channel, and
 // Message methods. Pass the client received in your event handler directly —
 // *connection.Client satisfies this interface.
@@ -20,7 +22,7 @@ type RestClient interface {
 	// Channel operations
 	DeleteChannel(channelID Snowflake) (*Channel, error)
 	TriggerTypingIndicator(channelID Snowflake) error
-	GetPinnedMessages(channelID Snowflake) ([]*Message, error)
+	GetPinnedMessages(channelID Snowflake) (*collection.Collection[Snowflake, *Message], error)
 
 	// Message operations
 	DeleteMessage(channelID, messageID Snowflake) error
@@ -85,8 +87,8 @@ func (c *Channel) TriggerTyping(client RestClient) error {
 	return client.TriggerTypingIndicator(c.ID)
 }
 
-// GetPinnedMessages returns all pinned messages in the channel.
-func (c *Channel) GetPinnedMessages(client RestClient) ([]*Message, error) {
+// GetPinnedMessages returns all pinned messages in the channel, keyed by message ID.
+func (c *Channel) GetPinnedMessages(client RestClient) (*collection.Collection[Snowflake, *Message], error) {
 	return client.GetPinnedMessages(c.ID)
 }
 

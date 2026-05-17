@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/util"
 )
@@ -40,14 +41,15 @@ func (c *RestClient) FetchAllGuildMembers(ctx context.Context, guildID discord.S
 
 // FetchAllMessages fetches all messages in a channel, walking backwards from the
 // most recent message (max 100 per request) until the beginning of the channel.
-func (c *RestClient) FetchAllMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
+// Returns a Collection keyed by message ID in newest-first insertion order.
+func (c *RestClient) FetchAllMessages(ctx context.Context, channelID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Message], error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
 
 	const pageSize = 100
 
-	var all []*discord.Message
+	all := collection.New[discord.Snowflake, *discord.Message]()
 	params := GetMessagesParams{Limit: util.PointerOf(pageSize)}
 
 	for {
@@ -56,15 +58,18 @@ func (c *RestClient) FetchAllMessages(ctx context.Context, channelID discord.Sno
 			return nil, err
 		}
 
-		all = append(all, page...)
+		for _, m := range page.Values() {
+			all.Set(m.ID, m)
+		}
 
-		if len(page) < pageSize {
+		if page.Len() < pageSize {
 			return all, nil
 		}
 
 		// Discord returns messages newest-first; the last entry is the oldest on
 		// this page, so use its ID as the next before cursor.
-		oldest := page[len(page)-1]
+		vals := page.Values()
+		oldest := vals[len(vals)-1]
 		params.Before = &oldest.ID
 	}
 }

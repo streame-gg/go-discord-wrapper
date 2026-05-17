@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/streame-gg/go-discord-wrapper/api"
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/components"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -199,10 +200,10 @@ func (d *Client) DeleteFollowup(ctx context.Context, i *interactions.Interaction
 
 // ── Message methods ───────────────────────────────────────────────────────────
 
-func (d *Client) GetMessages(ctx context.Context, channelID discord.Snowflake, params api.GetMessagesParams) ([]*discord.Message, error) {
+func (d *Client) GetMessages(ctx context.Context, channelID discord.Snowflake, params api.GetMessagesParams) (*collection.Collection[discord.Snowflake, *discord.Message], error) {
 	msgs, err := d.RestClient.GetMessages(ctx, channelID, params)
 	if err == nil {
-		d.cacheMessages(msgs)
+		d.cacheMessages(msgs.Values())
 	}
 	return msgs, err
 }
@@ -255,10 +256,10 @@ func (d *Client) CrosspostMessage(ctx context.Context, channelID, messageID disc
 	return msg, err
 }
 
-func (d *Client) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
+func (d *Client) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Message], error) {
 	msgs, err := d.RestClient.GetPinnedMessages(ctx, channelID)
 	if err == nil {
-		d.cacheMessages(msgs)
+		d.cacheMessages(msgs.Values())
 	}
 	return msgs, err
 }
@@ -283,10 +284,10 @@ func (d *Client) DeleteUserReaction(ctx context.Context, channelID, messageID di
 	return d.RestClient.DeleteUserReaction(ctx, channelID, messageID, emoji, userID)
 }
 
-func (d *Client) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params api.GetReactionsParams) ([]*discord.User, error) {
+func (d *Client) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params api.GetReactionsParams) (*collection.Collection[discord.Snowflake, *discord.User], error) {
 	users, err := d.RestClient.GetReactions(ctx, channelID, messageID, emoji, params)
 	if err == nil {
-		d.cacheUsers(users)
+		d.cacheUsers(users.Values())
 	}
 	return users, err
 }
