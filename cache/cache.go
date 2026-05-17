@@ -261,11 +261,15 @@ type MemberStore interface {
 type RoleStore interface {
 	Set(guildID discord.Snowflake, role *discord.Role)
 	Get(roleID discord.Snowflake) (*discord.Role, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.Role
+	// GetByGuild returns a snapshot Collection of all roles for guildID,
+	// keyed by role ID. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Role]
 	Delete(roleID discord.Snowflake)
 	// DeleteGuild removes every role entry for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)
-	All() []*discord.Role
+	// All returns a snapshot Collection of all roles across all guilds,
+	// keyed by role ID. The returned Collection is a copy.
+	All() *collection.Collection[discord.Snowflake, *discord.Role]
 	Size() int
 }
 

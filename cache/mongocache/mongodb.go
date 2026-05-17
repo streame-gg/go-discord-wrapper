@@ -643,28 +643,28 @@ func (s *mongoRoleStore) Get(roleID discord.Snowflake) (*discord.Role, bool) {
 	return &role, true
 }
 
-func (s *mongoRoleStore) GetByGuild(guildID discord.Snowflake) []*discord.Role {
+func (s *mongoRoleStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Role] {
+	coll := collection.New[discord.Snowflake, *discord.Role]()
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
 	}
 	cursor, err := s.col().Find(s.c.ctx, filter)
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []roleDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.Role, 0, len(docs))
 	for _, d := range docs {
 		var role discord.Role
 		if json.Unmarshal([]byte(d.JSON), &role) == nil {
-			out = append(out, &role)
+			coll.Set(role.ID, &role)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoRoleStore) Delete(roleID discord.Snowflake) {
@@ -675,24 +675,24 @@ func (s *mongoRoleStore) DeleteGuild(guildID discord.Snowflake) {
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
 }
 
-func (s *mongoRoleStore) All() []*discord.Role {
+func (s *mongoRoleStore) All() *collection.Collection[discord.Snowflake, *discord.Role] {
+	coll := collection.New[discord.Snowflake, *discord.Role]()
 	cursor, err := s.col().Find(s.c.ctx, liveFilter(s.c.opts.TTL))
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []roleDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.Role, 0, len(docs))
 	for _, d := range docs {
 		var role discord.Role
 		if json.Unmarshal([]byte(d.JSON), &role) == nil {
-			out = append(out, &role)
+			coll.Set(role.ID, &role)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoRoleStore) Size() int {

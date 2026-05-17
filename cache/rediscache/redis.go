@@ -510,11 +510,12 @@ func (s *redisRoleStore) Get(roleID discord.Snowflake) (*discord.Role, bool) {
 	return &role, true
 }
 
-func (s *redisRoleStore) GetByGuild(guildID discord.Snowflake) []*discord.Role {
+func (s *redisRoleStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Role] {
+	coll := collection.New[discord.Snowflake, *discord.Role]()
 	idx := s.c.k("role", "guild", string(guildID))
 	roleIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(roleIDs) == 0 {
-		return nil
+		return coll
 	}
 	keys := make([]string, len(roleIDs))
 	for i, id := range roleIDs {
@@ -522,9 +523,8 @@ func (s *redisRoleStore) GetByGuild(guildID discord.Snowflake) []*discord.Role {
 	}
 	vals, err := s.c.client.MGet(s.c.ctx, keys...).Result()
 	if err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.Role, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
@@ -533,7 +533,7 @@ func (s *redisRoleStore) GetByGuild(guildID discord.Snowflake) []*discord.Role {
 		}
 		var role discord.Role
 		if json.Unmarshal([]byte(v.(string)), &role) == nil {
-			out = append(out, &role)
+			coll.Set(role.ID, &role)
 		}
 	}
 	if len(stale) > 0 {
@@ -542,7 +542,7 @@ func (s *redisRoleStore) GetByGuild(guildID discord.Snowflake) []*discord.Role {
 			_ = s.c.client.Del(s.c.ctx, s.c.k("role", "map", id.(string))).Err()
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *redisRoleStore) Delete(roleID discord.Snowflake) {
@@ -567,9 +567,9 @@ func (s *redisRoleStore) DeleteGuild(guildID discord.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, idx).Err()
 }
 
-func (s *redisRoleStore) All() []*discord.Role {
+func (s *redisRoleStore) All() *collection.Collection[discord.Snowflake, *discord.Role] {
+	coll := collection.New[discord.Snowflake, *discord.Role]()
 	pattern := s.c.k("role", "guild", "*")
-	var out []*discord.Role
 	var cursor uint64
 	for {
 		keys, next, err := s.c.client.Scan(s.c.ctx, cursor, pattern, 100).Result()
@@ -595,7 +595,7 @@ func (s *redisRoleStore) All() []*discord.Role {
 				}
 				var role discord.Role
 				if json.Unmarshal([]byte(v.(string)), &role) == nil {
-					out = append(out, &role)
+					coll.Set(role.ID, &role)
 				}
 			}
 		}
@@ -604,7 +604,7 @@ func (s *redisRoleStore) All() []*discord.Role {
 			break
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *redisRoleStore) Size() int {

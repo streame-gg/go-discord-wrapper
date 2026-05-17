@@ -516,17 +516,17 @@ func (r *memRoleStore) Get(roleID discord.Snowflake) (*discord.Role, bool) {
 	return &cp, true
 }
 
-func (r *memRoleStore) GetByGuild(guildID discord.Snowflake) []*discord.Role {
+func (r *memRoleStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Role] {
 	now := time.Now()
 	r.s.mu.RLock()
 	defer r.s.mu.RUnlock()
-	var out []*discord.Role
+	coll := collection.New[discord.Snowflake, *discord.Role]()
 	for _, e := range r.s.items {
 		if e.value.GuildID == guildID && !e.expired(now) {
-			out = append(out, e.value.Role)
+			coll.Set(e.value.Role.ID, e.value.Role)
 		}
 	}
-	return out
+	return coll
 }
 
 func (r *memRoleStore) Delete(roleID discord.Snowflake) {
@@ -544,13 +544,13 @@ func (r *memRoleStore) DeleteGuild(guildID discord.Snowflake) {
 	}
 }
 
-func (r *memRoleStore) All() []*discord.Role {
+func (r *memRoleStore) All() *collection.Collection[discord.Snowflake, *discord.Role] {
 	vals := r.s.all()
-	out := make([]*discord.Role, len(vals))
-	for i, v := range vals {
-		out[i] = v.Role
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Role](len(vals))
+	for _, v := range vals {
+		coll.Set(v.Role.ID, v.Role)
 	}
-	return out
+	return coll
 }
 
 func (r *memRoleStore) Size() int { return r.s.size() }
