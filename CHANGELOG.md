@@ -8,6 +8,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `SnowflakeFromInt`, `SnowflakeFromUint`, `SnowflakeFromString` constructors for explicit
+  conversion from integer/string types (common in database integrations). (P4-7)
+
 ### Performance
 
 - **P3-53 — `evictN` heap-based top-N eviction**: `cache.genericStore.evictN` previously
