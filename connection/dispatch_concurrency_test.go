@@ -32,7 +32,7 @@ func TestBug9_MaxConcurrentEventsLimitsHandlers(t *testing.T) {
 		numEvents  = 10
 		workers    = 2
 		sleepTime  = 100 * time.Millisecond
-		minElapsed = time.Duration(numEvents) / workers * sleepTime
+		minElapsed = time.Duration(numEvents/workers) * sleepTime
 	)
 
 	wsURL, closeServer := mockGateway(t)

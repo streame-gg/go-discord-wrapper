@@ -147,7 +147,7 @@ func (r *rateLimiter) wait(ctx context.Context, method, path string) error {
 		if wait <= 0 {
 			// Window has elapsed; restore remaining exactly once per window.
 			// windowRestoredAt tracks when we last restored so that multiple
-			// goroutines that all slept for the same window doRequest not each
+			// goroutines that all slept for the same window do not each
 			// independently set remaining = limit (TOCTOU race).
 			if b.windowRestoredAt.Before(b.resetAt) {
 				if b.limit > 0 {

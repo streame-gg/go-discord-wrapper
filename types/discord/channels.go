@@ -42,7 +42,7 @@ type Channel struct {
 	Type                          ChannelType                   `json:"type"`
 	GuildID                       *Snowflake                    `json:"guild_id,omitempty"`
 	Position                      *int                          `json:"position,omitempty"`
-	PermissionOverwrites          []ChannelPermissionOverwrites `json:"permission_overwrites,omitempty"`
+	PermissionOverwrites          []ChannelPermissionOverwrite `json:"permission_overwrites,omitempty"`
 	Name                          string                        `json:"name,omitempty"`
 	Topic                         *string                       `json:"topic,omitempty"`
 	NSFW                          *bool                         `json:"nsfw,omitempty"`
@@ -75,18 +75,11 @@ type Channel struct {
 	Status                        *string                       `json:"status,omitempty"`
 }
 
-type ChannelPermissionOverwritesType int
-
-const (
-	ChannelPermissionOverwritesTypeRole ChannelPermissionOverwritesType = 0
-	ChannelPermissionOverwritesTypeUser ChannelPermissionOverwritesType = 1
-)
-
-type ChannelPermissionOverwrites struct {
-	ID    Snowflake                       `json:"id"`
-	Type  ChannelPermissionOverwritesType `json:"type"`
-	Allow string                          `json:"allow"`
-	Deny  string                          `json:"deny"`
+type ChannelPermissionOverwrite struct {
+	ID    Snowflake               `json:"id"`
+	Type  PermissionOverwriteType `json:"type"`
+	Allow string                  `json:"allow"`
+	Deny  string                  `json:"deny"`
 }
 
 type ChannelFlags int

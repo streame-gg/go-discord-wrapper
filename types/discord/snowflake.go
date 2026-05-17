@@ -10,14 +10,6 @@ func (s Snowflake) String() string {
 	return string(s)
 }
 
-// ValidatedString automatically returns whether the Snowflake is valid, and if so returns it as a string.
-func (s Snowflake) ValidatedString() (string, error) {
-	if err := s.Validate(); err != nil {
-		return "", err
-	}
-	return string(s), nil
-}
-
 // Validate returns an error if s is not a valid Discord Snowflake (15–20 decimal digits).
 // Use this to sanitize user-supplied IDs before embedding them in API paths.
 func (s Snowflake) Validate() error {

@@ -50,7 +50,7 @@ type CreateGuildChannelParams struct {
 	UserLimit                     *int                                  `json:"user_limit,omitempty"`
 	RateLimitPerUser              *int                                  `json:"rate_limit_per_user,omitempty"`
 	Position                      *int                                  `json:"position,omitempty"`
-	PermissionOverwrites          []discord.ChannelPermissionOverwrites `json:"permission_overwrites,omitempty"`
+	PermissionOverwrites          []discord.ChannelPermissionOverwrite `json:"permission_overwrites,omitempty"`
 	ParentID                      *discord.Snowflake                    `json:"parent_id,omitempty"`
 	NSFW                          *bool                                 `json:"nsfw,omitempty"`
 	RTCRegion                     *string                               `json:"rtc_region,omitempty"`

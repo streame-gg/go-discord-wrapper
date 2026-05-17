@@ -36,13 +36,9 @@ func newPaginationClient(ts *httptest.Server) *RestClient {
 func makeMembersPage(n int, startID int) []*discord.GuildMember {
 	members := make([]*discord.GuildMember, n)
 	for i := 0; i < n; i++ {
-		id := discord.Snowflake(string(rune('0' + startID + i))) // simple unique IDs
-		// Use a proper string-based snowflake
-		idStr := discord.Snowflake(jsonIntStr(startID + i))
 		members[i] = &discord.GuildMember{
-			User: &discord.User{ID: idStr},
+			User: &discord.User{ID: discord.Snowflake(jsonIntStr(startID + i))},
 		}
-		_ = id
 	}
 	return members
 }

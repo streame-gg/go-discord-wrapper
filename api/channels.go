@@ -36,7 +36,7 @@ type ModifyChannelParams struct {
 	RateLimitPerUser              *int                                  `json:"rate_limit_per_user,omitempty"`
 	Bitrate                       *int                                  `json:"bitrate,omitempty"`
 	UserLimit                     *int                                  `json:"user_limit,omitempty"`
-	PermissionOverwrites          []discord.ChannelPermissionOverwrites `json:"permission_overwrites,omitempty"`
+	PermissionOverwrites          []discord.ChannelPermissionOverwrite `json:"permission_overwrites,omitempty"`
 	ParentID                      *discord.Snowflake                    `json:"parent_id,omitempty"`
 	RTCRegion                     *string                               `json:"rtc_region,omitempty"`
 	VideoQualityMode              *discord.VideoQualityMode             `json:"video_quality_mode,omitempty"`
@@ -56,7 +56,7 @@ type ModifyChannelOptions struct {
 type EditChannelPermissionsParams struct {
 	Allow *string                                 `json:"allow,omitempty"`
 	Deny  *string                                 `json:"deny,omitempty"`
-	Type  discord.ChannelPermissionOverwritesType `json:"type"`
+	Type  discord.PermissionOverwriteType `json:"type"`
 }
 
 type EditChannelPermissionsOptions struct {

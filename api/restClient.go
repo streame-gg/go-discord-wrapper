@@ -211,10 +211,11 @@ func (c *RestClient) emitEvent(event RestEvent) {
 }
 
 // validateAPIPath rejects any digit-only path segment that is not a valid Discord Snowflake
-// (15–20 decimal digits). This stops the most discord URL-injection pattern where user-supplied
+// (15–20 decimal digits). This stops the most common URL-injection pattern where user-supplied
 // short numeric input (e.g. "123") is concatenated directly into a path without sanitisation.
-// Slash-injection (e.g. Snowflake("123456789012345/evil")) is caught earlier by Snowflake.String(),
-// which panics when the value contains a '/'.
+// validateAPIPath is the only line of defense against path injection via Snowflake values.
+// Each path segment that looks like a digit-only ID is validated against Snowflake.Validate().
+// Non-numeric segments are accepted as-is (route literals).
 func validateAPIPath(path string) error {
 	for i, seg := range strings.Split(strings.Trim(path, "/"), "/") {
 		if seg == "" {
@@ -295,20 +296,10 @@ func (c *RestClient) generateRequest(ctx context.Context, method, path string, b
 	return req, nil
 }
 
-func DoesIntExistInList(actual int, list []int) bool {
-	for _, code := range list {
-		if code == actual {
-			return true
-		}
-	}
-
-	return false
-}
-
 // doRequest executes req and decodes a successful response into v (when v != nil).
 // The returned *http.Response has its Body already closed; callers must not
 // read from it. Inspect headers and status codes via the returned value, but
-// doRequest not call resp.Body.Read or resp.Body.Close again.
+// do not call resp.Body.Read or resp.Body.Close again.
 
 // successResponseCodeData is based on map[statusCode]returnRequestBody
 // if statusCode is 204 (No Content), no request body will be returned, so you do not have to set it to false
