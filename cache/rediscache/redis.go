@@ -424,11 +424,12 @@ func (s *redisMemberStore) DeleteGuild(guildID discord.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, gIdx).Err()
 }
 
-func (s *redisMemberStore) AllInGuild(guildID discord.Snowflake) []*discord.GuildMember {
+func (s *redisMemberStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.GuildMember] {
+	coll := collection.New[discord.Snowflake, *discord.GuildMember]()
 	gIdx := s.c.k("member", "guild", string(guildID))
 	userIDs, err := s.c.client.SMembers(s.c.ctx, gIdx).Result()
 	if err != nil || len(userIDs) == 0 {
-		return nil
+		return coll
 	}
 	keys := make([]string, len(userIDs))
 	for i, uid := range userIDs {
@@ -436,9 +437,8 @@ func (s *redisMemberStore) AllInGuild(guildID discord.Snowflake) []*discord.Guil
 	}
 	vals, err := s.c.client.MGet(s.c.ctx, keys...).Result()
 	if err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.GuildMember, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
@@ -447,13 +447,13 @@ func (s *redisMemberStore) AllInGuild(guildID discord.Snowflake) []*discord.Guil
 		}
 		var m discord.GuildMember
 		if json.Unmarshal([]byte(v.(string)), &m) == nil {
-			out = append(out, &m)
+			coll.Set(m.User.ID, &m)
 		}
 	}
 	if len(stale) > 0 {
 		_ = s.c.client.SRem(s.c.ctx, gIdx, stale...).Err()
 	}
-	return out
+	return coll
 }
 
 // Size returns the approximate total number of cached members by scanning all

@@ -284,11 +284,11 @@ func TestMemberStore_DeleteGuild(t *testing.T) {
 
 	c.Members().DeleteGuild("guild1")
 
-	if members := c.Members().AllInGuild("guild1"); len(members) != 0 {
-		t.Fatalf("expected 0 members in guild1 after DeleteGuild, got %d", len(members))
+	if n := c.Members().AllInGuild("guild1").Len(); n != 0 {
+		t.Fatalf("expected 0 members in guild1 after DeleteGuild, got %d", n)
 	}
-	if members := c.Members().AllInGuild("guild2"); len(members) != 1 {
-		t.Fatalf("guild2 should be unaffected, got %d members", len(members))
+	if n := c.Members().AllInGuild("guild2").Len(); n != 1 {
+		t.Fatalf("guild2 should be unaffected, got %d members", n)
 	}
 }
 
@@ -300,11 +300,11 @@ func TestMemberStore_AllInGuild(t *testing.T) {
 	}
 	c.Members().Set("g2", member("99"))
 
-	if all := c.Members().AllInGuild("g1"); len(all) != 3 {
-		t.Fatalf("expected 3 members in g1, got %d", len(all))
+	if n := c.Members().AllInGuild("g1").Len(); n != 3 {
+		t.Fatalf("expected 3 members in g1, got %d", n)
 	}
-	if all := c.Members().AllInGuild("g2"); len(all) != 1 {
-		t.Fatalf("expected 1 member in g2, got %d", len(all))
+	if n := c.Members().AllInGuild("g2").Len(); n != 1 {
+		t.Fatalf("expected 1 member in g2, got %d", n)
 	}
 }
 

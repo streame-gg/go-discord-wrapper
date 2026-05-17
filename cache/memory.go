@@ -481,17 +481,17 @@ func (m *memMemberStore) DeleteGuild(guildID discord.Snowflake) {
 	}
 }
 
-func (m *memMemberStore) AllInGuild(guildID discord.Snowflake) []*discord.GuildMember {
+func (m *memMemberStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.GuildMember] {
 	now := time.Now()
 	m.s.mu.RLock()
 	defer m.s.mu.RUnlock()
-	var out []*discord.GuildMember
+	coll := collection.New[discord.Snowflake, *discord.GuildMember]()
 	for k, e := range m.s.items {
 		if k.guildID == guildID && !e.expired(now) {
-			out = append(out, e.value)
+			coll.Set(e.value.User.ID, e.value)
 		}
 	}
-	return out
+	return coll
 }
 
 func (m *memMemberStore) Size() int { return m.s.size() }

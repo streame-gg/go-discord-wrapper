@@ -153,8 +153,8 @@ func (s *memoryTestSuite) TestMemberStore_DeleteGuild() {
 
 	c.Members().DeleteGuild("guild1")
 
-	s.Lenf(c.Members().AllInGuild("guild1"), 0, "expected guild1 members deleted")
-	s.Lenf(c.Members().AllInGuild("guild2"), 1, "guild2 member should be unaffected")
+	s.Equal(0, c.Members().AllInGuild("guild1").Len(), "expected guild1 members deleted")
+	s.Equal(1, c.Members().AllInGuild("guild2").Len(), "guild2 member should be unaffected")
 }
 
 func (s *memoryTestSuite) TestMemberStore_NilUser() {

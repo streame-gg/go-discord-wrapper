@@ -253,7 +253,9 @@ type MemberStore interface {
 	Delete(guildID, userID discord.Snowflake)
 	// DeleteGuild removes every member entry for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)
-	AllInGuild(guildID discord.Snowflake) []*discord.GuildMember
+	// AllInGuild returns a snapshot Collection of all members for guildID,
+	// keyed by user ID. The returned Collection is a copy.
+	AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.GuildMember]
 	Size() int
 }
 

@@ -578,28 +578,28 @@ func (s *mongoMemberStore) DeleteGuild(guildID discord.Snowflake) {
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
 }
 
-func (s *mongoMemberStore) AllInGuild(guildID discord.Snowflake) []*discord.GuildMember {
+func (s *mongoMemberStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.GuildMember] {
+	coll := collection.New[discord.Snowflake, *discord.GuildMember]()
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
 	}
 	cursor, err := s.col().Find(s.c.ctx, filter)
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []memberDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.GuildMember, 0, len(docs))
 	for _, d := range docs {
 		var m discord.GuildMember
 		if json.Unmarshal([]byte(d.JSON), &m) == nil {
-			out = append(out, &m)
+			coll.Set(m.User.ID, &m)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoMemberStore) Size() int {

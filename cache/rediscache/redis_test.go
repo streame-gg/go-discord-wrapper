@@ -252,8 +252,8 @@ func (s *RedisCacheTestSuite) TestMemberStore_DeleteGuild() {
 
 	c.Members().DeleteGuild("guild1")
 
-	s.Require().Len(c.Members().AllInGuild("guild1"), 0, "expected 0 members in guild1")
-	s.Require().Len(c.Members().AllInGuild("guild2"), 1, "expected 1 member in guild2")
+	s.Require().Equal(0, c.Members().AllInGuild("guild1").Len(), "expected 0 members in guild1")
+	s.Require().Equal(1, c.Members().AllInGuild("guild2").Len(), "expected 1 member in guild2")
 }
 
 func (s *RedisCacheTestSuite) TestMemberStore_AllInGuild() {
@@ -265,7 +265,7 @@ func (s *RedisCacheTestSuite) TestMemberStore_AllInGuild() {
 	c.Members().Set("g2", member("99"))
 
 	all := c.Members().AllInGuild("g1")
-	s.Require().Len(all, 3, "expected 3 members in g1")
+	s.Require().Equal(3, all.Len(), "expected 3 members in g1")
 }
 
 func (s *RedisCacheTestSuite) TestMemberStore_NilUser() {
