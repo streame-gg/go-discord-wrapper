@@ -339,6 +339,19 @@ func doRequestWithoutResponse(c *RestClient, req *http.Request, enforceStatusCod
 	return err
 }
 
+// doRequestSlice is like doRequest but dereferences the pointer so callers
+// receive a plain slice instead of a pointer-to-slice.
+func doRequestSlice[T any](c *RestClient, req *http.Request, codes map[int]bool) ([]*T, error) {
+	result, err := doRequest[[]*T](c, req, codes)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, nil
+	}
+	return *result, nil
+}
+
 func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData map[int]bool) (*T, error) {
 	if req == nil {
 		return nil, errors.New("request must not be nil")

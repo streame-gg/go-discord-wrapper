@@ -47,7 +47,7 @@ type DeleteAutoModerationRuleOptions struct {
 // ── Auto moderation endpoints ─────────────────────────────────────────────────
 
 // ListAutoModerationRules returns all auto moderation rules for a guild.
-func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID discord.Snowflake) (*[]*discord.AutoModerationRule, error) {
+func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID discord.Snowflake) ([]*discord.AutoModerationRule, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID discor
 		return nil, err
 	}
 
-	return doRequest[[]*discord.AutoModerationRule](c, req, map[int]bool{
+	return doRequestSlice[discord.AutoModerationRule](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

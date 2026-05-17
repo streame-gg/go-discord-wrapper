@@ -6,6 +6,20 @@ All notable changes to this project will be documented in this file.
 
 ## v0.2.0 Breaking Changes
 
+- **P2-26 — REST list methods return `[]*T` instead of `*[]*T`**: All REST methods that previously returned a pointer-to-slice (`*[]*discord.Message`, `*[]*discord.GuildMember`, etc.) now return the slice directly (`[]*discord.Message`, `[]*discord.GuildMember`, etc.). The `*` dereference operators previously required in user code are no longer needed. `FetchAllAuditLogEntries` similarly changes from `*[]AuditLogEntry` to `[]AuditLogEntry`. All pagination helpers are updated accordingly.
+
+  ```go
+  // Before:
+  msgs, err := client.GetMessages(ctx, channelID, params)
+  if err != nil { ... }
+  for _, m := range *msgs { fmt.Println(m.Content) }
+
+  // After:
+  msgs, err := client.GetMessages(ctx, channelID, params)
+  if err != nil { ... }
+  for _, m := range msgs { fmt.Println(m.Content) }
+  ```
+
 - **P2-25 — `AuditLog` fields typed**: `AutoModerationRules`, `GuildScheduledEvents`, `Integrations`, and `Webhooks` are now typed slices instead of `[]any`. `ApplicationCommands` remains `[]any` due to an import-cycle constraint (the `ApplicationCommand` struct lives in `types/commands` which imports `types/discord`); unmarshal elements into `*commands.ApplicationCommand` individually. `AuditLogEntryChange.NewValue`/`OldValue` also remain `any` because Discord audit-log change values are genuinely polymorphic.
 
   ```go

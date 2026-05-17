@@ -38,7 +38,7 @@ type DeleteGuildEmojiOptions struct {
 // ── Emoji endpoints ───────────────────────────────────────────────────────────
 
 // ListGuildEmojis returns all emojis for a guild.
-func (c *RestClient) ListGuildEmojis(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Emoji, error) {
+func (c *RestClient) ListGuildEmojis(ctx context.Context, guildID discord.Snowflake) ([]*discord.Emoji, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (c *RestClient) ListGuildEmojis(ctx context.Context, guildID discord.Snowfl
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Emoji](c, req, map[int]bool{
+	return doRequestSlice[discord.Emoji](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

@@ -75,7 +75,7 @@ func (c *RestClient) ListStickerPacks(ctx context.Context) (*ListStickerPacksRes
 }
 
 // ListGuildStickers returns all stickers for the given guild.
-func (c *RestClient) ListGuildStickers(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Sticker, error) {
+func (c *RestClient) ListGuildStickers(ctx context.Context, guildID discord.Snowflake) ([]*discord.Sticker, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (c *RestClient) ListGuildStickers(ctx context.Context, guildID discord.Snow
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Sticker](c, req, map[int]bool{
+	return doRequestSlice[discord.Sticker](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

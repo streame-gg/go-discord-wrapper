@@ -301,7 +301,7 @@ func (c *RestClient) GetThreadMember(ctx context.Context, channelID, userID disc
 }
 
 // ListThreadMembers returns the members of a thread.
-func (c *RestClient) ListThreadMembers(ctx context.Context, channelID discord.Snowflake, params ListThreadMembersParams) (*[]*discord.ThreadMember, error) {
+func (c *RestClient) ListThreadMembers(ctx context.Context, channelID discord.Snowflake, params ListThreadMembersParams) ([]*discord.ThreadMember, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -312,7 +312,7 @@ func (c *RestClient) ListThreadMembers(ctx context.Context, channelID discord.Sn
 		return nil, err
 	}
 
-	return doRequest[[]*discord.ThreadMember](c, req, map[int]bool{
+	return doRequestSlice[discord.ThreadMember](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

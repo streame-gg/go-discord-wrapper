@@ -46,13 +46,13 @@ type SendSoundboardSoundParams struct {
 // ── Soundboard endpoints ──────────────────────────────────────────────────────
 
 // ListDefaultSoundboardSounds returns the list of default sounds available to all users.
-func (c *RestClient) ListDefaultSoundboardSounds(ctx context.Context) (*[]*discord.SoundboardSound, error) {
+func (c *RestClient) ListDefaultSoundboardSounds(ctx context.Context) ([]*discord.SoundboardSound, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/soundboard-default-sounds", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequest[[]*discord.SoundboardSound](c, req, map[int]bool{
+	return doRequestSlice[discord.SoundboardSound](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

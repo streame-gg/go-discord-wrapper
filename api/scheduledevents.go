@@ -71,7 +71,7 @@ func (p GetGuildScheduledEventUsersParams) toQuery() string {
 
 // ListGuildScheduledEvents returns all scheduled events for a guild.
 // Set withUserCount to true to include subscriber counts.
-func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID discord.Snowflake, withUserCount bool) (*[]*discord.GuildScheduledEvent, error) {
+func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID discord.Snowflake, withUserCount bool) ([]*discord.GuildScheduledEvent, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID disco
 		return nil, err
 	}
 
-	return doRequest[[]*discord.GuildScheduledEvent](c, req, map[int]bool{
+	return doRequestSlice[discord.GuildScheduledEvent](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -184,7 +184,7 @@ func (c *RestClient) DeleteGuildScheduledEvent(ctx context.Context, guildID, eve
 }
 
 // GetGuildScheduledEventUsers returns users subscribed to a scheduled event.
-func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, params GetGuildScheduledEventUsersParams) (*[]*discord.GuildScheduledEventUser, error) {
+func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, params GetGuildScheduledEventUsersParams) ([]*discord.GuildScheduledEventUser, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, e
 		return nil, err
 	}
 
-	return doRequest[[]*discord.GuildScheduledEventUser](c, req, map[int]bool{
+	return doRequestSlice[discord.GuildScheduledEventUser](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

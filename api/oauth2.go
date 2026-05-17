@@ -47,13 +47,13 @@ func (c *RestClient) DeleteCurrentUserApplicationRoleConnection(ctx context.Cont
 
 // GetCurrentUserConnections returns the connections linked to the current user's account.
 // Requires an OAuth2 bearer token with the connections scope; bot tokens will receive a 401.
-func (c *RestClient) GetCurrentUserConnections(ctx context.Context, userToken string) (*[]*discord.UserConnection, error) {
+func (c *RestClient) GetCurrentUserConnections(ctx context.Context, userToken string) ([]*discord.UserConnection, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/users/@me/connections", nil, WithUserAuthorization(userToken))
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequest[[]*discord.UserConnection](c, req, map[int]bool{
+	return doRequestSlice[discord.UserConnection](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

@@ -186,7 +186,7 @@ func encodeEmoji(emoji string) string {
 // ── Message endpoints ─────────────────────────────────────────────────────────
 
 // GetMessages returns up to 100 messages from a channel.
-func (c *RestClient) GetMessages(ctx context.Context, channelID discord.Snowflake, params GetMessagesParams) (*[]*discord.Message, error) {
+func (c *RestClient) GetMessages(ctx context.Context, channelID discord.Snowflake, params GetMessagesParams) ([]*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func (c *RestClient) GetMessages(ctx context.Context, channelID discord.Snowflak
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Message](c, req, map[int]bool{
+	return doRequestSlice[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -403,7 +403,7 @@ type BulkDeleteMessagesOptions struct {
 // ── Pin endpoints ─────────────────────────────────────────────────────────────
 
 // GetPinnedMessages returns all pinned messages in a channel (max 50).
-func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) (*[]*discord.Message, error) {
+func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -413,7 +413,7 @@ func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID discord.Sn
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Message](c, req, map[int]bool{
+	return doRequestSlice[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -539,7 +539,7 @@ func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageI
 }
 
 // GetReactions returns the users who reacted to a message with the given emoji.
-func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params GetReactionsParams) (*[]*discord.User, error) {
+func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params GetReactionsParams) ([]*discord.User, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -554,7 +554,7 @@ func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID disc
 		return nil, err
 	}
 
-	return doRequest[[]*discord.User](c, req, map[int]bool{
+	return doRequestSlice[discord.User](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

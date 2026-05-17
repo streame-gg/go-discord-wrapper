@@ -111,7 +111,7 @@ func (c *RestClient) CreateWebhook(ctx context.Context, channelID discord.Snowfl
 }
 
 // GetChannelWebhooks returns all webhooks for a channel.
-func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID discord.Snowflake) (*[]*discord.Webhook, error) {
+func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID discord.Snowflake) ([]*discord.Webhook, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -121,13 +121,13 @@ func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID discord.S
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Webhook](c, req, map[int]bool{
+	return doRequestSlice[discord.Webhook](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetGuildWebhooks returns all webhooks in a guild.
-func (c *RestClient) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Webhook, error) {
+func (c *RestClient) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (c *RestClient) GetGuildWebhooks(ctx context.Context, guildID discord.Snowf
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Webhook](c, req, map[int]bool{
+	return doRequestSlice[discord.Webhook](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

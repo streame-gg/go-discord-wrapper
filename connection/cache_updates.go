@@ -23,8 +23,8 @@ func (d *Client) cacheChannel(channel *discord.Channel) {
 	}
 }
 
-func (d *Client) cacheChannels(channels *[]*discord.Channel) {
-	for _, channel := range *channels {
+func (d *Client) cacheChannels(channels []*discord.Channel) {
+	for _, channel := range channels {
 		d.cacheChannel(channel)
 	}
 }
@@ -53,8 +53,8 @@ func (d *Client) cacheMember(guildID discord.Snowflake, member *discord.GuildMem
 	}
 }
 
-func (d *Client) cacheMembers(guildID discord.Snowflake, members *[]*discord.GuildMember) {
-	for _, member := range *members {
+func (d *Client) cacheMembers(guildID discord.Snowflake, members []*discord.GuildMember) {
+	for _, member := range members {
 		d.cacheMember(guildID, member)
 	}
 }
@@ -70,8 +70,8 @@ func (d *Client) cacheMessage(msg *discord.Message) {
 	}
 }
 
-func (d *Client) cacheMessages(messages *[]*discord.Message) {
-	for _, msg := range *messages {
+func (d *Client) cacheMessages(messages []*discord.Message) {
+	for _, msg := range messages {
 		d.cacheMessage(msg)
 	}
 }
@@ -84,8 +84,8 @@ func (d *Client) cacheRole(guildID discord.Snowflake, role *discord.Role) {
 	d.Cache.Roles().Set(guildID, role)
 }
 
-func (d *Client) cacheRoles(guildID discord.Snowflake, roles *[]*discord.Role) {
-	for _, role := range *roles {
+func (d *Client) cacheRoles(guildID discord.Snowflake, roles []*discord.Role) {
+	for _, role := range roles {
 		d.cacheRole(guildID, role)
 	}
 }

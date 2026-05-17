@@ -38,7 +38,7 @@ func (c *RestClient) GetCurrentApplication(ctx context.Context) (*discord.Applic
 
 // GetApplicationRoleConnectionsMetadata returns the role connection metadata records for the
 // given application. Returns up to 5 records.
-func (c *RestClient) GetApplicationRoleConnectionsMetadata(ctx context.Context, appID discord.Snowflake) (*[]*discord.ApplicationRoleConnectionsMetadata, error) {
+func (c *RestClient) GetApplicationRoleConnectionsMetadata(ctx context.Context, appID discord.Snowflake) ([]*discord.ApplicationRoleConnectionsMetadata, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -49,14 +49,14 @@ func (c *RestClient) GetApplicationRoleConnectionsMetadata(ctx context.Context, 
 		return nil, err
 	}
 
-	return doRequest[[]*discord.ApplicationRoleConnectionsMetadata](c, req, map[int]bool{
+	return doRequestSlice[discord.ApplicationRoleConnectionsMetadata](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // UpdateApplicationRoleConnectionsMetadata overwrites the role connection metadata records for
 // the given application. Accepts up to 5 records; omitting a record deletes it.
-func (c *RestClient) UpdateApplicationRoleConnectionsMetadata(ctx context.Context, appID discord.Snowflake, records []*discord.ApplicationRoleConnectionsMetadata) (*[]*discord.ApplicationRoleConnectionsMetadata, error) {
+func (c *RestClient) UpdateApplicationRoleConnectionsMetadata(ctx context.Context, appID discord.Snowflake, records []*discord.ApplicationRoleConnectionsMetadata) ([]*discord.ApplicationRoleConnectionsMetadata, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (c *RestClient) UpdateApplicationRoleConnectionsMetadata(ctx context.Contex
 		return nil, err
 	}
 
-	return doRequest[[]*discord.ApplicationRoleConnectionsMetadata](c, req, map[int]bool{
+	return doRequestSlice[discord.ApplicationRoleConnectionsMetadata](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
