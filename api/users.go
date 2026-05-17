@@ -124,6 +124,9 @@ func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrent
 
 // GetCurrentUserGuildMember returns the guild member object for the current user in the given guild.
 func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID discord.Snowflake, userAccessToken *string) (*discord.GuildMember, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
 	var authOption func(req *http.Request)
 	if userAccessToken != nil {
 		authOption = WithUserAuthorization(*userAccessToken)
