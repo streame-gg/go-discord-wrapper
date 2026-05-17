@@ -393,10 +393,10 @@ func (s *RedisCacheTestSuite) TestMessageStore_Channel_NewestFirst() {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
 	}
 	msgs := c.Messages().Channel("c1")
-	s.Require().Len(msgs, 5, "expected 5 messages")
+	s.Require().Equal(5, msgs.Len(), "expected 5 messages")
 
 	// The most recently added message must be first.
-	s.Require().Equal(discord.Snowflake("m5"), msgs[0].ID, "expected newest first")
+	s.Require().Equal(discord.Snowflake("m5"), msgs.Values()[0].ID, "expected newest first")
 }
 
 func (s *RedisCacheTestSuite) TestMessageStore_DeleteChannel() {
@@ -407,8 +407,8 @@ func (s *RedisCacheTestSuite) TestMessageStore_DeleteChannel() {
 
 	c.Messages().DeleteChannel("c1")
 
-	s.Require().Len(c.Messages().Channel("c1"), 0, "expected c1 messages deleted")
-	s.Require().Len(c.Messages().Channel("c2"), 1, "c2 should be unaffected")
+	s.Require().Equal(0, c.Messages().Channel("c1").Len(), "expected c1 messages deleted")
+	s.Require().Equal(1, c.Messages().Channel("c2").Len(), "c2 should be unaffected")
 }
 
 func (s *RedisCacheTestSuite) TestMessageStore_RingCap() {
@@ -421,10 +421,10 @@ func (s *RedisCacheTestSuite) TestMessageStore_RingCap() {
 	}
 
 	msgs := c.Messages().Channel("c1")
-	s.Require().Len(msgs, 3, "expected ring cap of 3")
+	s.Require().Equal(3, msgs.Len(), "expected ring cap of 3")
 
 	// Oldest messages (m1, m2) must have been evicted.
-	for _, m := range msgs {
+	for _, m := range msgs.Values() {
 		s.Require().NotEqual(discord.Snowflake("m1"), m.ID, "m1 should have been evicted")
 		s.Require().NotEqual(discord.Snowflake("m2"), m.ID, "m2 should have been evicted")
 	}
@@ -652,7 +652,7 @@ func (s *RedisCacheTestSuite) TestBug36MaxPerChannelZeroDisables() {
 	c.Messages().Add(message("m1", "ch1"))
 	c.Messages().Add(message("m2", "ch1"))
 
-	s.Require().Len(c.Messages().Channel("ch1"), 0, "MaxPerChannel=0 should disable caching (Bug 36)")
+	s.Require().Equal(0, c.Messages().Channel("ch1").Len(), "MaxPerChannel=0 should disable caching (Bug 36)")
 	s.Require().Equal(0, c.Messages().Size(), "Size should be 0 when disabled (Bug 36)")
 }
 

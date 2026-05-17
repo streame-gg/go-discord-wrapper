@@ -285,9 +285,10 @@ type MessageStore interface {
 	Update(msg *discord.Message)
 	Delete(channelID, messageID discord.Snowflake)
 	DeleteBulk(channelID discord.Snowflake, ids []discord.Snowflake)
-	// Channel returns cached messages for channelID newest-first,
-	// excluding TTL-expired entries. Returns nil for unknown channels.
-	Channel(channelID discord.Snowflake) []*discord.Message
+	// Channel returns a snapshot Collection of cached messages for channelID,
+	// ordered newest-first, keyed by message ID. Returns an empty Collection
+	// for unknown or disabled channels.
+	Channel(channelID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Message]
 	// DeleteChannel drops the entire ring for channelID. Call on CHANNEL_DELETE.
 	DeleteChannel(channelID discord.Snowflake)
 	Size() int

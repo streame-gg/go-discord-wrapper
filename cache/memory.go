@@ -885,16 +885,20 @@ func (s *memMessageStore) DeleteBulk(channelID discord.Snowflake, ids []discord.
 	s.totalMsgs.Add(-int64(removed))
 }
 
-func (s *memMessageStore) Channel(channelID discord.Snowflake) []*discord.Message {
+func (s *memMessageStore) Channel(channelID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Message] {
 	s.mu.Lock()
 	r := s.channels[channelID]
 	if r == nil {
 		s.mu.Unlock()
-		return nil
+		return collection.New[discord.Snowflake, *discord.Message]()
 	}
 	msgs := r.all(s.opts.TTL)
 	s.mu.Unlock()
-	return msgs
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Message](len(msgs))
+	for _, m := range msgs {
+		coll.Set(m.ID, m)
+	}
+	return coll
 }
 
 func (s *memMessageStore) DeleteChannel(channelID discord.Snowflake) {

@@ -1568,7 +1568,8 @@ func (s *redisMessageStore) DeleteBulk(channelID discord.Snowflake, ids []discor
 
 // Channel returns cached messages for channelID newest-first.
 // Entries whose JSON keys have expired are silently pruned from the index.
-func (s *redisMessageStore) Channel(channelID discord.Snowflake) []*discord.Message {
+func (s *redisMessageStore) Channel(channelID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Message] {
+	coll := collection.New[discord.Snowflake, *discord.Message]()
 	chKey := s.c.k("msg", "ch", string(channelID))
 	// ZREVRANGE: highest score (most recent insertedAt) first.
 	members, err := s.c.client.ZRangeArgs(s.c.ctx, redis.ZRangeArgs{
@@ -1578,7 +1579,7 @@ func (s *redisMessageStore) Channel(channelID discord.Snowflake) []*discord.Mess
 		Rev:   true,
 	}).Result()
 	if err != nil || len(members) == 0 {
-		return nil
+		return coll
 	}
 	keys := make([]string, len(members))
 	for i, m := range members {
@@ -1586,9 +1587,8 @@ func (s *redisMessageStore) Channel(channelID discord.Snowflake) []*discord.Mess
 	}
 	vals, err := s.c.client.MGet(s.c.ctx, keys...).Result()
 	if err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.Message, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
@@ -1597,13 +1597,13 @@ func (s *redisMessageStore) Channel(channelID discord.Snowflake) []*discord.Mess
 		}
 		var msg discord.Message
 		if json.Unmarshal([]byte(v.(string)), &msg) == nil {
-			out = append(out, &msg)
+			coll.Set(msg.ID, &msg)
 		}
 	}
 	if len(stale) > 0 {
 		_ = s.c.client.ZRem(s.c.ctx, chKey, stale...).Err()
 	}
-	return out
+	return coll
 }
 
 func (s *redisMessageStore) DeleteChannel(channelID discord.Snowflake) {

@@ -241,8 +241,8 @@ func (s *memoryTestSuite) TestMessageStore_Channel_NewestFirst() {
 		c.Messages().Add(message(fmt.Sprintf("msg%d", i), "chan1"))
 	}
 	msgs := c.Messages().Channel("chan1")
-	s.Require().Lenf(msgs, 5, "expected 5 messages, got %d", len(msgs))
-	s.Equalf(discord.Snowflake("msg5"), msgs[0].ID, "expected newest first (msg5), got %s", msgs[0].ID)
+	s.Require().Equal(5, msgs.Len(), "expected 5 messages")
+	s.Equalf(discord.Snowflake("msg5"), msgs.Values()[0].ID, "expected newest first (msg5), got %s", msgs.Values()[0].ID)
 }
 
 func (s *memoryTestSuite) TestMessageStore_DeleteChannel() {
@@ -254,8 +254,8 @@ func (s *memoryTestSuite) TestMessageStore_DeleteChannel() {
 
 	c.Messages().DeleteChannel("chan1")
 
-	s.Lenf(c.Messages().Channel("chan1"), 0, "expected chan1 messages deleted")
-	s.Lenf(c.Messages().Channel("chan2"), 1, "chan2 should be unaffected")
+	s.Equal(0, c.Messages().Channel("chan1").Len(), "expected chan1 messages deleted")
+	s.Equal(1, c.Messages().Channel("chan2").Len(), "chan2 should be unaffected")
 }
 
 func (s *memoryTestSuite) TestMessageStore_RingEvictsOldest() {
@@ -268,8 +268,8 @@ func (s *memoryTestSuite) TestMessageStore_RingEvictsOldest() {
 		c.Messages().Add(message(fmt.Sprintf("msg%d", i), "chan1"))
 	}
 	msgs := c.Messages().Channel("chan1")
-	s.Require().Lenf(msgs, 3, "expected ring cap of 3, got %d", len(msgs))
-	for _, m := range msgs {
+	s.Require().Equal(3, msgs.Len(), "expected ring cap of 3")
+	for _, m := range msgs.Values() {
 		s.NotEqualf(discord.Snowflake("msg1"), m.ID, "msg1 (oldest) should have been evicted")
 	}
 }
@@ -794,7 +794,7 @@ func TestBug3ConcurrentAddDeleteChannelNoCounterDrift(t *testing.T) {
 	// totalMsgs counter must equal the actual number of messages in all rings.
 	reported := c.Messages().Size()
 	// Get() returns all messages in the channel; use Channel() to count actual messages.
-	actual := len(c.Messages().Channel(chanID))
+	actual := c.Messages().Channel(chanID).Len()
 	if reported < 0 {
 		t.Errorf("totalMsgs went negative: %d", reported)
 	}

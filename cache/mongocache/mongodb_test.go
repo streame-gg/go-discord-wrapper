@@ -402,12 +402,12 @@ func TestMessageStore_Update_PreservesInsertedAt(t *testing.T) {
 	c.Messages().Update(updated)
 
 	msgs := c.Messages().Channel("c1")
-	if len(msgs) != 3 {
-		t.Fatalf("expected 3 messages, got %d", len(msgs))
+	if msgs.Len() != 3 {
+		t.Fatalf("expected 3 messages, got %d", msgs.Len())
 	}
 	// m3 was added last, so it must be first (newest).
-	if msgs[0].ID != "m3" {
-		t.Fatalf("expected m3 first (newest), got %s", msgs[0].ID)
+	if msgs.Values()[0].ID != "m3" {
+		t.Fatalf("expected m3 first (newest), got %s", msgs.Values()[0].ID)
 	}
 }
 
@@ -448,14 +448,14 @@ func TestMessageStore_Channel_NewestFirst(t *testing.T) {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
 	}
 	msgs := c.Messages().Channel("c1")
-	if len(msgs) != 5 {
-		t.Fatalf("expected 5 messages, got %d", len(msgs))
+	if msgs.Len() != 5 {
+		t.Fatalf("expected 5 messages, got %d", msgs.Len())
 	}
-	if msgs[0].ID != "m5" {
-		t.Fatalf("expected newest first (m5), got %s", msgs[0].ID)
+	if msgs.Values()[0].ID != "m5" {
+		t.Fatalf("expected newest first (m5), got %s", msgs.Values()[0].ID)
 	}
-	if msgs[4].ID != "m1" {
-		t.Fatalf("expected oldest last (m1), got %s", msgs[4].ID)
+	if msgs.Values()[4].ID != "m1" {
+		t.Fatalf("expected oldest last (m1), got %s", msgs.Values()[4].ID)
 	}
 }
 
@@ -467,10 +467,10 @@ func TestMessageStore_DeleteChannel(t *testing.T) {
 
 	c.Messages().DeleteChannel("c1")
 
-	if msgs := c.Messages().Channel("c1"); len(msgs) != 0 {
-		t.Fatalf("expected c1 messages deleted, got %d", len(msgs))
+	if n := c.Messages().Channel("c1").Len(); n != 0 {
+		t.Fatalf("expected c1 messages deleted, got %d", n)
 	}
-	if msgs := c.Messages().Channel("c2"); len(msgs) != 1 {
+	if n := c.Messages().Channel("c2").Len(); n != 1 {
 		t.Fatal("c2 should be unaffected")
 	}
 }
@@ -485,10 +485,10 @@ func TestMessageStore_RingCap(t *testing.T) {
 	}
 
 	msgs := c.Messages().Channel("c1")
-	if len(msgs) != 3 {
-		t.Fatalf("expected ring cap of 3, got %d", len(msgs))
+	if msgs.Len() != 3 {
+		t.Fatalf("expected ring cap of 3, got %d", msgs.Len())
 	}
-	for _, m := range msgs {
+	for _, m := range msgs.Values() {
 		if m.ID == "m1" || m.ID == "m2" {
 			t.Fatalf("message %s (oldest) should have been evicted", m.ID)
 		}
@@ -513,8 +513,8 @@ func TestMessageStore_TTL(t *testing.T) {
 	if _, ok := c.Messages().Get("c1", "m1"); ok {
 		t.Fatal("expected message expired after TTL (expires_at filter)")
 	}
-	if msgs := c.Messages().Channel("c1"); len(msgs) != 0 {
-		t.Fatalf("expected no messages after TTL, got %d", len(msgs))
+	if n := c.Messages().Channel("c1").Len(); n != 0 {
+		t.Fatalf("expected no messages after TTL, got %d", n)
 	}
 }
 
@@ -651,8 +651,8 @@ func TestBug36MaxPerChannelZeroDisables(t *testing.T) {
 	c.Messages().Add(message("m2", "ch1"))
 
 	ch := c.Messages().Channel("ch1")
-	if len(ch) != 0 {
-		t.Errorf("MaxPerChannel=0 should disable caching, got %d messages (Bug 36)", len(ch))
+	if ch.Len() != 0 {
+		t.Errorf("MaxPerChannel=0 should disable caching, got %d messages (Bug 36)", ch.Len())
 	}
 	if sz := c.Messages().Size(); sz != 0 {
 		t.Errorf("Size should be 0 when disabled, got %d (Bug 36)", sz)

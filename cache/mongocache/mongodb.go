@@ -1397,9 +1397,10 @@ func (s *mongoMessageStore) DeleteBulk(channelID discord.Snowflake, ids []discor
 }
 
 // Channel returns messages for channelID newest-first, excluding expired entries.
-func (s *mongoMessageStore) Channel(channelID discord.Snowflake) []*discord.Message {
+func (s *mongoMessageStore) Channel(channelID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Message] {
+	coll := collection.New[discord.Snowflake, *discord.Message]()
 	if s.c.opts.Messages.MaxPerChannel == 0 {
-		return nil
+		return coll
 	}
 	filter := bson.M{"channel_id": string(channelID)}
 	if s.c.opts.Messages.TTL > 0 {
@@ -1413,21 +1414,20 @@ func (s *mongoMessageStore) Channel(channelID discord.Snowflake) []*discord.Mess
 			SetLimit(int64(s.c.opts.Messages.MaxPerChannel)),
 	)
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []msgDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.Message, 0, len(docs))
 	for _, d := range docs {
 		var msg discord.Message
 		if json.Unmarshal([]byte(d.JSON), &msg) == nil {
-			out = append(out, &msg)
+			coll.Set(msg.ID, &msg)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoMessageStore) DeleteChannel(channelID discord.Snowflake) {
