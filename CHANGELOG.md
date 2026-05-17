@@ -13,6 +13,11 @@ All notable changes to this project will be documented in this file.
 - `SnowflakeFromInt`, `SnowflakeFromUint`, `SnowflakeFromString` constructors for explicit
   conversion from integer/string types (common in database integrations). (P4-7)
 
+### Fixed
+
+- Filenames in multipart uploads are now stripped to basename, preventing local filesystem
+  paths from leaking into uploaded attachments via the `Content-Disposition` header. (P4-9)
+
 ### Performance
 
 - **P3-53 — `evictN` heap-based top-N eviction**: `cache.genericStore.evictN` previously

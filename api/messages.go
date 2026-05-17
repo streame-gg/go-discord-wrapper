@@ -10,6 +10,7 @@ import (
 	"net/textproto"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -55,6 +56,19 @@ type MessageFile struct {
 	Data []byte
 }
 
+// basenameFilename returns the basename of a filename, stripping any path
+// components. Used to ensure local filesystem paths don't leak into Discord
+// uploads via the Content-Disposition header.
+func basenameFilename(name string) string {
+	if i := strings.LastIndexAny(name, `/\`); i >= 0 {
+		name = name[i+1:]
+	}
+	if name == "" {
+		return "file"
+	}
+	return name
+}
+
 // buildMultipartMessage encodes payload as multipart/form-data with optional file parts.
 // Returns the body buffer and the Content-Type header value (including boundary).
 func buildMultipartMessage(payload []byte, files []MessageFile) (*bytes.Buffer, string, error) {
@@ -79,7 +93,7 @@ func buildMultipartMessage(payload []byte, files []MessageFile) (*bytes.Buffer, 
 			ct = "application/octet-stream"
 		}
 		h := textproto.MIMEHeader{
-			"Content-Disposition": []string{fmt.Sprintf(`form-data; name="files[%d]"; filename=%q`, i, f.Name)},
+			"Content-Disposition": []string{fmt.Sprintf(`form-data; name="files[%d]"; filename=%q`, i, basenameFilename(f.Name))},
 			"Content-Type":        []string{ct},
 		}
 		part, err := w.CreatePart(h)
