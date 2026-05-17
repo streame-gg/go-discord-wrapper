@@ -979,28 +979,28 @@ func (s *mongoStageInstanceStore) Get(instanceID discord.Snowflake) (*discord.St
 	return &instance, true
 }
 
-func (s *mongoStageInstanceStore) GetByGuild(guildID discord.Snowflake) []*discord.StageInstance {
+func (s *mongoStageInstanceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.StageInstance] {
+	coll := collection.New[discord.Snowflake, *discord.StageInstance]()
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
 	}
 	cursor, err := s.col().Find(s.c.ctx, filter)
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []guildEntityDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.StageInstance, 0, len(docs))
 	for _, d := range docs {
 		var instance discord.StageInstance
 		if json.Unmarshal([]byte(d.JSON), &instance) == nil {
-			out = append(out, &instance)
+			coll.Set(instance.ID, &instance)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoStageInstanceStore) Delete(instanceID discord.Snowflake) {

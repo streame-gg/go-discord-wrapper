@@ -1037,11 +1037,12 @@ func (s *redisStageInstanceStore) Get(instanceID discord.Snowflake) (*discord.St
 	return &instance, true
 }
 
-func (s *redisStageInstanceStore) GetByGuild(guildID discord.Snowflake) []*discord.StageInstance {
+func (s *redisStageInstanceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.StageInstance] {
+	coll := collection.New[discord.Snowflake, *discord.StageInstance]()
 	idx := s.c.k("stage_instance", "guild", string(guildID))
 	instanceIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(instanceIDs) == 0 {
-		return nil
+		return coll
 	}
 	keys := make([]string, len(instanceIDs))
 	for i, id := range instanceIDs {
@@ -1049,9 +1050,8 @@ func (s *redisStageInstanceStore) GetByGuild(guildID discord.Snowflake) []*disco
 	}
 	vals, err := s.c.client.MGet(s.c.ctx, keys...).Result()
 	if err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.StageInstance, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
@@ -1060,7 +1060,7 @@ func (s *redisStageInstanceStore) GetByGuild(guildID discord.Snowflake) []*disco
 		}
 		var instance discord.StageInstance
 		if json.Unmarshal([]byte(v.(string)), &instance) == nil {
-			out = append(out, &instance)
+			coll.Set(instance.ID, &instance)
 		}
 	}
 	if len(stale) > 0 {
@@ -1069,7 +1069,7 @@ func (s *redisStageInstanceStore) GetByGuild(guildID discord.Snowflake) []*disco
 			_ = s.c.client.Del(s.c.ctx, s.c.k("stage_instance", "map", id.(string))).Err()
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *redisStageInstanceStore) Delete(instanceID discord.Snowflake) {

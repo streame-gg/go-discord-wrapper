@@ -326,7 +326,9 @@ type ScheduledEventStore interface {
 type StageInstanceStore interface {
 	Set(instance *discord.StageInstance)
 	Get(instanceID discord.Snowflake) (*discord.StageInstance, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.StageInstance
+	// GetByGuild returns a snapshot Collection of all stage instances for guildID,
+	// keyed by instance ID. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.StageInstance]
 	Delete(instanceID discord.Snowflake)
 	// DeleteGuild removes every stage instance for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)

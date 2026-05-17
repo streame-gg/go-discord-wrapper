@@ -1660,17 +1660,17 @@ func (si *memStageInstanceStore) Get(instanceID discord.Snowflake) (*discord.Sta
 	return &cp, true
 }
 
-func (si *memStageInstanceStore) GetByGuild(guildID discord.Snowflake) []*discord.StageInstance {
+func (si *memStageInstanceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.StageInstance] {
 	now := time.Now()
 	si.s.mu.RLock()
 	defer si.s.mu.RUnlock()
-	var out []*discord.StageInstance
+	coll := collection.New[discord.Snowflake, *discord.StageInstance]()
 	for _, e := range si.s.items {
 		if e.value.GuildID == guildID && !e.expired(now) {
-			out = append(out, e.value)
+			coll.Set(e.value.ID, e.value)
 		}
 	}
-	return out
+	return coll
 }
 
 func (si *memStageInstanceStore) Delete(instanceID discord.Snowflake) { si.s.delete(instanceID) }
