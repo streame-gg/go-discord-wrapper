@@ -74,7 +74,7 @@ func TestBug10SetAllIsAtomicNoEmptyWindowForReaders(t *testing.T) {
 			case <-stop:
 				return
 			default:
-				if len(es.GetByGuild(guildID)) == 0 {
+				if es.GetByGuild(guildID).Len() == 0 {
 					select {
 					case sawEmpty <- struct{}{}:
 					default:

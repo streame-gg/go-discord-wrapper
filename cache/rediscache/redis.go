@@ -1146,11 +1146,12 @@ func (s *redisEmojiStore) Get(emojiID discord.Snowflake) (*discord.Emoji, bool) 
 	return &emoji, true
 }
 
-func (s *redisEmojiStore) GetByGuild(guildID discord.Snowflake) []*discord.Emoji {
+func (s *redisEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Emoji] {
+	coll := collection.New[discord.Snowflake, *discord.Emoji]()
 	idx := s.c.k("emoji", "guild", string(guildID))
 	emojiIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(emojiIDs) == 0 {
-		return nil
+		return coll
 	}
 	keys := make([]string, len(emojiIDs))
 	for i, id := range emojiIDs {
@@ -1158,9 +1159,8 @@ func (s *redisEmojiStore) GetByGuild(guildID discord.Snowflake) []*discord.Emoji
 	}
 	vals, err := s.c.client.MGet(s.c.ctx, keys...).Result()
 	if err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.Emoji, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
@@ -1169,7 +1169,7 @@ func (s *redisEmojiStore) GetByGuild(guildID discord.Snowflake) []*discord.Emoji
 		}
 		var emoji discord.Emoji
 		if json.Unmarshal([]byte(v.(string)), &emoji) == nil {
-			out = append(out, &emoji)
+			coll.Set(emoji.ID, &emoji)
 		}
 	}
 	if len(stale) > 0 {
@@ -1178,7 +1178,7 @@ func (s *redisEmojiStore) GetByGuild(guildID discord.Snowflake) []*discord.Emoji
 			_ = s.c.client.Del(s.c.ctx, s.c.k("emoji", "map", id.(string))).Err()
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *redisEmojiStore) SetAll(guildID discord.Snowflake, emojis []*discord.Emoji) {

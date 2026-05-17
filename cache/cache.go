@@ -335,7 +335,9 @@ type StageInstanceStore interface {
 type EmojiStore interface {
 	Set(guildID discord.Snowflake, emoji *discord.Emoji)
 	Get(emojiID discord.Snowflake) (*discord.Emoji, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.Emoji
+	// GetByGuild returns a snapshot Collection of all emojis for guildID,
+	// keyed by emoji ID. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Emoji]
 	SetAll(guildID discord.Snowflake, emojis []*discord.Emoji)
 	Delete(emojiID discord.Snowflake)
 	// DeleteGuild removes every emoji for guildID. Call on GUILD_DELETE.

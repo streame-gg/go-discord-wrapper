@@ -1052,28 +1052,28 @@ func (s *mongoEmojiStore) Get(emojiID discord.Snowflake) (*discord.Emoji, bool) 
 	return &emoji, true
 }
 
-func (s *mongoEmojiStore) GetByGuild(guildID discord.Snowflake) []*discord.Emoji {
+func (s *mongoEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Emoji] {
+	coll := collection.New[discord.Snowflake, *discord.Emoji]()
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
 	}
 	cursor, err := s.col().Find(s.c.ctx, filter)
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []guildEntityDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.Emoji, 0, len(docs))
 	for _, d := range docs {
 		var emoji discord.Emoji
 		if json.Unmarshal([]byte(d.JSON), &emoji) == nil {
-			out = append(out, &emoji)
+			coll.Set(emoji.ID, &emoji)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoEmojiStore) SetAll(guildID discord.Snowflake, emojis []*discord.Emoji) {

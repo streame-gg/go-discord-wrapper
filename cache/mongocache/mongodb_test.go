@@ -616,7 +616,7 @@ func TestBug50SetAllIsAtomic(t *testing.T) {
 				default:
 				}
 				got := c.Emojis().GetByGuild(guildID)
-				if len(got) != 0 && len(got) != len(initial) && len(got) != 5 {
+				if got.Len() != 0 && got.Len() != len(initial) && got.Len() != 5 {
 					partial.Store(true)
 				}
 			}

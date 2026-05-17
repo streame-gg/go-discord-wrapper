@@ -1715,17 +1715,17 @@ func (es *memEmojiStore) Get(emojiID discord.Snowflake) (*discord.Emoji, bool) {
 	return &cp, true
 }
 
-func (es *memEmojiStore) GetByGuild(guildID discord.Snowflake) []*discord.Emoji {
+func (es *memEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Emoji] {
 	now := time.Now()
 	es.s.mu.RLock()
 	defer es.s.mu.RUnlock()
-	var out []*discord.Emoji
+	coll := collection.New[discord.Snowflake, *discord.Emoji]()
 	for _, e := range es.s.items {
 		if e.value.GuildID == guildID && !e.expired(now) {
-			out = append(out, e.value.Emoji)
+			coll.Set(e.value.Emoji.ID, e.value.Emoji)
 		}
 	}
-	return out
+	return coll
 }
 
 func (es *memEmojiStore) SetAll(guildID discord.Snowflake, emojis []*discord.Emoji) {
