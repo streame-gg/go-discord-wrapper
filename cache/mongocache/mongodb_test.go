@@ -342,8 +342,8 @@ func TestStickerStore_CRUDAndSetAll(t *testing.T) {
 	if _, ok := c.Stickers().Get("s1"); ok {
 		t.Fatal("expected old guild stickers replaced by SetAll")
 	}
-	if stickers := c.Stickers().GetByGuild("guild1"); len(stickers) != 2 {
-		t.Fatalf("expected 2 stickers in guild1, got %d", len(stickers))
+	if n := c.Stickers().GetByGuild("guild1").Len(); n != 2 {
+		t.Fatalf("expected 2 stickers in guild1, got %d", n)
 	}
 
 	c.Stickers().Delete("s2")
@@ -352,8 +352,8 @@ func TestStickerStore_CRUDAndSetAll(t *testing.T) {
 	}
 
 	c.Stickers().DeleteGuild("guild1")
-	if stickers := c.Stickers().GetByGuild("guild1"); len(stickers) != 0 {
-		t.Fatalf("expected guild stickers deleted, got %d", len(stickers))
+	if n := c.Stickers().GetByGuild("guild1").Len(); n != 0 {
+		t.Fatalf("expected guild stickers deleted, got %d", n)
 	}
 }
 

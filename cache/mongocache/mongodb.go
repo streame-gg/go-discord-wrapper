@@ -1145,28 +1145,28 @@ func (s *mongoStickerStore) Get(stickerID discord.Snowflake) (*discord.Sticker, 
 	return &sticker, true
 }
 
-func (s *mongoStickerStore) GetByGuild(guildID discord.Snowflake) []*discord.Sticker {
+func (s *mongoStickerStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Sticker] {
+	coll := collection.New[discord.Snowflake, *discord.Sticker]()
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
 	}
 	cursor, err := s.col().Find(s.c.ctx, filter)
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []guildEntityDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.Sticker, 0, len(docs))
 	for _, d := range docs {
 		var sticker discord.Sticker
 		if json.Unmarshal([]byte(d.JSON), &sticker) == nil {
-			out = append(out, &sticker)
+			coll.Set(sticker.ID, &sticker)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoStickerStore) SetAll(guildID discord.Snowflake, stickers []*discord.Sticker) {

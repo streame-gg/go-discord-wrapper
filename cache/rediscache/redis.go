@@ -1274,11 +1274,12 @@ func (s *redisStickerStore) Get(stickerID discord.Snowflake) (*discord.Sticker, 
 	return &sticker, true
 }
 
-func (s *redisStickerStore) GetByGuild(guildID discord.Snowflake) []*discord.Sticker {
+func (s *redisStickerStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Sticker] {
+	coll := collection.New[discord.Snowflake, *discord.Sticker]()
 	idx := s.c.k("sticker", "guild", string(guildID))
 	stickerIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(stickerIDs) == 0 {
-		return nil
+		return coll
 	}
 	keys := make([]string, len(stickerIDs))
 	for i, id := range stickerIDs {
@@ -1286,9 +1287,8 @@ func (s *redisStickerStore) GetByGuild(guildID discord.Snowflake) []*discord.Sti
 	}
 	vals, err := s.c.client.MGet(s.c.ctx, keys...).Result()
 	if err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.Sticker, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
@@ -1297,7 +1297,7 @@ func (s *redisStickerStore) GetByGuild(guildID discord.Snowflake) []*discord.Sti
 		}
 		var sticker discord.Sticker
 		if json.Unmarshal([]byte(v.(string)), &sticker) == nil {
-			out = append(out, &sticker)
+			coll.Set(sticker.ID, &sticker)
 		}
 	}
 	if len(stale) > 0 {
@@ -1306,7 +1306,7 @@ func (s *redisStickerStore) GetByGuild(guildID discord.Snowflake) []*discord.Sti
 			_ = s.c.client.Del(s.c.ctx, s.c.k("sticker", "map", id.(string))).Err()
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *redisStickerStore) SetAll(guildID discord.Snowflake, stickers []*discord.Sticker) {

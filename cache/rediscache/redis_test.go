@@ -307,15 +307,14 @@ func (s *RedisCacheTestSuite) TestStickerStore_CRUDAndSetAll() {
 	_, ok = c.Stickers().Get("s1")
 	s.Require().False(ok, "expected old guild stickers replaced by SetAll")
 
-	stickers := c.Stickers().GetByGuild("guild1")
-	s.Require().Len(stickers, 2, "expected 2 stickers in guild1")
+	s.Require().Equal(2, c.Stickers().GetByGuild("guild1").Len(), "expected 2 stickers in guild1")
 
 	c.Stickers().Delete("s2")
 	_, ok = c.Stickers().Get("s2")
 	s.Require().False(ok, "expected sticker s2 deleted")
 
 	c.Stickers().DeleteGuild("guild1")
-	s.Require().Len(c.Stickers().GetByGuild("guild1"), 0, "expected guild stickers deleted")
+	s.Require().Equal(0, c.Stickers().GetByGuild("guild1").Len(), "expected guild stickers deleted")
 }
 
 // ── MessageStore ──────────────────────────────────────────────────────────────

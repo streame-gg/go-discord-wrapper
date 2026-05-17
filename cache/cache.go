@@ -347,7 +347,9 @@ type EmojiStore interface {
 type StickerStore interface {
 	Set(guildID discord.Snowflake, sticker *discord.Sticker)
 	Get(stickerID discord.Snowflake) (*discord.Sticker, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.Sticker
+	// GetByGuild returns a snapshot Collection of all stickers for guildID,
+	// keyed by sticker ID. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Sticker]
 	SetAll(guildID discord.Snowflake, stickers []*discord.Sticker)
 	Delete(stickerID discord.Snowflake)
 	// DeleteGuild removes every sticker for guildID. Call on GUILD_DELETE.

@@ -178,14 +178,14 @@ func (s *memoryTestSuite) TestStickerStore_CRUDAndSetAll() {
 	c.Stickers().SetAll("guild1", []*discord.Sticker{sticker("s2"), sticker("s3")})
 	_, ok = c.Stickers().Get("s1")
 	s.False(ok, "expected old guild stickers replaced by SetAll")
-	s.Lenf(c.Stickers().GetByGuild("guild1"), 2, "expected 2 stickers after SetAll")
+	s.Equal(2, c.Stickers().GetByGuild("guild1").Len(), "expected 2 stickers after SetAll")
 
 	c.Stickers().Delete("s2")
 	_, ok = c.Stickers().Get("s2")
 	s.False(ok, "expected sticker s2 deleted")
 
 	c.Stickers().DeleteGuild("guild1")
-	s.Lenf(c.Stickers().GetByGuild("guild1"), 0, "expected guild stickers deleted")
+	s.Equal(0, c.Stickers().GetByGuild("guild1").Len(), "expected guild stickers deleted")
 }
 
 // ── MessageStore ──────────────────────────────────────────────────────────────

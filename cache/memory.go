@@ -1790,17 +1790,17 @@ func (ss *memStickerStore) Get(stickerID discord.Snowflake) (*discord.Sticker, b
 	return &cp, true
 }
 
-func (ss *memStickerStore) GetByGuild(guildID discord.Snowflake) []*discord.Sticker {
+func (ss *memStickerStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Sticker] {
 	now := time.Now()
 	ss.s.mu.RLock()
 	defer ss.s.mu.RUnlock()
-	var out []*discord.Sticker
+	coll := collection.New[discord.Snowflake, *discord.Sticker]()
 	for _, e := range ss.s.items {
 		if e.value.GuildID == guildID && !e.expired(now) {
-			out = append(out, e.value.Sticker)
+			coll.Set(e.value.Sticker.ID, e.value.Sticker)
 		}
 	}
-	return out
+	return coll
 }
 
 func (ss *memStickerStore) SetAll(guildID discord.Snowflake, stickers []*discord.Sticker) {
