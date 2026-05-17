@@ -904,28 +904,28 @@ func (s *mongoScheduledEventStore) Get(eventID discord.Snowflake) (*discord.Guil
 	return &event, true
 }
 
-func (s *mongoScheduledEventStore) GetByGuild(guildID discord.Snowflake) []*discord.GuildScheduledEvent {
+func (s *mongoScheduledEventStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.GuildScheduledEvent] {
+	coll := collection.New[discord.Snowflake, *discord.GuildScheduledEvent]()
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
 	}
 	cursor, err := s.col().Find(s.c.ctx, filter)
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []guildEntityDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.GuildScheduledEvent, 0, len(docs))
 	for _, d := range docs {
 		var event discord.GuildScheduledEvent
 		if json.Unmarshal([]byte(d.JSON), &event) == nil {
-			out = append(out, &event)
+			coll.Set(event.ID, &event)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoScheduledEventStore) Delete(eventID discord.Snowflake) {

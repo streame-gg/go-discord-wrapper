@@ -928,11 +928,12 @@ func (s *redisScheduledEventStore) Get(eventID discord.Snowflake) (*discord.Guil
 	return &event, true
 }
 
-func (s *redisScheduledEventStore) GetByGuild(guildID discord.Snowflake) []*discord.GuildScheduledEvent {
+func (s *redisScheduledEventStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.GuildScheduledEvent] {
+	coll := collection.New[discord.Snowflake, *discord.GuildScheduledEvent]()
 	idx := s.c.k("scheduled_event", "guild", string(guildID))
 	eventIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(eventIDs) == 0 {
-		return nil
+		return coll
 	}
 	keys := make([]string, len(eventIDs))
 	for i, id := range eventIDs {
@@ -940,9 +941,8 @@ func (s *redisScheduledEventStore) GetByGuild(guildID discord.Snowflake) []*disc
 	}
 	vals, err := s.c.client.MGet(s.c.ctx, keys...).Result()
 	if err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.GuildScheduledEvent, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
@@ -951,7 +951,7 @@ func (s *redisScheduledEventStore) GetByGuild(guildID discord.Snowflake) []*disc
 		}
 		var event discord.GuildScheduledEvent
 		if json.Unmarshal([]byte(v.(string)), &event) == nil {
-			out = append(out, &event)
+			coll.Set(event.ID, &event)
 		}
 	}
 	if len(stale) > 0 {
@@ -960,7 +960,7 @@ func (s *redisScheduledEventStore) GetByGuild(guildID discord.Snowflake) []*disc
 			_ = s.c.client.Del(s.c.ctx, s.c.k("scheduled_event", "map", id.(string))).Err()
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *redisScheduledEventStore) Delete(eventID discord.Snowflake) {

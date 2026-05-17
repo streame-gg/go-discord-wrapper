@@ -315,7 +315,9 @@ type SoundboardStore interface {
 type ScheduledEventStore interface {
 	Set(event *discord.GuildScheduledEvent)
 	Get(eventID discord.Snowflake) (*discord.GuildScheduledEvent, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.GuildScheduledEvent
+	// GetByGuild returns a snapshot Collection of all scheduled events for guildID,
+	// keyed by event ID. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.GuildScheduledEvent]
 	Delete(eventID discord.Snowflake)
 	// DeleteGuild removes every scheduled event for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)

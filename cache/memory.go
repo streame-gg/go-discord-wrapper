@@ -1610,17 +1610,17 @@ func (se *memScheduledEventStore) Get(eventID discord.Snowflake) (*discord.Guild
 	return &cp, true
 }
 
-func (se *memScheduledEventStore) GetByGuild(guildID discord.Snowflake) []*discord.GuildScheduledEvent {
+func (se *memScheduledEventStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.GuildScheduledEvent] {
 	now := time.Now()
 	se.s.mu.RLock()
 	defer se.s.mu.RUnlock()
-	var out []*discord.GuildScheduledEvent
+	coll := collection.New[discord.Snowflake, *discord.GuildScheduledEvent]()
 	for _, e := range se.s.items {
 		if e.value.GuildID == guildID && !e.expired(now) {
-			out = append(out, e.value)
+			coll.Set(e.value.ID, e.value)
 		}
 	}
-	return out
+	return coll
 }
 
 func (se *memScheduledEventStore) Delete(eventID discord.Snowflake) { se.s.delete(eventID) }
