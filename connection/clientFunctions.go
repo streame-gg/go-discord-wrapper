@@ -37,7 +37,7 @@ func (d *Client) RegisterCommand(ctx context.Context, cmd *commands.ApplicationC
 // BulkRegisterCommands overwrites all application commands with the provided list.
 // Any existing commands not included will be deleted.
 // Must be called after Login() so that the application ID is available.
-func (d *Client) BulkRegisterCommands(ctx context.Context, cmds []*commands.ApplicationCommand) (*[]*commands.ApplicationCommand, error) {
+func (d *Client) BulkRegisterCommands(ctx context.Context, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
 	appID, err := d.applicationID()
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (d *Client) BulkRegisterCommands(ctx context.Context, cmds []*commands.Appl
 // Reply sends an immediate message response to an interaction.
 // Pass withResponse=true to get the created message back.
 // Pass optional files to include attachments; when present the request is sent as multipart/form-data.
-func (d *Client) Reply(ctx context.Context, i *interactions.Interaction, data *responses.InteractionResponseDataDefault, withResponse bool, files ...api.MessageFile) (*responses.InteractionCallbackResponse, error) {
+func (d *Client) Reply(ctx context.Context, i *interactions.Interaction, data *responses.InteractionResponseDataDefault, withResponse bool, files ...discord.MessageFile) (*responses.InteractionCallbackResponse, error) {
 	return d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
 		Type: discord.InteractionCallbackTypeChannelMessageWithSource,
 		Data: data,
@@ -60,14 +60,13 @@ func (d *Client) Reply(ctx context.Context, i *interactions.Interaction, data *r
 // DeferReply acknowledges the interaction, telling Discord the bot will respond later.
 // Set ephemeral=true to make the eventual follow-up visible only to the invoker.
 func (d *Client) DeferReply(ctx context.Context, i *interactions.Interaction, ephemeral bool) error {
-	var data *responses.InteractionResponseDataDefault
-	if ephemeral {
-		data = &responses.InteractionResponseDataDefault{Flags: discord.MessageFlagEphemeral}
-	}
-	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
+	resp := responses.InteractionResponse{
 		Type: discord.InteractionCallbackTypeDeferredChannelMessageWithSource,
-		Data: data,
-	}, false)
+	}
+	if ephemeral {
+		resp.Data = &responses.InteractionResponseDataDefault{Flags: discord.MessageFlagEphemeral}
+	}
+	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, resp, false)
 	return err
 }
 
@@ -81,11 +80,11 @@ func (d *Client) DeferUpdateMessage(ctx context.Context, i *interactions.Interac
 }
 
 // UpdateMessage edits the message that triggered a component interaction.
-func (d *Client) UpdateMessage(ctx context.Context, i *interactions.Interaction, data *responses.InteractionResponseDataDefault) error {
+func (d *Client) UpdateMessage(ctx context.Context, i *interactions.Interaction, data *responses.InteractionResponseDataDefault, files ...discord.MessageFile) error {
 	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
 		Type: discord.InteractionCallbackTypeUpdateMessage,
 		Data: data,
-	}, false)
+	}, false, files...)
 	return err
 }
 
@@ -200,7 +199,7 @@ func (d *Client) DeleteFollowup(ctx context.Context, i *interactions.Interaction
 
 // ── Message methods ───────────────────────────────────────────────────────────
 
-func (d *Client) GetMessages(ctx context.Context, channelID discord.Snowflake, params api.GetMessagesParams) (*[]*discord.Message, error) {
+func (d *Client) GetMessages(ctx context.Context, channelID discord.Snowflake, params api.GetMessagesParams) ([]*discord.Message, error) {
 	msgs, err := d.RestClient.GetMessages(ctx, channelID, params)
 	if err == nil {
 		d.cacheMessages(msgs)
@@ -256,7 +255,7 @@ func (d *Client) CrosspostMessage(ctx context.Context, channelID, messageID disc
 	return msg, err
 }
 
-func (d *Client) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) (*[]*discord.Message, error) {
+func (d *Client) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
 	msgs, err := d.RestClient.GetPinnedMessages(ctx, channelID)
 	if err == nil {
 		d.cacheMessages(msgs)
@@ -284,10 +283,10 @@ func (d *Client) DeleteUserReaction(ctx context.Context, channelID, messageID di
 	return d.RestClient.DeleteUserReaction(ctx, channelID, messageID, emoji, userID)
 }
 
-func (d *Client) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params api.GetReactionsParams) (*[]*discord.User, error) {
+func (d *Client) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params api.GetReactionsParams) ([]*discord.User, error) {
 	users, err := d.RestClient.GetReactions(ctx, channelID, messageID, emoji, params)
 	if err == nil {
-		d.cacheUsers(*users)
+		d.cacheUsers(users)
 	}
 	return users, err
 }
@@ -326,7 +325,7 @@ func (d *Client) DeleteChannel(ctx context.Context, channelID discord.Snowflake)
 	return channel, err
 }
 
-func (d *Client) GetChannelInvites(ctx context.Context, channelID discord.Snowflake) (*[]*discord.Invite, error) {
+func (d *Client) GetChannelInvites(ctx context.Context, channelID discord.Snowflake) ([]*discord.Invite, error) {
 	return d.RestClient.GetChannelInvites(ctx, channelID)
 }
 
@@ -376,7 +375,7 @@ func (d *Client) DeleteGuild(ctx context.Context, guildID discord.Snowflake) err
 	return nil
 }
 
-func (d *Client) GetGuildChannels(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Channel, error) {
+func (d *Client) GetGuildChannels(ctx context.Context, guildID discord.Snowflake) ([]*discord.Channel, error) {
 	channels, err := d.RestClient.GetGuildChannels(ctx, guildID)
 	if err == nil {
 		if d.Cache != nil {
@@ -403,7 +402,7 @@ func (d *Client) ModifyGuildChannelPositions(ctx context.Context, guildID discor
 	return d.RestClient.ModifyGuildChannelPositions(ctx, guildID, entries, nil)
 }
 
-func (d *Client) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Role, error) {
+func (d *Client) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) ([]*discord.Role, error) {
 	roles, err := d.RestClient.GetGuildRoles(ctx, guildID)
 	if err == nil {
 		if d.Cache != nil {
@@ -431,7 +430,7 @@ func (d *Client) CreateGuildRole(ctx context.Context, guildID discord.Snowflake,
 	return role, err
 }
 
-func (d *Client) ModifyGuildRolePositions(ctx context.Context, guildID discord.Snowflake, entries []api.ModifyGuildRolePositionsEntry) (*[]*discord.Role, error) {
+func (d *Client) ModifyGuildRolePositions(ctx context.Context, guildID discord.Snowflake, entries []api.ModifyGuildRolePositionsEntry) ([]*discord.Role, error) {
 	roles, err := d.RestClient.ModifyGuildRolePositions(ctx, guildID, entries, nil)
 	if err == nil {
 		if d.Cache != nil {
@@ -459,7 +458,7 @@ func (d *Client) DeleteGuildRole(ctx context.Context, guildID, roleID discord.Sn
 	return nil
 }
 
-func (d *Client) GetGuildBans(ctx context.Context, guildID discord.Snowflake, params api.GetGuildBansParams) (*[]*discord.Ban, error) {
+func (d *Client) GetGuildBans(ctx context.Context, guildID discord.Snowflake, params api.GetGuildBansParams) ([]*discord.Ban, error) {
 	return d.RestClient.GetGuildBans(ctx, guildID, params)
 }
 
@@ -483,7 +482,7 @@ func (d *Client) BeginGuildPrune(ctx context.Context, guildID discord.Snowflake,
 	return d.RestClient.BeginGuildPrune(ctx, guildID, params, nil)
 }
 
-func (d *Client) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Invite, error) {
+func (d *Client) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) ([]*discord.Invite, error) {
 	return d.RestClient.GetGuildInvites(ctx, guildID)
 }
 
@@ -510,7 +509,7 @@ func (d *Client) GetGuildMember(ctx context.Context, guildID, userID discord.Sno
 	return member, err
 }
 
-func (d *Client) ListGuildMembers(ctx context.Context, guildID discord.Snowflake, params api.GetGuildMembersParams) (*[]*discord.GuildMember, error) {
+func (d *Client) ListGuildMembers(ctx context.Context, guildID discord.Snowflake, params api.GetGuildMembersParams) ([]*discord.GuildMember, error) {
 	members, err := d.RestClient.ListGuildMembers(ctx, guildID, params)
 	if err == nil {
 		d.cacheMembers(guildID, members)
@@ -518,7 +517,7 @@ func (d *Client) ListGuildMembers(ctx context.Context, guildID discord.Snowflake
 	return members, err
 }
 
-func (d *Client) SearchGuildMembers(ctx context.Context, guildID discord.Snowflake, params api.SearchGuildMembersParams) (*[]*discord.GuildMember, error) {
+func (d *Client) SearchGuildMembers(ctx context.Context, guildID discord.Snowflake, params api.SearchGuildMembersParams) ([]*discord.GuildMember, error) {
 	members, err := d.RestClient.SearchGuildMembers(ctx, guildID, params)
 	if err == nil {
 		d.cacheMembers(guildID, members)
@@ -564,7 +563,7 @@ func (d *Client) RemoveGuildMember(ctx context.Context, guildID, userID discord.
 //
 // Requires the GUILD_MEMBERS privileged intent to be enabled both in the Discord
 // developer portal and in the intents passed to NewClient.
-func (d *Client) FetchAllGuildMembers(ctx context.Context, guildID discord.Snowflake) (*[]*discord.GuildMember, error) {
+func (d *Client) FetchAllGuildMembers(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildMember, error) {
 	members, err := d.RestClient.FetchAllGuildMembers(ctx, guildID)
 	if err == nil {
 		d.cacheMembers(guildID, members)
@@ -706,11 +705,11 @@ func (d *Client) ModifyGuildOnboarding(ctx context.Context, guildID discord.Snow
 
 // ── Voice ─────────────────────────────────────────────────────────────────────
 
-func (d *Client) ListVoiceRegions(ctx context.Context) (*[]*discord.VoiceRegion, error) {
+func (d *Client) ListVoiceRegions(ctx context.Context) ([]*discord.VoiceRegion, error) {
 	return d.RestClient.ListVoiceRegions(ctx)
 }
 
-func (d *Client) ListGuildVoiceRegions(ctx context.Context, guildID discord.Snowflake) (*[]*discord.VoiceRegion, error) {
+func (d *Client) ListGuildVoiceRegions(ctx context.Context, guildID discord.Snowflake) ([]*discord.VoiceRegion, error) {
 	return d.RestClient.ListGuildVoiceRegions(ctx, guildID)
 }
 
@@ -724,7 +723,7 @@ func (d *Client) ModifyUserVoiceState(ctx context.Context, guildID, userID disco
 
 // ── Soundboard ────────────────────────────────────────────────────────────────
 
-func (d *Client) ListDefaultSoundboardSounds(ctx context.Context) (*[]*discord.SoundboardSound, error) {
+func (d *Client) ListDefaultSoundboardSounds(ctx context.Context) ([]*discord.SoundboardSound, error) {
 	return d.RestClient.ListDefaultSoundboardSounds(ctx)
 }
 
@@ -766,7 +765,7 @@ func (d *Client) ModifyCurrentApplication(ctx context.Context, params api.Modify
 
 // GetGuildApplicationCommandPermissions returns all permission overrides for every command in a guild.
 // Uses the bot's own application ID automatically.
-func (d *Client) GetGuildApplicationCommandPermissions(ctx context.Context, guildID discord.Snowflake) (*[]*discord.GuildApplicationCommandPermissions, error) {
+func (d *Client) GetGuildApplicationCommandPermissions(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildApplicationCommandPermissions, error) {
 	appID, err := d.applicationID()
 	if err != nil {
 		return nil, err
@@ -807,7 +806,7 @@ func (d *Client) DeleteApplicationEmoji(ctx context.Context, appID, emojiID disc
 
 // ── Entitlements ──────────────────────────────────────────────────────────────
 
-func (d *Client) ListEntitlements(ctx context.Context, appID discord.Snowflake, params api.ListEntitlementsParams) (*[]*discord.Entitlement, error) {
+func (d *Client) ListEntitlements(ctx context.Context, appID discord.Snowflake, params api.ListEntitlementsParams) ([]*discord.Entitlement, error) {
 	return d.RestClient.ListEntitlements(ctx, appID, params)
 }
 
@@ -829,13 +828,13 @@ func (d *Client) DeleteTestEntitlement(ctx context.Context, appID, entitlementID
 
 // ── SKUs ──────────────────────────────────────────────────────────────────────
 
-func (d *Client) ListSKUs(ctx context.Context, appID discord.Snowflake) (*[]*discord.SKU, error) {
+func (d *Client) ListSKUs(ctx context.Context, appID discord.Snowflake) ([]*discord.SKU, error) {
 	return d.RestClient.ListSKUs(ctx, appID)
 }
 
 // ── Subscriptions ─────────────────────────────────────────────────────────────
 
-func (d *Client) ListSKUSubscriptions(ctx context.Context, skuID discord.Snowflake, params api.ListSKUSubscriptionsParams) (*[]*discord.Subscription, error) {
+func (d *Client) ListSKUSubscriptions(ctx context.Context, skuID discord.Snowflake, params api.ListSKUSubscriptionsParams) ([]*discord.Subscription, error) {
 	return d.RestClient.ListSKUSubscriptions(ctx, skuID, params)
 }
 
@@ -907,7 +906,7 @@ func (d *Client) BulkBanGuildMembers(ctx context.Context, guildID discord.Snowfl
 	return d.RestClient.BulkBanGuildMembers(ctx, guildID, params, nil)
 }
 
-func (d *Client) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Integration, error) {
+func (d *Client) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) ([]*discord.Integration, error) {
 	return d.RestClient.GetGuildIntegrations(ctx, guildID)
 }
 

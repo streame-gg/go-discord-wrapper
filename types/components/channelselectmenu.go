@@ -32,6 +32,9 @@ func (c *ChannelSelectMenuComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*c = ChannelSelectMenuComponent(*raw.Alias)
 	return nil
 }
@@ -88,6 +91,9 @@ func (c *ChannelComponentInteractionResponse) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*c = ChannelComponentInteractionResponse(*raw.Alias)
 	return nil
 }

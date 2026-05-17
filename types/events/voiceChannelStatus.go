@@ -9,7 +9,7 @@ import (
 type VoiceChannelStatusUpdateEvent struct {
 	ChannelID discord.Snowflake `json:"id"`
 	GuildID   discord.Snowflake `json:"guild_id"`
-	Status    *string           `json:"status"`
+	Status    *string           `json:"status,omitempty"`
 }
 
 type VoiceChannelStartTimeUpdateEvent struct {

@@ -23,6 +23,9 @@ func (t *ThumbnailComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*t = ThumbnailComponent(*raw.Alias)
 	return nil
 }

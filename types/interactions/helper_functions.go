@@ -150,10 +150,10 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 
 	switch typeProbe.ComponentType {
 	case discord.ComponentTypeButton,
-		discord.ComponentTypeStringSelectMenu,
-		discord.ComponentTypeUserSelectMenu,
-		discord.ComponentTypeRoleSelectMenu,
-		discord.ComponentTypeMentionableMenu,
+		discord.ComponentTypeStringSelect,
+		discord.ComponentTypeUserSelect,
+		discord.ComponentTypeRoleSelect,
+		discord.ComponentTypeMentionableSelect,
 		discord.ComponentTypeChannelSelect:
 		var comp responses.InteractionDataMessageComponent
 		if err := json.Unmarshal(aux.Data, &comp); err != nil {

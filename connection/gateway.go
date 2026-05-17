@@ -20,6 +20,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
+	"github.com/streame-gg/go-discord-wrapper/types/interactions"
 	"github.com/streame-gg/go-discord-wrapper/util"
 
 	"github.com/gorilla/websocket"
@@ -71,6 +72,13 @@ type Client struct {
 	// senders) that shutdown is in progress.  Initialized in NewClient.
 	shutdownCh   chan struct{}
 	shutdownOnce sync.Once
+
+	// readyCh is closed exactly once when the first READY event is received.
+	// Unlike Websocket.Ready, it lives on the Client and survives reconnects,
+	// so Login() can safely wait on it without racing against d.Websocket being
+	// replaced by a concurrent reconnect.
+	readyCh   chan struct{}
+	readyOnce sync.Once
 
 	// eventWg tracks unlimited-mode goroutines (one per event) so Shutdown can
 	// drain them before waiting on handler goroutines tracked by dispatchWg.
@@ -194,6 +202,7 @@ func NewClient(token string, intents discord.Intent, opts ...options.Option) (*C
 		cacheAutoPopulate:   cacheStores,
 		shardDispatchSem:    make(chan struct{}, 16),
 		shutdownCh:          make(chan struct{}),
+		readyCh:             make(chan struct{}),
 	}
 
 	if cfg.MaxConcurrentEvents == 0 {
@@ -229,6 +238,14 @@ func NewClient(token string, intents discord.Intent, opts ...options.Option) (*C
 	}
 
 	return c, nil
+}
+
+// Ready returns a channel that is closed once the first READY event is
+// received from the Discord gateway.  Unlike Websocket.Ready, this channel
+// lives on the Client and is never replaced, so it is safe to use across
+// reconnects.
+func (d *Client) Ready() <-chan struct{} {
+	return d.readyCh
 }
 
 // dispatchJob carries a single gateway event through the worker pool.
@@ -607,12 +624,8 @@ func (d *Client) Login(ctx context.Context) error {
 		}
 	}()
 
-	d.wsMu.RLock()
-	ready := d.Websocket.Ready
-	d.wsMu.RUnlock()
-
 	select {
-	case <-ready:
+	case <-d.readyCh:
 	case <-ctx.Done():
 		_ = d.Shutdown()
 		return ctx.Err()
@@ -698,6 +711,15 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				currentGuildIDs[g.Guild.GetID()] = struct{}{}
 			}
 
+			// Prune stale member-count entries even when cache is disabled.
+			d.guildMu.Lock()
+			for guildID := range d.guildMemberCounts {
+				if _, present := currentGuildIDs[guildID]; !present {
+					delete(d.guildMemberCounts, guildID)
+				}
+			}
+			d.guildMu.Unlock()
+
 			// Remove cached guilds that are no longer present (bot was kicked while offline).
 			if d.cacheEnabled() {
 				for _, cachedGuild := range d.Cache.Guilds().All() {
@@ -718,6 +740,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			}
 
 			d.Websocket.readyOnce.Do(func() { close(d.Websocket.Ready) })
+			d.readyOnce.Do(func() { close(d.readyCh) })
 
 			return true
 		}
@@ -942,10 +965,6 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			}
 
 			// Bot was kicked or the guild was deleted.
-			d.guildMu.Lock()
-			delete(d.guildMemberCounts, guildDeleteEvent.ID)
-			d.guildMu.Unlock()
-
 			d.removeGuildFromCache(guildDeleteEvent.ID)
 
 			prefix := string(guildDeleteEvent.ID) + ":"
@@ -1555,12 +1574,21 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 			}
 		}
+	case events.EventInteractionCreate:
+		if ev, ok := event.(*events.InteractionCreateEvent); ok {
+			ev.Hydrate(d, context.Background())
+		}
+		return true
+
 	default:
 		return true
 	}
 
 	return true
 }
+
+// ensure interactions package is used (import guard)
+var _ interactions.Client = (*Client)(nil)
 
 func (d *Client) addUnavailableGuild(id discord.Snowflake) {
 	d.mu.Lock()

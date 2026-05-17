@@ -44,6 +44,9 @@ func (t *TextInputComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*t = TextInputComponent(*raw.Alias)
 	return nil
 }
@@ -93,6 +96,9 @@ func (t *TextInputComponentInteractionResponse) UnmarshalJSON(data []byte) error
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*t = TextInputComponentInteractionResponse(*raw.Alias)
 	return nil
 }

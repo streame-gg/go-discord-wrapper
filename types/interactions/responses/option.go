@@ -9,7 +9,7 @@ import (
 type ApplicationCommandInteractionDataOption[T string | int | bool | interface{}] struct {
 	Name    string                                                 `json:"name"`
 	Type    discord.ApplicationCommandOptionType                   `json:"type"`
-	Value   *T                                                     `json:"value"`
+	Value   *T                                                     `json:"value,omitempty"`
 	Options []ApplicationCommandInteractionDataOption[interface{}] `json:"options,omitempty"`
 	Focused *bool                                                  `json:"focused,omitempty"`
 }

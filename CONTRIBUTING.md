@@ -5,13 +5,13 @@
 Open an issue on GitHub. Include:
 - Go version and OS
 - A minimal reproducible example
-- The full error message or unexpected behaviour
+- The full error message or unexpected behavior
 
 ## Pull requests
 
 1. Fork the repo and create a branch from `master`.
 2. Keep changes focused — one concern per PR.
-3. Add or update tests for any changed behaviour.
+3. Add or update tests for any changed behavior.
 4. Run `go test ./...` and `go vet ./...` before opening the PR.
 5. Open the PR against `master`.
 
@@ -40,4 +40,4 @@ Open an issue on GitHub. Include:
 
 1. Add the method to the appropriate file in `api/` (or create a new file for a new resource group).
 2. Follow the existing pattern: define param/response types at the top of the file, then the method(s) below.
-3. Include a single-line godoc comment on every exported symbol.
+3. Include a single-line GoDoc comment on every exported symbol.

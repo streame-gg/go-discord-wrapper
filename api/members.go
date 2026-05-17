@@ -100,7 +100,7 @@ func (c *RestClient) GetGuildMember(ctx context.Context, guildID, userID discord
 }
 
 // ListGuildMembers returns a paginated list of members in a guild (max 1000 per request).
-func (c *RestClient) ListGuildMembers(ctx context.Context, guildID discord.Snowflake, params GetGuildMembersParams) (*[]*discord.GuildMember, error) {
+func (c *RestClient) ListGuildMembers(ctx context.Context, guildID discord.Snowflake, params GetGuildMembersParams) ([]*discord.GuildMember, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -111,13 +111,13 @@ func (c *RestClient) ListGuildMembers(ctx context.Context, guildID discord.Snowf
 		return nil, err
 	}
 
-	return doRequest[[]*discord.GuildMember](c, req, map[int]bool{
+	return doRequestSlice[discord.GuildMember](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // SearchGuildMembers returns members whose username or nickname starts with the given query string.
-func (c *RestClient) SearchGuildMembers(ctx context.Context, guildID discord.Snowflake, params SearchGuildMembersParams) (*[]*discord.GuildMember, error) {
+func (c *RestClient) SearchGuildMembers(ctx context.Context, guildID discord.Snowflake, params SearchGuildMembersParams) ([]*discord.GuildMember, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (c *RestClient) SearchGuildMembers(ctx context.Context, guildID discord.Sno
 		return nil, err
 	}
 
-	return doRequest[[]*discord.GuildMember](c, req, map[int]bool{
+	return doRequestSlice[discord.GuildMember](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

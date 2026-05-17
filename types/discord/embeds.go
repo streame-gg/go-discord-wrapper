@@ -36,7 +36,7 @@ type EmbedProvider struct {
 
 type EmbedAuthor struct {
 	Name         string  `json:"name"`
-	URL          *string `json:"url"`
+	URL          *string `json:"url,omitempty"`
 	IconURL      *string `json:"icon_url,omitempty"`
 	ProxyIconURL *string `json:"proxy_icon_url,omitempty"`
 }

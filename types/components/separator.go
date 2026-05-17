@@ -29,6 +29,9 @@ func (s *SeparatorComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*s = SeparatorComponent(*raw.Alias)
 	return nil
 }

@@ -147,10 +147,16 @@ func (r *rateLimiter) wait(ctx context.Context, method, path string) error {
 		if wait <= 0 {
 			// Window has elapsed; restore remaining exactly once per window.
 			// windowRestoredAt tracks when we last restored so that multiple
-			// goroutines that all slept for the same window doRequest not each
+			// goroutines that all slept for the same window do not each
 			// independently set remaining = limit (TOCTOU race).
-			if b.limit > 0 && b.windowRestoredAt.Before(b.resetAt) {
-				b.remaining = b.limit
+			if b.windowRestoredAt.Before(b.resetAt) {
+				if b.limit > 0 {
+					b.remaining = b.limit
+				} else {
+					// Unknown limit (e.g. 429 without X-RateLimit-Limit header).
+					// Let one request through to re-learn the bucket.
+					b.remaining = 1
+				}
 				b.windowRestoredAt = time.Now()
 			}
 			break
@@ -162,8 +168,14 @@ func (r *rateLimiter) wait(ctx context.Context, method, path string) error {
 			return ctx.Err()
 		}
 		b.mu.Lock()
-		if b.limit > 0 && !time.Now().Before(b.resetAt) && b.windowRestoredAt.Before(b.resetAt) {
-			b.remaining = b.limit
+		if !time.Now().Before(b.resetAt) && b.windowRestoredAt.Before(b.resetAt) {
+			if b.limit > 0 {
+				b.remaining = b.limit
+			} else {
+				// Unknown limit (e.g. 429 without X-RateLimit-Limit header).
+				// Let one request through to re-learn the bucket.
+				b.remaining = 1
+			}
 			b.windowRestoredAt = time.Now()
 		}
 	}

@@ -10,6 +10,7 @@ import (
 	"net/textproto"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -45,19 +46,22 @@ func (p GetMessagesParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
-// MessageFile is a binary file attachment included in a message or webhook.
-type MessageFile struct {
-	// Name is the filename Discord will display (e.g. "image.png").
-	Name string
-	// ContentType is the MIME type (e.g. "image/png"). Defaults to "application/octet-stream".
-	ContentType string
-	// Data is the raw file content.
-	Data []byte
+// basenameFilename returns the basename of a filename, stripping any path
+// components. Used to ensure local filesystem paths don't leak into Discord
+// uploads via the Content-Disposition header.
+func basenameFilename(name string) string {
+	if i := strings.LastIndexAny(name, `/\`); i >= 0 {
+		name = name[i+1:]
+	}
+	if name == "" {
+		return "file"
+	}
+	return name
 }
 
 // buildMultipartMessage encodes payload as multipart/form-data with optional file parts.
 // Returns the body buffer and the Content-Type header value (including boundary).
-func buildMultipartMessage(payload []byte, files []MessageFile) (*bytes.Buffer, string, error) {
+func buildMultipartMessage(payload []byte, files []discord.MessageFile) (*bytes.Buffer, string, error) {
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
 
@@ -79,7 +83,7 @@ func buildMultipartMessage(payload []byte, files []MessageFile) (*bytes.Buffer, 
 			ct = "application/octet-stream"
 		}
 		h := textproto.MIMEHeader{
-			"Content-Disposition": []string{fmt.Sprintf(`form-data; name="files[%d]"; filename=%q`, i, f.Name)},
+			"Content-Disposition": []string{fmt.Sprintf(`form-data; name="files[%d]"; filename=%q`, i, basenameFilename(f.Name))},
 			"Content-Type":        []string{ct},
 		}
 		part, err := w.CreatePart(h)
@@ -109,7 +113,7 @@ type CreateMessageParams struct {
 	EnforceNonce bool                   `json:"enforce_nonce,omitempty"`
 	// Files are binary attachments sent via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
-	Files             []MessageFile             `json:"-"`
+	Files             []discord.MessageFile     `json:"-"`
 	Poll              discord.PollRequest       `json:"poll_request,omitempty"`
 	SharedClientTheme discord.SharedClientTheme `json:"shared_client_theme,omitempty"`
 }
@@ -139,7 +143,7 @@ type EditMessageParams struct {
 	Attachments *[]discord.Attachment  `json:"attachments,omitempty"`
 	// Files are binary attachments added via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
-	Files []MessageFile `json:"-"`
+	Files []discord.MessageFile `json:"-"`
 }
 
 func (p EditMessageParams) MarshalJSON() ([]byte, error) {
@@ -186,7 +190,7 @@ func encodeEmoji(emoji string) string {
 // ── Message endpoints ─────────────────────────────────────────────────────────
 
 // GetMessages returns up to 100 messages from a channel.
-func (c *RestClient) GetMessages(ctx context.Context, channelID discord.Snowflake, params GetMessagesParams) (*[]*discord.Message, error) {
+func (c *RestClient) GetMessages(ctx context.Context, channelID discord.Snowflake, params GetMessagesParams) ([]*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -197,7 +201,7 @@ func (c *RestClient) GetMessages(ctx context.Context, channelID discord.Snowflak
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Message](c, req, map[int]bool{
+	return doRequestSlice[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -403,7 +407,7 @@ type BulkDeleteMessagesOptions struct {
 // ── Pin endpoints ─────────────────────────────────────────────────────────────
 
 // GetPinnedMessages returns all pinned messages in a channel (max 50).
-func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) (*[]*discord.Message, error) {
+func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -413,7 +417,7 @@ func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID discord.Sn
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Message](c, req, map[int]bool{
+	return doRequestSlice[discord.Message](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -539,7 +543,7 @@ func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageI
 }
 
 // GetReactions returns the users who reacted to a message with the given emoji.
-func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params GetReactionsParams) (*[]*discord.User, error) {
+func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params GetReactionsParams) ([]*discord.User, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -554,7 +558,7 @@ func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID disc
 		return nil, err
 	}
 
-	return doRequest[[]*discord.User](c, req, map[int]bool{
+	return doRequestSlice[discord.User](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

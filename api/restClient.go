@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strings"
 	"sync"
@@ -77,6 +78,13 @@ type RestClient struct {
 //	    options.WithRateLimiting(options.RateLimiterOptions{SafetyMargin: 1}),
 //	)
 func NewRestClient(token string, opts ...options.Option) (*RestClient, error) {
+	token = strings.TrimSpace(token)
+	token = strings.TrimPrefix(token, "Bot ")
+	token = strings.TrimPrefix(token, "Bearer ")
+	if token == "" {
+		return nil, errors.New("go-discord-wrapper: token must not be empty")
+	}
+
 	cfg := options.Build(options.Config{
 		BaseURL:    "https://discord.com/api",
 		APIVersion: discord.APIVersion10,
@@ -203,10 +211,11 @@ func (c *RestClient) emitEvent(event RestEvent) {
 }
 
 // validateAPIPath rejects any digit-only path segment that is not a valid Discord Snowflake
-// (15–20 decimal digits). This stops the most discord URL-injection pattern where user-supplied
+// (15–20 decimal digits). This stops the most common URL-injection pattern where user-supplied
 // short numeric input (e.g. "123") is concatenated directly into a path without sanitisation.
-// Slash-injection (e.g. Snowflake("123456789012345/evil")) is caught earlier by Snowflake.String(),
-// which panics when the value contains a '/'.
+// validateAPIPath is the only line of defense against path injection via Snowflake values.
+// Each path segment that looks like a digit-only ID is validated against Snowflake.Validate().
+// Non-numeric segments are accepted as-is (route literals).
 func validateAPIPath(path string) error {
 	for i, seg := range strings.Split(strings.Trim(path, "/"), "/") {
 		if seg == "" {
@@ -244,11 +253,20 @@ func WithUserAuthorization(token string) func(req *http.Request) {
 	}
 }
 
+// WithAuditLogReason attaches an audit-log reason to the request.
+// The reason is URL-encoded so non-ASCII characters are transmitted safely.
+// Reasons longer than 512 characters (Discord's limit) are silently truncated.
 func WithAuditLogReason(reason string) func(req *http.Request) {
+	if reason == "" {
+		return func(_ *http.Request) {}
+	}
+	runes := []rune(reason)
+	if len(runes) > 512 {
+		runes = runes[:512]
+	}
+	encoded := url.PathEscape(string(runes))
 	return func(req *http.Request) {
-		if reason != "" {
-			req.Header.Set("X-Audit-Log-Reason", reason)
-		}
+		req.Header.Set("X-Audit-Log-Reason", encoded)
 	}
 }
 
@@ -278,20 +296,10 @@ func (c *RestClient) generateRequest(ctx context.Context, method, path string, b
 	return req, nil
 }
 
-func DoesIntExistInList(actual int, list []int) bool {
-	for _, code := range list {
-		if code == actual {
-			return true
-		}
-	}
-
-	return false
-}
-
 // doRequest executes req and decodes a successful response into v (when v != nil).
 // The returned *http.Response has its Body already closed; callers must not
 // read from it. Inspect headers and status codes via the returned value, but
-// doRequest not call resp.Body.Read or resp.Body.Close again.
+// do not call resp.Body.Read or resp.Body.Close again.
 
 // successResponseCodeData is based on map[statusCode]returnRequestBody
 // if statusCode is 204 (No Content), no request body will be returned, so you do not have to set it to false
@@ -320,6 +328,19 @@ func doRequestWithoutResponse(c *RestClient, req *http.Request, enforceStatusCod
 	_, err := doRequest[NoReturnData](c, req, statusCodes)
 
 	return err
+}
+
+// doRequestSlice is like doRequest but dereferences the pointer so callers
+// receive a plain slice instead of a pointer-to-slice.
+func doRequestSlice[T any](c *RestClient, req *http.Request, codes map[int]bool) ([]*T, error) {
+	result, err := doRequest[[]*T](c, req, codes)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, nil
+	}
+	return *result, nil
 }
 
 func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData map[int]bool) (*T, error) {

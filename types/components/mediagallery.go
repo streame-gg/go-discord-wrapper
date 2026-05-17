@@ -21,6 +21,9 @@ func (m *MediaGalleryComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*m = MediaGalleryComponent(*raw.Alias)
 	return nil
 }

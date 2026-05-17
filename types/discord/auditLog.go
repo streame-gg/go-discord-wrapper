@@ -1,26 +1,30 @@
 package discord
 
 // AuditLog is the response wrapper returned by the Get Guild Audit Log endpoint.
+//
+// ApplicationCommands is typed as []any because the ApplicationCommand struct
+// lives in types/commands, which imports this package. Unmarshal elements into
+// *commands.ApplicationCommand as needed.
 type AuditLog struct {
-	ApplicationCommands  []any           `json:"application_commands"`
-	AuditLogEntries      []AuditLogEntry `json:"audit_log_entries"`
-	AutoModerationRules  []any           `json:"auto_moderation_rules"`
-	GuildScheduledEvents []any           `json:"guild_scheduled_events"`
-	Integrations         []any           `json:"integrations"`
-	Threads              []Channel       `json:"threads"`
-	Users                []User          `json:"users"`
-	Webhooks             []any           `json:"webhooks"`
+	ApplicationCommands  []any                 `json:"application_commands"`
+	AuditLogEntries      []AuditLogEntry       `json:"audit_log_entries"`
+	AutoModerationRules  []AutoModerationRule  `json:"auto_moderation_rules"`
+	GuildScheduledEvents []GuildScheduledEvent `json:"guild_scheduled_events"`
+	Integrations         []Integration         `json:"integrations"`
+	Threads              []Channel             `json:"threads"`
+	Users                []User                `json:"users"`
+	Webhooks             []Webhook             `json:"webhooks"`
 }
 
 // AuditLogEntry // https://docs.discord.com/developers/resources/audit-log#audit-log-entry-object
 type AuditLogEntry struct {
 	TargetID   Snowflake             `json:"target_id"`
 	Changes    []AuditLogEntryChange `json:"changes"`
-	UserID     *Snowflake            `json:"user_id"`
+	UserID     *Snowflake            `json:"user_id,omitempty"`
 	ID         Snowflake             `json:"id"`
 	ActionType AuditLogActionType    `json:"action_type"`
 	Options    *AuditLogEntryOptions `json:"options,omitempty"`
-	Reason     *string               `json:"reason"`
+	Reason     *string               `json:"reason,omitempty"`
 }
 
 type AuditLogEntryChange struct {
@@ -31,17 +35,17 @@ type AuditLogEntryChange struct {
 
 // AuditLogEntryOptions // https://docs.discord.com/developers/resources/audit-log#audit-log-entry-object-optional-audit-entry-info
 type AuditLogEntryOptions struct {
-	ApplicationID                 *Snowflake                             `json:"application_id"`
-	AutoModerationRuleName        *string                                `json:"auto_moderation_rule_name"`
-	AutoModerationRuleTriggerType *AutoModerationTriggerType             `json:"auto_moderation_rule_trigger_type"`
-	ChannelID                     *Snowflake                             `json:"channel_id"`
-	Count                         *int                                   `json:"count"`
-	DeleteMemberDays              *string                                `json:"delete_member_days"`
-	ID                            *Snowflake                             `json:"id"`
-	MembersRemoved                string                                 `json:"members_removed,omitempty"`
-	MessageID                     *Snowflake                             `json:"message_id"`
-	RoleName                      *string                                `json:"role_name"`
-	Type                          *PermissionOverwriteType               `json:"type"`
+	ApplicationID                 *Snowflake                             `json:"application_id,omitempty"`
+	AutoModerationRuleName        *string                                `json:"auto_moderation_rule_name,omitempty"`
+	AutoModerationRuleTriggerType *AutoModerationTriggerType             `json:"auto_moderation_rule_trigger_type,omitempty"`
+	ChannelID                     *Snowflake                             `json:"channel_id,omitempty"`
+	Count                         *int                                   `json:"count,omitempty"`
+	DeleteMemberDays              *string                                `json:"delete_member_days,omitempty"`
+	ID                            *Snowflake                             `json:"id,omitempty"`
+	MembersRemoved                *string                                `json:"members_removed,omitempty"`
+	MessageID                     *Snowflake                             `json:"message_id,omitempty"`
+	RoleName                      *string                                `json:"role_name,omitempty"`
+	Type                          *PermissionOverwriteType               `json:"type,omitempty"`
 	IntegrationType               *InteractionApplicationIntegrationType `json:"integration_type,omitempty"`
 }
 

@@ -40,7 +40,7 @@ func (p ListSKUSubscriptionsParams) toQuery() string {
 
 // ── Subscription endpoints ────────────────────────────────────────────────────
 
-func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID discord.Snowflake, params ListSKUSubscriptionsParams) (*[]*discord.Subscription, error) {
+func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID discord.Snowflake, params ListSKUSubscriptionsParams) ([]*discord.Subscription, error) {
 	if err := skuID.Validate(); err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID discord.Sno
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Subscription](c, req, map[int]bool{
+	return doRequestSlice[discord.Subscription](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

@@ -32,7 +32,7 @@ func TestBug9_MaxConcurrentEventsLimitsHandlers(t *testing.T) {
 		numEvents  = 10
 		workers    = 2
 		sleepTime  = 100 * time.Millisecond
-		minElapsed = time.Duration(numEvents) / workers * sleepTime
+		minElapsed = time.Duration(numEvents/workers) * sleepTime
 	)
 
 	wsURL, closeServer := mockGateway(t)
@@ -49,7 +49,7 @@ func TestBug9_MaxConcurrentEventsLimitsHandlers(t *testing.T) {
 
 	// Wait for READY before registering handlers.
 	select {
-	case <-c.Websocket.Ready:
+	case <-c.Ready():
 	case <-time.After(5 * time.Second):
 		t.Fatal("timeout waiting for READY")
 	}
@@ -57,7 +57,7 @@ func TestBug9_MaxConcurrentEventsLimitsHandlers(t *testing.T) {
 
 	var completed atomic.Int32
 
-	factory := events.EventFactories[events.EventMessageCreate]
+	factory, _ := events.GetEventFactory(events.EventMessageCreate)
 
 	// Register a slow handler.
 	c.OnMessageCreate(func(_ *Client, _ *events.MessageCreateEvent) {

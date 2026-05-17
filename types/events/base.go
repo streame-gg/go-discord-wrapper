@@ -1,16 +1,22 @@
 package events
 
-// EventFactories maps each EventType to a factory that returns a new zero-value
-// instance of the corresponding event struct. Populated automatically via
-// RegisterEvent; do not write to it directly.
-var EventFactories = map[EventType]func() Event{}
+// eventFactories maps each EventType to a factory that returns a new zero-value
+// instance of the corresponding event struct. Populated via RegisterEvent.
+var eventFactories = map[EventType]func() Event{}
 
 // RegisterEvent registers an event type so the gateway knows how to unmarshal
 // it. Call this from an init() function in your event file:
 //
 //	func init() { events.RegisterEvent(MyEvent{}) }
 func RegisterEvent(e Event) {
-	EventFactories[e.Event()] = e.DesiredEventType
+	eventFactories[e.Event()] = e.DesiredEventType
+}
+
+// GetEventFactory returns the factory function for the given event type and
+// whether it was found. Use this instead of accessing the internal map directly.
+func GetEventFactory(t EventType) (func() Event, bool) {
+	f, ok := eventFactories[t]
+	return f, ok
 }
 
 type Event interface {

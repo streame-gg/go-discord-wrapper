@@ -26,19 +26,19 @@ type ModifyUserVoiceStateParams struct {
 // ── Voice endpoints ───────────────────────────────────────────────────────────
 
 // ListVoiceRegions returns all available voice regions.
-func (c *RestClient) ListVoiceRegions(ctx context.Context) (*[]*discord.VoiceRegion, error) {
+func (c *RestClient) ListVoiceRegions(ctx context.Context) ([]*discord.VoiceRegion, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/voice/regions", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequest[[]*discord.VoiceRegion](c, req, map[int]bool{
+	return doRequestSlice[discord.VoiceRegion](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // ListGuildVoiceRegions returns voice regions available for a guild, including VIP regions if applicable.
-func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID discord.Snowflake) (*[]*discord.VoiceRegion, error) {
+func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID discord.Snowflake) ([]*discord.VoiceRegion, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID discord.
 		return nil, err
 	}
 
-	return doRequest[[]*discord.VoiceRegion](c, req, map[int]bool{
+	return doRequestSlice[discord.VoiceRegion](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

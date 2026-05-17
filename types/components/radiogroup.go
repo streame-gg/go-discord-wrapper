@@ -41,6 +41,9 @@ func (r *RadioGroupComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*r = RadioGroupComponent(*raw.Alias)
 	return nil
 }
@@ -57,7 +60,7 @@ type RadioGroupComponentInteractionResponse struct {
 	Type     discord.ComponentType `json:"type"`
 	ID       *int                  `json:"id,omitempty"`
 	CustomID string                `json:"custom_id,omitempty"`
-	Value    *string               `json:"value"`
+	Value    *string               `json:"value,omitempty"`
 }
 
 func (r *RadioGroupComponentInteractionResponse) IsInteractionResponseDataComponent() {}
@@ -83,6 +86,9 @@ func (r *RadioGroupComponentInteractionResponse) UnmarshalJSON(bytes []byte) err
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*r = RadioGroupComponentInteractionResponse(*raw.Alias)
 	return nil
 }

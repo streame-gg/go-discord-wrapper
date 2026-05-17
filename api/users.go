@@ -103,7 +103,7 @@ func (c *RestClient) ModifyCurrentUser(ctx context.Context, params ModifyCurrent
 }
 
 // GetCurrentUserGuilds returns the guilds the current user is a member of.
-func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrentUserGuildsParams) (*[]*discord.CurrentUserGuild, error) {
+func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrentUserGuildsParams) ([]*discord.CurrentUserGuild, error) {
 	var authOption func(req *http.Request)
 	if params.UserToken != nil {
 		authOption = WithUserAuthorization(*params.UserToken)
@@ -117,13 +117,16 @@ func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrent
 		return nil, err
 	}
 
-	return doRequest[[]*discord.CurrentUserGuild](c, req, map[int]bool{
+	return doRequestSlice[discord.CurrentUserGuild](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetCurrentUserGuildMember returns the guild member object for the current user in the given guild.
 func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID discord.Snowflake, userAccessToken *string) (*discord.GuildMember, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
 	var authOption func(req *http.Request)
 	if userAccessToken != nil {
 		authOption = WithUserAuthorization(*userAccessToken)

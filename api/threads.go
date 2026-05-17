@@ -175,29 +175,40 @@ func (c *RestClient) CreateThread(ctx context.Context, channelID discord.Snowfla
 }
 
 // CreateForumThread starts a thread in a forum or media channel.
+// When params.Message.Files is non-empty the request is sent as multipart/form-data.
 func (c *RestClient) CreateForumThread(ctx context.Context, channelID discord.Snowflake, params CreateForumThreadParams, opts *CreateForumThreadOptions) (*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
+
+	path := "/channels/" + channelID.String() + "/threads"
 
 	body, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body), c.WithBotAuthorization())
+	reqOpts := []func(req *http.Request){c.WithBotAuthorization()}
+	if opts != nil {
+		reqOpts = append(reqOpts, WithAuditLogReason(opts.Reason))
+	}
+
+	var req *http.Request
+	if len(params.Message.Files) > 0 {
+		buf, ct, err := buildMultipartMessage(body, params.Message.Files)
 		if err != nil {
 			return nil, err
 		}
-		return doRequest[discord.Channel](c, req, map[int]bool{
-			http.StatusCreated: true,
-		})
-	}
-
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
-	if err != nil {
-		return nil, err
+		req, err = c.generateRequest(ctx, http.MethodPost, path, buf, reqOpts...)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", ct)
+	} else {
+		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), reqOpts...)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return doRequest[discord.Channel](c, req, map[int]bool{
@@ -290,7 +301,7 @@ func (c *RestClient) GetThreadMember(ctx context.Context, channelID, userID disc
 }
 
 // ListThreadMembers returns the members of a thread.
-func (c *RestClient) ListThreadMembers(ctx context.Context, channelID discord.Snowflake, params ListThreadMembersParams) (*[]*discord.ThreadMember, error) {
+func (c *RestClient) ListThreadMembers(ctx context.Context, channelID discord.Snowflake, params ListThreadMembersParams) ([]*discord.ThreadMember, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -301,7 +312,7 @@ func (c *RestClient) ListThreadMembers(ctx context.Context, channelID discord.Sn
 		return nil, err
 	}
 
-	return doRequest[[]*discord.ThreadMember](c, req, map[int]bool{
+	return doRequestSlice[discord.ThreadMember](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

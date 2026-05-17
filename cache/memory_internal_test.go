@@ -1,8 +1,11 @@
 package cache
 
 import (
+	"sort"
+	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -148,5 +151,131 @@ func TestBug11TotalBytesNeverNegative(t *testing.T) {
 	case v := <-negative:
 		t.Errorf("totalBytes went negative (%d) during concurrent updates — non-atomic byte accounting (Bug 11)", v)
 	default:
+	}
+}
+
+// ── findEvictionCandidates correctness tests ──────────────────────────────────
+
+// naiveFindCandidates is a reference implementation using full sort, used to
+// validate the heap-based result.
+func naiveFindCandidates(s *genericStore[string, *discord.Guild], n int, by ClearBy) []evictionPair[string] {
+	type scored struct {
+		key        string
+		score      float64
+		insertedAt int64
+		size       int64
+	}
+	all := make([]scored, 0, len(s.items))
+	for k, e := range s.items {
+		all = append(all, scored{k, e.rank(by), e.insertedAt.UnixNano(), e.sizeBytes})
+	}
+	sort.Slice(all, func(i, j int) bool {
+		if all[i].score != all[j].score {
+			return all[i].score < all[j].score
+		}
+		return all[i].insertedAt < all[j].insertedAt
+	})
+	if n > len(all) {
+		n = len(all)
+	}
+	result := make([]evictionPair[string], n)
+	for i, a := range all[:n] {
+		result[i] = evictionPair[string]{a.key, a.score, a.insertedAt, a.size}
+	}
+	return result
+}
+
+// candidateKeys extracts and sorts the keys from a candidate list for
+// order-independent comparison.
+func candidateKeys(ps []evictionPair[string]) []string {
+	keys := make([]string, len(ps))
+	for i, p := range ps {
+		keys[i] = p.key
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func stringSliceEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// TestFindEvictionCandidates_MatchesNaiveSort verifies that the heap-based
+// implementation selects the same n lowest-rank keys as a full sort.
+func TestFindEvictionCandidates_MatchesNaiveSort(t *testing.T) {
+	for _, n := range []int{10, 100, 1000} {
+		total := 2000
+		s := newGenericStore[string, *discord.Guild](storeCfg{clearBy: ClearByAge})
+		now := time.Now()
+		for i := 0; i < total; i++ {
+			key := strconv.Itoa(i)
+			e := &memEntry[*discord.Guild]{
+				value:      &discord.Guild{},
+				insertedAt: now.Add(time.Duration(i) * time.Millisecond),
+				accessedAt: now,
+			}
+			s.items[key] = e
+		}
+
+		got := candidateKeys(s.findEvictionCandidates(n, ClearByAge))
+		want := candidateKeys(naiveFindCandidates(s, n, ClearByAge))
+
+		if len(got) != n {
+			t.Errorf("n=%d: got %d candidates, want %d", n, len(got), n)
+		}
+		if !stringSliceEqual(got, want) {
+			t.Errorf("n=%d: heap result does not match naive sort result", n)
+		}
+	}
+}
+
+// TestFindEvictionCandidates_Tiebreaker verifies that when scores are equal,
+// older entries (smaller insertedAt) are preferred for eviction.
+func TestFindEvictionCandidates_Tiebreaker(t *testing.T) {
+	s := newGenericStore[string, *discord.Guild](storeCfg{clearBy: ClearByAge})
+	base := time.Now()
+	// All entries have the same rank score; older ones should be evicted first.
+	s.items["old"] = &memEntry[*discord.Guild]{value: &discord.Guild{}, insertedAt: base, accessedAt: base}
+	s.items["mid"] = &memEntry[*discord.Guild]{value: &discord.Guild{}, insertedAt: base.Add(time.Second), accessedAt: base}
+	s.items["new"] = &memEntry[*discord.Guild]{value: &discord.Guild{}, insertedAt: base.Add(2 * time.Second), accessedAt: base}
+
+	// ClearByLastUsed: all have the same accessedAt, so tiebreaker by insertedAt.
+	got := s.findEvictionCandidates(1, ClearByLastUsed)
+	if len(got) != 1 || got[0].key != "old" {
+		t.Errorf("tiebreaker: expected oldest key 'old', got %+v", got)
+	}
+}
+
+// TestFindEvictionCandidates_NGreaterThanItems verifies that requesting more
+// candidates than items returns all items without panic.
+func TestFindEvictionCandidates_NGreaterThanItems(t *testing.T) {
+	s := newGenericStore[string, *discord.Guild](storeCfg{})
+	s.items["a"] = &memEntry[*discord.Guild]{value: &discord.Guild{}, insertedAt: time.Now(), accessedAt: time.Now()}
+	s.items["b"] = &memEntry[*discord.Guild]{value: &discord.Guild{}, insertedAt: time.Now(), accessedAt: time.Now()}
+
+	got := s.findEvictionCandidates(100, ClearByLastUsed)
+	if len(got) != 2 {
+		t.Errorf("expected 2 candidates for n=100 with 2 items, got %d", len(got))
+	}
+}
+
+// TestFindEvictionCandidates_ZeroOrEmpty verifies that edge cases return nil
+// without panicking.
+func TestFindEvictionCandidates_ZeroOrEmpty(t *testing.T) {
+	s := newGenericStore[string, *discord.Guild](storeCfg{})
+
+	if got := s.findEvictionCandidates(0, ClearByLastUsed); got != nil {
+		t.Errorf("n=0: expected nil, got %v", got)
+	}
+	if got := s.findEvictionCandidates(5, ClearByLastUsed); got != nil {
+		t.Errorf("empty store: expected nil, got %v", got)
 	}
 }

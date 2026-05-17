@@ -401,7 +401,7 @@ func (s *shardingTestSuite) TestBug24StartRollsBackOnFailure() {
 	// This verifies that the rollback slice operation (m.clients[:id]) is safe
 	// for id=0 (empty slice, no-op) and Start returns nil.
 	coord := sharding.NewLocalCoordinator(0)
-	mgr := sharding.NewShardManager(coord, func(id, total int) *connection.Client { return nil })
+	mgr := sharding.NewShardManager(coord, func(id, total int) (*connection.Client, error) { return nil, nil })
 	err := mgr.Start()
 	s.NoError(err, "Start with 0 shards must not error")
 }
@@ -413,7 +413,7 @@ func (s *shardingTestSuite) TestBug24StartRollsBackOnFailure() {
 func (s *shardingTestSuite) TestBug23ShutdownCollectsCoordinatorError() {
 	// TotalShards()=0 → clients slice is empty → shard loop is a no-op.
 	// Only coordinator.Close() runs; it always returns an error.
-	mgr := sharding.NewShardManager(&failCoord{}, func(id, total int) *connection.Client { return nil })
+	mgr := sharding.NewShardManager(&failCoord{}, func(id, total int) (*connection.Client, error) { return nil, nil })
 	err := mgr.Shutdown()
 	s.Require().Error(err, "coordinator Close error must be returned by Shutdown")
 	s.Contains(err.Error(), "coord")

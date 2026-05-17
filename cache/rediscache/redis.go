@@ -99,13 +99,19 @@ func NewRedisCache(client *redis.Client, opts cache.Options) *RedisCache {
 // WithKeyPrefix returns a new RedisCache that uses prefix as the key namespace
 // instead of the default "discord". Use this when multiple bots or environments
 // share a single Redis instance.
+//
+// The returned instance shares the underlying [*redis.Client] and cache options
+// but has its own lifecycle: calling [Close] on the derivative does not affect
+// the original, and vice versa.
 func (c *RedisCache) WithKeyPrefix(prefix string) *RedisCache {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &RedisCache{
 		client: c.client,
 		opts:   c.opts,
-		ctx:    c.ctx,
-		cancel: c.cancel,
 		prefix: prefix,
+		ctx:    ctx,
+		cancel: cancel,
+		// stopOnce is zero-value — ready for independent Close() calls.
 	}
 }
 

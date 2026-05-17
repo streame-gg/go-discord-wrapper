@@ -55,10 +55,6 @@ const (
 	PayloadRequestSoundboardSounds   PayloadOpCode = 31
 )
 
-type InvalidSessionPayload struct {
-	D bool `json:"d"`
-}
-
 type Intent uint64
 
 const (

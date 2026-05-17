@@ -26,6 +26,9 @@ func (c *Container) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*c = Container(*raw.Alias)
 
 	for _, comp := range raw.Components {

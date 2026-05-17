@@ -26,6 +26,9 @@ func (l *LabelComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*l = LabelComponent(*raw.Alias)
 
 	if raw.Component != nil {
@@ -50,25 +53,25 @@ func (l *LabelComponent) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			l.Component = f
-		case discord.ComponentTypeStringSelectMenu:
+		case discord.ComponentTypeStringSelect:
 			var s *StringSelectMenuComponent
 			if err := json.Unmarshal(raw.Component, &s); err != nil {
 				return err
 			}
 			l.Component = s
-		case discord.ComponentTypeUserSelectMenu:
+		case discord.ComponentTypeUserSelect:
 			var u *UserSelectMenuComponent
 			if err := json.Unmarshal(raw.Component, &u); err != nil {
 				return err
 			}
 			l.Component = u
-		case discord.ComponentTypeRoleSelectMenu:
+		case discord.ComponentTypeRoleSelect:
 			var r *RoleSelectMenuComponent
 			if err := json.Unmarshal(raw.Component, &r); err != nil {
 				return err
 			}
 			l.Component = r
-		case discord.ComponentTypeMentionableMenu:
+		case discord.ComponentTypeMentionableSelect:
 			var m *MentionableSelectMenuComponent
 			if err := json.Unmarshal(raw.Component, &m); err != nil {
 				return err
@@ -135,6 +138,9 @@ func (l *LabelComponentInteractionResponse) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if raw.Alias == nil {
+		return nil
+	}
 	*l = LabelComponentInteractionResponse(*raw.Alias)
 	return nil
 }
@@ -174,15 +180,15 @@ func (l *ComponentLabelComponent) UnmarshalJSON(data []byte) error {
 	var c AnyComponentInteractionResponse
 
 	switch probe.Type {
-	case discord.ComponentTypeUserSelectMenu:
+	case discord.ComponentTypeUserSelect:
 		c = &UserSelectComponentInteractionResponse{}
-	case discord.ComponentTypeRoleSelectMenu:
+	case discord.ComponentTypeRoleSelect:
 		c = &RoleComponentInteractionResponse{}
-	case discord.ComponentTypeStringSelectMenu:
+	case discord.ComponentTypeStringSelect:
 		c = &StringSelectComponentInteractionResponse{}
 	case discord.ComponentTypeChannelSelect:
 		c = &ChannelComponentInteractionResponse{}
-	case discord.ComponentTypeMentionableMenu:
+	case discord.ComponentTypeMentionableSelect:
 		c = &MentionableComponentInteractionResponse{}
 	case discord.ComponentTypeTextDisplay:
 		c = &TextDisplayComponentInteractionResponse{}

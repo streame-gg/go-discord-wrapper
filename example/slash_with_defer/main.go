@@ -19,6 +19,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
+	"github.com/streame-gg/go-discord-wrapper/types/interactions"
 )
 
 func main() {
@@ -46,9 +47,9 @@ func main() {
 	// ── 2. Slash command with DeferAndFollowup ────────────────────────────────
 	//
 	// /slow — simulates a command that needs to do async work before replying.
-	// It defers immediately so Discord shows a loading state, then sends the
-	// follow-up once the work is done.
-	bot.OnEvent(events.EventInteractionCreate, func(c *connection.Client, ev *events.InteractionCreateEvent) {
+	// The gateway hydrates i with the client and context automatically, so
+	// ctx and client are no longer passed explicitly.
+	if err := bot.OnEvent(events.EventInteractionCreate, func(c *connection.Client, ev *events.InteractionCreateEvent) {
 		i := &ev.Interaction
 
 		if ev.GetFullCommand() != "slow" {
@@ -57,7 +58,7 @@ func main() {
 
 		// DeferAndFollowup acknowledges the interaction right away and returns
 		// a sender function for the eventual reply.
-		send, err := i.DeferAndFollowup(context.Background(), c, false)
+		send, err := i.DeferAndFollowup(interactions.DeferOptions{})
 		if err != nil {
 			c.Logger.Error("defer failed", slog.Any("err", err))
 			return
@@ -67,16 +68,21 @@ func main() {
 			// Simulate slow work (database query, external API call, …).
 			time.Sleep(2 * time.Second)
 
-			if _, err := send(api.CreateMessageParams{Content: "Done! Your slow result is here."}); err != nil {
+			if _, err := send(context.Background(), interactions.FollowUpOptions{
+				Content: "Done! Your slow result is here.",
+			}); err != nil {
 				c.Logger.Error("followup failed", slog.Any("err", err))
 			}
 		}()
-	})
+	}); err != nil {
+		slog.Error("failed to register slow handler", "err", err)
+		os.Exit(1)
+	}
 
 	// ── 3. Typed error handling ───────────────────────────────────────────────
 	//
 	// /ban — shows how to distinguish a permission error from other failures.
-	bot.OnEvent(events.EventInteractionCreate, func(c *connection.Client, ev *events.InteractionCreateEvent) {
+	if err := bot.OnEvent(events.EventInteractionCreate, func(c *connection.Client, ev *events.InteractionCreateEvent) {
 		i := &ev.Interaction
 
 		if ev.GetFullCommand() != "ban" || ev.GuildID == nil || ev.Member == nil {
@@ -84,7 +90,7 @@ func main() {
 		}
 
 		// Immediately acknowledge — ban can take a moment.
-		send, err := i.DeferAndFollowup(context.Background(), c, true)
+		send, err := i.DeferAndFollowup(interactions.DeferOptions{Ephemeral: true})
 		if err != nil {
 			return
 		}
@@ -102,14 +108,17 @@ func main() {
 				case errors.Is(err, api.ErrUnknownMember):
 					msg = "That member isn't in this server."
 				default:
-					msg = "APISuccessReturn went wrong: " + err.Error()
+					msg = "Something went wrong: " + err.Error()
 				}
-				_, _ = send(api.CreateMessageParams{Content: msg})
+				_, _ = send(context.Background(), interactions.FollowUpOptions{Content: msg})
 				return
 			}
-			_, _ = send(api.CreateMessageParams{Content: "Member banned."})
+			_, _ = send(context.Background(), interactions.FollowUpOptions{Content: "Member banned."})
 		}()
-	})
+	}); err != nil {
+		slog.Error("failed to register ban handler", "err", err)
+		os.Exit(1)
+	}
 
 	if err := bot.Login(context.Background()); err != nil {
 		panic(err)

@@ -10,7 +10,7 @@ type InviteCreateEvent struct {
 	ChannelID         discord.Snowflake             `json:"channel_id"`
 	Code              string                        `json:"code"`
 	CreatedAt         time.Time                     `json:"created_at"`
-	GuildID           *discord.Snowflake            `json:"guild_id"`
+	GuildID           *discord.Snowflake            `json:"guild_id,omitempty"`
 	Inviter           *discord.User                 `json:"inviter,omitempty"`
 	MaxAge            *int                          `json:"max_age,omitempty"`
 	MaxUses           *int                          `json:"max_uses,omitempty"`

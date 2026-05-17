@@ -7,7 +7,7 @@ import (
 
 type ActionRow struct {
 	Type       discord.ComponentType  `json:"type"`
-	ID         *int                   `json:"id"`
+	ID         *int                   `json:"id,omitempty"`
 	Components []discord.AnyComponent `json:"components"`
 }
 

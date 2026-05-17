@@ -20,6 +20,8 @@ type InteractionResponseDataDefault struct {
 	Components      *[]discord.AnyComponent  `json:"components,omitempty"`
 	Attachments     *[]discord.Attachment    `json:"attachments,omitempty"`
 	Poll            *discord.PollRequest     `json:"poll,omitempty"`
+
+	Files []discord.MessageFile `json:"-"`
 }
 
 func (d *InteractionResponseDataDefault) IsInteractionResponseData() bool {
@@ -57,5 +59,5 @@ type InteractionCallbackResource struct {
 
 type InteractionCallbackResponse struct {
 	Interaction InteractionCallback          `json:"interaction"`
-	Resource    *InteractionCallbackResource `json:"resource"`
+	Resource    *InteractionCallbackResource `json:"resource,omitempty"`
 }

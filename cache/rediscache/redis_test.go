@@ -712,3 +712,26 @@ func (s *RedisCacheTestSuite) TestBug50SetAllIsAtomic() {
 
 	s.Require().False(partial.Load(), "reader observed a partial emoji set during concurrent SetAll (Bug 50)")
 }
+
+// TestWithKeyPrefix_IndependentLifecycle verifies that closing a WithKeyPrefix
+// derivative does not cancel the original instance's context (P2-31).
+func (s *RedisCacheTestSuite) TestWithKeyPrefix_IndependentLifecycle() {
+	client := redis.NewClient(&redis.Options{Addr: s.redisAddr})
+	s.T().Cleanup(func() { _ = client.Close() })
+
+	base := rediscache.NewRedisCache(client, cache.Options{})
+	s.T().Cleanup(func() { _ = base.Close() })
+
+	prefixed := base.WithKeyPrefix("p2-31-test")
+
+	// Write via prefixed, then close it.
+	g := guild("lifecycle-1")
+	base.Guilds().Set(g)
+
+	s.Require().NoError(prefixed.Close())
+
+	// base must still be functional after the derivative is closed.
+	got, ok := base.Guilds().Get(g.ID)
+	s.Require().True(ok, "base cache must remain functional after closing a WithKeyPrefix derivative")
+	s.Equal(g.ID, got.ID)
+}

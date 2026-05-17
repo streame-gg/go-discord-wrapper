@@ -43,24 +43,24 @@ type ModifyGuildOptions struct {
 }
 
 type CreateGuildChannelParams struct {
-	Name                          string                                `json:"name"`
-	Type                          *discord.ChannelType                  `json:"type,omitempty"`
-	Topic                         *string                               `json:"topic,omitempty"`
-	Bitrate                       *int                                  `json:"bitrate,omitempty"`
-	UserLimit                     *int                                  `json:"user_limit,omitempty"`
-	RateLimitPerUser              *int                                  `json:"rate_limit_per_user,omitempty"`
-	Position                      *int                                  `json:"position,omitempty"`
-	PermissionOverwrites          []discord.ChannelPermissionOverwrites `json:"permission_overwrites,omitempty"`
-	ParentID                      *discord.Snowflake                    `json:"parent_id,omitempty"`
-	NSFW                          *bool                                 `json:"nsfw,omitempty"`
-	RTCRegion                     *string                               `json:"rtc_region,omitempty"`
-	VideoQualityMode              *discord.VideoQualityMode             `json:"video_quality_mode,omitempty"`
-	DefaultAutoArchiveDuration    *int                                  `json:"default_auto_archive_duration,omitempty"`
-	DefaultReactionEmoji          *discord.DefaultReactionEmoji         `json:"default_reaction_emoji,omitempty"`
-	AvailableTags                 []discord.ChannelTag                  `json:"available_tags,omitempty"`
-	DefaultSortOrder              *discord.DefaultSortOrder             `json:"default_sort_order,omitempty"`
-	DefaultForumLayout            *discord.ChannelForumLayoutType       `json:"default_forum_layout,omitempty"`
-	DefaultThreadRateLimitPerUser *int                                  `json:"default_thread_rate_limit_per_user,omitempty"`
+	Name                          string                               `json:"name"`
+	Type                          *discord.ChannelType                 `json:"type,omitempty"`
+	Topic                         *string                              `json:"topic,omitempty"`
+	Bitrate                       *int                                 `json:"bitrate,omitempty"`
+	UserLimit                     *int                                 `json:"user_limit,omitempty"`
+	RateLimitPerUser              *int                                 `json:"rate_limit_per_user,omitempty"`
+	Position                      *int                                 `json:"position,omitempty"`
+	PermissionOverwrites          []discord.ChannelPermissionOverwrite `json:"permission_overwrites,omitempty"`
+	ParentID                      *discord.Snowflake                   `json:"parent_id,omitempty"`
+	NSFW                          *bool                                `json:"nsfw,omitempty"`
+	RTCRegion                     *string                              `json:"rtc_region,omitempty"`
+	VideoQualityMode              *discord.VideoQualityMode            `json:"video_quality_mode,omitempty"`
+	DefaultAutoArchiveDuration    *int                                 `json:"default_auto_archive_duration,omitempty"`
+	DefaultReactionEmoji          *discord.DefaultReactionEmoji        `json:"default_reaction_emoji,omitempty"`
+	AvailableTags                 []discord.ChannelTag                 `json:"available_tags,omitempty"`
+	DefaultSortOrder              *discord.DefaultSortOrder            `json:"default_sort_order,omitempty"`
+	DefaultForumLayout            *discord.ChannelForumLayoutType      `json:"default_forum_layout,omitempty"`
+	DefaultThreadRateLimitPerUser *int                                 `json:"default_thread_rate_limit_per_user,omitempty"`
 }
 
 type CreateGuildChannelOptions struct {
@@ -233,7 +233,6 @@ type ModifyGuildWelcomeScreenOptions struct {
 	Reason string
 }
 
-// TODO: verify audit log support
 type ModifyGuildOnboardingParams struct {
 	Prompts           []discord.OnboardingPrompt `json:"prompts"`
 	DefaultChannelIDs []discord.Snowflake        `json:"default_channel_ids"`
@@ -333,7 +332,7 @@ func (c *RestClient) DeleteGuild(ctx context.Context, guildID discord.Snowflake)
 // ── Guild channel endpoints ───────────────────────────────────────────────────
 
 // GetGuildChannels returns all channels in a guild.
-func (c *RestClient) GetGuildChannels(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Channel, error) {
+func (c *RestClient) GetGuildChannels(ctx context.Context, guildID discord.Snowflake) ([]*discord.Channel, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -343,7 +342,7 @@ func (c *RestClient) GetGuildChannels(ctx context.Context, guildID discord.Snowf
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Channel](c, req, map[int]bool{
+	return doRequestSlice[discord.Channel](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -409,7 +408,7 @@ func (c *RestClient) ModifyGuildChannelPositions(ctx context.Context, guildID di
 // ── Guild role endpoints ──────────────────────────────────────────────────────
 
 // GetGuildRoles returns all roles in a guild.
-func (c *RestClient) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Role, error) {
+func (c *RestClient) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) ([]*discord.Role, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -419,7 +418,7 @@ func (c *RestClient) GetGuildRoles(ctx context.Context, guildID discord.Snowflak
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Role](c, req, map[int]bool{
+	return doRequestSlice[discord.Role](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -494,7 +493,7 @@ func (c *RestClient) CreateGuildRole(ctx context.Context, guildID discord.Snowfl
 }
 
 // ModifyGuildRolePositions bulk-updates the positions of roles. Requires MANAGE_ROLES.
-func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID discord.Snowflake, entries []ModifyGuildRolePositionsEntry, opts *ModifyGuildRolePositionsOptions) (*[]*discord.Role, error) {
+func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID discord.Snowflake, entries []ModifyGuildRolePositionsEntry, opts *ModifyGuildRolePositionsOptions) ([]*discord.Role, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -509,7 +508,7 @@ func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID disco
 		if err != nil {
 			return nil, err
 		}
-		return doRequest[[]*discord.Role](c, req, map[int]bool{
+		return doRequestSlice[discord.Role](c, req, map[int]bool{
 			http.StatusOK: true,
 		})
 	}
@@ -519,7 +518,7 @@ func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID disco
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Role](c, req, map[int]bool{
+	return doRequestSlice[discord.Role](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -590,7 +589,7 @@ func (c *RestClient) DeleteGuildRole(ctx context.Context, guildID, roleID discor
 }
 
 // GetGuildBans returns a paginated list of bans in a guild. Requires BAN_MEMBERS.
-func (c *RestClient) GetGuildBans(ctx context.Context, guildID discord.Snowflake, params GetGuildBansParams) (*[]*discord.Ban, error) {
+func (c *RestClient) GetGuildBans(ctx context.Context, guildID discord.Snowflake, params GetGuildBansParams) ([]*discord.Ban, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -601,7 +600,7 @@ func (c *RestClient) GetGuildBans(ctx context.Context, guildID discord.Snowflake
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Ban](c, req, map[int]bool{
+	return doRequestSlice[discord.Ban](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -739,7 +738,7 @@ func (c *RestClient) BeginGuildPrune(ctx context.Context, guildID discord.Snowfl
 // ── Invite and misc endpoints ─────────────────────────────────────────────────
 
 // GetGuildInvites returns all active invites for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Invite, error) {
+func (c *RestClient) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) ([]*discord.Invite, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -749,7 +748,7 @@ func (c *RestClient) GetGuildInvites(ctx context.Context, guildID discord.Snowfl
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Invite](c, req, map[int]bool{
+	return doRequestSlice[discord.Invite](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -1165,7 +1164,7 @@ func (c *RestClient) GetGuildNewMemberWelcome(ctx context.Context, guildID disco
 }
 
 // GetGuildIntegrations returns all integrations for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) (*[]*discord.Integration, error) {
+func (c *RestClient) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) ([]*discord.Integration, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -1175,7 +1174,7 @@ func (c *RestClient) GetGuildIntegrations(ctx context.Context, guildID discord.S
 		return nil, err
 	}
 
-	return doRequest[[]*discord.Integration](c, req, map[int]bool{
+	return doRequestSlice[discord.Integration](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

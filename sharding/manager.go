@@ -25,7 +25,7 @@ const identifyInterval = 5 * time.Second
 type ShardManager struct {
 	total       int
 	coordinator options.ShardCoordinator
-	factory     func(shardID, totalShards int) *connection.Client
+	factory     func(shardID, totalShards int) (*connection.Client, error)
 	clients     []*connection.Client
 }
 
@@ -33,11 +33,11 @@ type ShardManager struct {
 //
 // factory is called once per shard (0 … total-1) during Start. It receives the
 // shard ID and total shard count and must return a fully configured but not-yet-
-// logged-in Client. Typically you pass options.WithSharding and
+// logged-in Client or an error. Typically you pass options.WithSharding and
 // options.WithCoordinator(coord) inside factory:
 //
 //	coord := sharding.NewLocalCoordinator(4)
-//	mgr := sharding.NewShardManager(coord, func(shardID, total int) *connection.Client {
+//	mgr := sharding.NewShardManager(coord, func(shardID, total int) (*connection.Client, error) {
 //	    return connection.NewClient(token, intents,
 //	        options.WithSharding(total, shardID),
 //	        options.WithCoordinator(coord),
@@ -45,7 +45,7 @@ type ShardManager struct {
 //	})
 func NewShardManager(
 	coord options.ShardCoordinator,
-	factory func(shardID, totalShards int) *connection.Client,
+	factory func(shardID, totalShards int) (*connection.Client, error),
 ) *ShardManager {
 	total := coord.TotalShards()
 	return &ShardManager{
@@ -67,7 +67,24 @@ func NewShardManager(
 // before returning the error so no shards are left orphaned.
 func (m *ShardManager) Start() error {
 	for id := 0; id < m.total; id++ {
-		client := m.factory(id, m.total)
+		client, err := m.factory(id, m.total)
+		if err != nil {
+			for _, c := range m.clients[:id] {
+				if c != nil {
+					_ = c.Shutdown()
+				}
+			}
+			return fmt.Errorf("sharding: shard %d factory failed: %w", id, err)
+		}
+
+		if client == nil {
+			for _, c := range m.clients[:id] {
+				if c != nil {
+					_ = c.Shutdown()
+				}
+			}
+			return fmt.Errorf("sharding: shard %d factory returned nil client", id)
+		}
 
 		if err := client.Login(context.Background()); err != nil {
 			// Shut down all shards that started successfully before this failure.

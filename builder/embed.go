@@ -80,5 +80,11 @@ func (b *EmbedBuilder) AddFields(fields ...discord.EmbedFields) *EmbedBuilder {
 }
 
 func (b *EmbedBuilder) Build() discord.Embed {
-	return b.embed
+	embed := b.embed
+	if b.embed.Fields != nil {
+		fields := make([]discord.EmbedFields, len(b.embed.Fields))
+		copy(fields, b.embed.Fields)
+		embed.Fields = fields
+	}
+	return embed
 }

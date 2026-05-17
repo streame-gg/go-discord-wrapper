@@ -2,7 +2,7 @@
 
 A Go library for the Discord gateway and REST API.
 
-> **Status:** This library is very new and being checked for bugs. I am currently updating a lot so please do not use yet. :)
+> **Status:** Alpha — actively developed, APIs may change before the first tagged release.
 
 ## Features
 
@@ -14,6 +14,11 @@ A Go library for the Discord gateway and REST API.
 - Slash command and interaction support (reply, defer, modal, component)
 - Horizontal sharding with a built-in shard coordinator
 - Middleware support for event handlers
+
+> **Voice support:** Voice state and server events are tracked, but voice-connection
+> establishment (UDP, Opus encoding/decoding, sending or receiving audio) is **not supported**.
+> If you need voice capabilities, consider using [bwmarrin/discordgo](https://github.com/bwmarrin/discordgo)
+> alongside this library for voice operations only.
 
 ## Installation
 
@@ -36,19 +41,22 @@ import (
     "syscall"
 
     "github.com/streame-gg/go-discord-wrapper/connection"
-    "github.com/streame-gg/go-discord-wrapper/types/common"
+    "github.com/streame-gg/go-discord-wrapper/types/discord"
     "github.com/streame-gg/go-discord-wrapper/types/events"
     "github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
 
 func main() {
-    bot, err := connection.NewClient(os.Getenv("DISCORD_TOKEN"), common.IntentGuilds|common.IntentGuildMessages)
+    bot, err := connection.NewClient(os.Getenv("DISCORD_TOKEN"), discord.IntentGuilds|discord.IntentGuildMessages)
     if err != nil {
         slog.Error("failed to create client", "err", err)
         os.Exit(1)
     }
 
-    bot.OnEvent(events.EventMessageCreate, func(c *connection.Client, e *events.MessageCreateEvent) {
+    bot.OnMessageCreate(func(c *connection.Client, e *events.MessageCreateEvent) {
+        if e.Author == nil {
+            return
+        }
         slog.Info("new message", "author", e.Author.Username, "content", e.Content)
     })
 
@@ -108,8 +116,8 @@ if ch, ok := bot.Cache.Channels().Get(channelID); ok {
 | Backend | Import |
 |---------|--------|
 | In-process memory (default) | `cache.NewMemoryCache(...)` |
-| Redis | `cache/redis` package |
-| MongoDB | `cache/mongo` package |
+| Redis | `cache/rediscache` package |
+| MongoDB | `cache/mongocache` package |
 
 ## Sharding
 
@@ -141,6 +149,27 @@ _, err := bot.BulkRegisterCommands(ctx, []*commands.ApplicationCommand{
 | `options.WithRateLimiting(opts)` | Rate-limiter tuning (safety margin, disable) |
 | `options.WithMinRequestInterval(d)` | Global minimum delay between REST requests |
 | `options.WithAPIVersion(v)` | Discord API version (default: v10) |
+| `options.WithBaseURL(url)` | Override the Discord API base URL (useful for mock servers in tests) |
+
+## Testing with a mock server
+
+Use `WithBaseURL` together with Go's `net/http/httptest` to run integration tests without
+hitting Discord:
+
+```go
+import (
+    "net/http/httptest"
+    "github.com/streame-gg/go-discord-wrapper/api"
+    "github.com/streame-gg/go-discord-wrapper/options"
+)
+
+ts := httptest.NewServer(myHandler)
+defer ts.Close()
+
+client, err := api.NewRestClient("test-token",
+    options.WithBaseURL(ts.URL),
+)
+```
 
 ## Supported gateway events
 

@@ -55,6 +55,12 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 	if err != nil {
 		return nil, err
 	}
+	var dialSucceeded bool
+	defer func() {
+		if !dialSucceeded {
+			_ = c.Close()
+		}
+	}()
 
 	_ = c.SetWriteDeadline(time.Time{})
 	c.SetReadLimit(4 * 1024 * 1024) // 4 MiB — protects against rogue/compromised endpoint flooding RAM
@@ -215,6 +221,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 		}
 	}()
 
+	dialSucceeded = true
 	return ws, nil
 }
 
@@ -309,7 +316,11 @@ func (d *Client) reconnect(freshConnect bool) error {
 			} else {
 				d.Logger.Debug("Waiting before retry", slog.Duration("backoff", backoff), slog.Int("attempt", i+1), slog.Int("max", maxRetries))
 			}
-			time.Sleep(backoff)
+			select {
+			case <-time.After(backoff):
+			case <-d.shutdownCh:
+				return nil
+			}
 		}
 
 		if err := d.connectWebsocket(reconnectURL, !freshConnect, lastEventNum, sessionID); err != nil {
@@ -424,7 +435,7 @@ func (d *Client) listenWebsocket() error {
 		}
 
 		if payload.T != "" {
-			factory, ok := events.EventFactories[events.EventType(payload.T)]
+			factory, ok := events.GetEventFactory(events.EventType(payload.T))
 			if !ok {
 				d.Logger.Warn("No factory found for event type", slog.String("type", string(payload.T)))
 				continue
