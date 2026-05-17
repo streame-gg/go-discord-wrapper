@@ -6,6 +6,22 @@ All notable changes to this project will be documented in this file.
 
 ## v0.2.0 Breaking Changes
 
+- **P2-34 — `DeferAndFollowup` send-callback now takes an explicit `ctx` parameter**: The closure returned by `DeferAndFollowup` previously captured the `ctx` passed to the defer call. If that context was cancelled by the time the follow-up was ready to send, `CreateFollowup` would fail. The send-function now accepts its own `context.Context` as the first argument.
+
+  ```go
+  // Before:
+  send, err := i.DeferAndFollowup(ctx, client, false)
+  // ...
+  send(api.CreateMessageParams{Content: "Done!"})
+
+  // After:
+  send, err := i.DeferAndFollowup(ctx, client, false)
+  // ...
+  send(ctx, api.CreateMessageParams{Content: "Done!"})
+  // or use a fresh context for the follow-up:
+  send(context.Background(), api.CreateMessageParams{Content: "Done!"})
+  ```
+
 - **P2-33 — `EmbedBuilder.Build()` no longer aliases the builder's `Fields` slice**: `Build()` now returns an embed whose `Fields` slice is backed by an independent array. Calling `AddFields` after `Build()` will not mutate the previously returned `Embed`. Only `Fields` was affected; all other `Embed` pointer fields (`Title`, `Description`, `Footer`, etc.) were already independent because each setter stores a fresh pointer.
 
 - **P2-32 — `ModalBuilder.Build()` no longer aliases the builder's internal state**: `Build()` now returns a deep copy of the modal. Calling `AddComponents` after `Build()` will not mutate the previously returned `*Modal`. Code that relied on post-`Build()` mutations observing the returned value must be updated (such usage was a bug).

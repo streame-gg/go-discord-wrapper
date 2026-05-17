@@ -67,7 +67,7 @@ func main() {
 			// Simulate slow work (database query, external API call, …).
 			time.Sleep(2 * time.Second)
 
-			if _, err := send(api.CreateMessageParams{Content: "Done! Your slow result is here."}); err != nil {
+			if _, err := send(context.Background(), api.CreateMessageParams{Content: "Done! Your slow result is here."}); err != nil {
 				c.Logger.Error("followup failed", slog.Any("err", err))
 			}
 		}()
@@ -107,10 +107,10 @@ func main() {
 				default:
 					msg = "APISuccessReturn went wrong: " + err.Error()
 				}
-				_, _ = send(api.CreateMessageParams{Content: msg})
+				_, _ = send(context.Background(), api.CreateMessageParams{Content: msg})
 				return
 			}
-			_, _ = send(api.CreateMessageParams{Content: "Member banned."})
+			_, _ = send(context.Background(), api.CreateMessageParams{Content: "Member banned."})
 		}()
 	}); err != nil {
 		slog.Error("failed to register ban handler", "err", err)

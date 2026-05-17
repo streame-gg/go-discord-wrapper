@@ -106,14 +106,17 @@ func (i *Interaction) DeleteFollowup(ctx context.Context, client Client, message
 // follow-up when called. Use this pattern for handlers that need to do async
 // work before responding.
 //
+// The returned send function accepts its own context so that the caller can
+// control the follow-up deadline independently of the defer call.
+//
 //	send, err := i.DeferAndFollowup(ctx, client, false)
 //	if err != nil { return }
-//	_ = send // invoke send(api.CreateMessageParams{Content: result}) when ready
-func (i *Interaction) DeferAndFollowup(ctx context.Context, client Client, ephemeral bool) (func(api.CreateMessageParams) (*discord.Message, error), error) {
+//	_ = send // invoke send(ctx, api.CreateMessageParams{Content: result}) when ready
+func (i *Interaction) DeferAndFollowup(ctx context.Context, client Client, ephemeral bool) (func(context.Context, api.CreateMessageParams) (*discord.Message, error), error) {
 	if err := client.DeferReply(ctx, i, ephemeral); err != nil {
 		return nil, err
 	}
-	return func(params api.CreateMessageParams) (*discord.Message, error) {
-		return client.CreateFollowup(ctx, i, params)
+	return func(sendCtx context.Context, params api.CreateMessageParams) (*discord.Message, error) {
+		return client.CreateFollowup(sendCtx, i, params)
 	}, nil
 }
