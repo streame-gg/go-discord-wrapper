@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ## v0.2.0 Breaking Changes
 
+- **P2-32 — `ModalBuilder.Build()` no longer aliases the builder's internal state**: `Build()` now returns a deep copy of the modal. Calling `AddComponents` after `Build()` will not mutate the previously returned `*Modal`. Code that relied on post-`Build()` mutations observing the returned value must be updated (such usage was a bug).
+
 - **P2-27 — `AutoModerationTriggerMetadata.Presets` typed enum**: `Presets []int` is now `Presets []KeywordPresetType`. Use the new constants `KeywordPresetTypeProfanity` (1), `KeywordPresetTypeSexualContent` (2), `KeywordPresetTypeSlurs` (3) instead of raw integer literals.
 
   ```go

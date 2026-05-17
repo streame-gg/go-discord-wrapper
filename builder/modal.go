@@ -41,5 +41,11 @@ func (b *ModalBuilder) AddComponents(c ...*components.LabelComponent) *ModalBuil
 }
 
 func (b *ModalBuilder) Build() *components.Modal {
-	return &b.modal
+	modal := b.modal
+	if b.modal.Components != nil {
+		comps := make([]components.LabelComponent, len(*b.modal.Components))
+		copy(comps, *b.modal.Components)
+		modal.Components = &comps
+	}
+	return &modal
 }
