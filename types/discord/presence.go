@@ -74,7 +74,7 @@ type FullActivity struct {
 	Secrets       *ActivitySecrets    `json:"secrets,omitempty"`
 	Instance      *bool               `json:"instance,omitempty"`
 	Flags         *ActivityFlags      `json:"flags,omitempty"`
-	Buttons       []ActivityButton    `json:"buttons,omitempty"`
+	Buttons       []string            `json:"buttons,omitempty"`
 }
 
 type ClientStatus struct {
