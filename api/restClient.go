@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strings"
 	"sync"
@@ -251,11 +252,20 @@ func WithUserAuthorization(token string) func(req *http.Request) {
 	}
 }
 
+// WithAuditLogReason attaches an audit-log reason to the request.
+// The reason is URL-encoded so non-ASCII characters are transmitted safely.
+// Reasons longer than 512 characters (Discord's limit) are silently truncated.
 func WithAuditLogReason(reason string) func(req *http.Request) {
+	if reason == "" {
+		return func(_ *http.Request) {}
+	}
+	runes := []rune(reason)
+	if len(runes) > 512 {
+		runes = runes[:512]
+	}
+	encoded := url.PathEscape(string(runes))
 	return func(req *http.Request) {
-		if reason != "" {
-			req.Header.Set("X-Audit-Log-Reason", reason)
-		}
+		req.Header.Set("X-Audit-Log-Reason", encoded)
 	}
 }
 
