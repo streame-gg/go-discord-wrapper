@@ -22,7 +22,7 @@ func (s *StringSelectMenuComponent) IsAnyContainerAccessory() bool {
 }
 
 func (s *StringSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	s.Type = discord.ComponentTypeStringSelectMenu
+	s.Type = discord.ComponentTypeStringSelect
 	type Alias StringSelectMenuComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -32,7 +32,7 @@ func (s *StringSelectMenuComponent) MarshalJSON() ([]byte, error) {
 }
 
 func (s *StringSelectMenuComponent) GetType() discord.ComponentType {
-	return discord.ComponentTypeStringSelectMenu
+	return discord.ComponentTypeStringSelect
 }
 
 func (s *StringSelectMenuComponent) UnmarshalJSON(data []byte) error {
@@ -77,8 +77,8 @@ func (s *StringSelectComponentInteractionResponse) IsInteractionResponseDataComp
 }
 
 func (s *StringSelectComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	s.ComponentType = discord.ComponentTypeStringSelectMenu
-	s.Type = discord.ComponentTypeStringSelectMenu
+	s.ComponentType = discord.ComponentTypeStringSelect
+	s.Type = discord.ComponentTypeStringSelect
 
 	type Alias StringSelectComponentInteractionResponse
 

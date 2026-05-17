@@ -44,7 +44,7 @@ func (m *MentionableSelectMenuComponent) IsAnyLabelComponent() {
 }
 
 func (m *MentionableSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	m.Type = discord.ComponentTypeMentionableMenu
+	m.Type = discord.ComponentTypeMentionableSelect
 	type Alias MentionableSelectMenuComponent
 	return json.Marshal(&struct {
 		*Alias
@@ -54,7 +54,7 @@ func (m *MentionableSelectMenuComponent) MarshalJSON() ([]byte, error) {
 }
 
 func (m *MentionableSelectMenuComponent) GetType() discord.ComponentType {
-	return discord.ComponentTypeMentionableMenu
+	return discord.ComponentTypeMentionableSelect
 }
 
 type MentionableComponentInteractionResponse struct {
@@ -70,8 +70,8 @@ func (m *MentionableComponentInteractionResponse) IsInteractionResponseDataCompo
 }
 
 func (m *MentionableComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	m.ComponentType = discord.ComponentTypeMentionableMenu
-	m.Type = discord.ComponentTypeMentionableMenu
+	m.ComponentType = discord.ComponentTypeMentionableSelect
+	m.Type = discord.ComponentTypeMentionableSelect
 
 	type Alias MentionableComponentInteractionResponse
 
