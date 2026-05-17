@@ -21,7 +21,7 @@ type InteractionResponseDataDefault struct {
 	Attachments     *[]discord.Attachment    `json:"attachments,omitempty"`
 	Poll            *discord.PollRequest     `json:"poll,omitempty"`
 
-	Files []discord.MessageFile `json:"files,omitempty"`
+	Files []discord.MessageFile `json:"-"`
 }
 
 func (d *InteractionResponseDataDefault) IsInteractionResponseData() bool {

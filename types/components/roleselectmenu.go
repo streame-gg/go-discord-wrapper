@@ -24,7 +24,7 @@ func (r *RoleSelectMenuComponent) IsAnyContainerAccessory() bool {
 
 func (r *RoleSelectMenuComponent) MarshalJSON() ([]byte, error) {
 	r.Type = discord.ComponentTypeRoleSelect
-	type Alias UserSelectMenuComponent
+	type Alias RoleSelectMenuComponent
 	return json.Marshal(&struct {
 		*Alias
 	}{
