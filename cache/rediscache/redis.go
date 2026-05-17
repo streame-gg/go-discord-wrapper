@@ -670,11 +670,12 @@ func (s *redisVoiceStateStore) DeleteGuild(guildID discord.Snowflake) {
 	_ = s.c.client.Del(s.c.ctx, gIdx).Err()
 }
 
-func (s *redisVoiceStateStore) AllInGuild(guildID discord.Snowflake) []*discord.VoiceState {
+func (s *redisVoiceStateStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.VoiceState] {
+	coll := collection.New[discord.Snowflake, *discord.VoiceState]()
 	gIdx := s.c.k("voice_state", "guild", string(guildID))
 	userIDs, err := s.c.client.SMembers(s.c.ctx, gIdx).Result()
 	if err != nil || len(userIDs) == 0 {
-		return nil
+		return coll
 	}
 	keys := make([]string, len(userIDs))
 	for i, uid := range userIDs {
@@ -682,9 +683,8 @@ func (s *redisVoiceStateStore) AllInGuild(guildID discord.Snowflake) []*discord.
 	}
 	vals, err := s.c.client.MGet(s.c.ctx, keys...).Result()
 	if err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.VoiceState, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
@@ -693,13 +693,13 @@ func (s *redisVoiceStateStore) AllInGuild(guildID discord.Snowflake) []*discord.
 		}
 		var state discord.VoiceState
 		if json.Unmarshal([]byte(v.(string)), &state) == nil {
-			out = append(out, &state)
+			coll.Set(state.UserID, &state)
 		}
 	}
 	if len(stale) > 0 {
 		_ = s.c.client.SRem(s.c.ctx, gIdx, stale...).Err()
 	}
-	return out
+	return coll
 }
 
 func (s *redisVoiceStateStore) Size() int {

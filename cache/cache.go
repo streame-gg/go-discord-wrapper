@@ -293,7 +293,9 @@ type VoiceStateStore interface {
 	Delete(guildID, userID discord.Snowflake)
 	// DeleteGuild removes every voice state entry for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)
-	AllInGuild(guildID discord.Snowflake) []*discord.VoiceState
+	// AllInGuild returns a snapshot Collection of all voice states for guildID,
+	// keyed by UserID. The returned Collection is a copy.
+	AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.VoiceState]
 	Size() int
 }
 

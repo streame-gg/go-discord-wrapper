@@ -744,28 +744,28 @@ func (s *mongoVoiceStateStore) DeleteGuild(guildID discord.Snowflake) {
 	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": string(guildID)})
 }
 
-func (s *mongoVoiceStateStore) AllInGuild(guildID discord.Snowflake) []*discord.VoiceState {
+func (s *mongoVoiceStateStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.VoiceState] {
+	coll := collection.New[discord.Snowflake, *discord.VoiceState]()
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
 	}
 	cursor, err := s.col().Find(s.c.ctx, filter)
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []guildUserDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.VoiceState, 0, len(docs))
 	for _, d := range docs {
 		var state discord.VoiceState
 		if json.Unmarshal([]byte(d.JSON), &state) == nil {
-			out = append(out, &state)
+			coll.Set(state.UserID, &state)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoVoiceStateStore) Size() int {
