@@ -78,6 +78,11 @@ func (m *ShardManager) Start() error {
 		}
 
 		if client == nil {
+			for _, c := range m.clients[:id] {
+				if c != nil {
+					_ = c.Shutdown()
+				}
+			}
 			return fmt.Errorf("sharding: shard %d factory returned nil client", id)
 		}
 
