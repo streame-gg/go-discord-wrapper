@@ -189,7 +189,7 @@ func (s *RedisCacheTestSuite) TestChannelStore_All() {
 	for i := 1; i <= 4; i++ {
 		c.Channels().Set(channel(fmt.Sprintf("%d", i)))
 	}
-	s.Require().Len(c.Channels().All(), 4, "expected 4 channels")
+	s.Require().Equal(4, c.Channels().All().Len(), "expected 4 channels")
 }
 
 // ── UserStore ─────────────────────────────────────────────────────────────────

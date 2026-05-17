@@ -211,8 +211,8 @@ func TestChannelStore_All(t *testing.T) {
 	for i := 1; i <= 4; i++ {
 		c.Channels().Set(channel(fmt.Sprintf("%d", i)))
 	}
-	if len(c.Channels().All()) != 4 {
-		t.Fatalf("expected 4 channels, got %d", len(c.Channels().All()))
+	if n := c.Channels().All().Len(); n != 4 {
+		t.Fatalf("expected 4 channels, got %d", n)
 	}
 }
 

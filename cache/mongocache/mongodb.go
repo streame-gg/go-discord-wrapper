@@ -434,24 +434,24 @@ func (s *mongoChannelStore) Delete(id discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(id)})
 }
 
-func (s *mongoChannelStore) All() []*discord.Channel {
+func (s *mongoChannelStore) All() *collection.Collection[discord.Snowflake, *discord.Channel] {
+	coll := collection.New[discord.Snowflake, *discord.Channel]()
 	cursor, err := s.col().Find(s.c.ctx, liveFilter(s.c.opts.TTL))
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []entityDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.Channel, 0, len(docs))
 	for _, d := range docs {
 		var ch discord.Channel
 		if json.Unmarshal([]byte(d.JSON), &ch) == nil {
-			out = append(out, &ch)
+			coll.Set(ch.ID, &ch)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoChannelStore) Size() int {

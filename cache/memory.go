@@ -407,7 +407,14 @@ func (c *memChannelStore) Get(id discord.Snowflake) (*discord.Channel, bool) {
 	return &cp, true
 }
 func (c *memChannelStore) Delete(id discord.Snowflake) { c.s.delete(id) }
-func (c *memChannelStore) All() []*discord.Channel     { return c.s.all() }
+func (c *memChannelStore) All() *collection.Collection[discord.Snowflake, *discord.Channel] {
+	vals := c.s.all()
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Channel](len(vals))
+	for _, v := range vals {
+		coll.Set(v.ID, v)
+	}
+	return coll
+}
 func (c *memChannelStore) Size() int                   { return c.s.size() }
 
 type memUserStore struct {

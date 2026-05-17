@@ -226,12 +226,13 @@ type GuildStore interface {
 	Size() int
 }
 
-// ChannelStore is a thread-safe cache for [discord.Channel] objects.
+// ChannelStore is a thread-safe cache for [discord.Channel] objects, keyed by channel ID.
 type ChannelStore interface {
 	Set(channel *discord.Channel)
 	Get(id discord.Snowflake) (*discord.Channel, bool)
 	Delete(id discord.Snowflake)
-	All() []*discord.Channel
+	// All returns a snapshot Collection of every cached channel, keyed by channel ID.
+	All() *collection.Collection[discord.Snowflake, *discord.Channel]
 	Size() int
 }
 
