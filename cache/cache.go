@@ -217,12 +217,13 @@ type Options struct {
 
 // ── Entity store interfaces ───────────────────────────────────────────────────
 
-// GuildStore is a thread-safe cache for [discord.Guild] objects.
+// GuildStore is a thread-safe cache for [discord.Guild] objects, keyed by guild ID.
 type GuildStore interface {
 	Set(guild *discord.Guild)
 	Get(id discord.Snowflake) (*discord.Guild, bool)
 	Delete(id discord.Snowflake)
-	All() []*discord.Guild
+	// All returns a snapshot Collection of every cached guild, keyed by guild ID.
+	All() *collection.Collection[discord.Snowflake, *discord.Guild]
 	Size() int
 }
 

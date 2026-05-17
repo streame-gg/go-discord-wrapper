@@ -79,7 +79,7 @@ func (s *memoryTestSuite) TestGuildStore_All() {
 	for i := 1; i <= 5; i++ {
 		c.Guilds().Set(guild(fmt.Sprintf("%d", i)))
 	}
-	s.Lenf(c.Guilds().All(), 5, "expected 5 guilds, got %d", len(c.Guilds().All()))
+	s.Equal(5, c.Guilds().All().Len(), "expected 5 guilds")
 }
 
 func (s *memoryTestSuite) TestGuildStore_TTLExpiry() {

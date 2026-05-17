@@ -370,24 +370,24 @@ func (s *mongoGuildStore) Delete(id discord.Snowflake) {
 	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": string(id)})
 }
 
-func (s *mongoGuildStore) All() []*discord.Guild {
+func (s *mongoGuildStore) All() *collection.Collection[discord.Snowflake, *discord.Guild] {
+	coll := collection.New[discord.Snowflake, *discord.Guild]()
 	cursor, err := s.col().Find(s.c.ctx, liveFilter(s.c.opts.TTL))
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []entityDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.Guild, 0, len(docs))
 	for _, d := range docs {
 		var g discord.Guild
 		if json.Unmarshal([]byte(d.JSON), &g) == nil {
-			out = append(out, &g)
+			coll.Set(g.ID, &g)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoGuildStore) Size() int {

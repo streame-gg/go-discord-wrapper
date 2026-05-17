@@ -128,7 +128,7 @@ func (s *RedisCacheTestSuite) TestGuildStore_All() {
 		c.Guilds().Set(guild(fmt.Sprintf("%d", i)))
 	}
 	all := c.Guilds().All()
-	s.Require().Len(all, 5, "expected 5 guilds after 5 sets")
+	s.Require().Equal(5, all.Len(), "expected 5 guilds after 5 sets")
 }
 
 func (s *RedisCacheTestSuite) TestGuildStore_Size() {

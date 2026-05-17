@@ -132,8 +132,8 @@ func TestGuildStore_All(t *testing.T) {
 	for i := 1; i <= 5; i++ {
 		c.Guilds().Set(guild(fmt.Sprintf("%d", i)))
 	}
-	if len(c.Guilds().All()) != 5 {
-		t.Fatalf("expected 5 guilds, got %d", len(c.Guilds().All()))
+	if n := c.Guilds().All().Len(); n != 5 {
+		t.Fatalf("expected 5 guilds, got %d", n)
 	}
 }
 
@@ -185,8 +185,8 @@ func TestGuildStore_TTL(t *testing.T) {
 	if n := c.Guilds().Size(); n != 0 {
 		t.Fatalf("expected Size() == 0 after TTL, got %d", n)
 	}
-	if all := c.Guilds().All(); len(all) != 0 {
-		t.Fatalf("expected All() empty after TTL, got %d", len(all))
+	if n := c.Guilds().All().Len(); n != 0 {
+		t.Fatalf("expected All() empty after TTL, got %d", n)
 	}
 }
 
