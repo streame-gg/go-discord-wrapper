@@ -70,8 +70,8 @@ func (u *UserSelectComponentInteractionResponse) IsInteractionResponseDataCompon
 }
 
 func (u *UserSelectComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	u.ComponentType = discord.ComponentTypeRoleSelect
-	u.Type = discord.ComponentTypeRoleSelect
+	u.ComponentType = discord.ComponentTypeUserSelect
+	u.Type = discord.ComponentTypeUserSelect
 
 	type Alias UserSelectComponentInteractionResponse
 

@@ -77,6 +77,10 @@ func (m *ShardManager) Start() error {
 			return fmt.Errorf("sharding: shard %d factory failed: %w", id, err)
 		}
 
+		if client == nil {
+			return fmt.Errorf("sharding: shard %d factory returned nil client", id)
+		}
+
 		if err := client.Login(context.Background()); err != nil {
 			// Shut down all shards that started successfully before this failure.
 			for _, c := range m.clients[:id] {
