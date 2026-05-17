@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -332,7 +333,7 @@ func (c *RestClient) DeleteGuild(ctx context.Context, guildID discord.Snowflake)
 // ── Guild channel endpoints ───────────────────────────────────────────────────
 
 // GetGuildChannels returns all channels in a guild.
-func (c *RestClient) GetGuildChannels(ctx context.Context, guildID discord.Snowflake) ([]*discord.Channel, error) {
+func (c *RestClient) GetGuildChannels(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Channel], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -342,9 +343,17 @@ func (c *RestClient) GetGuildChannels(ctx context.Context, guildID discord.Snowf
 		return nil, err
 	}
 
-	return doRequestSlice[discord.Channel](c, req, map[int]bool{
+	channels, err := doRequestSlice[discord.Channel](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Channel](len(channels))
+	for _, ch := range channels {
+		coll.Set(ch.ID, ch)
+	}
+	return coll, nil
 }
 
 // CreateGuildChannel creates a new channel in a guild. Requires MANAGE_CHANNELS.
@@ -407,8 +416,8 @@ func (c *RestClient) ModifyGuildChannelPositions(ctx context.Context, guildID di
 
 // ── Guild role endpoints ──────────────────────────────────────────────────────
 
-// GetGuildRoles returns all roles in a guild.
-func (c *RestClient) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) ([]*discord.Role, error) {
+// GetGuildRoles returns all roles in a guild, keyed by role ID.
+func (c *RestClient) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Role], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -418,9 +427,17 @@ func (c *RestClient) GetGuildRoles(ctx context.Context, guildID discord.Snowflak
 		return nil, err
 	}
 
-	return doRequestSlice[discord.Role](c, req, map[int]bool{
+	roles, err := doRequestSlice[discord.Role](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Role](len(roles))
+	for _, r := range roles {
+		coll.Set(r.ID, r)
+	}
+	return coll, nil
 }
 
 // GetGuildRoleMemberCounts returns the role.
@@ -493,7 +510,8 @@ func (c *RestClient) CreateGuildRole(ctx context.Context, guildID discord.Snowfl
 }
 
 // ModifyGuildRolePositions bulk-updates the positions of roles. Requires MANAGE_ROLES.
-func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID discord.Snowflake, entries []ModifyGuildRolePositionsEntry, opts *ModifyGuildRolePositionsOptions) ([]*discord.Role, error) {
+// Returns a Collection keyed by role ID.
+func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID discord.Snowflake, entries []ModifyGuildRolePositionsEntry, opts *ModifyGuildRolePositionsOptions) (*collection.Collection[discord.Snowflake, *discord.Role], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -503,24 +521,27 @@ func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID disco
 		return nil, err
 	}
 
+	var req *http.Request
 	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization())
-		if err != nil {
-			return nil, err
-		}
-		return doRequestSlice[discord.Role](c, req, map[int]bool{
-			http.StatusOK: true,
-		})
+		req, err = c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization())
+	} else {
+		req, err = c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	}
-
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequestSlice[discord.Role](c, req, map[int]bool{
+	roles, err := doRequestSlice[discord.Role](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Role](len(roles))
+	for _, r := range roles {
+		coll.Set(r.ID, r)
+	}
+	return coll, nil
 }
 
 // ModifyGuildRole updates a role's settings. Requires MANAGE_ROLES.
@@ -589,7 +610,8 @@ func (c *RestClient) DeleteGuildRole(ctx context.Context, guildID, roleID discor
 }
 
 // GetGuildBans returns a paginated list of bans in a guild. Requires BAN_MEMBERS.
-func (c *RestClient) GetGuildBans(ctx context.Context, guildID discord.Snowflake, params GetGuildBansParams) ([]*discord.Ban, error) {
+// Returns a Collection keyed by the banned user's ID.
+func (c *RestClient) GetGuildBans(ctx context.Context, guildID discord.Snowflake, params GetGuildBansParams) (*collection.Collection[discord.Snowflake, *discord.Ban], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -600,9 +622,17 @@ func (c *RestClient) GetGuildBans(ctx context.Context, guildID discord.Snowflake
 		return nil, err
 	}
 
-	return doRequestSlice[discord.Ban](c, req, map[int]bool{
+	bans, err := doRequestSlice[discord.Ban](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Ban](len(bans))
+	for _, b := range bans {
+		coll.Set(b.User.ID, b)
+	}
+	return coll, nil
 }
 
 // GetGuildBan returns the ban record for a specific user. Requires BAN_MEMBERS.
@@ -738,7 +768,8 @@ func (c *RestClient) BeginGuildPrune(ctx context.Context, guildID discord.Snowfl
 // ── Invite and misc endpoints ─────────────────────────────────────────────────
 
 // GetGuildInvites returns all active invites for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) ([]*discord.Invite, error) {
+// Returns a Collection keyed by invite code.
+func (c *RestClient) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[string, *discord.Invite], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -748,9 +779,17 @@ func (c *RestClient) GetGuildInvites(ctx context.Context, guildID discord.Snowfl
 		return nil, err
 	}
 
-	return doRequestSlice[discord.Invite](c, req, map[int]bool{
+	invites, err := doRequestSlice[discord.Invite](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	coll := collection.NewWithCapacity[string, *discord.Invite](len(invites))
+	for _, inv := range invites {
+		coll.Set(inv.Code, inv)
+	}
+	return coll, nil
 }
 
 // GetGuildVanityURL returns the vanity invite code and use count for a guild. Requires MANAGE_GUILD.
@@ -1164,7 +1203,8 @@ func (c *RestClient) GetGuildNewMemberWelcome(ctx context.Context, guildID disco
 }
 
 // GetGuildIntegrations returns all integrations for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) ([]*discord.Integration, error) {
+// Returns a Collection keyed by integration ID.
+func (c *RestClient) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Integration], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -1174,9 +1214,17 @@ func (c *RestClient) GetGuildIntegrations(ctx context.Context, guildID discord.S
 		return nil, err
 	}
 
-	return doRequestSlice[discord.Integration](c, req, map[int]bool{
+	integrations, err := doRequestSlice[discord.Integration](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Integration](len(integrations))
+	for _, i := range integrations {
+		coll.Set(i.ID, i)
+	}
+	return coll, nil
 }
 
 // DeleteGuildIntegration deletes an integration from a guild. Requires MANAGE_GUILD.

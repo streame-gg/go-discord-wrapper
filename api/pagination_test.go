@@ -233,11 +233,12 @@ func TestFetchAllGuildBansOnePage(t *testing.T) {
 	result, err := client.FetchAllGuildBans(context.Background(), "1234567890123456789")
 
 	require.NoError(t, err)
-	assert.Len(t, result, 7)
+	assert.Equal(t, 7, result.Len())
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount), "expected single page request")
 
 	// verify IDs round-trip
-	assert.Equal(t, discord.Snowflake("1"), result[0].User.ID)
+	first, _ := result.At(0)
+	assert.Equal(t, discord.Snowflake("1"), first.User.ID)
 
 	// suppress unused import
 	_ = time.Second

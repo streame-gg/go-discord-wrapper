@@ -376,7 +376,7 @@ func (d *Client) DeleteGuild(ctx context.Context, guildID discord.Snowflake) err
 	return nil
 }
 
-func (d *Client) GetGuildChannels(ctx context.Context, guildID discord.Snowflake) ([]*discord.Channel, error) {
+func (d *Client) GetGuildChannels(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Channel], error) {
 	channels, err := d.RestClient.GetGuildChannels(ctx, guildID)
 	if err == nil {
 		if d.Cache != nil {
@@ -386,7 +386,7 @@ func (d *Client) GetGuildChannels(ctx context.Context, guildID discord.Snowflake
 				d.Cache.Messages().DeleteChannel(oldID)
 			}
 		}
-		d.cacheChannels(channels)
+		d.cacheChannels(channels.Values())
 	}
 	return channels, err
 }
@@ -403,14 +403,14 @@ func (d *Client) ModifyGuildChannelPositions(ctx context.Context, guildID discor
 	return d.RestClient.ModifyGuildChannelPositions(ctx, guildID, entries, nil)
 }
 
-func (d *Client) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) ([]*discord.Role, error) {
+func (d *Client) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Role], error) {
 	roles, err := d.RestClient.GetGuildRoles(ctx, guildID)
 	if err == nil {
 		if d.Cache != nil {
 			// Remove stale roles deleted since the last cache fill (Bug 25).
 			d.Cache.Roles().DeleteGuild(guildID)
 		}
-		d.cacheRoles(guildID, roles)
+		d.cacheRoles(guildID, roles.Values())
 	}
 	return roles, err
 }
@@ -431,14 +431,14 @@ func (d *Client) CreateGuildRole(ctx context.Context, guildID discord.Snowflake,
 	return role, err
 }
 
-func (d *Client) ModifyGuildRolePositions(ctx context.Context, guildID discord.Snowflake, entries []api.ModifyGuildRolePositionsEntry) ([]*discord.Role, error) {
+func (d *Client) ModifyGuildRolePositions(ctx context.Context, guildID discord.Snowflake, entries []api.ModifyGuildRolePositionsEntry) (*collection.Collection[discord.Snowflake, *discord.Role], error) {
 	roles, err := d.RestClient.ModifyGuildRolePositions(ctx, guildID, entries, nil)
 	if err == nil {
 		if d.Cache != nil {
 			// Remove stale roles deleted since the last cache fill (Bug 25).
 			d.Cache.Roles().DeleteGuild(guildID)
 		}
-		d.cacheRoles(guildID, roles)
+		d.cacheRoles(guildID, roles.Values())
 	}
 	return roles, err
 }
@@ -459,7 +459,7 @@ func (d *Client) DeleteGuildRole(ctx context.Context, guildID, roleID discord.Sn
 	return nil
 }
 
-func (d *Client) GetGuildBans(ctx context.Context, guildID discord.Snowflake, params api.GetGuildBansParams) ([]*discord.Ban, error) {
+func (d *Client) GetGuildBans(ctx context.Context, guildID discord.Snowflake, params api.GetGuildBansParams) (*collection.Collection[discord.Snowflake, *discord.Ban], error) {
 	return d.RestClient.GetGuildBans(ctx, guildID, params)
 }
 
@@ -483,7 +483,7 @@ func (d *Client) BeginGuildPrune(ctx context.Context, guildID discord.Snowflake,
 	return d.RestClient.BeginGuildPrune(ctx, guildID, params, nil)
 }
 
-func (d *Client) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) ([]*discord.Invite, error) {
+func (d *Client) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[string, *discord.Invite], error) {
 	return d.RestClient.GetGuildInvites(ctx, guildID)
 }
 
@@ -907,7 +907,7 @@ func (d *Client) BulkBanGuildMembers(ctx context.Context, guildID discord.Snowfl
 	return d.RestClient.BulkBanGuildMembers(ctx, guildID, params, nil)
 }
 
-func (d *Client) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) ([]*discord.Integration, error) {
+func (d *Client) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Integration], error) {
 	return d.RestClient.GetGuildIntegrations(ctx, guildID)
 }
 

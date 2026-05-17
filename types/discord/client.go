@@ -10,8 +10,8 @@ import "github.com/streame-gg/go-discord-wrapper/collection"
 // ModifyChannel) are intentionally omitted; call those directly on the client.
 type RestClient interface {
 	// Guild operations
-	GetGuildChannels(guildID Snowflake) ([]*Channel, error)
-	GetGuildRoles(guildID Snowflake) ([]*Role, error)
+	GetGuildChannels(guildID Snowflake) (*collection.Collection[Snowflake, *Channel], error)
+	GetGuildRoles(guildID Snowflake) (*collection.Collection[Snowflake, *Role], error)
 	GetGuildRoleMemberCounts(guildID Snowflake) (map[string]int, error)
 	DeleteGuild(guildID Snowflake) error
 	RemoveGuildBan(guildID, userID Snowflake) error
@@ -36,13 +36,13 @@ type RestClient interface {
 
 // ── Guild methods ─────────────────────────────────────────────────────────────
 
-// GetChannels returns all channels in the guild.
-func (g *Guild) GetChannels(client RestClient) ([]*Channel, error) {
+// GetChannels returns all channels in the guild, keyed by channel ID.
+func (g *Guild) GetChannels(client RestClient) (*collection.Collection[Snowflake, *Channel], error) {
 	return client.GetGuildChannels(g.ID)
 }
 
-// GetRoles returns all roles in the guild.
-func (g *Guild) GetRoles(client RestClient) ([]*Role, error) {
+// GetRoles returns all roles in the guild, keyed by role ID.
+func (g *Guild) GetRoles(client RestClient) (*collection.Collection[Snowflake, *Role], error) {
 	return client.GetGuildRoles(g.ID)
 }
 

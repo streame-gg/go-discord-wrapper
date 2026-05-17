@@ -81,15 +81,15 @@ func (c *RestClient) FetchAllMessages(ctx context.Context, channelID discord.Sno
 }
 
 // FetchAllGuildBans fetches every ban in a guild across as many pages as needed
-// (max 1000 per request).
-func (c *RestClient) FetchAllGuildBans(ctx context.Context, guildID discord.Snowflake) ([]*discord.Ban, error) {
+// (max 1000 per request). Returns a Collection keyed by banned user ID.
+func (c *RestClient) FetchAllGuildBans(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Ban], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
 
 	const pageSize = 1000
 
-	var all []*discord.Ban
+	all := collection.New[discord.Snowflake, *discord.Ban]()
 	params := GetGuildBansParams{Limit: util.PointerOf(pageSize)}
 
 	for {
@@ -98,13 +98,16 @@ func (c *RestClient) FetchAllGuildBans(ctx context.Context, guildID discord.Snow
 			return nil, err
 		}
 
-		all = append(all, page...)
+		for _, b := range page.Values() {
+			all.Set(b.User.ID, b)
+		}
 
-		if len(page) < pageSize {
+		if page.Len() < pageSize {
 			return all, nil
 		}
 
-		last := page[len(page)-1]
+		vals := page.Values()
+		last := vals[len(vals)-1]
 		params.After = &last.User.ID
 	}
 }
