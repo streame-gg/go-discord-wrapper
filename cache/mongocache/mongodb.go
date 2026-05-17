@@ -61,6 +61,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -1237,28 +1238,28 @@ func (s *mongoPresenceStore) Get(guildID, userID discord.Snowflake) (*discord.Pr
 	return &presence, true
 }
 
-func (s *mongoPresenceStore) GetByGuild(guildID discord.Snowflake) []*discord.Presence {
+func (s *mongoPresenceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Presence] {
+	coll := collection.New[discord.Snowflake, *discord.Presence]()
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
 	}
 	cursor, err := s.col().Find(s.c.ctx, filter)
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []guildUserDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.Presence, 0, len(docs))
 	for _, d := range docs {
 		var presence discord.Presence
 		if json.Unmarshal([]byte(d.JSON), &presence) == nil {
-			out = append(out, &presence)
+			coll.Set(presence.User.ID, &presence)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoPresenceStore) Delete(guildID, userID discord.Snowflake) {

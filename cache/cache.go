@@ -55,6 +55,7 @@ package cache
 import (
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -358,7 +359,9 @@ type StickerStore interface {
 type PresenceStore interface {
 	Set(presence *discord.Presence)
 	Get(guildID, userID discord.Snowflake) (*discord.Presence, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.Presence
+	// GetByGuild returns a snapshot Collection of all presences for guildID.
+	// The returned Collection is a copy — mutating it does not affect the cache.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Presence]
 	Delete(guildID, userID discord.Snowflake)
 	// DeleteGuild removes every presence entry for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)

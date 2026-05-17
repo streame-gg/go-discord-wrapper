@@ -54,6 +54,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/streame-gg/go-discord-wrapper/cache"
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -1394,11 +1395,12 @@ func (s *redisPresenceStore) Get(guildID, userID discord.Snowflake) (*discord.Pr
 	return &presence, true
 }
 
-func (s *redisPresenceStore) GetByGuild(guildID discord.Snowflake) []*discord.Presence {
+func (s *redisPresenceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Presence] {
 	idx := s.c.k("presence", "guild", string(guildID))
 	userIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
+	coll := collection.New[discord.Snowflake, *discord.Presence]()
 	if err != nil || len(userIDs) == 0 {
-		return nil
+		return coll
 	}
 	keys := make([]string, len(userIDs))
 	for i, uid := range userIDs {
@@ -1406,9 +1408,8 @@ func (s *redisPresenceStore) GetByGuild(guildID discord.Snowflake) []*discord.Pr
 	}
 	vals, err := s.c.client.MGet(s.c.ctx, keys...).Result()
 	if err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.Presence, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
@@ -1417,13 +1418,13 @@ func (s *redisPresenceStore) GetByGuild(guildID discord.Snowflake) []*discord.Pr
 		}
 		var presence discord.Presence
 		if json.Unmarshal([]byte(v.(string)), &presence) == nil {
-			out = append(out, &presence)
+			coll.Set(presence.User.ID, &presence)
 		}
 	}
 	if len(stale) > 0 {
 		_ = s.c.client.SRem(s.c.ctx, idx, stale...).Err()
 	}
-	return out
+	return coll
 }
 
 func (s *redisPresenceStore) Delete(guildID, userID discord.Snowflake) {

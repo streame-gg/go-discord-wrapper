@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -1859,17 +1860,17 @@ func (ps *memPresenceStore) Get(guildID, userID discord.Snowflake) (*discord.Pre
 	return &cp, true
 }
 
-func (ps *memPresenceStore) GetByGuild(guildID discord.Snowflake) []*discord.Presence {
+func (ps *memPresenceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Presence] {
 	now := time.Now()
 	ps.s.mu.RLock()
 	defer ps.s.mu.RUnlock()
-	var out []*discord.Presence
+	coll := collection.New[discord.Snowflake, *discord.Presence]()
 	for k, e := range ps.s.items {
 		if k.guildID == guildID && !e.expired(now) {
-			out = append(out, e.value)
+			coll.Set(e.value.User.ID, e.value)
 		}
 	}
-	return out
+	return coll
 }
 
 func (ps *memPresenceStore) Delete(guildID, userID discord.Snowflake) {
