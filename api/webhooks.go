@@ -46,7 +46,7 @@ type ExecuteWebhookParams struct {
 	ThreadName      *string                  `json:"thread_name,omitempty"`
 	// Files are binary attachments sent via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
-	Files []MessageFile `json:"-"`
+	Files []discord.MessageFile `json:"-"`
 }
 
 func (p ExecuteWebhookParams) MarshalJSON() ([]byte, error) {

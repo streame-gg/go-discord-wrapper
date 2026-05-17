@@ -14,7 +14,7 @@ import (
 // CreateInteractionResponse sends a response to an interaction. Must be called within 3 seconds.
 // Set withResponse=true to receive the created message back; returns nil otherwise.
 // Pass optional files to send attachments; when present the request is encoded as multipart/form-data.
-func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionID discord.Snowflake, token string, response responses.InteractionResponse, withResponse bool, files ...MessageFile) (*responses.InteractionCallbackResponse, error) {
+func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionID discord.Snowflake, token string, response responses.InteractionResponse, withResponse bool, files ...discord.MessageFile) (*responses.InteractionCallbackResponse, error) {
 	if err := interactionID.Validate(); err != nil {
 		return nil, err
 	}

@@ -12,7 +12,7 @@ type ReplyOptions struct {
 	Content               string
 	Embeds                []discord.Embed
 	Components            []discord.AnyComponent
-	Files                 []api.MessageFile
+	Files                 []discord.MessageFile
 	AllowedMentions       *discord.AllowedMentions
 	Ephemeral             bool
 	SuppressEmbeds        bool
@@ -67,7 +67,8 @@ type UpdateMessageOptions struct {
 	Embeds          []discord.Embed
 	Components      []discord.AnyComponent
 	AllowedMentions *discord.AllowedMentions
-	Files           []api.MessageFile
+
+	Files []discord.MessageFile
 }
 
 func (o UpdateMessageOptions) toResponseData() *responses.InteractionResponseDataDefault {
@@ -86,6 +87,7 @@ func (o UpdateMessageOptions) toResponseData() *responses.InteractionResponseDat
 	if o.AllowedMentions != nil {
 		data.AllowedMentions = o.AllowedMentions
 	}
+
 	return data
 }
 
@@ -95,7 +97,7 @@ type FollowUpOptions struct {
 	Content               string
 	Embeds                []discord.Embed
 	Components            []discord.AnyComponent
-	Files                 []api.MessageFile
+	Files                 []discord.MessageFile
 	AllowedMentions       *discord.AllowedMentions
 	Ephemeral             bool
 	SuppressEmbeds        bool

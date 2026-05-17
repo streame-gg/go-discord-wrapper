@@ -50,7 +50,7 @@ func (d *Client) BulkRegisterCommands(ctx context.Context, cmds []*commands.Appl
 // Reply sends an immediate message response to an interaction.
 // Pass withResponse=true to get the created message back.
 // Pass optional files to include attachments; when present the request is sent as multipart/form-data.
-func (d *Client) Reply(ctx context.Context, i *interactions.Interaction, data *responses.InteractionResponseDataDefault, withResponse bool, files ...api.MessageFile) (*responses.InteractionCallbackResponse, error) {
+func (d *Client) Reply(ctx context.Context, i *interactions.Interaction, data *responses.InteractionResponseDataDefault, withResponse bool, files ...discord.MessageFile) (*responses.InteractionCallbackResponse, error) {
 	return d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
 		Type: discord.InteractionCallbackTypeChannelMessageWithSource,
 		Data: data,
@@ -80,11 +80,11 @@ func (d *Client) DeferUpdateMessage(ctx context.Context, i *interactions.Interac
 }
 
 // UpdateMessage edits the message that triggered a component interaction.
-func (d *Client) UpdateMessage(ctx context.Context, i *interactions.Interaction, data *responses.InteractionResponseDataDefault) error {
+func (d *Client) UpdateMessage(ctx context.Context, i *interactions.Interaction, data *responses.InteractionResponseDataDefault, files ...discord.MessageFile) error {
 	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
 		Type: discord.InteractionCallbackTypeUpdateMessage,
 		Data: data,
-	}, false)
+	}, false, files...)
 	return err
 }
 

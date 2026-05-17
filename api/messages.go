@@ -46,16 +46,6 @@ func (p GetMessagesParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
-// MessageFile is a binary file attachment included in a message or webhook.
-type MessageFile struct {
-	// Name is the filename Discord will display (e.g. "image.png").
-	Name string
-	// ContentType is the MIME type (e.g. "image/png"). Defaults to "application/octet-stream".
-	ContentType string
-	// Data is the raw file content.
-	Data []byte
-}
-
 // basenameFilename returns the basename of a filename, stripping any path
 // components. Used to ensure local filesystem paths don't leak into Discord
 // uploads via the Content-Disposition header.
@@ -71,7 +61,7 @@ func basenameFilename(name string) string {
 
 // buildMultipartMessage encodes payload as multipart/form-data with optional file parts.
 // Returns the body buffer and the Content-Type header value (including boundary).
-func buildMultipartMessage(payload []byte, files []MessageFile) (*bytes.Buffer, string, error) {
+func buildMultipartMessage(payload []byte, files []discord.MessageFile) (*bytes.Buffer, string, error) {
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
 
@@ -123,7 +113,7 @@ type CreateMessageParams struct {
 	EnforceNonce bool                   `json:"enforce_nonce,omitempty"`
 	// Files are binary attachments sent via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
-	Files             []MessageFile             `json:"-"`
+	Files             []discord.MessageFile     `json:"-"`
 	Poll              discord.PollRequest       `json:"poll_request,omitempty"`
 	SharedClientTheme discord.SharedClientTheme `json:"shared_client_theme,omitempty"`
 }
@@ -153,7 +143,7 @@ type EditMessageParams struct {
 	Attachments *[]discord.Attachment  `json:"attachments,omitempty"`
 	// Files are binary attachments added via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
-	Files []MessageFile `json:"-"`
+	Files []discord.MessageFile `json:"-"`
 }
 
 func (p EditMessageParams) MarshalJSON() ([]byte, error) {

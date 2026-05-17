@@ -12,10 +12,10 @@ import (
 // Client is the subset of *connection.Client needed by Interaction methods.
 // Pass the client received in your event handler — *connection.Client satisfies this interface.
 type Client interface {
-	Reply(ctx context.Context, i *Interaction, data *responses.InteractionResponseDataDefault, withResponse bool, files ...api.MessageFile) (*responses.InteractionCallbackResponse, error)
+	Reply(ctx context.Context, i *Interaction, data *responses.InteractionResponseDataDefault, withResponse bool, files ...discord.MessageFile) (*responses.InteractionCallbackResponse, error)
 	DeferReply(ctx context.Context, i *Interaction, ephemeral bool) error
 	DeferUpdateMessage(ctx context.Context, i *Interaction) error
-	UpdateMessage(ctx context.Context, i *Interaction, data *responses.InteractionResponseDataDefault) error
+	UpdateMessage(ctx context.Context, i *Interaction, data *responses.InteractionResponseDataDefault, files ...discord.MessageFile) error
 	ReplyWithModal(ctx context.Context, i *Interaction, modal *components.Modal) error
 	ReplyAutocomplete(ctx context.Context, i *Interaction, choices []responses.AutocompleteChoice) error
 	LaunchActivity(ctx context.Context, i *Interaction) error
@@ -74,7 +74,7 @@ func (i *Interaction) UpdateMessage(opts UpdateMessageOptions) error {
 	if err != nil {
 		return err
 	}
-	return c.UpdateMessage(ctx, i, opts.toResponseData())
+	return c.UpdateMessage(ctx, i, opts.toResponseData(), opts.Files...)
 }
 
 // Modal responds to the interaction with a modal dialog.
