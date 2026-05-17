@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## v0.2.0 Breaking Changes
+
+- **P2-27 — `AutoModerationTriggerMetadata.Presets` typed enum**: `Presets []int` is now `Presets []KeywordPresetType`. Use the new constants `KeywordPresetTypeProfanity` (1), `KeywordPresetTypeSexualContent` (2), `KeywordPresetTypeSlurs` (3) instead of raw integer literals.
+
+  ```go
+  // Before:
+  meta := discord.AutoModerationTriggerMetadata{
+      Presets: []int{1, 3},
+  }
+
+  // After:
+  meta := discord.AutoModerationTriggerMetadata{
+      Presets: []discord.KeywordPresetType{
+          discord.KeywordPresetTypeProfanity,
+          discord.KeywordPresetTypeSlurs,
+      },
+  }
+  ```
+
 ### Added
 
 - **CI pipeline** (P0-12): Added `.github/workflows/ci.yml` with three jobs: `build` (`go build` + `go vet`), `test-race` (`go test -race -timeout 5m`), and `doc-examples` (builds and runs `cmd/doc-check`). Triggers on push and pull request for all branches.
