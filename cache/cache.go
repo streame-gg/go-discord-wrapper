@@ -301,7 +301,9 @@ type VoiceStateStore interface {
 type SoundboardStore interface {
 	Set(guildID discord.Snowflake, sound *discord.SoundboardSound)
 	Get(soundID discord.Snowflake) (*discord.SoundboardSound, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.SoundboardSound
+	// GetByGuild returns a snapshot Collection of all soundboard sounds for guildID,
+	// keyed by SoundID. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.SoundboardSound]
 	SetAll(guildID discord.Snowflake, sounds []*discord.SoundboardSound)
 	Delete(soundID discord.Snowflake)
 	// DeleteGuild removes every soundboard sound for guildID. Call on GUILD_DELETE.

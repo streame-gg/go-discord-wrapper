@@ -800,11 +800,12 @@ func (s *redisSoundboardStore) Get(soundID discord.Snowflake) (*discord.Soundboa
 	return &sound, true
 }
 
-func (s *redisSoundboardStore) GetByGuild(guildID discord.Snowflake) []*discord.SoundboardSound {
+func (s *redisSoundboardStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.SoundboardSound] {
+	coll := collection.New[discord.Snowflake, *discord.SoundboardSound]()
 	idx := s.c.k("soundboard", "guild", string(guildID))
 	soundIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(soundIDs) == 0 {
-		return nil
+		return coll
 	}
 	keys := make([]string, len(soundIDs))
 	for i, id := range soundIDs {
@@ -812,9 +813,8 @@ func (s *redisSoundboardStore) GetByGuild(guildID discord.Snowflake) []*discord.
 	}
 	vals, err := s.c.client.MGet(s.c.ctx, keys...).Result()
 	if err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.SoundboardSound, 0, len(vals))
 	var stale []any
 	for i, v := range vals {
 		if v == nil {
@@ -823,7 +823,7 @@ func (s *redisSoundboardStore) GetByGuild(guildID discord.Snowflake) []*discord.
 		}
 		var sound discord.SoundboardSound
 		if json.Unmarshal([]byte(v.(string)), &sound) == nil {
-			out = append(out, &sound)
+			coll.Set(sound.SoundID, &sound)
 		}
 	}
 	if len(stale) > 0 {
@@ -832,7 +832,7 @@ func (s *redisSoundboardStore) GetByGuild(guildID discord.Snowflake) []*discord.
 			_ = s.c.client.Del(s.c.ctx, s.c.k("soundboard", "map", id.(string))).Err()
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *redisSoundboardStore) SetAll(guildID discord.Snowflake, sounds []*discord.SoundboardSound) {

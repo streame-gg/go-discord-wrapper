@@ -809,28 +809,28 @@ func (s *mongoSoundboardStore) Get(soundID discord.Snowflake) (*discord.Soundboa
 	return &sound, true
 }
 
-func (s *mongoSoundboardStore) GetByGuild(guildID discord.Snowflake) []*discord.SoundboardSound {
+func (s *mongoSoundboardStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.SoundboardSound] {
+	coll := collection.New[discord.Snowflake, *discord.SoundboardSound]()
 	filter := bson.M{"guild_id": string(guildID)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
 	}
 	cursor, err := s.col().Find(s.c.ctx, filter)
 	if err != nil {
-		return nil
+		return coll
 	}
 	defer cursor.Close(s.c.ctx)
 	var docs []guildEntityDoc
 	if err := cursor.All(s.c.ctx, &docs); err != nil {
-		return nil
+		return coll
 	}
-	out := make([]*discord.SoundboardSound, 0, len(docs))
 	for _, d := range docs {
 		var sound discord.SoundboardSound
 		if json.Unmarshal([]byte(d.JSON), &sound) == nil {
-			out = append(out, &sound)
+			coll.Set(sound.SoundID, &sound)
 		}
 	}
-	return out
+	return coll
 }
 
 func (s *mongoSoundboardStore) SetAll(guildID discord.Snowflake, sounds []*discord.SoundboardSound) {

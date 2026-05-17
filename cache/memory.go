@@ -1540,17 +1540,17 @@ func (ss *memSoundboardStore) Get(soundID discord.Snowflake) (*discord.Soundboar
 	return &cp, true
 }
 
-func (ss *memSoundboardStore) GetByGuild(guildID discord.Snowflake) []*discord.SoundboardSound {
+func (ss *memSoundboardStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.SoundboardSound] {
 	now := time.Now()
 	ss.s.mu.RLock()
 	defer ss.s.mu.RUnlock()
-	var out []*discord.SoundboardSound
+	coll := collection.New[discord.Snowflake, *discord.SoundboardSound]()
 	for _, e := range ss.s.items {
 		if e.value.GuildID == guildID && !e.expired(now) {
-			out = append(out, e.value.Sound)
+			coll.Set(e.value.Sound.SoundID, e.value.Sound)
 		}
 	}
-	return out
+	return coll
 }
 
 func (ss *memSoundboardStore) SetAll(guildID discord.Snowflake, sounds []*discord.SoundboardSound) {
