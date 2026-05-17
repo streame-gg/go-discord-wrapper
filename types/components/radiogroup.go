@@ -60,7 +60,7 @@ type RadioGroupComponentInteractionResponse struct {
 	Type     discord.ComponentType `json:"type"`
 	ID       *int                  `json:"id,omitempty"`
 	CustomID string                `json:"custom_id,omitempty"`
-	Value    *string               `json:"value"`
+	Value    *string               `json:"value,omitempty"`
 }
 
 func (r *RadioGroupComponentInteractionResponse) IsInteractionResponseDataComponent() {}

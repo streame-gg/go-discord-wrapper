@@ -16,7 +16,7 @@ type VoiceStateUpdateEvent struct {
 type VoiceServerUpdateEvent struct {
 	Token    string            `json:"token"`
 	GuildID  discord.Snowflake `json:"guild_id"`
-	Endpoint *string           `json:"endpoint"` // null when the guild has no voice server
+	Endpoint *string           `json:"endpoint,omitempty"` // null when the guild has no voice server
 }
 
 // VoiceChannelEffectSendEvent is dispatched when a user sends an effect (soundboard,

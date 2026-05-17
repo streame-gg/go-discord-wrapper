@@ -299,14 +299,14 @@ const (
 // GuildWidgetSettings holds the guild widget configuration.
 type GuildWidgetSettings struct {
 	Enabled   bool       `json:"enabled"`
-	ChannelID *Snowflake `json:"channel_id"`
+	ChannelID *Snowflake `json:"channel_id,omitempty"`
 }
 
 // GuildWidget is the public JSON widget for a guild.
 type GuildWidget struct {
 	ID            Snowflake `json:"id"`
 	Name          string    `json:"name"`
-	InstantInvite *string   `json:"instant_invite"`
+	InstantInvite *string   `json:"instant_invite,omitempty"`
 	Channels      []Channel `json:"channels"`
 	Members       []User    `json:"members"`
 	PresenceCount int       `json:"presence_count"`
@@ -334,17 +334,17 @@ func (g GatewayGuild) IsAvailable() bool { return true }
 func (g GatewayGuild) GetID() Snowflake  { return g.ID }
 
 type Ban struct {
-	Reason *string `json:"reason"`
+	Reason *string `json:"reason,omitempty"`
 	User   User    `json:"user"`
 }
 
 type GuildVanityURL struct {
-	Code *string `json:"code"`
+	Code *string `json:"code,omitempty"`
 	Uses int     `json:"uses"`
 }
 
 type GuildPruneCountResult struct {
-	Pruned *int `json:"pruned"`
+	Pruned *int `json:"pruned,omitempty"`
 }
 
 type StickerPack struct {

@@ -26,8 +26,8 @@ type AutoModerationActionExecutionEvent struct {
 	MessageID            *discord.Snowflake                `json:"message_id,omitempty"`
 	AlertSystemMessageID *discord.Snowflake                `json:"alert_system_message_id,omitempty"`
 	Content              string                            `json:"content"`
-	MatchedKeyword       *string                           `json:"matched_keyword"`
-	MatchedContent       *string                           `json:"matched_content"`
+	MatchedKeyword       *string                           `json:"matched_keyword,omitempty"`
+	MatchedContent       *string                           `json:"matched_content,omitempty"`
 }
 
 func init() {

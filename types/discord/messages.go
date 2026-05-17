@@ -21,7 +21,7 @@ type Message struct {
 	Application          *Application                `json:"application,omitempty"`
 	ApplicationID        *string                     `json:"application_id,omitempty"`
 	Attachments          []Attachment                `json:"attachments,omitempty"`
-	Author               *User                       `json:"author"`
+	Author               *User                       `json:"author,omitempty"`
 	Call                 *Call                       `json:"call,omitempty"`
 	ChannelID            Snowflake                   `json:"channel_id"`
 	ChannelType          ChannelType                 `json:"channel_type"`

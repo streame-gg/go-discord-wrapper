@@ -57,5 +57,5 @@ type InteractionCallbackResource struct {
 
 type InteractionCallbackResponse struct {
 	Interaction InteractionCallback          `json:"interaction"`
-	Resource    *InteractionCallbackResource `json:"resource"`
+	Resource    *InteractionCallbackResource `json:"resource,omitempty"`
 }

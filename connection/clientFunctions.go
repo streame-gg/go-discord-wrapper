@@ -60,14 +60,13 @@ func (d *Client) Reply(ctx context.Context, i *interactions.Interaction, data *r
 // DeferReply acknowledges the interaction, telling Discord the bot will respond later.
 // Set ephemeral=true to make the eventual follow-up visible only to the invoker.
 func (d *Client) DeferReply(ctx context.Context, i *interactions.Interaction, ephemeral bool) error {
-	var data *responses.InteractionResponseDataDefault
-	if ephemeral {
-		data = &responses.InteractionResponseDataDefault{Flags: discord.MessageFlagEphemeral}
-	}
-	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
+	resp := responses.InteractionResponse{
 		Type: discord.InteractionCallbackTypeDeferredChannelMessageWithSource,
-		Data: data,
-	}, false)
+	}
+	if ephemeral {
+		resp.Data = &responses.InteractionResponseDataDefault{Flags: discord.MessageFlagEphemeral}
+	}
+	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, resp, false)
 	return err
 }
 

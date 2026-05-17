@@ -6,7 +6,7 @@ import (
 
 type MessageCreateEvent struct {
 	discord.Message
-	GuildID  *discord.Snowflake   `json:"guild_id"`
+	GuildID  *discord.Snowflake   `json:"guild_id,omitempty"`
 	Member   *discord.GuildMember `json:"member,omitempty"`
 	Mentions *[]discord.User      `json:"mentions"`
 }
