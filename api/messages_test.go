@@ -5,6 +5,8 @@ import (
 	"mime/multipart"
 	"strings"
 	"testing"
+
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 func TestBasenameFilename(t *testing.T) {
@@ -30,7 +32,7 @@ func TestBasenameFilename(t *testing.T) {
 
 func TestBuildMultipartMessage_BasenameInHeader(t *testing.T) {
 	payload := []byte(`{"content":"hello"}`)
-	files := []MessageFile{
+	files := []discord.MessageFile{
 		{Name: "/home/user/Downloads/secret_report.pdf", ContentType: "application/pdf", Data: []byte("pdfdata")},
 	}
 

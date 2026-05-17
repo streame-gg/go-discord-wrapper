@@ -47,7 +47,7 @@ func TestP0_10_CreateForumThreadWithFiles(t *testing.T) {
 		Name: "my-forum-thread",
 		Message: CreateMessageParams{
 			Content: "hello from forum thread",
-			Files: []MessageFile{
+			Files: []discord.MessageFile{
 				{
 					Name:        "hello.txt",
 					ContentType: "text/plain",
