@@ -393,7 +393,7 @@ func (g *memGuildStore) All() *collection.Collection[discord.Snowflake, *discord
 	}
 	return coll
 }
-func (g *memGuildStore) Size() int                   { return g.s.size() }
+func (g *memGuildStore) Size() int { return g.s.size() }
 
 type memChannelStore struct {
 	s *genericStore[discord.Snowflake, *discord.Channel]
@@ -422,7 +422,7 @@ func (c *memChannelStore) All() *collection.Collection[discord.Snowflake, *disco
 	}
 	return coll
 }
-func (c *memChannelStore) Size() int                   { return c.s.size() }
+func (c *memChannelStore) Size() int { return c.s.size() }
 
 type memUserStore struct {
 	s *genericStore[discord.Snowflake, *discord.User]
@@ -451,7 +451,7 @@ func (u *memUserStore) All() *collection.Collection[discord.Snowflake, *discord.
 	}
 	return coll
 }
-func (u *memUserStore) Size() int                   { return u.s.size() }
+func (u *memUserStore) Size() int { return u.s.size() }
 
 // ── Member store ──────────────────────────────────────────────────────────────
 
