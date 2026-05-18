@@ -132,8 +132,8 @@ func TestGuildStore_All(t *testing.T) {
 	for i := 1; i <= 5; i++ {
 		c.Guilds().Set(guild(fmt.Sprintf("%d", i)))
 	}
-	if len(c.Guilds().All()) != 5 {
-		t.Fatalf("expected 5 guilds, got %d", len(c.Guilds().All()))
+	if n := c.Guilds().All().Len(); n != 5 {
+		t.Fatalf("expected 5 guilds, got %d", n)
 	}
 }
 
@@ -185,8 +185,8 @@ func TestGuildStore_TTL(t *testing.T) {
 	if n := c.Guilds().Size(); n != 0 {
 		t.Fatalf("expected Size() == 0 after TTL, got %d", n)
 	}
-	if all := c.Guilds().All(); len(all) != 0 {
-		t.Fatalf("expected All() empty after TTL, got %d", len(all))
+	if n := c.Guilds().All().Len(); n != 0 {
+		t.Fatalf("expected All() empty after TTL, got %d", n)
 	}
 }
 
@@ -211,8 +211,8 @@ func TestChannelStore_All(t *testing.T) {
 	for i := 1; i <= 4; i++ {
 		c.Channels().Set(channel(fmt.Sprintf("%d", i)))
 	}
-	if len(c.Channels().All()) != 4 {
-		t.Fatalf("expected 4 channels, got %d", len(c.Channels().All()))
+	if n := c.Channels().All().Len(); n != 4 {
+		t.Fatalf("expected 4 channels, got %d", n)
 	}
 }
 
@@ -247,8 +247,8 @@ func TestUserStore_All(t *testing.T) {
 
 	c.Users().Set(user("1"))
 	c.Users().Set(user("2"))
-	if len(c.Users().All()) != 2 {
-		t.Fatalf("expected 2 users, got %d", len(c.Users().All()))
+	if c.Users().All().Len() != 2 {
+		t.Fatalf("expected 2 users, got %d", c.Users().All().Len())
 	}
 }
 
@@ -284,11 +284,11 @@ func TestMemberStore_DeleteGuild(t *testing.T) {
 
 	c.Members().DeleteGuild("guild1")
 
-	if members := c.Members().AllInGuild("guild1"); len(members) != 0 {
-		t.Fatalf("expected 0 members in guild1 after DeleteGuild, got %d", len(members))
+	if n := c.Members().AllInGuild("guild1").Len(); n != 0 {
+		t.Fatalf("expected 0 members in guild1 after DeleteGuild, got %d", n)
 	}
-	if members := c.Members().AllInGuild("guild2"); len(members) != 1 {
-		t.Fatalf("guild2 should be unaffected, got %d members", len(members))
+	if n := c.Members().AllInGuild("guild2").Len(); n != 1 {
+		t.Fatalf("guild2 should be unaffected, got %d members", n)
 	}
 }
 
@@ -300,11 +300,11 @@ func TestMemberStore_AllInGuild(t *testing.T) {
 	}
 	c.Members().Set("g2", member("99"))
 
-	if all := c.Members().AllInGuild("g1"); len(all) != 3 {
-		t.Fatalf("expected 3 members in g1, got %d", len(all))
+	if n := c.Members().AllInGuild("g1").Len(); n != 3 {
+		t.Fatalf("expected 3 members in g1, got %d", n)
 	}
-	if all := c.Members().AllInGuild("g2"); len(all) != 1 {
-		t.Fatalf("expected 1 member in g2, got %d", len(all))
+	if n := c.Members().AllInGuild("g2").Len(); n != 1 {
+		t.Fatalf("expected 1 member in g2, got %d", n)
 	}
 }
 
@@ -342,8 +342,8 @@ func TestStickerStore_CRUDAndSetAll(t *testing.T) {
 	if _, ok := c.Stickers().Get("s1"); ok {
 		t.Fatal("expected old guild stickers replaced by SetAll")
 	}
-	if stickers := c.Stickers().GetByGuild("guild1"); len(stickers) != 2 {
-		t.Fatalf("expected 2 stickers in guild1, got %d", len(stickers))
+	if n := c.Stickers().GetByGuild("guild1").Len(); n != 2 {
+		t.Fatalf("expected 2 stickers in guild1, got %d", n)
 	}
 
 	c.Stickers().Delete("s2")
@@ -352,8 +352,8 @@ func TestStickerStore_CRUDAndSetAll(t *testing.T) {
 	}
 
 	c.Stickers().DeleteGuild("guild1")
-	if stickers := c.Stickers().GetByGuild("guild1"); len(stickers) != 0 {
-		t.Fatalf("expected guild stickers deleted, got %d", len(stickers))
+	if n := c.Stickers().GetByGuild("guild1").Len(); n != 0 {
+		t.Fatalf("expected guild stickers deleted, got %d", n)
 	}
 }
 
@@ -402,12 +402,12 @@ func TestMessageStore_Update_PreservesInsertedAt(t *testing.T) {
 	c.Messages().Update(updated)
 
 	msgs := c.Messages().Channel("c1")
-	if len(msgs) != 3 {
-		t.Fatalf("expected 3 messages, got %d", len(msgs))
+	if msgs.Len() != 3 {
+		t.Fatalf("expected 3 messages, got %d", msgs.Len())
 	}
 	// m3 was added last, so it must be first (newest).
-	if msgs[0].ID != "m3" {
-		t.Fatalf("expected m3 first (newest), got %s", msgs[0].ID)
+	if msgs.Values()[0].ID != "m3" {
+		t.Fatalf("expected m3 first (newest), got %s", msgs.Values()[0].ID)
 	}
 }
 
@@ -448,14 +448,14 @@ func TestMessageStore_Channel_NewestFirst(t *testing.T) {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
 	}
 	msgs := c.Messages().Channel("c1")
-	if len(msgs) != 5 {
-		t.Fatalf("expected 5 messages, got %d", len(msgs))
+	if msgs.Len() != 5 {
+		t.Fatalf("expected 5 messages, got %d", msgs.Len())
 	}
-	if msgs[0].ID != "m5" {
-		t.Fatalf("expected newest first (m5), got %s", msgs[0].ID)
+	if msgs.Values()[0].ID != "m5" {
+		t.Fatalf("expected newest first (m5), got %s", msgs.Values()[0].ID)
 	}
-	if msgs[4].ID != "m1" {
-		t.Fatalf("expected oldest last (m1), got %s", msgs[4].ID)
+	if msgs.Values()[4].ID != "m1" {
+		t.Fatalf("expected oldest last (m1), got %s", msgs.Values()[4].ID)
 	}
 }
 
@@ -467,10 +467,10 @@ func TestMessageStore_DeleteChannel(t *testing.T) {
 
 	c.Messages().DeleteChannel("c1")
 
-	if msgs := c.Messages().Channel("c1"); len(msgs) != 0 {
-		t.Fatalf("expected c1 messages deleted, got %d", len(msgs))
+	if n := c.Messages().Channel("c1").Len(); n != 0 {
+		t.Fatalf("expected c1 messages deleted, got %d", n)
 	}
-	if msgs := c.Messages().Channel("c2"); len(msgs) != 1 {
+	if n := c.Messages().Channel("c2").Len(); n != 1 {
 		t.Fatal("c2 should be unaffected")
 	}
 }
@@ -485,10 +485,10 @@ func TestMessageStore_RingCap(t *testing.T) {
 	}
 
 	msgs := c.Messages().Channel("c1")
-	if len(msgs) != 3 {
-		t.Fatalf("expected ring cap of 3, got %d", len(msgs))
+	if msgs.Len() != 3 {
+		t.Fatalf("expected ring cap of 3, got %d", msgs.Len())
 	}
-	for _, m := range msgs {
+	for _, m := range msgs.Values() {
 		if m.ID == "m1" || m.ID == "m2" {
 			t.Fatalf("message %s (oldest) should have been evicted", m.ID)
 		}
@@ -513,8 +513,8 @@ func TestMessageStore_TTL(t *testing.T) {
 	if _, ok := c.Messages().Get("c1", "m1"); ok {
 		t.Fatal("expected message expired after TTL (expires_at filter)")
 	}
-	if msgs := c.Messages().Channel("c1"); len(msgs) != 0 {
-		t.Fatalf("expected no messages after TTL, got %d", len(msgs))
+	if n := c.Messages().Channel("c1").Len(); n != 0 {
+		t.Fatalf("expected no messages after TTL, got %d", n)
 	}
 }
 
@@ -616,7 +616,7 @@ func TestBug50SetAllIsAtomic(t *testing.T) {
 				default:
 				}
 				got := c.Emojis().GetByGuild(guildID)
-				if len(got) != 0 && len(got) != len(initial) && len(got) != 5 {
+				if got.Len() != 0 && got.Len() != len(initial) && got.Len() != 5 {
 					partial.Store(true)
 				}
 			}
@@ -651,8 +651,8 @@ func TestBug36MaxPerChannelZeroDisables(t *testing.T) {
 	c.Messages().Add(message("m2", "ch1"))
 
 	ch := c.Messages().Channel("ch1")
-	if len(ch) != 0 {
-		t.Errorf("MaxPerChannel=0 should disable caching, got %d messages (Bug 36)", len(ch))
+	if ch.Len() != 0 {
+		t.Errorf("MaxPerChannel=0 should disable caching, got %d messages (Bug 36)", ch.Len())
 	}
 	if sz := c.Messages().Size(); sz != 0 {
 		t.Errorf("Size should be 0 when disabled, got %d (Bug 36)", sz)

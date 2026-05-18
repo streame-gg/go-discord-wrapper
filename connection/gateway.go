@@ -722,7 +722,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 
 			// Remove cached guilds that are no longer present (bot was kicked while offline).
 			if d.cacheEnabled() {
-				for _, cachedGuild := range d.Cache.Guilds().All() {
+				for _, cachedGuild := range d.Cache.Guilds().All().Values() {
 					if _, present := currentGuildIDs[cachedGuild.ID]; !present {
 						d.removeGuildFromCache(cachedGuild.ID)
 					}
@@ -1196,7 +1196,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				// consistent immediately so permission checks cannot see stale roles.
 				if d.cacheStoreEnabled(cache.CategoryMembers) {
 					roleStr := ev.RoleID.String()
-					for _, m := range d.Cache.Members().AllInGuild(ev.GuildID) {
+					for _, m := range d.Cache.Members().AllInGuild(ev.GuildID).Values() {
 						found := false
 						for _, r := range m.Roles {
 							if r == roleStr {

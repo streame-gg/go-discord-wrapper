@@ -7,6 +7,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// ListSKUs returns all SKUs for the given application.
 func (c *RestClient) ListSKUs(ctx context.Context, appID discord.Snowflake) ([]*discord.SKU, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err

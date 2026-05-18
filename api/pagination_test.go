@@ -237,7 +237,8 @@ func TestFetchAllGuildBansOnePage(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount), "expected single page request")
 
 	// verify IDs round-trip
-	assert.Equal(t, discord.Snowflake("1"), result[0].User.ID)
+	first := result[0]
+	assert.Equal(t, discord.Snowflake("1"), first.User.ID)
 
 	// suppress unused import
 	_ = time.Second

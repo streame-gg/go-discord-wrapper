@@ -65,6 +65,7 @@ type CreateTestEntitlementParams struct {
 
 // ── Entitlement endpoints ─────────────────────────────────────────────────────
 
+// ListEntitlements returns entitlements for an application.
 func (c *RestClient) ListEntitlements(ctx context.Context, appID discord.Snowflake, params ListEntitlementsParams) ([]*discord.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err

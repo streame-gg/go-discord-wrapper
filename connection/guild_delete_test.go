@@ -132,7 +132,7 @@ func TestGuildDelete_CleansGuildAndMembers(t *testing.T) {
 	assert.False(t, guildOK, "guild should be evicted from cache after GUILD_DELETE")
 
 	members := c.Cache.Members().AllInGuild(guildID)
-	assert.Empty(t, members, "guild members should be evicted from cache after GUILD_DELETE")
+	assert.Equal(t, 0, members.Len(), "guild members should be evicted from cache after GUILD_DELETE")
 }
 
 // TestGuildDelete_UnavailableIsNoop verifies that a GUILD_DELETE with

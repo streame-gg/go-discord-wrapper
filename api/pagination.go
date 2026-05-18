@@ -32,7 +32,6 @@ func (c *RestClient) FetchAllGuildMembers(ctx context.Context, guildID discord.S
 			return all, nil
 		}
 
-		// Advance the cursor past the last member on this page.
 		last := page[len(page)-1]
 		params.After = &last.User.ID
 	}

@@ -79,7 +79,7 @@ func (s *memoryTestSuite) TestGuildStore_All() {
 	for i := 1; i <= 5; i++ {
 		c.Guilds().Set(guild(fmt.Sprintf("%d", i)))
 	}
-	s.Lenf(c.Guilds().All(), 5, "expected 5 guilds, got %d", len(c.Guilds().All()))
+	s.Equal(5, c.Guilds().All().Len(), "expected 5 guilds")
 }
 
 func (s *memoryTestSuite) TestGuildStore_TTLExpiry() {
@@ -153,8 +153,8 @@ func (s *memoryTestSuite) TestMemberStore_DeleteGuild() {
 
 	c.Members().DeleteGuild("guild1")
 
-	s.Lenf(c.Members().AllInGuild("guild1"), 0, "expected guild1 members deleted")
-	s.Lenf(c.Members().AllInGuild("guild2"), 1, "guild2 member should be unaffected")
+	s.Equal(0, c.Members().AllInGuild("guild1").Len(), "expected guild1 members deleted")
+	s.Equal(1, c.Members().AllInGuild("guild2").Len(), "guild2 member should be unaffected")
 }
 
 func (s *memoryTestSuite) TestMemberStore_NilUser() {
@@ -178,14 +178,14 @@ func (s *memoryTestSuite) TestStickerStore_CRUDAndSetAll() {
 	c.Stickers().SetAll("guild1", []*discord.Sticker{sticker("s2"), sticker("s3")})
 	_, ok = c.Stickers().Get("s1")
 	s.False(ok, "expected old guild stickers replaced by SetAll")
-	s.Lenf(c.Stickers().GetByGuild("guild1"), 2, "expected 2 stickers after SetAll")
+	s.Equal(2, c.Stickers().GetByGuild("guild1").Len(), "expected 2 stickers after SetAll")
 
 	c.Stickers().Delete("s2")
 	_, ok = c.Stickers().Get("s2")
 	s.False(ok, "expected sticker s2 deleted")
 
 	c.Stickers().DeleteGuild("guild1")
-	s.Lenf(c.Stickers().GetByGuild("guild1"), 0, "expected guild stickers deleted")
+	s.Equal(0, c.Stickers().GetByGuild("guild1").Len(), "expected guild stickers deleted")
 }
 
 // ── MessageStore ──────────────────────────────────────────────────────────────
@@ -241,8 +241,8 @@ func (s *memoryTestSuite) TestMessageStore_Channel_NewestFirst() {
 		c.Messages().Add(message(fmt.Sprintf("msg%d", i), "chan1"))
 	}
 	msgs := c.Messages().Channel("chan1")
-	s.Require().Lenf(msgs, 5, "expected 5 messages, got %d", len(msgs))
-	s.Equalf(discord.Snowflake("msg5"), msgs[0].ID, "expected newest first (msg5), got %s", msgs[0].ID)
+	s.Require().Equal(5, msgs.Len(), "expected 5 messages")
+	s.Equalf(discord.Snowflake("msg5"), msgs.Values()[0].ID, "expected newest first (msg5), got %s", msgs.Values()[0].ID)
 }
 
 func (s *memoryTestSuite) TestMessageStore_DeleteChannel() {
@@ -254,8 +254,8 @@ func (s *memoryTestSuite) TestMessageStore_DeleteChannel() {
 
 	c.Messages().DeleteChannel("chan1")
 
-	s.Lenf(c.Messages().Channel("chan1"), 0, "expected chan1 messages deleted")
-	s.Lenf(c.Messages().Channel("chan2"), 1, "chan2 should be unaffected")
+	s.Equal(0, c.Messages().Channel("chan1").Len(), "expected chan1 messages deleted")
+	s.Equal(1, c.Messages().Channel("chan2").Len(), "chan2 should be unaffected")
 }
 
 func (s *memoryTestSuite) TestMessageStore_RingEvictsOldest() {
@@ -268,8 +268,8 @@ func (s *memoryTestSuite) TestMessageStore_RingEvictsOldest() {
 		c.Messages().Add(message(fmt.Sprintf("msg%d", i), "chan1"))
 	}
 	msgs := c.Messages().Channel("chan1")
-	s.Require().Lenf(msgs, 3, "expected ring cap of 3, got %d", len(msgs))
-	for _, m := range msgs {
+	s.Require().Equal(3, msgs.Len(), "expected ring cap of 3")
+	for _, m := range msgs.Values() {
 		s.NotEqualf(discord.Snowflake("msg1"), m.ID, "msg1 (oldest) should have been evicted")
 	}
 }
@@ -794,7 +794,7 @@ func TestBug3ConcurrentAddDeleteChannelNoCounterDrift(t *testing.T) {
 	// totalMsgs counter must equal the actual number of messages in all rings.
 	reported := c.Messages().Size()
 	// Get() returns all messages in the channel; use Channel() to count actual messages.
-	actual := len(c.Messages().Channel(chanID))
+	actual := c.Messages().Channel(chanID).Len()
 	if reported < 0 {
 		t.Errorf("totalMsgs went negative: %d", reported)
 	}

@@ -503,17 +503,12 @@ func (c *RestClient) ModifyGuildRolePositions(ctx context.Context, guildID disco
 		return nil, err
 	}
 
+	var req *http.Request
 	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization())
-		if err != nil {
-			return nil, err
-		}
-		return doRequestSlice[discord.Role](c, req, map[int]bool{
-			http.StatusOK: true,
-		})
+		req, err = c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization())
+	} else {
+		req, err = c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	}
-
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/guilds/"+guildID.String()+"/roles", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
 	if err != nil {
 		return nil, err
 	}

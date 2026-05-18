@@ -40,6 +40,7 @@ func (p ListSKUSubscriptionsParams) toQuery() string {
 
 // ── Subscription endpoints ────────────────────────────────────────────────────
 
+// ListSKUSubscriptions returns subscriptions for a SKU.
 func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID discord.Snowflake, params ListSKUSubscriptionsParams) ([]*discord.Subscription, error) {
 	if err := skuID.Validate(); err != nil {
 		return nil, err

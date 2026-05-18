@@ -110,7 +110,7 @@ func (c *RestClient) CreateWebhook(ctx context.Context, channelID discord.Snowfl
 	})
 }
 
-// GetChannelWebhooks returns all webhooks for a channel.
+// GetChannelWebhooks returns all webhooks for a channel. Requires MANAGE_WEBHOOKS.
 func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID discord.Snowflake) ([]*discord.Webhook, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err

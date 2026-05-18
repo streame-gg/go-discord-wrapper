@@ -128,7 +128,7 @@ func (s *RedisCacheTestSuite) TestGuildStore_All() {
 		c.Guilds().Set(guild(fmt.Sprintf("%d", i)))
 	}
 	all := c.Guilds().All()
-	s.Require().Len(all, 5, "expected 5 guilds after 5 sets")
+	s.Require().Equal(5, all.Len(), "expected 5 guilds after 5 sets")
 }
 
 func (s *RedisCacheTestSuite) TestGuildStore_Size() {
@@ -189,7 +189,7 @@ func (s *RedisCacheTestSuite) TestChannelStore_All() {
 	for i := 1; i <= 4; i++ {
 		c.Channels().Set(channel(fmt.Sprintf("%d", i)))
 	}
-	s.Require().Len(c.Channels().All(), 4, "expected 4 channels")
+	s.Require().Equal(4, c.Channels().All().Len(), "expected 4 channels")
 }
 
 // ── UserStore ─────────────────────────────────────────────────────────────────
@@ -214,7 +214,7 @@ func (s *RedisCacheTestSuite) TestUserStore_All() {
 
 	c.Users().Set(user("1"))
 	c.Users().Set(user("2"))
-	s.Require().Len(c.Users().All(), 2, "expected 2 users")
+	s.Require().Equal(2, c.Users().All().Len(), "expected 2 users")
 }
 
 // ── MemberStore ───────────────────────────────────────────────────────────────
@@ -252,8 +252,8 @@ func (s *RedisCacheTestSuite) TestMemberStore_DeleteGuild() {
 
 	c.Members().DeleteGuild("guild1")
 
-	s.Require().Len(c.Members().AllInGuild("guild1"), 0, "expected 0 members in guild1")
-	s.Require().Len(c.Members().AllInGuild("guild2"), 1, "expected 1 member in guild2")
+	s.Require().Equal(0, c.Members().AllInGuild("guild1").Len(), "expected 0 members in guild1")
+	s.Require().Equal(1, c.Members().AllInGuild("guild2").Len(), "expected 1 member in guild2")
 }
 
 func (s *RedisCacheTestSuite) TestMemberStore_AllInGuild() {
@@ -265,7 +265,7 @@ func (s *RedisCacheTestSuite) TestMemberStore_AllInGuild() {
 	c.Members().Set("g2", member("99"))
 
 	all := c.Members().AllInGuild("g1")
-	s.Require().Len(all, 3, "expected 3 members in g1")
+	s.Require().Equal(3, all.Len(), "expected 3 members in g1")
 }
 
 func (s *RedisCacheTestSuite) TestMemberStore_NilUser() {
@@ -307,15 +307,14 @@ func (s *RedisCacheTestSuite) TestStickerStore_CRUDAndSetAll() {
 	_, ok = c.Stickers().Get("s1")
 	s.Require().False(ok, "expected old guild stickers replaced by SetAll")
 
-	stickers := c.Stickers().GetByGuild("guild1")
-	s.Require().Len(stickers, 2, "expected 2 stickers in guild1")
+	s.Require().Equal(2, c.Stickers().GetByGuild("guild1").Len(), "expected 2 stickers in guild1")
 
 	c.Stickers().Delete("s2")
 	_, ok = c.Stickers().Get("s2")
 	s.Require().False(ok, "expected sticker s2 deleted")
 
 	c.Stickers().DeleteGuild("guild1")
-	s.Require().Len(c.Stickers().GetByGuild("guild1"), 0, "expected guild stickers deleted")
+	s.Require().Equal(0, c.Stickers().GetByGuild("guild1").Len(), "expected guild stickers deleted")
 }
 
 // ── MessageStore ──────────────────────────────────────────────────────────────
@@ -394,10 +393,10 @@ func (s *RedisCacheTestSuite) TestMessageStore_Channel_NewestFirst() {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
 	}
 	msgs := c.Messages().Channel("c1")
-	s.Require().Len(msgs, 5, "expected 5 messages")
+	s.Require().Equal(5, msgs.Len(), "expected 5 messages")
 
 	// The most recently added message must be first.
-	s.Require().Equal(discord.Snowflake("m5"), msgs[0].ID, "expected newest first")
+	s.Require().Equal(discord.Snowflake("m5"), msgs.Values()[0].ID, "expected newest first")
 }
 
 func (s *RedisCacheTestSuite) TestMessageStore_DeleteChannel() {
@@ -408,8 +407,8 @@ func (s *RedisCacheTestSuite) TestMessageStore_DeleteChannel() {
 
 	c.Messages().DeleteChannel("c1")
 
-	s.Require().Len(c.Messages().Channel("c1"), 0, "expected c1 messages deleted")
-	s.Require().Len(c.Messages().Channel("c2"), 1, "c2 should be unaffected")
+	s.Require().Equal(0, c.Messages().Channel("c1").Len(), "expected c1 messages deleted")
+	s.Require().Equal(1, c.Messages().Channel("c2").Len(), "c2 should be unaffected")
 }
 
 func (s *RedisCacheTestSuite) TestMessageStore_RingCap() {
@@ -422,10 +421,10 @@ func (s *RedisCacheTestSuite) TestMessageStore_RingCap() {
 	}
 
 	msgs := c.Messages().Channel("c1")
-	s.Require().Len(msgs, 3, "expected ring cap of 3")
+	s.Require().Equal(3, msgs.Len(), "expected ring cap of 3")
 
 	// Oldest messages (m1, m2) must have been evicted.
-	for _, m := range msgs {
+	for _, m := range msgs.Values() {
 		s.Require().NotEqual(discord.Snowflake("m1"), m.ID, "m1 should have been evicted")
 		s.Require().NotEqual(discord.Snowflake("m2"), m.ID, "m2 should have been evicted")
 	}
@@ -653,7 +652,7 @@ func (s *RedisCacheTestSuite) TestBug36MaxPerChannelZeroDisables() {
 	c.Messages().Add(message("m1", "ch1"))
 	c.Messages().Add(message("m2", "ch1"))
 
-	s.Require().Len(c.Messages().Channel("ch1"), 0, "MaxPerChannel=0 should disable caching (Bug 36)")
+	s.Require().Equal(0, c.Messages().Channel("ch1").Len(), "MaxPerChannel=0 should disable caching (Bug 36)")
 	s.Require().Equal(0, c.Messages().Size(), "Size should be 0 when disabled (Bug 36)")
 }
 
@@ -690,7 +689,7 @@ func (s *RedisCacheTestSuite) TestBug50SetAllIsAtomic() {
 				default:
 				}
 				got := c.Emojis().GetByGuild(guildID)
-				if len(got) != 0 && len(got) != len(initial) && len(got) != 5 {
+				if got.Len() != 0 && got.Len() != len(initial) && got.Len() != 5 {
 					partial.Store(true)
 				}
 			}

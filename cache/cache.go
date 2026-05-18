@@ -55,6 +55,7 @@ package cache
 import (
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -216,30 +217,33 @@ type Options struct {
 
 // ── Entity store interfaces ───────────────────────────────────────────────────
 
-// GuildStore is a thread-safe cache for [discord.Guild] objects.
+// GuildStore is a thread-safe cache for [discord.Guild] objects, keyed by guild ID.
 type GuildStore interface {
 	Set(guild *discord.Guild)
 	Get(id discord.Snowflake) (*discord.Guild, bool)
 	Delete(id discord.Snowflake)
-	All() []*discord.Guild
+	// All returns a snapshot Collection of every cached guild, keyed by guild ID.
+	All() *collection.Collection[discord.Snowflake, *discord.Guild]
 	Size() int
 }
 
-// ChannelStore is a thread-safe cache for [discord.Channel] objects.
+// ChannelStore is a thread-safe cache for [discord.Channel] objects, keyed by channel ID.
 type ChannelStore interface {
 	Set(channel *discord.Channel)
 	Get(id discord.Snowflake) (*discord.Channel, bool)
 	Delete(id discord.Snowflake)
-	All() []*discord.Channel
+	// All returns a snapshot Collection of every cached channel, keyed by channel ID.
+	All() *collection.Collection[discord.Snowflake, *discord.Channel]
 	Size() int
 }
 
-// UserStore is a thread-safe cache for [discord.User] objects.
+// UserStore is a thread-safe cache for [discord.User] objects, keyed by user ID.
 type UserStore interface {
 	Set(user *discord.User)
 	Get(id discord.Snowflake) (*discord.User, bool)
 	Delete(id discord.Snowflake)
-	All() []*discord.User
+	// All returns a snapshot Collection of every cached user, keyed by user ID.
+	All() *collection.Collection[discord.Snowflake, *discord.User]
 	Size() int
 }
 
@@ -251,7 +255,9 @@ type MemberStore interface {
 	Delete(guildID, userID discord.Snowflake)
 	// DeleteGuild removes every member entry for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)
-	AllInGuild(guildID discord.Snowflake) []*discord.GuildMember
+	// AllInGuild returns a snapshot Collection of all members for guildID,
+	// keyed by user ID. The returned Collection is a copy.
+	AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.GuildMember]
 	Size() int
 }
 
@@ -260,11 +266,15 @@ type MemberStore interface {
 type RoleStore interface {
 	Set(guildID discord.Snowflake, role *discord.Role)
 	Get(roleID discord.Snowflake) (*discord.Role, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.Role
+	// GetByGuild returns a snapshot Collection of all roles for guildID,
+	// keyed by role ID. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Role]
 	Delete(roleID discord.Snowflake)
 	// DeleteGuild removes every role entry for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)
-	All() []*discord.Role
+	// All returns a snapshot Collection of all roles across all guilds,
+	// keyed by role ID. The returned Collection is a copy.
+	All() *collection.Collection[discord.Snowflake, *discord.Role]
 	Size() int
 }
 
@@ -276,9 +286,10 @@ type MessageStore interface {
 	Update(msg *discord.Message)
 	Delete(channelID, messageID discord.Snowflake)
 	DeleteBulk(channelID discord.Snowflake, ids []discord.Snowflake)
-	// Channel returns cached messages for channelID newest-first,
-	// excluding TTL-expired entries. Returns nil for unknown channels.
-	Channel(channelID discord.Snowflake) []*discord.Message
+	// Channel returns a snapshot Collection of cached messages for channelID,
+	// ordered newest-first, keyed by message ID. Returns an empty Collection
+	// for unknown or disabled channels.
+	Channel(channelID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Message]
 	// DeleteChannel drops the entire ring for channelID. Call on CHANNEL_DELETE.
 	DeleteChannel(channelID discord.Snowflake)
 	Size() int
@@ -292,7 +303,9 @@ type VoiceStateStore interface {
 	Delete(guildID, userID discord.Snowflake)
 	// DeleteGuild removes every voice state entry for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)
-	AllInGuild(guildID discord.Snowflake) []*discord.VoiceState
+	// AllInGuild returns a snapshot Collection of all voice states for guildID,
+	// keyed by UserID. The returned Collection is a copy.
+	AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.VoiceState]
 	Size() int
 }
 
@@ -300,7 +313,9 @@ type VoiceStateStore interface {
 type SoundboardStore interface {
 	Set(guildID discord.Snowflake, sound *discord.SoundboardSound)
 	Get(soundID discord.Snowflake) (*discord.SoundboardSound, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.SoundboardSound
+	// GetByGuild returns a snapshot Collection of all soundboard sounds for guildID,
+	// keyed by SoundID. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.SoundboardSound]
 	SetAll(guildID discord.Snowflake, sounds []*discord.SoundboardSound)
 	Delete(soundID discord.Snowflake)
 	// DeleteGuild removes every soundboard sound for guildID. Call on GUILD_DELETE.
@@ -312,7 +327,9 @@ type SoundboardStore interface {
 type ScheduledEventStore interface {
 	Set(event *discord.GuildScheduledEvent)
 	Get(eventID discord.Snowflake) (*discord.GuildScheduledEvent, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.GuildScheduledEvent
+	// GetByGuild returns a snapshot Collection of all scheduled events for guildID,
+	// keyed by event ID. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.GuildScheduledEvent]
 	Delete(eventID discord.Snowflake)
 	// DeleteGuild removes every scheduled event for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)
@@ -323,7 +340,9 @@ type ScheduledEventStore interface {
 type StageInstanceStore interface {
 	Set(instance *discord.StageInstance)
 	Get(instanceID discord.Snowflake) (*discord.StageInstance, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.StageInstance
+	// GetByGuild returns a snapshot Collection of all stage instances for guildID,
+	// keyed by instance ID. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.StageInstance]
 	Delete(instanceID discord.Snowflake)
 	// DeleteGuild removes every stage instance for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)
@@ -334,7 +353,9 @@ type StageInstanceStore interface {
 type EmojiStore interface {
 	Set(guildID discord.Snowflake, emoji *discord.Emoji)
 	Get(emojiID discord.Snowflake) (*discord.Emoji, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.Emoji
+	// GetByGuild returns a snapshot Collection of all emojis for guildID,
+	// keyed by emoji ID. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Emoji]
 	SetAll(guildID discord.Snowflake, emojis []*discord.Emoji)
 	Delete(emojiID discord.Snowflake)
 	// DeleteGuild removes every emoji for guildID. Call on GUILD_DELETE.
@@ -346,7 +367,9 @@ type EmojiStore interface {
 type StickerStore interface {
 	Set(guildID discord.Snowflake, sticker *discord.Sticker)
 	Get(stickerID discord.Snowflake) (*discord.Sticker, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.Sticker
+	// GetByGuild returns a snapshot Collection of all stickers for guildID,
+	// keyed by sticker ID. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Sticker]
 	SetAll(guildID discord.Snowflake, stickers []*discord.Sticker)
 	Delete(stickerID discord.Snowflake)
 	// DeleteGuild removes every sticker for guildID. Call on GUILD_DELETE.
@@ -358,7 +381,9 @@ type StickerStore interface {
 type PresenceStore interface {
 	Set(presence *discord.Presence)
 	Get(guildID, userID discord.Snowflake) (*discord.Presence, bool)
-	GetByGuild(guildID discord.Snowflake) []*discord.Presence
+	// GetByGuild returns a snapshot Collection of all presences for guildID.
+	// The returned Collection is a copy — mutating it does not affect the cache.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Presence]
 	Delete(guildID, userID discord.Snowflake)
 	// DeleteGuild removes every presence entry for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)

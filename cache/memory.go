@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -384,8 +385,15 @@ func (g *memGuildStore) Get(id discord.Snowflake) (*discord.Guild, bool) {
 	return &cp, true
 }
 func (g *memGuildStore) Delete(id discord.Snowflake) { g.s.delete(id) }
-func (g *memGuildStore) All() []*discord.Guild       { return g.s.all() }
-func (g *memGuildStore) Size() int                   { return g.s.size() }
+func (g *memGuildStore) All() *collection.Collection[discord.Snowflake, *discord.Guild] {
+	vals := g.s.all()
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Guild](len(vals))
+	for _, v := range vals {
+		coll.Set(v.ID, v)
+	}
+	return coll
+}
+func (g *memGuildStore) Size() int { return g.s.size() }
 
 type memChannelStore struct {
 	s *genericStore[discord.Snowflake, *discord.Channel]
@@ -406,8 +414,15 @@ func (c *memChannelStore) Get(id discord.Snowflake) (*discord.Channel, bool) {
 	return &cp, true
 }
 func (c *memChannelStore) Delete(id discord.Snowflake) { c.s.delete(id) }
-func (c *memChannelStore) All() []*discord.Channel     { return c.s.all() }
-func (c *memChannelStore) Size() int                   { return c.s.size() }
+func (c *memChannelStore) All() *collection.Collection[discord.Snowflake, *discord.Channel] {
+	vals := c.s.all()
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Channel](len(vals))
+	for _, v := range vals {
+		coll.Set(v.ID, v)
+	}
+	return coll
+}
+func (c *memChannelStore) Size() int { return c.s.size() }
 
 type memUserStore struct {
 	s *genericStore[discord.Snowflake, *discord.User]
@@ -428,8 +443,15 @@ func (u *memUserStore) Get(id discord.Snowflake) (*discord.User, bool) {
 	return &cp, true
 }
 func (u *memUserStore) Delete(id discord.Snowflake) { u.s.delete(id) }
-func (u *memUserStore) All() []*discord.User        { return u.s.all() }
-func (u *memUserStore) Size() int                   { return u.s.size() }
+func (u *memUserStore) All() *collection.Collection[discord.Snowflake, *discord.User] {
+	vals := u.s.all()
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.User](len(vals))
+	for _, v := range vals {
+		coll.Set(v.ID, v)
+	}
+	return coll
+}
+func (u *memUserStore) Size() int { return u.s.size() }
 
 // ── Member store ──────────────────────────────────────────────────────────────
 
@@ -473,17 +495,17 @@ func (m *memMemberStore) DeleteGuild(guildID discord.Snowflake) {
 	}
 }
 
-func (m *memMemberStore) AllInGuild(guildID discord.Snowflake) []*discord.GuildMember {
+func (m *memMemberStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.GuildMember] {
 	now := time.Now()
 	m.s.mu.RLock()
 	defer m.s.mu.RUnlock()
-	var out []*discord.GuildMember
+	coll := collection.New[discord.Snowflake, *discord.GuildMember]()
 	for k, e := range m.s.items {
 		if k.guildID == guildID && !e.expired(now) {
-			out = append(out, e.value)
+			coll.Set(e.value.User.ID, e.value)
 		}
 	}
-	return out
+	return coll
 }
 
 func (m *memMemberStore) Size() int { return m.s.size() }
@@ -515,17 +537,17 @@ func (r *memRoleStore) Get(roleID discord.Snowflake) (*discord.Role, bool) {
 	return &cp, true
 }
 
-func (r *memRoleStore) GetByGuild(guildID discord.Snowflake) []*discord.Role {
+func (r *memRoleStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Role] {
 	now := time.Now()
 	r.s.mu.RLock()
 	defer r.s.mu.RUnlock()
-	var out []*discord.Role
+	coll := collection.New[discord.Snowflake, *discord.Role]()
 	for _, e := range r.s.items {
 		if e.value.GuildID == guildID && !e.expired(now) {
-			out = append(out, e.value.Role)
+			coll.Set(e.value.Role.ID, e.value.Role)
 		}
 	}
-	return out
+	return coll
 }
 
 func (r *memRoleStore) Delete(roleID discord.Snowflake) {
@@ -543,13 +565,13 @@ func (r *memRoleStore) DeleteGuild(guildID discord.Snowflake) {
 	}
 }
 
-func (r *memRoleStore) All() []*discord.Role {
+func (r *memRoleStore) All() *collection.Collection[discord.Snowflake, *discord.Role] {
 	vals := r.s.all()
-	out := make([]*discord.Role, len(vals))
-	for i, v := range vals {
-		out[i] = v.Role
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Role](len(vals))
+	for _, v := range vals {
+		coll.Set(v.Role.ID, v.Role)
 	}
-	return out
+	return coll
 }
 
 func (r *memRoleStore) Size() int { return r.s.size() }
@@ -870,16 +892,20 @@ func (s *memMessageStore) DeleteBulk(channelID discord.Snowflake, ids []discord.
 	s.totalMsgs.Add(-int64(removed))
 }
 
-func (s *memMessageStore) Channel(channelID discord.Snowflake) []*discord.Message {
+func (s *memMessageStore) Channel(channelID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Message] {
 	s.mu.Lock()
 	r := s.channels[channelID]
 	if r == nil {
 		s.mu.Unlock()
-		return nil
+		return collection.New[discord.Snowflake, *discord.Message]()
 	}
 	msgs := r.all(s.opts.TTL)
 	s.mu.Unlock()
-	return msgs
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Message](len(msgs))
+	for _, m := range msgs {
+		coll.Set(m.ID, m)
+	}
+	return coll
 }
 
 func (s *memMessageStore) DeleteChannel(channelID discord.Snowflake) {
@@ -1497,17 +1523,17 @@ func (v *memVoiceStateStore) DeleteGuild(guildID discord.Snowflake) {
 	}
 }
 
-func (v *memVoiceStateStore) AllInGuild(guildID discord.Snowflake) []*discord.VoiceState {
+func (v *memVoiceStateStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.VoiceState] {
 	now := time.Now()
 	v.s.mu.RLock()
 	defer v.s.mu.RUnlock()
-	var out []*discord.VoiceState
+	coll := collection.New[discord.Snowflake, *discord.VoiceState]()
 	for k, e := range v.s.items {
 		if k.guildID == guildID && !e.expired(now) {
-			out = append(out, e.value)
+			coll.Set(e.value.UserID, e.value)
 		}
 	}
-	return out
+	return coll
 }
 
 func (v *memVoiceStateStore) Size() int { return v.s.size() }
@@ -1539,17 +1565,17 @@ func (ss *memSoundboardStore) Get(soundID discord.Snowflake) (*discord.Soundboar
 	return &cp, true
 }
 
-func (ss *memSoundboardStore) GetByGuild(guildID discord.Snowflake) []*discord.SoundboardSound {
+func (ss *memSoundboardStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.SoundboardSound] {
 	now := time.Now()
 	ss.s.mu.RLock()
 	defer ss.s.mu.RUnlock()
-	var out []*discord.SoundboardSound
+	coll := collection.New[discord.Snowflake, *discord.SoundboardSound]()
 	for _, e := range ss.s.items {
 		if e.value.GuildID == guildID && !e.expired(now) {
-			out = append(out, e.value.Sound)
+			coll.Set(e.value.Sound.SoundID, e.value.Sound)
 		}
 	}
-	return out
+	return coll
 }
 
 func (ss *memSoundboardStore) SetAll(guildID discord.Snowflake, sounds []*discord.SoundboardSound) {
@@ -1609,17 +1635,17 @@ func (se *memScheduledEventStore) Get(eventID discord.Snowflake) (*discord.Guild
 	return &cp, true
 }
 
-func (se *memScheduledEventStore) GetByGuild(guildID discord.Snowflake) []*discord.GuildScheduledEvent {
+func (se *memScheduledEventStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.GuildScheduledEvent] {
 	now := time.Now()
 	se.s.mu.RLock()
 	defer se.s.mu.RUnlock()
-	var out []*discord.GuildScheduledEvent
+	coll := collection.New[discord.Snowflake, *discord.GuildScheduledEvent]()
 	for _, e := range se.s.items {
 		if e.value.GuildID == guildID && !e.expired(now) {
-			out = append(out, e.value)
+			coll.Set(e.value.ID, e.value)
 		}
 	}
-	return out
+	return coll
 }
 
 func (se *memScheduledEventStore) Delete(eventID discord.Snowflake) { se.s.delete(eventID) }
@@ -1659,17 +1685,17 @@ func (si *memStageInstanceStore) Get(instanceID discord.Snowflake) (*discord.Sta
 	return &cp, true
 }
 
-func (si *memStageInstanceStore) GetByGuild(guildID discord.Snowflake) []*discord.StageInstance {
+func (si *memStageInstanceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.StageInstance] {
 	now := time.Now()
 	si.s.mu.RLock()
 	defer si.s.mu.RUnlock()
-	var out []*discord.StageInstance
+	coll := collection.New[discord.Snowflake, *discord.StageInstance]()
 	for _, e := range si.s.items {
 		if e.value.GuildID == guildID && !e.expired(now) {
-			out = append(out, e.value)
+			coll.Set(e.value.ID, e.value)
 		}
 	}
-	return out
+	return coll
 }
 
 func (si *memStageInstanceStore) Delete(instanceID discord.Snowflake) { si.s.delete(instanceID) }
@@ -1714,17 +1740,17 @@ func (es *memEmojiStore) Get(emojiID discord.Snowflake) (*discord.Emoji, bool) {
 	return &cp, true
 }
 
-func (es *memEmojiStore) GetByGuild(guildID discord.Snowflake) []*discord.Emoji {
+func (es *memEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Emoji] {
 	now := time.Now()
 	es.s.mu.RLock()
 	defer es.s.mu.RUnlock()
-	var out []*discord.Emoji
+	coll := collection.New[discord.Snowflake, *discord.Emoji]()
 	for _, e := range es.s.items {
 		if e.value.GuildID == guildID && !e.expired(now) {
-			out = append(out, e.value.Emoji)
+			coll.Set(e.value.Emoji.ID, e.value.Emoji)
 		}
 	}
-	return out
+	return coll
 }
 
 func (es *memEmojiStore) SetAll(guildID discord.Snowflake, emojis []*discord.Emoji) {
@@ -1789,17 +1815,17 @@ func (ss *memStickerStore) Get(stickerID discord.Snowflake) (*discord.Sticker, b
 	return &cp, true
 }
 
-func (ss *memStickerStore) GetByGuild(guildID discord.Snowflake) []*discord.Sticker {
+func (ss *memStickerStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Sticker] {
 	now := time.Now()
 	ss.s.mu.RLock()
 	defer ss.s.mu.RUnlock()
-	var out []*discord.Sticker
+	coll := collection.New[discord.Snowflake, *discord.Sticker]()
 	for _, e := range ss.s.items {
 		if e.value.GuildID == guildID && !e.expired(now) {
-			out = append(out, e.value.Sticker)
+			coll.Set(e.value.Sticker.ID, e.value.Sticker)
 		}
 	}
-	return out
+	return coll
 }
 
 func (ss *memStickerStore) SetAll(guildID discord.Snowflake, stickers []*discord.Sticker) {
@@ -1859,17 +1885,17 @@ func (ps *memPresenceStore) Get(guildID, userID discord.Snowflake) (*discord.Pre
 	return &cp, true
 }
 
-func (ps *memPresenceStore) GetByGuild(guildID discord.Snowflake) []*discord.Presence {
+func (ps *memPresenceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Presence] {
 	now := time.Now()
 	ps.s.mu.RLock()
 	defer ps.s.mu.RUnlock()
-	var out []*discord.Presence
+	coll := collection.New[discord.Snowflake, *discord.Presence]()
 	for k, e := range ps.s.items {
 		if k.guildID == guildID && !e.expired(now) {
-			out = append(out, e.value)
+			coll.Set(e.value.User.ID, e.value)
 		}
 	}
-	return out
+	return coll
 }
 
 func (ps *memPresenceStore) Delete(guildID, userID discord.Snowflake) {
