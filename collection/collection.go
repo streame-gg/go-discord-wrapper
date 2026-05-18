@@ -233,15 +233,24 @@ func (c *Collection[K, V]) Every(fn func(V) bool) bool {
 	return true
 }
 
-// Equals returns true if other has the same keys and values (using ==).
-// For pointer-value Collections this is reference equality, NOT deep equality.
-func (c *Collection[K, V]) Equals(other *Collection[K, V]) bool {
+// Equals returns true if other contains the same keys and values according to eq.
+// Callers supply the equality function so that Equals is safe for any V,
+// including non-comparable types such as structs containing slices or maps.
+//
+// Example (pointer identity):
+//
+//	a.Equals(b, func(x, y *T) bool { return x == y })
+//
+// Example (deep equality):
+//
+//	a.Equals(b, func(x, y MyStruct) bool { return reflect.DeepEqual(x, y) })
+func (c *Collection[K, V]) Equals(other *Collection[K, V], eq func(V, V) bool) bool {
 	if len(c.items) != len(other.items) {
 		return false
 	}
 	for k, v := range c.items {
 		ov, ok := other.items[k]
-		if !ok || any(v) != any(ov) {
+		if !ok || !eq(v, ov) {
 			return false
 		}
 	}

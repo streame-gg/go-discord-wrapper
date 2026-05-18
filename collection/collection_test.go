@@ -363,11 +363,12 @@ func TestEquals(t *testing.T) {
 	a.Set(1, "a").Set(2, "b")
 	b := collection.New[int, string]()
 	b.Set(2, "b").Set(1, "a")
-	if !a.Equals(b) {
+	strEq := func(x, y string) bool { return x == y }
+	if !a.Equals(b, strEq) {
 		t.Error("collections with same key-value pairs should be equal")
 	}
 	b.Set(3, "c")
-	if a.Equals(b) {
+	if a.Equals(b, strEq) {
 		t.Error("collections of different sizes should not be equal")
 	}
 }
@@ -380,12 +381,13 @@ func TestEqualsPointers(t *testing.T) {
 	a.Set(1, v1)
 	b := collection.New[int, *val]()
 	b.Set(1, v2)
-	if a.Equals(b) {
+	ptrEq := func(x, y *val) bool { return x == y }
+	if a.Equals(b, ptrEq) {
 		t.Error("pointer equality: different pointers should not be equal")
 	}
 	b2 := collection.New[int, *val]()
 	b2.Set(1, v1)
-	if !a.Equals(b2) {
+	if !a.Equals(b2, ptrEq) {
 		t.Error("same pointer should be equal")
 	}
 }
@@ -767,7 +769,7 @@ func TestMergeAlias(t *testing.T) {
 	b.Set(2, "b")
 	r1 := a.Concat(b)
 	r2 := a.Merge(b)
-	if !r1.Equals(r2) {
+	if !r1.Equals(r2, func(x, y string) bool { return x == y }) {
 		t.Error("Merge should be equivalent to Concat")
 	}
 }
