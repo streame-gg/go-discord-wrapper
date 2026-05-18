@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -41,8 +40,8 @@ func (p ListSKUSubscriptionsParams) toQuery() string {
 
 // ── Subscription endpoints ────────────────────────────────────────────────────
 
-// ListSKUSubscriptions returns subscriptions for a SKU, keyed by subscription ID.
-func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID discord.Snowflake, params ListSKUSubscriptionsParams) (*collection.Collection[discord.Snowflake, *discord.Subscription], error) {
+// ListSKUSubscriptions returns subscriptions for a SKU.
+func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID discord.Snowflake, params ListSKUSubscriptionsParams) ([]*discord.Subscription, error) {
 	if err := skuID.Validate(); err != nil {
 		return nil, err
 	}
@@ -53,18 +52,9 @@ func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID discord.Sno
 		return nil, err
 	}
 
-	subs, err := doRequestSlice[discord.Subscription](c, req, map[int]bool{
+	return doRequestSlice[discord.Subscription](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Subscription](len(subs))
-	for _, s := range subs {
-		coll.Set(s.ID, s)
-	}
-	return coll, nil
 }
 
 func (c *RestClient) GetSKUSubscription(ctx context.Context, skuID, subscriptionID discord.Snowflake) (*discord.Subscription, error) {

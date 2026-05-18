@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -66,8 +65,8 @@ type CreateTestEntitlementParams struct {
 
 // ── Entitlement endpoints ─────────────────────────────────────────────────────
 
-// ListEntitlements returns entitlements for an application, keyed by entitlement ID.
-func (c *RestClient) ListEntitlements(ctx context.Context, appID discord.Snowflake, params ListEntitlementsParams) (*collection.Collection[discord.Snowflake, *discord.Entitlement], error) {
+// ListEntitlements returns entitlements for an application.
+func (c *RestClient) ListEntitlements(ctx context.Context, appID discord.Snowflake, params ListEntitlementsParams) ([]*discord.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -78,18 +77,9 @@ func (c *RestClient) ListEntitlements(ctx context.Context, appID discord.Snowfla
 		return nil, err
 	}
 
-	entitlements, err := doRequestSlice[discord.Entitlement](c, req, map[int]bool{
+	return doRequestSlice[discord.Entitlement](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Entitlement](len(entitlements))
-	for _, e := range entitlements {
-		coll.Set(e.ID, e)
-	}
-	return coll, nil
 }
 
 func (c *RestClient) GetEntitlement(ctx context.Context, appID, entitlementID discord.Snowflake) (*discord.Entitlement, error) {
@@ -174,8 +164,8 @@ func (p GetCurrentUserApplicationEntitlementsParams) toQuery() string {
 }
 
 // GetCurrentUserApplicationEntitlements returns entitlements for the current user for the given
-// application, keyed by entitlement ID. Requires an OAuth2 bearer token.
-func (c *RestClient) GetCurrentUserApplicationEntitlements(ctx context.Context, appID discord.Snowflake, params GetCurrentUserApplicationEntitlementsParams, userToken string) (*collection.Collection[discord.Snowflake, *discord.Entitlement], error) {
+// application. Requires an OAuth2 bearer token.
+func (c *RestClient) GetCurrentUserApplicationEntitlements(ctx context.Context, appID discord.Snowflake, params GetCurrentUserApplicationEntitlementsParams, userToken string) ([]*discord.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -186,18 +176,9 @@ func (c *RestClient) GetCurrentUserApplicationEntitlements(ctx context.Context, 
 		return nil, err
 	}
 
-	entitlements, err := doRequestSlice[discord.Entitlement](c, req, map[int]bool{
+	return doRequestSlice[discord.Entitlement](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Entitlement](len(entitlements))
-	for _, e := range entitlements {
-		coll.Set(e.ID, e)
-	}
-	return coll, nil
 }
 
 func (c *RestClient) DeleteTestEntitlement(ctx context.Context, appID, entitlementID discord.Snowflake) error {

@@ -1,7 +1,5 @@
 package discord
 
-import "github.com/streame-gg/go-discord-wrapper/collection"
-
 // RestClient is the subset of *connection.Client needed by Guild, Channel, and
 // Message methods. Pass the client received in your event handler directly —
 // *connection.Client satisfies this interface.
@@ -10,8 +8,8 @@ import "github.com/streame-gg/go-discord-wrapper/collection"
 // ModifyChannel) are intentionally omitted; call those directly on the client.
 type RestClient interface {
 	// Guild operations
-	GetGuildChannels(guildID Snowflake) (*collection.Collection[Snowflake, *Channel], error)
-	GetGuildRoles(guildID Snowflake) (*collection.Collection[Snowflake, *Role], error)
+	GetGuildChannels(guildID Snowflake) ([]*Channel, error)
+	GetGuildRoles(guildID Snowflake) ([]*Role, error)
 	GetGuildRoleMemberCounts(guildID Snowflake) (map[string]int, error)
 	DeleteGuild(guildID Snowflake) error
 	RemoveGuildBan(guildID, userID Snowflake) error
@@ -22,7 +20,7 @@ type RestClient interface {
 	// Channel operations
 	DeleteChannel(channelID Snowflake) (*Channel, error)
 	TriggerTypingIndicator(channelID Snowflake) error
-	GetPinnedMessages(channelID Snowflake) (*collection.Collection[Snowflake, *Message], error)
+	GetPinnedMessages(channelID Snowflake) ([]*Message, error)
 
 	// Message operations
 	DeleteMessage(channelID, messageID Snowflake) error
@@ -36,13 +34,13 @@ type RestClient interface {
 
 // ── Guild methods ─────────────────────────────────────────────────────────────
 
-// GetChannels returns all channels in the guild, keyed by channel ID.
-func (g *Guild) GetChannels(client RestClient) (*collection.Collection[Snowflake, *Channel], error) {
+// GetChannels returns all channels in the guild.
+func (g *Guild) GetChannels(client RestClient) ([]*Channel, error) {
 	return client.GetGuildChannels(g.ID)
 }
 
-// GetRoles returns all roles in the guild, keyed by role ID.
-func (g *Guild) GetRoles(client RestClient) (*collection.Collection[Snowflake, *Role], error) {
+// GetRoles returns all roles in the guild.
+func (g *Guild) GetRoles(client RestClient) ([]*Role, error) {
 	return client.GetGuildRoles(g.ID)
 }
 
@@ -87,8 +85,8 @@ func (c *Channel) TriggerTyping(client RestClient) error {
 	return client.TriggerTypingIndicator(c.ID)
 }
 
-// GetPinnedMessages returns all pinned messages in the channel, keyed by message ID.
-func (c *Channel) GetPinnedMessages(client RestClient) (*collection.Collection[Snowflake, *Message], error) {
+// GetPinnedMessages returns all pinned messages in the channel.
+func (c *Channel) GetPinnedMessages(client RestClient) ([]*Message, error) {
 	return client.GetPinnedMessages(c.ID)
 }
 

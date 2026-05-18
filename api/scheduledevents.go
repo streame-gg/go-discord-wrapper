@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -70,9 +69,9 @@ func (p GetGuildScheduledEventUsersParams) toQuery() string {
 
 // ── Scheduled event endpoints ─────────────────────────────────────────────────
 
-// ListGuildScheduledEvents returns all scheduled events for a guild, keyed by event ID.
+// ListGuildScheduledEvents returns all scheduled events for a guild.
 // Set withUserCount to true to include subscriber counts.
-func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID discord.Snowflake, withUserCount bool) (*collection.Collection[discord.Snowflake, *discord.GuildScheduledEvent], error) {
+func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID discord.Snowflake, withUserCount bool) ([]*discord.GuildScheduledEvent, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -87,18 +86,9 @@ func (c *RestClient) ListGuildScheduledEvents(ctx context.Context, guildID disco
 		return nil, err
 	}
 
-	events, err := doRequestSlice[discord.GuildScheduledEvent](c, req, map[int]bool{
+	return doRequestSlice[discord.GuildScheduledEvent](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	coll := collection.NewWithCapacity[discord.Snowflake, *discord.GuildScheduledEvent](len(events))
-	for _, e := range events {
-		coll.Set(e.ID, e)
-	}
-	return coll, nil
 }
 
 // CreateGuildScheduledEvent creates a new scheduled event in a guild.
@@ -193,8 +183,8 @@ func (c *RestClient) DeleteGuildScheduledEvent(ctx context.Context, guildID, eve
 	return doRequestWithoutResponse(c, req)
 }
 
-// GetGuildScheduledEventUsers returns users subscribed to a scheduled event, keyed by user ID.
-func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, params GetGuildScheduledEventUsersParams) (*collection.Collection[discord.Snowflake, *discord.GuildScheduledEventUser], error) {
+// GetGuildScheduledEventUsers returns users subscribed to a scheduled event.
+func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, params GetGuildScheduledEventUsersParams) ([]*discord.GuildScheduledEventUser, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -209,16 +199,7 @@ func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, e
 		return nil, err
 	}
 
-	users, err := doRequestSlice[discord.GuildScheduledEventUser](c, req, map[int]bool{
+	return doRequestSlice[discord.GuildScheduledEventUser](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	coll := collection.NewWithCapacity[discord.Snowflake, *discord.GuildScheduledEventUser](len(users))
-	for _, u := range users {
-		coll.Set(u.User.ID, u)
-	}
-	return coll, nil
 }

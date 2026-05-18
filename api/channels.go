@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -158,8 +157,8 @@ func (c *RestClient) DeleteChannel(ctx context.Context, channelID discord.Snowfl
 	})
 }
 
-// GetChannelInvites returns all invites for a channel, keyed by invite code. Requires MANAGE_CHANNELS.
-func (c *RestClient) GetChannelInvites(ctx context.Context, channelID discord.Snowflake) (*collection.Collection[string, *discord.Invite], error) {
+// GetChannelInvites returns all invites for a channel. Requires MANAGE_CHANNELS.
+func (c *RestClient) GetChannelInvites(ctx context.Context, channelID discord.Snowflake) ([]*discord.Invite, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -169,18 +168,9 @@ func (c *RestClient) GetChannelInvites(ctx context.Context, channelID discord.Sn
 		return nil, err
 	}
 
-	invites, err := doRequestSlice[discord.Invite](c, req, map[int]bool{
+	return doRequestSlice[discord.Invite](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	coll := collection.NewWithCapacity[string, *discord.Invite](len(invites))
-	for _, inv := range invites {
-		coll.Set(inv.Code, inv)
-	}
-	return coll, nil
 }
 
 // CreateChannelInvite creates a new invite for a channel. Requires CREATE_INSTANT_INVITE.

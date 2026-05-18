@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -301,8 +300,8 @@ func (c *RestClient) GetThreadMember(ctx context.Context, channelID, userID disc
 	})
 }
 
-// ListThreadMembers returns the members of a thread, keyed by user ID.
-func (c *RestClient) ListThreadMembers(ctx context.Context, channelID discord.Snowflake, params ListThreadMembersParams) (*collection.Collection[discord.Snowflake, *discord.ThreadMember], error) {
+// ListThreadMembers returns the members of a thread.
+func (c *RestClient) ListThreadMembers(ctx context.Context, channelID discord.Snowflake, params ListThreadMembersParams) ([]*discord.ThreadMember, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -313,20 +312,9 @@ func (c *RestClient) ListThreadMembers(ctx context.Context, channelID discord.Sn
 		return nil, err
 	}
 
-	members, err := doRequestSlice[discord.ThreadMember](c, req, map[int]bool{
+	return doRequestSlice[discord.ThreadMember](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	coll := collection.NewWithCapacity[discord.Snowflake, *discord.ThreadMember](len(members))
-	for _, m := range members {
-		if m.UserID != nil {
-			coll.Set(*m.UserID, m)
-		}
-	}
-	return coll, nil
 }
 
 // ListPublicArchivedThreads returns archived public threads in a channel, newest first.

@@ -104,7 +104,7 @@ func TestFetchAllGuildMembersOnePage(t *testing.T) {
 	members, err := client.FetchAllGuildMembers(context.Background(), "1234567890123456789")
 
 	require.NoError(t, err)
-	assert.Equal(t, 5, members.Len())
+	assert.Len(t, members, 5)
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount), "expected single request for one page")
 }
 
@@ -149,7 +149,7 @@ func TestFetchAllGuildMembersMultiplePages(t *testing.T) {
 	members, err := client.FetchAllGuildMembers(context.Background(), "1234567890123456789")
 
 	require.NoError(t, err)
-	assert.Equal(t, 1005, members.Len())
+	assert.Len(t, members, 1005)
 	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
 	assert.Equal(t, string(lastPage1ID), secondRequestAfter, "second request should advance cursor past last member of page 1")
 }
@@ -204,7 +204,7 @@ func TestFetchAllMessagesMultiplePages(t *testing.T) {
 	msgs, err := client.FetchAllMessages(context.Background(), "1234567890123456789")
 
 	require.NoError(t, err)
-	assert.Equal(t, 110, msgs.Len())
+	assert.Len(t, msgs, 110)
 	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
 	assert.Equal(t, string(oldestPage1ID), secondRequestBefore, "second request should use before=last_id_of_page1")
 }
@@ -233,11 +233,11 @@ func TestFetchAllGuildBansOnePage(t *testing.T) {
 	result, err := client.FetchAllGuildBans(context.Background(), "1234567890123456789")
 
 	require.NoError(t, err)
-	assert.Equal(t, 7, result.Len())
+	assert.Len(t, result, 7)
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount), "expected single page request")
 
 	// verify IDs round-trip
-	first, _ := result.At(0)
+	first := result[0]
 	assert.Equal(t, discord.Snowflake("1"), first.User.ID)
 
 	// suppress unused import
@@ -338,7 +338,7 @@ func TestFetchAllEntitlementsOnePage(t *testing.T) {
 	result, err := client.FetchAllEntitlements(context.Background(), "1234567890123456789", ListEntitlementsParams{})
 
 	require.NoError(t, err)
-	assert.Equal(t, 3, result.Len())
+	assert.Len(t, result, 3)
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount))
 }
 
@@ -372,7 +372,7 @@ func TestFetchAllEntitlementsMultiplePages(t *testing.T) {
 	result, err := client.FetchAllEntitlements(context.Background(), "1234567890123456789", ListEntitlementsParams{})
 
 	require.NoError(t, err)
-	assert.Equal(t, 102, result.Len())
+	assert.Len(t, result, 102)
 	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
 	assert.Equal(t, lastID1, secondAfter, "second request should advance cursor past last entitlement on page 1")
 }
@@ -405,7 +405,7 @@ func TestFetchAllScheduledEventUsersOnePage(t *testing.T) {
 	result, err := client.FetchAllScheduledEventUsers(context.Background(), "1234567890123456789", "1234567890123456789", false)
 
 	require.NoError(t, err)
-	assert.Equal(t, 3, result.Len())
+	assert.Len(t, result, 3)
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount))
 }
 
@@ -439,7 +439,7 @@ func TestFetchAllScheduledEventUsersMultiplePages(t *testing.T) {
 	result, err := client.FetchAllScheduledEventUsers(context.Background(), "1234567890123456789", "1234567890123456789", false)
 
 	require.NoError(t, err)
-	assert.Equal(t, 102, result.Len())
+	assert.Len(t, result, 102)
 	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
 	assert.Equal(t, lastID1, secondAfter)
 }

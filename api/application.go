@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -38,8 +37,8 @@ func (c *RestClient) GetCurrentApplication(ctx context.Context) (*discord.Applic
 }
 
 // GetApplicationRoleConnectionsMetadata returns the role connection metadata records for the
-// given application, keyed by metadata key. Returns up to 5 records.
-func (c *RestClient) GetApplicationRoleConnectionsMetadata(ctx context.Context, appID discord.Snowflake) (*collection.Collection[string, *discord.ApplicationRoleConnectionsMetadata], error) {
+// given application. Returns up to 5 records.
+func (c *RestClient) GetApplicationRoleConnectionsMetadata(ctx context.Context, appID discord.Snowflake) ([]*discord.ApplicationRoleConnectionsMetadata, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -50,23 +49,14 @@ func (c *RestClient) GetApplicationRoleConnectionsMetadata(ctx context.Context, 
 		return nil, err
 	}
 
-	records, err := doRequestSlice[discord.ApplicationRoleConnectionsMetadata](c, req, map[int]bool{
+	return doRequestSlice[discord.ApplicationRoleConnectionsMetadata](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	coll := collection.NewWithCapacity[string, *discord.ApplicationRoleConnectionsMetadata](len(records))
-	for _, r := range records {
-		coll.Set(r.Key, r)
-	}
-	return coll, nil
 }
 
 // UpdateApplicationRoleConnectionsMetadata overwrites the role connection metadata records for
-// the given application, keyed by metadata key. Accepts up to 5 records; omitting a record deletes it.
-func (c *RestClient) UpdateApplicationRoleConnectionsMetadata(ctx context.Context, appID discord.Snowflake, records []*discord.ApplicationRoleConnectionsMetadata) (*collection.Collection[string, *discord.ApplicationRoleConnectionsMetadata], error) {
+// the given application. Accepts up to 5 records; omitting a record deletes it.
+func (c *RestClient) UpdateApplicationRoleConnectionsMetadata(ctx context.Context, appID discord.Snowflake, records []*discord.ApplicationRoleConnectionsMetadata) ([]*discord.ApplicationRoleConnectionsMetadata, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -82,18 +72,9 @@ func (c *RestClient) UpdateApplicationRoleConnectionsMetadata(ctx context.Contex
 		return nil, err
 	}
 
-	result, err := doRequestSlice[discord.ApplicationRoleConnectionsMetadata](c, req, map[int]bool{
+	return doRequestSlice[discord.ApplicationRoleConnectionsMetadata](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	coll := collection.NewWithCapacity[string, *discord.ApplicationRoleConnectionsMetadata](len(result))
-	for _, r := range result {
-		coll.Set(r.Key, r)
-	}
-	return coll, nil
 }
 
 // ModifyCurrentApplication updates the current application. Returns the updated application.

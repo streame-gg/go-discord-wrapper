@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 
-	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/util"
 )
@@ -11,15 +10,14 @@ import (
 // FetchAllGuildMembers fetches every member in a guild across as many pages as
 // needed. It uses the after-cursor pattern (max 1000 per request) and stops when
 // a page returns fewer members than the page size.
-// Returns a Collection keyed by user ID.
-func (c *RestClient) FetchAllGuildMembers(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.GuildMember], error) {
+func (c *RestClient) FetchAllGuildMembers(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildMember, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
 
 	const pageSize = 1000
 
-	all := collection.New[discord.Snowflake, *discord.GuildMember]()
+	var all []*discord.GuildMember
 	params := GetGuildMembersParams{Limit: util.PointerOf(pageSize)}
 
 	for {
@@ -28,34 +26,27 @@ func (c *RestClient) FetchAllGuildMembers(ctx context.Context, guildID discord.S
 			return nil, err
 		}
 
-		for _, m := range page.Values() {
-			if m.User != nil {
-				all.Set(m.User.ID, m)
-			}
-		}
+		all = append(all, page...)
 
-		if page.Len() < pageSize {
+		if len(page) < pageSize {
 			return all, nil
 		}
 
-		// Advance the cursor past the last member on this page.
-		vals := page.Values()
-		last := vals[len(vals)-1]
+		last := page[len(page)-1]
 		params.After = &last.User.ID
 	}
 }
 
 // FetchAllMessages fetches all messages in a channel, walking backwards from the
 // most recent message (max 100 per request) until the beginning of the channel.
-// Returns a Collection keyed by message ID in newest-first insertion order.
-func (c *RestClient) FetchAllMessages(ctx context.Context, channelID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Message], error) {
+func (c *RestClient) FetchAllMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
 
 	const pageSize = 100
 
-	all := collection.New[discord.Snowflake, *discord.Message]()
+	var all []*discord.Message
 	params := GetMessagesParams{Limit: util.PointerOf(pageSize)}
 
 	for {
@@ -64,32 +55,29 @@ func (c *RestClient) FetchAllMessages(ctx context.Context, channelID discord.Sno
 			return nil, err
 		}
 
-		for _, m := range page.Values() {
-			all.Set(m.ID, m)
-		}
+		all = append(all, page...)
 
-		if page.Len() < pageSize {
+		if len(page) < pageSize {
 			return all, nil
 		}
 
 		// Discord returns messages newest-first; the last entry is the oldest on
 		// this page, so use its ID as the next before cursor.
-		vals := page.Values()
-		oldest := vals[len(vals)-1]
+		oldest := page[len(page)-1]
 		params.Before = &oldest.ID
 	}
 }
 
 // FetchAllGuildBans fetches every ban in a guild across as many pages as needed
-// (max 1000 per request). Returns a Collection keyed by banned user ID.
-func (c *RestClient) FetchAllGuildBans(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Ban], error) {
+// (max 1000 per request).
+func (c *RestClient) FetchAllGuildBans(ctx context.Context, guildID discord.Snowflake) ([]*discord.Ban, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
 
 	const pageSize = 1000
 
-	all := collection.New[discord.Snowflake, *discord.Ban]()
+	var all []*discord.Ban
 	params := GetGuildBansParams{Limit: util.PointerOf(pageSize)}
 
 	for {
@@ -98,16 +86,13 @@ func (c *RestClient) FetchAllGuildBans(ctx context.Context, guildID discord.Snow
 			return nil, err
 		}
 
-		for _, b := range page.Values() {
-			all.Set(b.User.ID, b)
-		}
+		all = append(all, page...)
 
-		if page.Len() < pageSize {
+		if len(page) < pageSize {
 			return all, nil
 		}
 
-		vals := page.Values()
-		last := vals[len(vals)-1]
+		last := page[len(page)-1]
 		params.After = &last.User.ID
 	}
 }
@@ -145,9 +130,9 @@ func (c *RestClient) FetchAllAuditLogEntries(ctx context.Context, guildID discor
 }
 
 // FetchAllEntitlements fetches every entitlement for an application by paginating
-// forward (max 100 per request), keyed by entitlement ID. The filter is forwarded
-// as-is so callers can scope by user, guild, or SKU.
-func (c *RestClient) FetchAllEntitlements(ctx context.Context, appID discord.Snowflake, filter ListEntitlementsParams) (*collection.Collection[discord.Snowflake, *discord.Entitlement], error) {
+// forward (max 100 per request). The filter is forwarded as-is so callers can
+// scope by user, guild, or SKU.
+func (c *RestClient) FetchAllEntitlements(ctx context.Context, appID discord.Snowflake, filter ListEntitlementsParams) ([]*discord.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -156,7 +141,7 @@ func (c *RestClient) FetchAllEntitlements(ctx context.Context, appID discord.Sno
 
 	filter.Limit = util.PointerOf(pageSize)
 
-	all := collection.New[discord.Snowflake, *discord.Entitlement]()
+	var all []*discord.Entitlement
 
 	for {
 		page, err := c.ListEntitlements(ctx, appID, filter)
@@ -164,24 +149,21 @@ func (c *RestClient) FetchAllEntitlements(ctx context.Context, appID discord.Sno
 			return nil, err
 		}
 
-		for _, e := range page.Values() {
-			all.Set(e.ID, e)
-		}
+		all = append(all, page...)
 
-		if page.Len() < pageSize {
+		if len(page) < pageSize {
 			return all, nil
 		}
 
-		vals := page.Values()
-		last := vals[len(vals)-1]
+		last := page[len(page)-1]
 		filter.After = &last.ID
 	}
 }
 
 // FetchAllScheduledEventUsers fetches every subscriber for a scheduled event by
-// paginating forward (max 100 per request), keyed by user ID. Set withMember=true
-// to include the full GuildMember object alongside each user.
-func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, withMember bool) (*collection.Collection[discord.Snowflake, *discord.GuildScheduledEventUser], error) {
+// paginating forward (max 100 per request). Set withMember=true to include the
+// full GuildMember object alongside each user.
+func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, withMember bool) ([]*discord.GuildScheduledEventUser, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -192,7 +174,7 @@ func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, e
 
 	const pageSize = 100
 
-	all := collection.New[discord.Snowflake, *discord.GuildScheduledEventUser]()
+	var all []*discord.GuildScheduledEventUser
 	params := GetGuildScheduledEventUsersParams{
 		Limit:      util.PointerOf(pageSize),
 		WithMember: util.PointerOf(withMember),
@@ -204,16 +186,13 @@ func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, e
 			return nil, err
 		}
 
-		for _, u := range page.Values() {
-			all.Set(u.User.ID, u)
-		}
+		all = append(all, page...)
 
-		if page.Len() < pageSize {
+		if len(page) < pageSize {
 			return all, nil
 		}
 
-		vals := page.Values()
-		last := vals[len(vals)-1]
+		last := page[len(page)-1]
 		params.After = &last.User.ID
 	}
 }

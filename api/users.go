@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -103,8 +102,8 @@ func (c *RestClient) ModifyCurrentUser(ctx context.Context, params ModifyCurrent
 	})
 }
 
-// GetCurrentUserGuilds returns the guilds the current user is a member of, keyed by guild ID.
-func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrentUserGuildsParams) (*collection.Collection[discord.Snowflake, *discord.CurrentUserGuild], error) {
+// GetCurrentUserGuilds returns the guilds the current user is a member of.
+func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrentUserGuildsParams) ([]*discord.CurrentUserGuild, error) {
 	var authOption func(req *http.Request)
 	if params.UserToken != nil {
 		authOption = WithUserAuthorization(*params.UserToken)
@@ -118,18 +117,9 @@ func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrent
 		return nil, err
 	}
 
-	guilds, err := doRequestSlice[discord.CurrentUserGuild](c, req, map[int]bool{
+	return doRequestSlice[discord.CurrentUserGuild](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	coll := collection.NewWithCapacity[discord.Snowflake, *discord.CurrentUserGuild](len(guilds))
-	for _, g := range guilds {
-		coll.Set(g.ID, g)
-	}
-	return coll, nil
 }
 
 // GetCurrentUserGuildMember returns the guild member object for the current user in the given guild.
