@@ -299,7 +299,11 @@ func (c *Collection[K, V]) First() (V, bool) {
 }
 
 // FirstN returns up to n first values in insertion order.
+// Returns nil if n <= 0.
 func (c *Collection[K, V]) FirstN(n int) []V {
+	if n <= 0 {
+		return nil
+	}
 	if n > len(c.keys) {
 		n = len(c.keys)
 	}
@@ -329,7 +333,11 @@ func (c *Collection[K, V]) Last() (V, bool) {
 }
 
 // LastN returns up to n last values in insertion order.
+// Returns nil if n <= 0.
 func (c *Collection[K, V]) LastN(n int) []V {
+	if n <= 0 {
+		return nil
+	}
 	total := len(c.keys)
 	if n > total {
 		n = total
@@ -391,7 +399,11 @@ func (c *Collection[K, V]) Random() (V, bool) {
 }
 
 // RandomN returns up to n distinct random values.
+// Returns nil if n <= 0.
 func (c *Collection[K, V]) RandomN(n int) []V {
+	if n <= 0 {
+		return nil
+	}
 	total := len(c.keys)
 	if n > total {
 		n = total
