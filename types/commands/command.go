@@ -8,7 +8,7 @@ import (
 )
 
 type ApplicationCommand struct {
-	ID                       *discord.Snowflake                              `json:"id,omitempty"`
+	ID                       discord.Snowflake                               `json:"id,omitempty"`
 	Type                     discord.ApplicationCommandType                  `json:"type"`
 	ApplicationID            discord.Snowflake                               `json:"application_id"`
 	GuildID                  *discord.Snowflake                              `json:"guild_id,omitempty"`
