@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -25,20 +26,29 @@ type ModifyUserVoiceStateParams struct {
 
 // ── Voice endpoints ───────────────────────────────────────────────────────────
 
-// ListVoiceRegions returns all available voice regions.
-func (c *RestClient) ListVoiceRegions(ctx context.Context) ([]*discord.VoiceRegion, error) {
+// ListVoiceRegions returns all available voice regions, keyed by region ID.
+func (c *RestClient) ListVoiceRegions(ctx context.Context) (*collection.Collection[string, *discord.VoiceRegion], error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/voice/regions", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequestSlice[discord.VoiceRegion](c, req, map[int]bool{
+	regions, err := doRequestSlice[discord.VoiceRegion](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[string, *discord.VoiceRegion](len(regions))
+	for _, r := range regions {
+		coll.Set(r.ID, r)
+	}
+	return coll, nil
 }
 
-// ListGuildVoiceRegions returns voice regions available for a guild, including VIP regions if applicable.
-func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID discord.Snowflake) ([]*discord.VoiceRegion, error) {
+// ListGuildVoiceRegions returns voice regions available for a guild, keyed by region ID, including VIP regions if applicable.
+func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[string, *discord.VoiceRegion], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -48,9 +58,18 @@ func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID discord.
 		return nil, err
 	}
 
-	return doRequestSlice[discord.VoiceRegion](c, req, map[int]bool{
+	regions, err := doRequestSlice[discord.VoiceRegion](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[string, *discord.VoiceRegion](len(regions))
+	for _, r := range regions {
+		coll.Set(r.ID, r)
+	}
+	return coll, nil
 }
 
 // ModifyCurrentUserVoiceState updates the bot's voice state in a guild stage channel.

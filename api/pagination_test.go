@@ -338,7 +338,7 @@ func TestFetchAllEntitlementsOnePage(t *testing.T) {
 	result, err := client.FetchAllEntitlements(context.Background(), "1234567890123456789", ListEntitlementsParams{})
 
 	require.NoError(t, err)
-	assert.Len(t, result, 3)
+	assert.Equal(t, 3, result.Len())
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount))
 }
 
@@ -372,7 +372,7 @@ func TestFetchAllEntitlementsMultiplePages(t *testing.T) {
 	result, err := client.FetchAllEntitlements(context.Background(), "1234567890123456789", ListEntitlementsParams{})
 
 	require.NoError(t, err)
-	assert.Len(t, result, 102)
+	assert.Equal(t, 102, result.Len())
 	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
 	assert.Equal(t, lastID1, secondAfter, "second request should advance cursor past last entitlement on page 1")
 }
@@ -405,7 +405,7 @@ func TestFetchAllScheduledEventUsersOnePage(t *testing.T) {
 	result, err := client.FetchAllScheduledEventUsers(context.Background(), "1234567890123456789", "1234567890123456789", false)
 
 	require.NoError(t, err)
-	assert.Len(t, result, 3)
+	assert.Equal(t, 3, result.Len())
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount))
 }
 
@@ -439,7 +439,7 @@ func TestFetchAllScheduledEventUsersMultiplePages(t *testing.T) {
 	result, err := client.FetchAllScheduledEventUsers(context.Background(), "1234567890123456789", "1234567890123456789", false)
 
 	require.NoError(t, err)
-	assert.Len(t, result, 102)
+	assert.Equal(t, 102, result.Len())
 	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
 	assert.Equal(t, lastID1, secondAfter)
 }

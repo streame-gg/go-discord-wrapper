@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -45,16 +46,25 @@ type SendSoundboardSoundParams struct {
 
 // ── Soundboard endpoints ──────────────────────────────────────────────────────
 
-// ListDefaultSoundboardSounds returns the list of default sounds available to all users.
-func (c *RestClient) ListDefaultSoundboardSounds(ctx context.Context) ([]*discord.SoundboardSound, error) {
+// ListDefaultSoundboardSounds returns the list of default sounds available to all users, keyed by sound ID.
+func (c *RestClient) ListDefaultSoundboardSounds(ctx context.Context) (*collection.Collection[discord.Snowflake, *discord.SoundboardSound], error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/soundboard-default-sounds", nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequestSlice[discord.SoundboardSound](c, req, map[int]bool{
+	sounds, err := doRequestSlice[discord.SoundboardSound](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.SoundboardSound](len(sounds))
+	for _, s := range sounds {
+		coll.Set(s.SoundID, s)
+	}
+	return coll, nil
 }
 
 type ListGuildSoundboardSoundsResponse struct {

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -37,8 +38,8 @@ type DeleteGuildEmojiOptions struct {
 
 // ── Emoji endpoints ───────────────────────────────────────────────────────────
 
-// ListGuildEmojis returns all emojis for a guild.
-func (c *RestClient) ListGuildEmojis(ctx context.Context, guildID discord.Snowflake) ([]*discord.Emoji, error) {
+// ListGuildEmojis returns all emojis for a guild, keyed by emoji ID.
+func (c *RestClient) ListGuildEmojis(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Emoji], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -48,9 +49,18 @@ func (c *RestClient) ListGuildEmojis(ctx context.Context, guildID discord.Snowfl
 		return nil, err
 	}
 
-	return doRequestSlice[discord.Emoji](c, req, map[int]bool{
+	emojis, err := doRequestSlice[discord.Emoji](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Emoji](len(emojis))
+	for _, e := range emojis {
+		coll.Set(e.ID, e)
+	}
+	return coll, nil
 }
 
 // GetGuildEmoji returns a specific emoji from a guild.

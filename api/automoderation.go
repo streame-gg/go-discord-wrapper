@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -46,8 +47,8 @@ type DeleteAutoModerationRuleOptions struct {
 
 // ── Auto moderation endpoints ─────────────────────────────────────────────────
 
-// ListAutoModerationRules returns all auto moderation rules for a guild.
-func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID discord.Snowflake) ([]*discord.AutoModerationRule, error) {
+// ListAutoModerationRules returns all auto moderation rules for a guild, keyed by rule ID.
+func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.AutoModerationRule], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -57,9 +58,18 @@ func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID discor
 		return nil, err
 	}
 
-	return doRequestSlice[discord.AutoModerationRule](c, req, map[int]bool{
+	rules, err := doRequestSlice[discord.AutoModerationRule](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.AutoModerationRule](len(rules))
+	for _, r := range rules {
+		coll.Set(r.ID, r)
+	}
+	return coll, nil
 }
 
 // GetAutoModerationRule returns a single auto moderation rule.

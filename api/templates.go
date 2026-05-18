@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -58,8 +59,8 @@ func (c *RestClient) CreateGuildFromTemplate(ctx context.Context, templateCode s
 	})
 }
 
-// GetGuildTemplates returns the templates for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildTemplate, error) {
+// GetGuildTemplates returns the templates for a guild, keyed by template code. Requires MANAGE_GUILD.
+func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[string, *discord.GuildTemplate], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -69,9 +70,18 @@ func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID discord.Snow
 		return nil, err
 	}
 
-	return doRequestSlice[discord.GuildTemplate](c, req, map[int]bool{
+	templates, err := doRequestSlice[discord.GuildTemplate](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[string, *discord.GuildTemplate](len(templates))
+	for _, t := range templates {
+		coll.Set(t.Code, t)
+	}
+	return coll, nil
 }
 
 // CreateGuildTemplate creates a template for a guild. Requires MANAGE_GUILD.

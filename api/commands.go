@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -33,8 +34,8 @@ func (c *RestClient) RegisterCommand(ctx context.Context, appID discord.Snowflak
 }
 
 // BulkRegisterCommands overwrites all global application commands for the given application ID.
-// Any commands not included in cmds are deleted.
-func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID discord.Snowflake, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
+// Any commands not included in cmds are deleted. Returns a Collection keyed by command ID.
+func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID discord.Snowflake, cmds []*commands.ApplicationCommand) (*collection.Collection[discord.Snowflake, *commands.ApplicationCommand], error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -49,16 +50,27 @@ func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID discord.Sno
 		return nil, err
 	}
 
-	return doRequestSlice[commands.ApplicationCommand](c, req, map[int]bool{
+	result, err := doRequestSlice[commands.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[discord.Snowflake, *commands.ApplicationCommand](len(result))
+	for _, cmd := range result {
+		if cmd.ID != nil {
+			coll.Set(*cmd.ID, cmd)
+		}
+	}
+	return coll, nil
 }
 
 // ── Global command management ─────────────────────────────────────────────────
 
-// GetGlobalApplicationCommands returns all global application commands for the given application ID.
-// Set withLocalizations to true to include localization dictionaries.
-func (c *RestClient) GetGlobalApplicationCommands(ctx context.Context, appID discord.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
+// GetGlobalApplicationCommands returns all global application commands for the given application ID,
+// keyed by command ID. Set withLocalizations to true to include localization dictionaries.
+func (c *RestClient) GetGlobalApplicationCommands(ctx context.Context, appID discord.Snowflake, withLocalizations bool) (*collection.Collection[discord.Snowflake, *commands.ApplicationCommand], error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -73,9 +85,20 @@ func (c *RestClient) GetGlobalApplicationCommands(ctx context.Context, appID dis
 		return nil, err
 	}
 
-	return doRequestSlice[commands.ApplicationCommand](c, req, map[int]bool{
+	result, err := doRequestSlice[commands.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[discord.Snowflake, *commands.ApplicationCommand](len(result))
+	for _, cmd := range result {
+		if cmd.ID != nil {
+			coll.Set(*cmd.ID, cmd)
+		}
+	}
+	return coll, nil
 }
 
 // GetGlobalApplicationCommand returns a single global application command.
@@ -146,8 +169,9 @@ func (c *RestClient) DeleteGlobalApplicationCommand(ctx context.Context, appID, 
 
 // ── Guild command management ──────────────────────────────────────────────────
 
-// GetGuildApplicationCommands returns all application commands registered to a specific guild.
-func (c *RestClient) GetGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
+// GetGuildApplicationCommands returns all application commands registered to a specific guild,
+// keyed by command ID.
+func (c *RestClient) GetGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, withLocalizations bool) (*collection.Collection[discord.Snowflake, *commands.ApplicationCommand], error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -166,9 +190,20 @@ func (c *RestClient) GetGuildApplicationCommands(ctx context.Context, appID, gui
 		return nil, err
 	}
 
-	return doRequestSlice[commands.ApplicationCommand](c, req, map[int]bool{
+	result, err := doRequestSlice[commands.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[discord.Snowflake, *commands.ApplicationCommand](len(result))
+	for _, cmd := range result {
+		if cmd.ID != nil {
+			coll.Set(*cmd.ID, cmd)
+		}
+	}
+	return coll, nil
 }
 
 // CreateGuildApplicationCommand registers a command in a specific guild.
@@ -277,8 +312,8 @@ func (c *RestClient) DeleteGuildApplicationCommand(ctx context.Context, appID, g
 }
 
 // BulkOverwriteGuildApplicationCommands overwrites all guild-specific commands for the given guild.
-// Any commands not included in cmds are deleted.
-func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
+// Any commands not included in cmds are deleted. Returns a Collection keyed by command ID.
+func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, cmds []*commands.ApplicationCommand) (*collection.Collection[discord.Snowflake, *commands.ApplicationCommand], error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -298,15 +333,27 @@ func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, 
 		return nil, err
 	}
 
-	return doRequestSlice[commands.ApplicationCommand](c, req, map[int]bool{
+	result, err := doRequestSlice[commands.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[discord.Snowflake, *commands.ApplicationCommand](len(result))
+	for _, cmd := range result {
+		if cmd.ID != nil {
+			coll.Set(*cmd.ID, cmd)
+		}
+	}
+	return coll, nil
 }
 
 // ── Command permissions ───────────────────────────────────────────────────────
 
-// GetGuildApplicationCommandPermissions returns all permission overrides for every command in a guild.
-func (c *RestClient) GetGuildApplicationCommandPermissions(ctx context.Context, appID, guildID discord.Snowflake) ([]*discord.GuildApplicationCommandPermissions, error) {
+// GetGuildApplicationCommandPermissions returns all permission overrides for every command in a guild,
+// keyed by command ID.
+func (c *RestClient) GetGuildApplicationCommandPermissions(ctx context.Context, appID, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.GuildApplicationCommandPermissions], error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -321,9 +368,18 @@ func (c *RestClient) GetGuildApplicationCommandPermissions(ctx context.Context, 
 		return nil, err
 	}
 
-	return doRequestSlice[discord.GuildApplicationCommandPermissions](c, req, map[int]bool{
+	perms, err := doRequestSlice[discord.GuildApplicationCommandPermissions](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.GuildApplicationCommandPermissions](len(perms))
+	for _, p := range perms {
+		coll.Set(p.ID, p)
+	}
+	return coll, nil
 }
 
 // GetApplicationCommandPermissions returns the permission overrides for a specific command in a guild.

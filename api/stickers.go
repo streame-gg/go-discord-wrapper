@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/textproto"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -74,8 +75,8 @@ func (c *RestClient) ListStickerPacks(ctx context.Context) (*ListStickerPacksRes
 	})
 }
 
-// ListGuildStickers returns all stickers for the given guild.
-func (c *RestClient) ListGuildStickers(ctx context.Context, guildID discord.Snowflake) ([]*discord.Sticker, error) {
+// ListGuildStickers returns all stickers for the given guild, keyed by sticker ID.
+func (c *RestClient) ListGuildStickers(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Sticker], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -85,9 +86,18 @@ func (c *RestClient) ListGuildStickers(ctx context.Context, guildID discord.Snow
 		return nil, err
 	}
 
-	return doRequestSlice[discord.Sticker](c, req, map[int]bool{
+	stickers, err := doRequestSlice[discord.Sticker](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Sticker](len(stickers))
+	for _, s := range stickers {
+		coll.Set(s.ID, s)
+	}
+	return coll, nil
 }
 
 // GetGuildSticker returns a specific sticker from a guild.

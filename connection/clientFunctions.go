@@ -38,7 +38,7 @@ func (d *Client) RegisterCommand(ctx context.Context, cmd *commands.ApplicationC
 // BulkRegisterCommands overwrites all application commands with the provided list.
 // Any existing commands not included will be deleted.
 // Must be called after Login() so that the application ID is available.
-func (d *Client) BulkRegisterCommands(ctx context.Context, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
+func (d *Client) BulkRegisterCommands(ctx context.Context, cmds []*commands.ApplicationCommand) (*collection.Collection[discord.Snowflake, *commands.ApplicationCommand], error) {
 	appID, err := d.applicationID()
 	if err != nil {
 		return nil, err
@@ -326,7 +326,7 @@ func (d *Client) DeleteChannel(ctx context.Context, channelID discord.Snowflake)
 	return channel, err
 }
 
-func (d *Client) GetChannelInvites(ctx context.Context, channelID discord.Snowflake) ([]*discord.Invite, error) {
+func (d *Client) GetChannelInvites(ctx context.Context, channelID discord.Snowflake) (*collection.Collection[string, *discord.Invite], error) {
 	return d.RestClient.GetChannelInvites(ctx, channelID)
 }
 
@@ -706,11 +706,11 @@ func (d *Client) ModifyGuildOnboarding(ctx context.Context, guildID discord.Snow
 
 // ── Voice ─────────────────────────────────────────────────────────────────────
 
-func (d *Client) ListVoiceRegions(ctx context.Context) ([]*discord.VoiceRegion, error) {
+func (d *Client) ListVoiceRegions(ctx context.Context) (*collection.Collection[string, *discord.VoiceRegion], error) {
 	return d.RestClient.ListVoiceRegions(ctx)
 }
 
-func (d *Client) ListGuildVoiceRegions(ctx context.Context, guildID discord.Snowflake) ([]*discord.VoiceRegion, error) {
+func (d *Client) ListGuildVoiceRegions(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[string, *discord.VoiceRegion], error) {
 	return d.RestClient.ListGuildVoiceRegions(ctx, guildID)
 }
 
@@ -724,7 +724,7 @@ func (d *Client) ModifyUserVoiceState(ctx context.Context, guildID, userID disco
 
 // ── Soundboard ────────────────────────────────────────────────────────────────
 
-func (d *Client) ListDefaultSoundboardSounds(ctx context.Context) ([]*discord.SoundboardSound, error) {
+func (d *Client) ListDefaultSoundboardSounds(ctx context.Context) (*collection.Collection[discord.Snowflake, *discord.SoundboardSound], error) {
 	return d.RestClient.ListDefaultSoundboardSounds(ctx)
 }
 
@@ -766,7 +766,7 @@ func (d *Client) ModifyCurrentApplication(ctx context.Context, params api.Modify
 
 // GetGuildApplicationCommandPermissions returns all permission overrides for every command in a guild.
 // Uses the bot's own application ID automatically.
-func (d *Client) GetGuildApplicationCommandPermissions(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildApplicationCommandPermissions, error) {
+func (d *Client) GetGuildApplicationCommandPermissions(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.GuildApplicationCommandPermissions], error) {
 	appID, err := d.applicationID()
 	if err != nil {
 		return nil, err
@@ -807,7 +807,7 @@ func (d *Client) DeleteApplicationEmoji(ctx context.Context, appID, emojiID disc
 
 // ── Entitlements ──────────────────────────────────────────────────────────────
 
-func (d *Client) ListEntitlements(ctx context.Context, appID discord.Snowflake, params api.ListEntitlementsParams) ([]*discord.Entitlement, error) {
+func (d *Client) ListEntitlements(ctx context.Context, appID discord.Snowflake, params api.ListEntitlementsParams) (*collection.Collection[discord.Snowflake, *discord.Entitlement], error) {
 	return d.RestClient.ListEntitlements(ctx, appID, params)
 }
 
@@ -829,13 +829,13 @@ func (d *Client) DeleteTestEntitlement(ctx context.Context, appID, entitlementID
 
 // ── SKUs ──────────────────────────────────────────────────────────────────────
 
-func (d *Client) ListSKUs(ctx context.Context, appID discord.Snowflake) ([]*discord.SKU, error) {
+func (d *Client) ListSKUs(ctx context.Context, appID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.SKU], error) {
 	return d.RestClient.ListSKUs(ctx, appID)
 }
 
 // ── Subscriptions ─────────────────────────────────────────────────────────────
 
-func (d *Client) ListSKUSubscriptions(ctx context.Context, skuID discord.Snowflake, params api.ListSKUSubscriptionsParams) ([]*discord.Subscription, error) {
+func (d *Client) ListSKUSubscriptions(ctx context.Context, skuID discord.Snowflake, params api.ListSKUSubscriptionsParams) (*collection.Collection[discord.Snowflake, *discord.Subscription], error) {
 	return d.RestClient.ListSKUSubscriptions(ctx, skuID, params)
 }
 

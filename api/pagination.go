@@ -145,9 +145,9 @@ func (c *RestClient) FetchAllAuditLogEntries(ctx context.Context, guildID discor
 }
 
 // FetchAllEntitlements fetches every entitlement for an application by paginating
-// forward (max 100 per request). The filter is forwarded as-is so callers can
-// scope by user, guild, or SKU.
-func (c *RestClient) FetchAllEntitlements(ctx context.Context, appID discord.Snowflake, filter ListEntitlementsParams) ([]*discord.Entitlement, error) {
+// forward (max 100 per request), keyed by entitlement ID. The filter is forwarded
+// as-is so callers can scope by user, guild, or SKU.
+func (c *RestClient) FetchAllEntitlements(ctx context.Context, appID discord.Snowflake, filter ListEntitlementsParams) (*collection.Collection[discord.Snowflake, *discord.Entitlement], error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func (c *RestClient) FetchAllEntitlements(ctx context.Context, appID discord.Sno
 
 	filter.Limit = util.PointerOf(pageSize)
 
-	var all []*discord.Entitlement
+	all := collection.New[discord.Snowflake, *discord.Entitlement]()
 
 	for {
 		page, err := c.ListEntitlements(ctx, appID, filter)
@@ -164,21 +164,24 @@ func (c *RestClient) FetchAllEntitlements(ctx context.Context, appID discord.Sno
 			return nil, err
 		}
 
-		all = append(all, page...)
+		for _, e := range page.Values() {
+			all.Set(e.ID, e)
+		}
 
-		if len(page) < pageSize {
+		if page.Len() < pageSize {
 			return all, nil
 		}
 
-		last := page[len(page)-1]
+		vals := page.Values()
+		last := vals[len(vals)-1]
 		filter.After = &last.ID
 	}
 }
 
 // FetchAllScheduledEventUsers fetches every subscriber for a scheduled event by
-// paginating forward (max 100 per request). Set withMember=true to include the
-// full GuildMember object alongside each user.
-func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, withMember bool) ([]*discord.GuildScheduledEventUser, error) {
+// paginating forward (max 100 per request), keyed by user ID. Set withMember=true
+// to include the full GuildMember object alongside each user.
+func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, withMember bool) (*collection.Collection[discord.Snowflake, *discord.GuildScheduledEventUser], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -189,7 +192,7 @@ func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, e
 
 	const pageSize = 100
 
-	var all []*discord.GuildScheduledEventUser
+	all := collection.New[discord.Snowflake, *discord.GuildScheduledEventUser]()
 	params := GetGuildScheduledEventUsersParams{
 		Limit:      util.PointerOf(pageSize),
 		WithMember: util.PointerOf(withMember),
@@ -201,13 +204,16 @@ func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, e
 			return nil, err
 		}
 
-		all = append(all, page...)
+		for _, u := range page.Values() {
+			all.Set(u.User.ID, u)
+		}
 
-		if len(page) < pageSize {
+		if page.Len() < pageSize {
 			return all, nil
 		}
 
-		last := page[len(page)-1]
+		vals := page.Values()
+		last := vals[len(vals)-1]
 		params.After = &last.User.ID
 	}
 }

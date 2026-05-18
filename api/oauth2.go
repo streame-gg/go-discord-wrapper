@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -45,17 +46,26 @@ func (c *RestClient) DeleteCurrentUserApplicationRoleConnection(ctx context.Cont
 	return doRequestWithoutResponse(c, req)
 }
 
-// GetCurrentUserConnections returns the connections linked to the current user's account.
-// Requires an OAuth2 bearer token with the connections scope; bot tokens will receive a 401.
-func (c *RestClient) GetCurrentUserConnections(ctx context.Context, userToken string) ([]*discord.UserConnection, error) {
+// GetCurrentUserConnections returns the connections linked to the current user's account,
+// keyed by connection ID. Requires an OAuth2 bearer token with the connections scope.
+func (c *RestClient) GetCurrentUserConnections(ctx context.Context, userToken string) (*collection.Collection[string, *discord.UserConnection], error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/users/@me/connections", nil, WithUserAuthorization(userToken))
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequestSlice[discord.UserConnection](c, req, map[int]bool{
+	conns, err := doRequestSlice[discord.UserConnection](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[string, *discord.UserConnection](len(conns))
+	for _, conn := range conns {
+		coll.Set(conn.ID, conn)
+	}
+	return coll, nil
 }
 
 // GetCurrentUserApplicationRoleConnection returns the application role connection for the current user.

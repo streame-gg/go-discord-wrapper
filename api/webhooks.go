@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -110,8 +111,8 @@ func (c *RestClient) CreateWebhook(ctx context.Context, channelID discord.Snowfl
 	})
 }
 
-// GetChannelWebhooks returns all webhooks for a channel.
-func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID discord.Snowflake) ([]*discord.Webhook, error) {
+// GetChannelWebhooks returns all webhooks for a channel, keyed by webhook ID.
+func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Webhook], error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -121,13 +122,22 @@ func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID discord.S
 		return nil, err
 	}
 
-	return doRequestSlice[discord.Webhook](c, req, map[int]bool{
+	webhooks, err := doRequestSlice[discord.Webhook](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Webhook](len(webhooks))
+	for _, w := range webhooks {
+		coll.Set(w.ID, w)
+	}
+	return coll, nil
 }
 
-// GetGuildWebhooks returns all webhooks in a guild.
-func (c *RestClient) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
+// GetGuildWebhooks returns all webhooks in a guild, keyed by webhook ID.
+func (c *RestClient) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake) (*collection.Collection[discord.Snowflake, *discord.Webhook], error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -137,9 +147,18 @@ func (c *RestClient) GetGuildWebhooks(ctx context.Context, guildID discord.Snowf
 		return nil, err
 	}
 
-	return doRequestSlice[discord.Webhook](c, req, map[int]bool{
+	webhooks, err := doRequestSlice[discord.Webhook](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	coll := collection.NewWithCapacity[discord.Snowflake, *discord.Webhook](len(webhooks))
+	for _, w := range webhooks {
+		coll.Set(w.ID, w)
+	}
+	return coll, nil
 }
 
 // GetWebhook returns the webhook object for the given ID.
