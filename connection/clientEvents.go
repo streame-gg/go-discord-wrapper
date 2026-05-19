@@ -225,6 +225,24 @@ func (d *Client) OnVoiceServerUpdate(h func(*Client, *events.VoiceServerUpdateEv
 func (d *Client) OnVoiceChannelEffectSend(h func(*Client, *events.VoiceChannelEffectSendEvent)) {
 	_ = d.OnEvent(events.EventVoiceChannelEffectSend, h)
 }
+func (d *Client) OnGuildMemberRoleAdd(h func(*Client, *events.GuildMemberRoleAddEvent)) {
+	_ = d.OnEvent(events.EventWrapperGuildMemberRoleAdd, h)
+}
+func (d *Client) OnGuildMemberRoleRemove(h func(*Client, *events.GuildMemberRoleRemoveEvent)) {
+	_ = d.OnEvent(events.EventWrapperGuildMemberRoleRemove, h)
+}
+func (d *Client) OnGuildMemberNickChange(h func(*Client, *events.GuildMemberNickChangeEvent)) {
+	_ = d.OnEvent(events.EventWrapperGuildMemberNickChange, h)
+}
+func (d *Client) OnGuildMemberTimeout(h func(*Client, *events.GuildMemberTimeoutEvent)) {
+	_ = d.OnEvent(events.EventWrapperGuildMemberTimeout, h)
+}
+func (d *Client) OnGuildMemberBoostStart(h func(*Client, *events.GuildMemberBoostStartEvent)) {
+	_ = d.OnEvent(events.EventWrapperGuildMemberBoostStart, h)
+}
+func (d *Client) OnGuildMemberBoostEnd(h func(*Client, *events.GuildMemberBoostEndEvent)) {
+	_ = d.OnEvent(events.EventWrapperGuildMemberBoostEnd, h)
+}
 func (d *Client) OnVoiceMemberJoin(h func(*Client, *events.VoiceMemberJoinEvent)) {
 	_ = d.OnEvent(events.EventWrapperVoiceMemberJoin, h)
 }

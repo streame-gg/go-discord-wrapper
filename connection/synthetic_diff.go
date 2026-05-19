@@ -1,6 +1,7 @@
 package connection
 
 import (
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 )
 
@@ -11,8 +12,137 @@ func (d *Client) deriveSyntheticEvents(ev events.Event) []events.Event {
 	switch e := ev.(type) {
 	case *events.VoiceStateUpdateEvent:
 		return deriveVoiceSyntheticEvents(e)
+	case *events.GuildMemberUpdateEvent:
+		return deriveGuildMemberSyntheticEvents(e)
 	}
 	return nil
+}
+
+// deriveGuildMemberSyntheticEvents derives member synthetic events from a
+// GuildMemberUpdateEvent. Returns nil if OldMember is nil (cache miss).
+// Multiple events may fire for a single update (e.g. role add + nick change).
+func deriveGuildMemberSyntheticEvents(ev *events.GuildMemberUpdateEvent) []events.Event {
+	if ev.OldMember == nil {
+		return nil
+	}
+
+	newMember := buildNewMember(ev)
+	var result []events.Event
+
+	// Role diff — compare old []string with new []Snowflake.
+	oldRoles := make(map[string]struct{}, len(ev.OldMember.Roles))
+	for _, r := range ev.OldMember.Roles {
+		oldRoles[r] = struct{}{}
+	}
+	newRoles := make(map[string]struct{}, len(ev.Roles))
+	for _, r := range ev.Roles {
+		newRoles[string(r)] = struct{}{}
+	}
+
+	for r := range newRoles {
+		if _, exists := oldRoles[r]; !exists {
+			result = append(result, &events.GuildMemberRoleAddEvent{
+				GuildID: ev.GuildID, UserID: ev.User.ID,
+				RoleID:    discord.Snowflake(r),
+				OldMember: ev.OldMember, NewMember: newMember,
+			})
+		}
+	}
+	for r := range oldRoles {
+		if _, exists := newRoles[r]; !exists {
+			result = append(result, &events.GuildMemberRoleRemoveEvent{
+				GuildID: ev.GuildID, UserID: ev.User.ID,
+				RoleID:    discord.Snowflake(r),
+				OldMember: ev.OldMember, NewMember: newMember,
+			})
+		}
+	}
+
+	// Nick change.
+	if nickDiffers(ev.OldMember.Nick, ev.Nick) {
+		result = append(result, &events.GuildMemberNickChangeEvent{
+			GuildID: ev.GuildID, UserID: ev.User.ID,
+			OldNick: ev.OldMember.Nick, NewNick: ev.Nick,
+			OldMember: ev.OldMember, NewMember: newMember,
+		})
+	}
+
+	// Timeout applied or extended.
+	if ev.CommunicationDisabledUntil != nil &&
+		(ev.OldMember.CommunicationDisabledUntil == nil ||
+			*ev.OldMember.CommunicationDisabledUntil != *ev.CommunicationDisabledUntil) {
+		result = append(result, &events.GuildMemberTimeoutEvent{
+			GuildID: ev.GuildID, UserID: ev.User.ID,
+			CommunicationDisabledUntil: *ev.CommunicationDisabledUntil,
+			OldMember:                  ev.OldMember, NewMember: newMember,
+		})
+	}
+
+	// Boost start.
+	if ev.PremiumSince != nil && ev.OldMember.PremiumSince == nil {
+		result = append(result, &events.GuildMemberBoostStartEvent{
+			GuildID: ev.GuildID, UserID: ev.User.ID,
+			PremiumSince: *ev.PremiumSince,
+			OldMember:    ev.OldMember, NewMember: newMember,
+		})
+	}
+
+	// Boost end.
+	if ev.PremiumSince == nil && ev.OldMember.PremiumSince != nil {
+		result = append(result, &events.GuildMemberBoostEndEvent{
+			GuildID:   ev.GuildID, UserID: ev.User.ID,
+			OldMember: ev.OldMember, NewMember: newMember,
+		})
+	}
+
+	return result
+}
+
+// buildNewMember constructs the post-update GuildMember from a GUILD_MEMBER_UPDATE event,
+// starting from OldMember as a base and applying the update fields on top.
+func buildNewMember(ev *events.GuildMemberUpdateEvent) *discord.GuildMember {
+	var m discord.GuildMember
+	if ev.OldMember != nil {
+		m = *ev.OldMember
+	}
+	m.GuildID = ev.GuildID
+	m.User = &ev.User
+	m.UserID = ev.User.ID
+	m.Nick = ev.Nick
+	m.AvatarHash = ev.AvatarHash
+	m.PremiumSince = ev.PremiumSince
+	m.CommunicationDisabledUntil = ev.CommunicationDisabledUntil
+	roles := make([]string, len(ev.Roles))
+	for i, r := range ev.Roles {
+		roles[i] = string(r)
+	}
+	m.Roles = roles
+	if ev.JoinedAt != nil {
+		m.JoinedAt = *ev.JoinedAt
+	}
+	if ev.Deaf != nil {
+		m.Deaf = *ev.Deaf
+	}
+	if ev.Mute != nil {
+		m.Mute = *ev.Mute
+	}
+	if ev.Pending != nil {
+		m.Pending = *ev.Pending
+	}
+	if ev.Flags != nil {
+		m.Flags = *ev.Flags
+	}
+	return &m
+}
+
+func nickDiffers(a, b *string) bool {
+	if a == nil && b == nil {
+		return false
+	}
+	if a == nil || b == nil {
+		return true
+	}
+	return *a != *b
 }
 
 // deriveVoiceSyntheticEvents derives 0 or 1 voice synthetic events from a
