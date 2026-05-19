@@ -12,6 +12,7 @@ type GuildRoleCreateEvent struct {
 type GuildRoleUpdateEvent struct {
 	GuildID discord.Snowflake `json:"guild_id"`
 	Role    discord.Role      `json:"role"`
+	OldRole *discord.Role     `json:"old_role,omitempty"`
 }
 
 type GuildRoleDeleteEvent struct {

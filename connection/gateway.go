@@ -1029,11 +1029,13 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventPresenceUpdate:
 		{
+			ev, ok := event.(*events.PresenceUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryPresences) {
-				var ev events.PresenceUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal PRESENCE_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.Presences().Get(ev.GuildID, ev.User.ID); exists {
+					ev.OldPresence = old
 				}
 				presence := discord.Presence{
 					User:         ev.User,
@@ -1047,33 +1049,35 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildUpdate:
 		{
-			if d.cacheStoreEnabled(cache.CategoryGuilds) || d.cacheStoreEnabled(cache.CategoryRoles) {
-				var ev events.GuildUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_UPDATE event", slog.Any("err", err))
-					return false
+			ev, ok := event.(*events.GuildUpdateEvent)
+			if !ok {
+				return false
+			}
+			g := ev.Guild
+			if d.cacheStoreEnabled(cache.CategoryGuilds) {
+				if old, exists := d.Cache.Guilds().Get(g.ID); exists {
+					ev.OldGuild = old
 				}
-				g := ev.Guild
-				if d.cacheStoreEnabled(cache.CategoryGuilds) {
-					d.Cache.Guilds().Set(&g)
-				}
-				if d.cacheStoreEnabled(cache.CategoryRoles) {
-					// Delete stale roles before re-adding so removed roles don't persist.
-					d.Cache.Roles().DeleteGuild(g.ID)
-					for i := range g.RawRoles {
-						role := g.RawRoles[i]
-						d.Cache.Roles().Set(g.ID, &role)
-					}
+				d.Cache.Guilds().Set(&g)
+			}
+			if d.cacheStoreEnabled(cache.CategoryRoles) {
+				// Delete stale roles before re-adding so removed roles don't persist.
+				d.Cache.Roles().DeleteGuild(g.ID)
+				for i := range g.RawRoles {
+					role := g.RawRoles[i]
+					d.Cache.Roles().Set(g.ID, &role)
 				}
 			}
 		}
 	case events.EventGuildEmojisUpdate:
 		{
+			ev, ok := event.(*events.GuildEmojisUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryEmojis) {
-				var ev events.GuildEmojisUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_EMOJIS_UPDATE event", slog.Any("err", err))
-					return false
+				if col := d.Cache.Emojis().GetByGuild(ev.GuildID); col != nil && col.Len() > 0 {
+					ev.OldEmojis = col.Values()
 				}
 				emojis := make([]*discord.Emoji, 0, len(ev.Emojis))
 				for i := range ev.Emojis {
@@ -1085,11 +1089,13 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildStickersUpdate:
 		{
+			ev, ok := event.(*events.GuildStickersUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryStickers) {
-				var ev events.GuildStickersUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_STICKERS_UPDATE event", slog.Any("err", err))
-					return false
+				if col := d.Cache.Stickers().GetByGuild(ev.GuildID); col != nil && col.Len() > 0 {
+					ev.OldStickers = col.Values()
 				}
 				stickers := make([]*discord.Sticker, 0, len(ev.Stickers))
 				for i := range ev.Stickers {
@@ -1129,17 +1135,17 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildMemberUpdate:
 		{
+			ev, ok := event.(*events.GuildMemberUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryMembers) {
-				var ev events.GuildMemberUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_MEMBER_UPDATE event", slog.Any("err", err))
-					return false
-				}
 				// Copy the cached entry rather than mutating the stored pointer in-place.
 				// Mutating the stored pointer without a lock produces data races with
 				// concurrent Get() callers that read the same pointer.
 				var m discord.GuildMember
-				if existing, ok := d.Cache.Members().Get(ev.GuildID, ev.User.ID); ok {
+				if existing, exists := d.Cache.Members().Get(ev.GuildID, ev.User.ID); exists {
+					ev.OldMember = existing
 					m = *existing
 				}
 				m.User = &ev.User
@@ -1190,11 +1196,13 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildRoleUpdate:
 		{
+			ev, ok := event.(*events.GuildRoleUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryRoles) {
-				var ev events.GuildRoleUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_ROLE_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.Roles().Get(ev.Role.ID); exists {
+					ev.OldRole = old
 				}
 				role := ev.Role
 				role.GuildID = ev.GuildID
@@ -1258,11 +1266,13 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildScheduledEventUpdate:
 		{
+			ev, ok := event.(*events.GuildScheduledEventUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
-				var ev events.GuildScheduledEventUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_SCHEDULED_EVENT_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.ScheduledEvents().Get(ev.GuildScheduledEvent.ID); exists {
+					ev.OldEvent = old
 				}
 				scheduled := ev.GuildScheduledEvent
 				scheduled.Hydrate(d)
@@ -1295,11 +1305,13 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventStageInstanceUpdate:
 		{
+			ev, ok := event.(*events.StageInstanceUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryStageInstances) {
-				var ev events.StageInstanceUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal STAGE_INSTANCE_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.StageInstances().Get(ev.StageInstance.ID); exists {
+					ev.OldInstance = old
 				}
 				instance := ev.StageInstance
 				instance.Hydrate(d)
@@ -1334,11 +1346,13 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildSoundboardSoundUpdate:
 		{
+			ev, ok := event.(*events.GuildSoundboardSoundUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategorySoundboard) {
-				var ev events.GuildSoundboardSoundUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_SOUNDBOARD_SOUND_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.Soundboard().Get(ev.SoundboardSound.SoundID); exists {
+					ev.OldSound = old
 				}
 				sound := ev.SoundboardSound
 				sound.Hydrate(d)
@@ -1406,11 +1420,13 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventChannelUpdate:
 		{
+			ev, ok := event.(*events.ChannelUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryChannels) {
-				var ev events.ChannelUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal CHANNEL_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.Channels().Get(ev.Channel.ID); exists {
+					ev.OldChannel = old
 				}
 				ch := ev.Channel
 				d.cacheChannel(&ch)
@@ -1443,12 +1459,19 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 	case events.EventThreadUpdate:
 		{
 			if d.cacheStoreEnabled(cache.CategoryChannels) {
-				var ev events.ThreadUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal THREAD_UPDATE event", slog.Any("err", err))
-					return false
+				var ch discord.Channel
+				if ev, ok := event.(*events.ThreadUpdateEvent); ok {
+					if old, exists := d.Cache.Channels().Get(ev.Channel.ID); exists {
+						ev.OldThread = old
+					}
+					ch = ev.Channel
+				} else {
+					var fallback events.ThreadUpdateEvent
+					if err := json.Unmarshal(msg, &fallback); err != nil {
+						return false
+					}
+					ch = fallback.Channel
 				}
-				ch := ev.Channel
 				d.cacheChannel(&ch)
 				d.trackThread(&ch)
 			}
@@ -1532,11 +1555,13 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventMessageUpdate:
 		{
+			ev, ok := event.(*events.MessageUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryMessages) {
-				var ev events.MessageUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal MESSAGE_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.Messages().Get(ev.Message.ChannelID, ev.Message.ID); exists {
+					ev.OldMessage = old
 				}
 				msg := ev.Message
 				d.Cache.Messages().Update(&msg)

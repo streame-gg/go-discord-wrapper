@@ -10,6 +10,7 @@ type PresenceUpdateEvent struct {
 	Status       discord.PresenceStatus      `json:"status"`
 	Activities   []discord.FullActivity      `json:"activities"`
 	ClientStatus discord.ClientStatus        `json:"client_status"`
+	OldPresence  *discord.Presence           `json:"old_presence,omitempty"`
 }
 
 func init() { RegisterEvent(PresenceUpdateEvent{}) }

@@ -5,13 +5,15 @@ import (
 )
 
 type GuildEmojisUpdateEvent struct {
-	GuildID discord.Snowflake `json:"guild_id"`
-	Emojis  []discord.Emoji   `json:"emojis"`
+	GuildID   discord.Snowflake `json:"guild_id"`
+	Emojis    []discord.Emoji   `json:"emojis"`
+	OldEmojis []*discord.Emoji  `json:"old_emojis,omitempty"`
 }
 
 type GuildStickersUpdateEvent struct {
-	GuildID  discord.Snowflake `json:"guild_id"`
-	Stickers []discord.Sticker `json:"stickers"`
+	GuildID     discord.Snowflake  `json:"guild_id"`
+	Stickers    []discord.Sticker  `json:"stickers"`
+	OldStickers []*discord.Sticker `json:"old_stickers,omitempty"`
 }
 
 func init() {

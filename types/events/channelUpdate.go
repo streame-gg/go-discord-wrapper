@@ -4,6 +4,7 @@ import "github.com/streame-gg/go-discord-wrapper/types/discord"
 
 type ChannelUpdateEvent struct {
 	discord.Channel
+	OldChannel *discord.Channel `json:"old_channel,omitempty"`
 }
 
 func init() { RegisterEvent(ChannelUpdateEvent{}) }

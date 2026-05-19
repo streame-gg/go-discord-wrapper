@@ -12,6 +12,7 @@ type GuildSoundboardSoundCreateEvent struct {
 // GuildSoundboardSoundUpdateEvent is dispatched when a soundboard sound is updated.
 type GuildSoundboardSoundUpdateEvent struct {
 	discord.SoundboardSound
+	OldSound *discord.SoundboardSound `json:"old_sound,omitempty"`
 }
 
 // GuildSoundboardSoundDeleteEvent is dispatched when a soundboard sound is deleted.

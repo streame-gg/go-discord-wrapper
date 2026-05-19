@@ -6,9 +6,10 @@ import (
 
 type MessageUpdateEvent struct {
 	discord.Message
-	GuildID  *discord.Snowflake   `json:"guild_id"`
-	Member   *discord.GuildMember `json:"member,omitempty"`
-	Mentions *[]discord.User      `json:"mentions"`
+	GuildID    *discord.Snowflake   `json:"guild_id"`
+	Member     *discord.GuildMember `json:"member,omitempty"`
+	Mentions   *[]discord.User      `json:"mentions"`
+	OldMessage *discord.Message     `json:"old_message,omitempty"`
 }
 
 func init() { RegisterEvent(MessageUpdateEvent{}) }
