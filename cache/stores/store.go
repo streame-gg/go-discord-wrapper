@@ -6,12 +6,24 @@
 package stores
 
 import (
+	"encoding/json"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
+
+// estimateSize returns the JSON-encoded byte length of v as a size proxy.
+// Not exact Go heap usage, but consistent and useful as a relative bound.
+func estimateSize[V any](v V) int64 {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return 0
+	}
+	return int64(len(b))
+}
 
 // ── Eviction strategy ─────────────────────────────────────────────────────────
 
@@ -83,6 +95,15 @@ type StoreOptions struct {
 	// EvictionStrategy selects which entry to evict on MaxItems overflow.
 	EvictionStrategy EvictionStrategy
 
+	// MaxTotal caps the total entry count across all sub-groups in stores that
+	// support it. For MemMessageStore, this is the total messages across all
+	// channels; enforced synchronously on Add. 0 = unlimited.
+	MaxTotal int
+
+	// TrackBytes enables JSON-based payload size estimation. Required by
+	// MemoryCache when Limits.MaxSizeMB is set. Adds one json.Marshal per Set.
+	TrackBytes bool
+
 	// Disabled makes the store a no-op: all writes are dropped and reads
 	// always return the zero value. Useful for disabling high-volume stores
 	// such as PresenceStore in bots that do not need presence data.
@@ -133,6 +154,7 @@ type entry[V any] struct {
 	accessedAt time.Time
 	hitCount   uint64
 	expiresAt  time.Time // zero = no TTL
+	sizeBytes  int64     // 0 when TrackBytes=false
 }
 
 // ── BaseStore ─────────────────────────────────────────────────────────────────
@@ -142,9 +164,10 @@ type entry[V any] struct {
 //
 // All public methods are safe for concurrent use.
 type BaseStore[K comparable, V any] struct {
-	mu      sync.RWMutex
-	items   *collection.Collection[K, *entry[V]]
-	options StoreOptions
+	mu         sync.RWMutex
+	items      *collection.Collection[K, *entry[V]]
+	options    StoreOptions
+	totalBytes atomic.Int64 // non-zero only when options.TrackBytes is true
 
 	stopCh chan struct{}
 	wg     sync.WaitGroup
@@ -215,10 +238,15 @@ func (s *BaseStore[K, V]) Set(key K, value V) {
 	}
 
 	now := time.Now()
+	var sz int64
+	if s.options.TrackBytes {
+		sz = estimateSize(value)
+	}
 	e := &entry[V]{
 		value:      value,
 		insertedAt: now,
 		accessedAt: now,
+		sizeBytes:  sz,
 	}
 	if s.options.TTL > 0 {
 		e.expiresAt = now.Add(s.options.TTL)
@@ -228,8 +256,14 @@ func (s *BaseStore[K, V]) Set(key K, value V) {
 	if old, ok := s.items.Get(key); ok {
 		e.insertedAt = old.insertedAt
 		e.hitCount = old.hitCount
+		if s.options.TrackBytes {
+			s.totalBytes.Add(-old.sizeBytes)
+		}
 	}
 	s.items.Set(key, e)
+	if s.options.TrackBytes {
+		s.totalBytes.Add(sz)
+	}
 	over := s.options.MaxItems > 0 && s.items.Len() > s.options.MaxItems
 	s.mu.Unlock()
 
@@ -242,6 +276,9 @@ func (s *BaseStore[K, V]) Set(key K, value V) {
 func (s *BaseStore[K, V]) Delete(key K) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if e, ok := s.items.Get(key); ok && s.options.TrackBytes {
+		s.totalBytes.Add(-e.sizeBytes)
+	}
 	return s.items.Delete(key)
 }
 
@@ -268,8 +305,19 @@ func (s *BaseStore[K, V]) Len() int {
 func (s *BaseStore[K, V]) Clear() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.options.TrackBytes {
+		s.totalBytes.Store(0)
+	}
 	s.items.Clear()
 }
+
+// Bytes returns the estimated total payload size in bytes.
+// Always 0 when TrackBytes is false in StoreOptions.
+func (s *BaseStore[K, V]) Bytes() int64 { return s.totalBytes.Load() }
+
+// TrimTo evicts entries (by EvictionStrategy) until Len() <= n.
+// Safe for concurrent use; must NOT be called while s.mu is held.
+func (s *BaseStore[K, V]) TrimTo(n int) { s.evictToCount(n) }
 
 // All returns a snapshot Collection of all live (non-expired) values.
 // The snapshot is a copy; mutations to it do not affect the store.
@@ -301,13 +349,22 @@ func (s *BaseStore[K, V]) ReplaceKeys(del []K, add map[K]V) {
 	now := time.Now()
 	s.mu.Lock()
 	for _, k := range del {
+		if e, ok := s.items.Get(k); ok && s.options.TrackBytes {
+			s.totalBytes.Add(-e.sizeBytes)
+		}
 		s.items.Delete(k)
 	}
 	for k, v := range add {
+		var sz int64
+		if s.options.TrackBytes {
+			sz = estimateSize(v)
+			s.totalBytes.Add(sz)
+		}
 		e := &entry[V]{
 			value:      v,
 			insertedAt: now,
 			accessedAt: now,
+			sizeBytes:  sz,
 		}
 		if s.options.TTL > 0 {
 			e.expiresAt = now.Add(s.options.TTL)
@@ -320,6 +377,26 @@ func (s *BaseStore[K, V]) ReplaceKeys(del []K, add map[K]V) {
 	if over {
 		s.evictToCount(s.options.MaxItems)
 	}
+}
+
+// SweepExpired removes entries whose TTL has elapsed. When unusedWindow > 0,
+// entries not accessed within that window are also removed.
+// Called by MemoryCache's background cleaner; safe for concurrent use.
+func (s *BaseStore[K, V]) SweepExpired(unusedWindow time.Duration) {
+	if s.options.Disabled {
+		return
+	}
+	now := time.Now()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.items.Sweep(func(e *entry[V]) bool {
+		expired := !e.expiresAt.IsZero() && now.After(e.expiresAt)
+		idle := unusedWindow > 0 && now.Sub(e.accessedAt) > unusedWindow
+		if (expired || idle) && s.options.TrackBytes {
+			s.totalBytes.Add(-e.sizeBytes)
+		}
+		return expired || idle
+	})
 }
 
 // Close stops all sweeper goroutines and waits for them to exit.
@@ -353,6 +430,9 @@ func (s *BaseStore[K, V]) evictOne() {
 	})
 
 	if !first {
+		if s.options.TrackBytes && victimEntry != nil {
+			s.totalBytes.Add(-victimEntry.sizeBytes)
+		}
 		s.items.Delete(victimKey)
 	}
 }
@@ -409,6 +489,10 @@ func (s *BaseStore[K, V]) runSweeper(sw Sweeper) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.items.Sweep(func(e *entry[V]) bool {
-		return sw.Filter(e.value)
+		remove := sw.Filter(e.value)
+		if remove && s.options.TrackBytes {
+			s.totalBytes.Add(-e.sizeBytes)
+		}
+		return remove
 	})
 }
