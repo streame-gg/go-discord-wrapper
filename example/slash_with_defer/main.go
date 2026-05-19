@@ -99,7 +99,7 @@ func main() {
 		targetID := discord.Snowflake("123456789")
 
 		go func() {
-			err := c.CreateGuildBan(context.Background(), *ev.GuildID, targetID, api.CreateGuildBanParams{})
+			err := c.CreateGuildBanRaw(context.Background(), *ev.GuildID, targetID, api.CreateGuildBanParams{})
 			if err != nil {
 				var msg string
 				switch {

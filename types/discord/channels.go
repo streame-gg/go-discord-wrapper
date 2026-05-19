@@ -38,6 +38,7 @@ type ChannelTag struct {
 }
 
 type Channel struct {
+	hClient                       EntityClient
 	ID                            Snowflake                    `json:"id"`
 	Type                          ChannelType                  `json:"type"`
 	GuildID                       *Snowflake                   `json:"guild_id,omitempty"`

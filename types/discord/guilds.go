@@ -41,6 +41,7 @@ type AnyGuild interface {
 }
 
 type Guild struct {
+	hClient                     EntityClient
 	ID                          Snowflake                       `json:"id"`
 	Name                        string                          `json:"name"`
 	IconHash                    *string                         `json:"icon,omitempty"`
@@ -237,6 +238,8 @@ type RoleColors struct {
 }
 
 type Role struct {
+	hClient     EntityClient
+	GuildID     Snowflake   `json:"-"`
 	ID           Snowflake  `json:"id"`
 	Name         string     `json:"name"`
 	Colors       RoleColors `json:"colors,omitempty"`
@@ -267,6 +270,7 @@ const (
 )
 
 type Sticker struct {
+	hClient     EntityClient
 	ID          Snowflake         `json:"id"`
 	PackID      *Snowflake        `json:"pack_id,omitempty"`
 	Name        string            `json:"name"`

@@ -223,7 +223,7 @@ func (d *Client) SendMessage(ctx context.Context, channelID discord.Snowflake, p
 	return msg, err
 }
 
-func (d *Client) EditMessage(ctx context.Context, channelID, messageID discord.Snowflake, params api.EditMessageParams) (*discord.Message, error) {
+func (d *Client) EditMessageRaw(ctx context.Context, channelID, messageID discord.Snowflake, params api.EditMessageParams) (*discord.Message, error) {
 	msg, err := d.RestClient.EditMessage(ctx, channelID, messageID, params)
 	if err == nil {
 		d.cacheMessage(msg)
@@ -231,16 +231,24 @@ func (d *Client) EditMessage(ctx context.Context, channelID, messageID discord.S
 	return msg, err
 }
 
-func (d *Client) DeleteMessage(ctx context.Context, channelID, messageID discord.Snowflake) error {
-	if err := d.RestClient.DeleteMessage(ctx, channelID, messageID, nil); err != nil {
+func (d *Client) DeleteMessage(ctx context.Context, channelID, messageID discord.Snowflake, reason *string) error {
+	var opts *api.DeleteMessageOptions
+	if reason != nil {
+		opts = &api.DeleteMessageOptions{Reason: *reason}
+	}
+	if err := d.RestClient.DeleteMessage(ctx, channelID, messageID, opts); err != nil {
 		return err
 	}
 	d.removeMessageFromCache(channelID, messageID)
 	return nil
 }
 
-func (d *Client) BulkDeleteMessages(ctx context.Context, channelID discord.Snowflake, messageIDs []discord.Snowflake) error {
-	if err := d.RestClient.BulkDeleteMessages(ctx, channelID, messageIDs, nil); err != nil {
+func (d *Client) BulkDeleteMessages(ctx context.Context, channelID discord.Snowflake, messageIDs []discord.Snowflake, reason *string) error {
+	var opts *api.BulkDeleteMessagesOptions
+	if reason != nil {
+		opts = &api.BulkDeleteMessagesOptions{Reason: *reason}
+	}
+	if err := d.RestClient.BulkDeleteMessages(ctx, channelID, messageIDs, opts); err != nil {
 		return err
 	}
 	d.removeMessagesFromCache(channelID, messageIDs)
@@ -263,12 +271,20 @@ func (d *Client) GetPinnedMessages(ctx context.Context, channelID discord.Snowfl
 	return msgs, err
 }
 
-func (d *Client) PinMessage(ctx context.Context, channelID, messageID discord.Snowflake) error {
-	return d.RestClient.PinMessage(ctx, channelID, messageID, nil)
+func (d *Client) PinMessage(ctx context.Context, channelID, messageID discord.Snowflake, reason *string) error {
+	var opts *api.PinMessageOptions
+	if reason != nil {
+		opts = &api.PinMessageOptions{Reason: *reason}
+	}
+	return d.RestClient.PinMessage(ctx, channelID, messageID, opts)
 }
 
-func (d *Client) UnpinMessage(ctx context.Context, channelID, messageID discord.Snowflake) error {
-	return d.RestClient.UnpinMessage(ctx, channelID, messageID, nil)
+func (d *Client) UnpinMessage(ctx context.Context, channelID, messageID discord.Snowflake, reason *string) error {
+	var opts *api.UnpinMessageOptions
+	if reason != nil {
+		opts = &api.UnpinMessageOptions{Reason: *reason}
+	}
+	return d.RestClient.UnpinMessage(ctx, channelID, messageID, opts)
 }
 
 func (d *Client) AddReaction(ctx context.Context, channelID, messageID discord.Snowflake, emoji string) error {
@@ -309,7 +325,7 @@ func (d *Client) GetChannel(ctx context.Context, channelID discord.Snowflake) (*
 	return channel, err
 }
 
-func (d *Client) ModifyChannel(ctx context.Context, channelID discord.Snowflake, params api.ModifyChannelParams) (*discord.Channel, error) {
+func (d *Client) ModifyChannelRaw(ctx context.Context, channelID discord.Snowflake, params api.ModifyChannelParams) (*discord.Channel, error) {
 	channel, err := d.RestClient.ModifyChannel(ctx, channelID, params, nil)
 	if err == nil {
 		d.cacheChannel(channel)
@@ -317,8 +333,12 @@ func (d *Client) ModifyChannel(ctx context.Context, channelID discord.Snowflake,
 	return channel, err
 }
 
-func (d *Client) DeleteChannel(ctx context.Context, channelID discord.Snowflake) (*discord.Channel, error) {
-	channel, err := d.RestClient.DeleteChannel(ctx, channelID, nil)
+func (d *Client) DeleteChannel(ctx context.Context, channelID discord.Snowflake, reason *string) (*discord.Channel, error) {
+	var opts *api.DeleteChannelOptions
+	if reason != nil {
+		opts = &api.DeleteChannelOptions{Reason: *reason}
+	}
+	channel, err := d.RestClient.DeleteChannel(ctx, channelID, opts)
 	if err == nil {
 		d.removeChannelFromCache(channelID)
 	}
@@ -329,7 +349,7 @@ func (d *Client) GetChannelInvites(ctx context.Context, channelID discord.Snowfl
 	return d.RestClient.GetChannelInvites(ctx, channelID)
 }
 
-func (d *Client) CreateChannelInvite(ctx context.Context, channelID discord.Snowflake, params api.CreateChannelInviteParams) (*discord.Invite, error) {
+func (d *Client) CreateChannelInviteRaw(ctx context.Context, channelID discord.Snowflake, params api.CreateChannelInviteParams) (*discord.Invite, error) {
 	return d.RestClient.CreateChannelInvite(ctx, channelID, params, nil)
 }
 
@@ -359,7 +379,7 @@ func (d *Client) GetGuildPreview(ctx context.Context, guildID discord.Snowflake)
 	return d.RestClient.GetGuildPreview(ctx, guildID)
 }
 
-func (d *Client) ModifyGuild(ctx context.Context, guildID discord.Snowflake, params api.ModifyGuildParams) (*discord.Guild, error) {
+func (d *Client) ModifyGuildRaw(ctx context.Context, guildID discord.Snowflake, params api.ModifyGuildParams) (*discord.Guild, error) {
 	guild, err := d.RestClient.ModifyGuild(ctx, guildID, params, nil)
 	if err == nil {
 		d.cacheGuild(guild)
@@ -390,7 +410,7 @@ func (d *Client) GetGuildChannels(ctx context.Context, guildID discord.Snowflake
 	return channels, err
 }
 
-func (d *Client) CreateGuildChannel(ctx context.Context, guildID discord.Snowflake, params api.CreateGuildChannelParams) (*discord.Channel, error) {
+func (d *Client) CreateGuildChannelRaw(ctx context.Context, guildID discord.Snowflake, params api.CreateGuildChannelParams) (*discord.Channel, error) {
 	channel, err := d.RestClient.CreateGuildChannel(ctx, guildID, params, nil)
 	if err == nil {
 		d.cacheChannel(channel)
@@ -422,7 +442,7 @@ func (d *Client) GetGuildRole(ctx context.Context, guildID, roleID discord.Snowf
 	return role, err
 }
 
-func (d *Client) CreateGuildRole(ctx context.Context, guildID discord.Snowflake, params api.CreateGuildRoleParams) (*discord.Role, error) {
+func (d *Client) CreateGuildRoleRaw(ctx context.Context, guildID discord.Snowflake, params api.CreateGuildRoleParams) (*discord.Role, error) {
 	role, err := d.RestClient.CreateGuildRole(ctx, guildID, params, nil)
 	if err == nil {
 		d.cacheRole(guildID, role)
@@ -430,7 +450,7 @@ func (d *Client) CreateGuildRole(ctx context.Context, guildID discord.Snowflake,
 	return role, err
 }
 
-func (d *Client) ModifyGuildRolePositions(ctx context.Context, guildID discord.Snowflake, entries []api.ModifyGuildRolePositionsEntry) ([]*discord.Role, error) {
+func (d *Client) ModifyGuildRolePositionsRaw(ctx context.Context, guildID discord.Snowflake, entries []api.ModifyGuildRolePositionsEntry) ([]*discord.Role, error) {
 	roles, err := d.RestClient.ModifyGuildRolePositions(ctx, guildID, entries, nil)
 	if err == nil {
 		if d.Cache != nil {
@@ -442,7 +462,7 @@ func (d *Client) ModifyGuildRolePositions(ctx context.Context, guildID discord.S
 	return roles, err
 }
 
-func (d *Client) ModifyGuildRole(ctx context.Context, guildID, roleID discord.Snowflake, params api.ModifyGuildRoleParams) (*discord.Role, error) {
+func (d *Client) ModifyGuildRoleRaw(ctx context.Context, guildID, roleID discord.Snowflake, params api.ModifyGuildRoleParams) (*discord.Role, error) {
 	role, err := d.RestClient.ModifyGuildRole(ctx, guildID, roleID, params, nil)
 	if err == nil {
 		d.cacheRole(guildID, role)
@@ -450,8 +470,12 @@ func (d *Client) ModifyGuildRole(ctx context.Context, guildID, roleID discord.Sn
 	return role, err
 }
 
-func (d *Client) DeleteGuildRole(ctx context.Context, guildID, roleID discord.Snowflake) error {
-	if err := d.RestClient.DeleteGuildRole(ctx, guildID, roleID, nil); err != nil {
+func (d *Client) DeleteGuildRole(ctx context.Context, guildID, roleID discord.Snowflake, reason *string) error {
+	var opts *api.DeleteGuildRoleOptions
+	if reason != nil {
+		opts = &api.DeleteGuildRoleOptions{Reason: *reason}
+	}
+	if err := d.RestClient.DeleteGuildRole(ctx, guildID, roleID, opts); err != nil {
 		return err
 	}
 	d.removeRoleFromCache(roleID)
@@ -466,7 +490,7 @@ func (d *Client) GetGuildBan(ctx context.Context, guildID, userID discord.Snowfl
 	return d.RestClient.GetGuildBan(ctx, guildID, userID)
 }
 
-func (d *Client) CreateGuildBan(ctx context.Context, guildID, userID discord.Snowflake, params api.CreateGuildBanParams) error {
+func (d *Client) CreateGuildBanRaw(ctx context.Context, guildID, userID discord.Snowflake, params api.CreateGuildBanParams) error {
 	return d.RestClient.CreateGuildBan(ctx, guildID, userID, params, nil)
 }
 
@@ -490,7 +514,7 @@ func (d *Client) GetGuildVanityURL(ctx context.Context, guildID discord.Snowflak
 	return d.RestClient.GetGuildVanityURL(ctx, guildID)
 }
 
-func (d *Client) GetGuildAuditLog(ctx context.Context, guildID discord.Snowflake, params api.GetGuildAuditLogParams) (*discord.AuditLog, error) {
+func (d *Client) GetGuildAuditLogRaw(ctx context.Context, guildID discord.Snowflake, params api.GetGuildAuditLogParams) (*discord.AuditLog, error) {
 	return d.RestClient.GetGuildAuditLog(ctx, guildID, params)
 }
 
@@ -509,7 +533,7 @@ func (d *Client) GetGuildMember(ctx context.Context, guildID, userID discord.Sno
 	return member, err
 }
 
-func (d *Client) ListGuildMembers(ctx context.Context, guildID discord.Snowflake, params api.GetGuildMembersParams) ([]*discord.GuildMember, error) {
+func (d *Client) ListGuildMembersRaw(ctx context.Context, guildID discord.Snowflake, params api.GetGuildMembersParams) ([]*discord.GuildMember, error) {
 	members, err := d.RestClient.ListGuildMembers(ctx, guildID, params)
 	if err == nil {
 		d.cacheMembers(guildID, members)
@@ -525,7 +549,7 @@ func (d *Client) SearchGuildMembers(ctx context.Context, guildID discord.Snowfla
 	return members, err
 }
 
-func (d *Client) ModifyGuildMember(ctx context.Context, guildID, userID discord.Snowflake, params api.ModifyGuildMemberParams) (*discord.GuildMember, error) {
+func (d *Client) ModifyGuildMemberRaw(ctx context.Context, guildID, userID discord.Snowflake, params api.ModifyGuildMemberParams) (*discord.GuildMember, error) {
 	member, err := d.RestClient.ModifyGuildMember(ctx, guildID, userID, params, nil)
 	if err == nil {
 		d.cacheMember(guildID, member)
@@ -541,12 +565,20 @@ func (d *Client) ModifyCurrentMember(ctx context.Context, guildID discord.Snowfl
 	return member, err
 }
 
-func (d *Client) AddGuildMemberRole(ctx context.Context, guildID, userID, roleID discord.Snowflake) error {
-	return d.RestClient.AddGuildMemberRole(ctx, guildID, userID, roleID, nil)
+func (d *Client) AddGuildMemberRole(ctx context.Context, guildID, userID, roleID discord.Snowflake, reason *string) error {
+	var opts *api.AddGuildMemberRoleOptions
+	if reason != nil {
+		opts = &api.AddGuildMemberRoleOptions{Reason: *reason}
+	}
+	return d.RestClient.AddGuildMemberRole(ctx, guildID, userID, roleID, opts)
 }
 
-func (d *Client) RemoveGuildMemberRole(ctx context.Context, guildID, userID, roleID discord.Snowflake) error {
-	return d.RestClient.RemoveGuildMemberRole(ctx, guildID, userID, roleID, nil)
+func (d *Client) RemoveGuildMemberRole(ctx context.Context, guildID, userID, roleID discord.Snowflake, reason *string) error {
+	var opts *api.RemoveGuildMemberRoleOptions
+	if reason != nil {
+		opts = &api.RemoveGuildMemberRoleOptions{Reason: *reason}
+	}
+	return d.RestClient.RemoveGuildMemberRole(ctx, guildID, userID, roleID, opts)
 }
 
 // RemoveGuildMember removes a member from a guild. Requires KICK_MEMBERS.
@@ -739,12 +771,16 @@ func (d *Client) CreateGuildSoundboardSound(ctx context.Context, guildID discord
 	return d.RestClient.CreateGuildSoundboardSound(ctx, guildID, params, nil)
 }
 
-func (d *Client) ModifyGuildSoundboardSound(ctx context.Context, guildID, soundID discord.Snowflake, params api.ModifyGuildSoundboardSoundParams) (*discord.SoundboardSound, error) {
+func (d *Client) ModifyGuildSoundboardSoundRaw(ctx context.Context, guildID, soundID discord.Snowflake, params api.ModifyGuildSoundboardSoundParams) (*discord.SoundboardSound, error) {
 	return d.RestClient.ModifyGuildSoundboardSound(ctx, guildID, soundID, params, nil)
 }
 
-func (d *Client) DeleteGuildSoundboardSound(ctx context.Context, guildID, soundID discord.Snowflake) error {
-	return d.RestClient.DeleteGuildSoundboardSound(ctx, guildID, soundID, nil)
+func (d *Client) DeleteGuildSoundboardSound(ctx context.Context, guildID, soundID discord.Snowflake, reason *string) error {
+	var opts *api.DeleteGuildSoundboardSoundOptions
+	if reason != nil {
+		opts = &api.DeleteGuildSoundboardSoundOptions{Reason: *reason}
+	}
+	return d.RestClient.DeleteGuildSoundboardSound(ctx, guildID, soundID, opts)
 }
 
 func (d *Client) SendSoundboardSound(ctx context.Context, channelID discord.Snowflake, params api.SendSoundboardSoundParams) error {
@@ -910,8 +946,12 @@ func (d *Client) GetGuildIntegrations(ctx context.Context, guildID discord.Snowf
 	return d.RestClient.GetGuildIntegrations(ctx, guildID)
 }
 
-func (d *Client) DeleteGuildIntegration(ctx context.Context, guildID, integrationID discord.Snowflake) error {
-	return d.RestClient.DeleteGuildIntegration(ctx, guildID, integrationID, nil)
+func (d *Client) DeleteGuildIntegration(ctx context.Context, guildID, integrationID discord.Snowflake, reason *string) error {
+	var opts *api.DeleteGuildIntegrationOptions
+	if reason != nil {
+		opts = &api.DeleteGuildIntegrationOptions{Reason: *reason}
+	}
+	return d.RestClient.DeleteGuildIntegration(ctx, guildID, integrationID, opts)
 }
 
 // ── Additional voice methods ──────────────────────────────────────────────────
@@ -930,7 +970,7 @@ func (d *Client) GetStickerPack(ctx context.Context, packID discord.Snowflake) (
 	return d.RestClient.GetStickerPack(ctx, packID)
 }
 
-func (d *Client) CreateGuildSticker(ctx context.Context, guildID discord.Snowflake, params api.CreateGuildStickerParams) (*discord.Sticker, error) {
+func (d *Client) CreateGuildStickerRaw(ctx context.Context, guildID discord.Snowflake, params api.CreateGuildStickerParams) (*discord.Sticker, error) {
 	return d.RestClient.CreateGuildSticker(ctx, guildID, params, nil)
 }
 
@@ -940,8 +980,12 @@ func (d *Client) GetInvite(ctx context.Context, code string, params api.GetInvit
 	return d.RestClient.GetInvite(ctx, code, params)
 }
 
-func (d *Client) DeleteInvite(ctx context.Context, code string) (*discord.Invite, error) {
-	return d.RestClient.DeleteInvite(ctx, code, nil)
+func (d *Client) DeleteInvite(ctx context.Context, code string, reason *string) (*discord.Invite, error) {
+	var opts *api.DeleteInviteOptions
+	if reason != nil {
+		opts = &api.DeleteInviteOptions{Reason: *reason}
+	}
+	return d.RestClient.DeleteInvite(ctx, code, opts)
 }
 
 // ── Additional webhook methods ────────────────────────────────────────────────

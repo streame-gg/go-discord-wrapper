@@ -5,6 +5,9 @@ import (
 )
 
 type GuildMember struct {
+	hClient                    EntityClient
+	GuildID                    Snowflake  `json:"-"`
+	UserID                     Snowflake  `json:"-"`
 	AvatarHash                 *string    `json:"avatar,omitempty"`
 	BannerHash                 *string    `json:"banner,omitempty"`
 	CommunicationDisabledUntil *string    `json:"communication_disabled_until,omitempty"`

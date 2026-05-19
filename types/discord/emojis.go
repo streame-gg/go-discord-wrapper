@@ -1,6 +1,8 @@
 package discord
 
 type Emoji struct {
+	hClient       EntityClient
+	GuildID       Snowflake `json:"-"`
 	ID            Snowflake `json:"id,omitempty"`
 	Name          string    `json:"name,omitempty"`
 	Roles         []string  `json:"roles,omitempty"`

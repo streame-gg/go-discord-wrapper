@@ -8,6 +8,7 @@ const (
 )
 
 type StageInstance struct {
+	hClient               EntityClient
 	ID                    Snowflake                 `json:"id"`
 	GuildID               Snowflake                 `json:"guild_id"`
 	ChannelID             Snowflake                 `json:"channel_id"`
