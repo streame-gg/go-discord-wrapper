@@ -225,6 +225,18 @@ func (d *Client) OnVoiceServerUpdate(h func(*Client, *events.VoiceServerUpdateEv
 func (d *Client) OnVoiceChannelEffectSend(h func(*Client, *events.VoiceChannelEffectSendEvent)) {
 	_ = d.OnEvent(events.EventVoiceChannelEffectSend, h)
 }
+func (d *Client) OnVoiceMemberJoin(h func(*Client, *events.VoiceMemberJoinEvent)) {
+	_ = d.OnEvent(events.EventWrapperVoiceMemberJoin, h)
+}
+func (d *Client) OnVoiceMemberLeave(h func(*Client, *events.VoiceMemberLeaveEvent)) {
+	_ = d.OnEvent(events.EventWrapperVoiceMemberLeave, h)
+}
+func (d *Client) OnVoiceMemberMove(h func(*Client, *events.VoiceMemberMoveEvent)) {
+	_ = d.OnEvent(events.EventWrapperVoiceMemberMove, h)
+}
+func (d *Client) OnVoiceMemberUpdate(h func(*Client, *events.VoiceMemberUpdateEvent)) {
+	_ = d.OnEvent(events.EventWrapperVoiceMemberUpdate, h)
+}
 func (d *Client) OnStageInstanceCreate(h func(*Client, *events.StageInstanceCreateEvent)) {
 	_ = d.OnEvent(events.EventStageInstanceCreate, h)
 }

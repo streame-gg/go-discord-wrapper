@@ -289,6 +289,42 @@ func (d *Client) runEventWorker() {
 	}
 }
 
+// enqueueOrDispatch submits event for handler dispatch.
+// In pool mode it enqueues to eventCh; in unlimited mode it spawns a goroutine.
+// Returns true if shutdown is in progress (caller should return nil from listenWebsocket).
+func (d *Client) enqueueOrDispatch(event events.Event) bool {
+	job := dispatchJob{event: event}
+	if d.eventCh != nil {
+		select {
+		case d.eventCh <- job:
+		case <-d.shutdownCh:
+			return true
+		default:
+			d.Logger.Warn("Event queue full, dropping event",
+				slog.String("type", string(event.Event())),
+				slog.Int("queueCap", cap(d.eventCh)),
+			)
+		}
+		return false
+	}
+	select {
+	case <-d.shutdownCh:
+		return true
+	default:
+	}
+	d.eventWg.Add(1)
+	go func() {
+		defer d.eventWg.Done()
+		select {
+		case <-d.shutdownCh:
+			return
+		default:
+		}
+		d.processEvent(job)
+	}()
+	return false
+}
+
 // ── Shard messaging ─────────────────────────────────────────────────────────
 
 // OnShardMessage registers a persistent handler for messages received from
