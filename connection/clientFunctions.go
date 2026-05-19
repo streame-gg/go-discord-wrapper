@@ -367,8 +367,8 @@ func (d *Client) TriggerTypingIndicator(ctx context.Context, channelID discord.S
 
 // ── Guild methods ─────────────────────────────────────────────────────────────
 
-func (d *Client) GetGuild(ctx context.Context, guildID discord.Snowflake, withCounts bool) (*discord.Guild, error) {
-	guild, err := d.RestClient.GetGuild(ctx, guildID, withCounts)
+func (d *Client) GetGuild(ctx context.Context, guildID discord.Snowflake) (*discord.Guild, error) {
+	guild, err := d.RestClient.GetGuild(ctx, guildID, false)
 	if err == nil {
 		d.cacheGuild(guild)
 	}
@@ -482,8 +482,12 @@ func (d *Client) DeleteGuildRole(ctx context.Context, guildID, roleID discord.Sn
 	return nil
 }
 
-func (d *Client) GetGuildBans(ctx context.Context, guildID discord.Snowflake, params api.GetGuildBansParams) ([]*discord.Ban, error) {
-	return d.RestClient.GetGuildBans(ctx, guildID, params)
+func (d *Client) GetGuildBans(ctx context.Context, guildID discord.Snowflake, opts discord.FetchBansOptions) ([]*discord.Ban, error) {
+	return d.RestClient.GetGuildBans(ctx, guildID, api.GetGuildBansParams{
+		Before: opts.Before,
+		After:  opts.After,
+		Limit:  opts.Limit,
+	})
 }
 
 func (d *Client) GetGuildBan(ctx context.Context, guildID, userID discord.Snowflake) (*discord.Ban, error) {
@@ -494,8 +498,12 @@ func (d *Client) CreateGuildBanRaw(ctx context.Context, guildID, userID discord.
 	return d.RestClient.CreateGuildBan(ctx, guildID, userID, params, nil)
 }
 
-func (d *Client) RemoveGuildBan(ctx context.Context, guildID, userID discord.Snowflake) error {
-	return d.RestClient.RemoveGuildBan(ctx, guildID, userID, nil)
+func (d *Client) RemoveGuildBan(ctx context.Context, guildID, userID discord.Snowflake, reason *string) error {
+	var opts *api.RemoveGuildBanOptions
+	if reason != nil {
+		opts = &api.RemoveGuildBanOptions{Reason: *reason}
+	}
+	return d.RestClient.RemoveGuildBan(ctx, guildID, userID, opts)
 }
 
 func (d *Client) GetGuildPruneCount(ctx context.Context, guildID discord.Snowflake, params api.GetGuildPruneCountParams) (*discord.GuildPruneCountResult, error) {
@@ -759,8 +767,12 @@ func (d *Client) ListDefaultSoundboardSounds(ctx context.Context) ([]*discord.So
 	return d.RestClient.ListDefaultSoundboardSounds(ctx)
 }
 
-func (d *Client) ListGuildSoundboardSounds(ctx context.Context, guildID discord.Snowflake) (*api.ListGuildSoundboardSoundsResponse, error) {
-	return d.RestClient.ListGuildSoundboardSounds(ctx, guildID)
+func (d *Client) ListGuildSoundboardSounds(ctx context.Context, guildID discord.Snowflake) ([]*discord.SoundboardSound, error) {
+	resp, err := d.RestClient.ListGuildSoundboardSounds(ctx, guildID)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Items, nil
 }
 
 func (d *Client) GetGuildSoundboardSound(ctx context.Context, guildID, soundID discord.Snowflake) (*discord.SoundboardSound, error) {

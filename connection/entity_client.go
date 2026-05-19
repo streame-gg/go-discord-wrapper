@@ -568,3 +568,87 @@ func (d *Client) ModifyGuildSoundboardSound(ctx context.Context, guildID, soundI
 	}
 	return d.RestClient.ModifyGuildSoundboardSound(ctx, guildID, soundID, params, apiOpts)
 }
+
+// ── Cache access ───────────────────────────────────────────────────────────────
+
+func (d *Client) ClientCache() discord.Cache {
+	if d.Cache == nil {
+		return nil
+	}
+	return cacheAdapter{d.Cache}
+}
+
+// ── Fetch (read) — used by sub-managers, not yet in clientFunctions.go ──────
+
+func (d *Client) GetGuildEmoji(ctx context.Context, guildID, emojiID discord.Snowflake) (*discord.Emoji, error) {
+	return d.RestClient.GetGuildEmoji(ctx, guildID, emojiID)
+}
+
+func (d *Client) ListGuildEmojis(ctx context.Context, guildID discord.Snowflake) ([]*discord.Emoji, error) {
+	return d.RestClient.ListGuildEmojis(ctx, guildID)
+}
+
+func (d *Client) GetGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake) (*discord.Sticker, error) {
+	return d.RestClient.GetGuildSticker(ctx, guildID, stickerID)
+}
+
+func (d *Client) ListGuildStickers(ctx context.Context, guildID discord.Snowflake) ([]*discord.Sticker, error) {
+	return d.RestClient.ListGuildStickers(ctx, guildID)
+}
+
+func (d *Client) GetGuildScheduledEvent(ctx context.Context, guildID, eventID discord.Snowflake) (*discord.GuildScheduledEvent, error) {
+	return d.RestClient.GetGuildScheduledEvent(ctx, guildID, eventID, false)
+}
+
+func (d *Client) ListGuildScheduledEvents(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildScheduledEvent, error) {
+	return d.RestClient.ListGuildScheduledEvents(ctx, guildID, false)
+}
+
+func (d *Client) GetStageInstance(ctx context.Context, channelID discord.Snowflake) (*discord.StageInstance, error) {
+	return d.RestClient.GetStageInstance(ctx, channelID)
+}
+
+func (d *Client) CreateStageInstance(ctx context.Context, opts discord.StageCreateOptions) (*discord.StageInstance, error) {
+	params := api.CreateStageInstanceParams{
+		ChannelID:             opts.ChannelID,
+		Topic:                 opts.Topic,
+		PrivacyLevel:          opts.PrivacyLevel,
+		GuildScheduledEventID: opts.GuildScheduledEventID,
+		SendStartNotification: opts.SendStartNotification,
+	}
+	var apiOpts *api.CreateStageInstanceOptions
+	if opts.AuditLogReason != nil {
+		apiOpts = &api.CreateStageInstanceOptions{Reason: *opts.AuditLogReason}
+	}
+	return d.RestClient.CreateStageInstance(ctx, params, apiOpts)
+}
+
+func (d *Client) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
+	return d.RestClient.GetGuildWebhooks(ctx, guildID)
+}
+
+func (d *Client) GetAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake) (*discord.AutoModerationRule, error) {
+	return d.RestClient.GetAutoModerationRule(ctx, guildID, ruleID)
+}
+
+func (d *Client) ListAutoModerationRules(ctx context.Context, guildID discord.Snowflake) ([]*discord.AutoModerationRule, error) {
+	return d.RestClient.ListAutoModerationRules(ctx, guildID)
+}
+
+func (d *Client) CreateAutoModerationRule(ctx context.Context, guildID discord.Snowflake, opts discord.RuleCreateOptions) (*discord.AutoModerationRule, error) {
+	params := api.CreateAutoModerationRuleParams{
+		Name:            opts.Name,
+		EventType:       opts.EventType,
+		TriggerType:     opts.TriggerType,
+		TriggerMetadata: opts.TriggerMetadata,
+		Actions:         opts.Actions,
+		Enabled:         opts.Enabled,
+		ExemptRoles:     opts.ExemptRoles,
+		ExemptChannels:  opts.ExemptChannels,
+	}
+	var apiOpts *api.CreateAutoModerationRuleOptions
+	if opts.AuditLogReason != nil {
+		apiOpts = &api.CreateAutoModerationRuleOptions{Reason: *opts.AuditLogReason}
+	}
+	return d.RestClient.CreateAutoModerationRule(ctx, guildID, params, apiOpts)
+}

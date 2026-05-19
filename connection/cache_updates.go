@@ -11,6 +11,7 @@ func (d *Client) cacheChannel(channel *discord.Channel) {
 	}
 
 	channel.Hydrate(d)
+	d.setChannelManagers(channel)
 	d.trackChannel(channel)
 	d.Cache.Channels().Set(channel)
 	if channel.Recipients == nil {
@@ -36,9 +37,10 @@ func (d *Client) cacheGuild(guild *discord.Guild) {
 	}
 
 	guild.Hydrate(d)
+	d.setGuildManagers(guild)
 	d.Cache.Guilds().Set(guild)
-	for i := range guild.Roles {
-		role := guild.Roles[i]
+	for i := range guild.RawRoles {
+		role := guild.RawRoles[i]
 		d.Cache.Roles().Set(guild.ID, &role)
 	}
 }

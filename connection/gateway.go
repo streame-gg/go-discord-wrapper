@@ -808,26 +808,26 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryRoles) {
 						// Delete stale roles before re-adding so removed roles don't persist.
 						d.Cache.Roles().DeleteGuild(guild.ID)
-						for i := range guild.Roles {
-							role := guild.Roles[i]
+						for i := range guild.RawRoles {
+							role := guild.RawRoles[i]
 							d.Cache.Roles().Set(guild.ID, &role)
 						}
 					}
 
 					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryEmojis) {
-						emojis := make([]*discord.Emoji, 0, len(guild.Emojis))
-						for i := range guild.Emojis {
-							emoji := guild.Emojis[i]
+						emojis := make([]*discord.Emoji, 0, len(guild.RawEmojis))
+						for i := range guild.RawEmojis {
+							emoji := guild.RawEmojis[i]
 							if emoji.ID != "" {
 								emojis = append(emojis, &emoji)
 							}
 						}
 						d.Cache.Emojis().SetAll(guild.ID, emojis)
 					}
-					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryStickers) && guild.Stickers != nil {
-						stickers := make([]*discord.Sticker, 0, len(*guild.Stickers))
-						for i := range *guild.Stickers {
-							sticker := (*guild.Stickers)[i]
+					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryStickers) && guild.RawStickers != nil {
+						stickers := make([]*discord.Sticker, 0, len(*guild.RawStickers))
+						for i := range *guild.RawStickers {
+							sticker := (*guild.RawStickers)[i]
 							if sticker.ID != "" {
 								stickers = append(stickers, &sticker)
 							}
@@ -1060,8 +1060,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				if d.cacheStoreEnabled(cache.CategoryRoles) {
 					// Delete stale roles before re-adding so removed roles don't persist.
 					d.Cache.Roles().DeleteGuild(g.ID)
-					for i := range g.Roles {
-						role := g.Roles[i]
+					for i := range g.RawRoles {
+						role := g.RawRoles[i]
 						d.Cache.Roles().Set(g.ID, &role)
 					}
 				}
