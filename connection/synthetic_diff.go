@@ -14,6 +14,8 @@ func (d *Client) deriveSyntheticEvents(ev events.Event) []events.Event {
 		return deriveVoiceSyntheticEvents(e)
 	case *events.GuildMemberUpdateEvent:
 		return deriveGuildMemberSyntheticEvents(e)
+	case *events.PresenceUpdateEvent:
+		return derivePresenceSyntheticEvents(e)
 	}
 	return nil
 }
@@ -143,6 +145,101 @@ func nickDiffers(a, b *string) bool {
 		return true
 	}
 	return *a != *b
+}
+
+// derivePresenceSyntheticEvents derives 0–4 synthetic events from a
+// PresenceUpdateEvent. Status transitions require OldPresence (cache hit);
+// UserProfileUpdate fires whenever ev.User carries any non-ID field.
+func derivePresenceSyntheticEvents(ev *events.PresenceUpdateEvent) []events.Event {
+	newPresence := &discord.Presence{
+		User:         ev.User,
+		GuildID:      ev.GuildID,
+		Status:       ev.Status,
+		Activities:   ev.Activities,
+		ClientStatus: ev.ClientStatus,
+	}
+
+	var result []events.Event
+
+	// Status transitions — only meaningful when we have an old baseline.
+	if ev.OldPresence != nil {
+		wasOffline := ev.OldPresence.Status == discord.PresenceStatusOffline
+		isOffline := ev.Status == discord.PresenceStatusOffline
+
+		if wasOffline && !isOffline {
+			result = append(result, &events.UserOnlineEvent{
+				GuildID:     ev.GuildID,
+				UserID:      ev.User.ID,
+				Status:      ev.Status,
+				OldPresence: ev.OldPresence,
+				NewPresence: newPresence,
+			})
+		} else if !wasOffline && isOffline {
+			result = append(result, &events.UserOfflineEvent{
+				GuildID:     ev.GuildID,
+				UserID:      ev.User.ID,
+				OldPresence: ev.OldPresence,
+				NewPresence: newPresence,
+			})
+		}
+
+		if activitiesChanged(ev.OldPresence.Activities, ev.Activities) {
+			result = append(result, &events.UserActivityChangeEvent{
+				GuildID:       ev.GuildID,
+				UserID:        ev.User.ID,
+				OldActivities: ev.OldPresence.Activities,
+				NewActivities: ev.Activities,
+				OldPresence:   ev.OldPresence,
+				NewPresence:   newPresence,
+			})
+		}
+	}
+
+	// Profile update — Discord only includes changed fields in the partial user.
+	if hasProfileFields(ev.User) {
+		result = append(result, &events.UserProfileUpdateEvent{
+			GuildID:     ev.GuildID,
+			UserID:      ev.User.ID,
+			User:        ev.User,
+			OldPresence: ev.OldPresence,
+			NewPresence: newPresence,
+		})
+	}
+
+	return result
+}
+
+// activitiesChanged reports whether two activity slices differ, compared as
+// multisets of (type, name) pairs. State/details changes within the same
+// activity are not detected; use raw PRESENCE_UPDATE for that granularity.
+func activitiesChanged(old, new_ []discord.FullActivity) bool {
+	if len(old) != len(new_) {
+		return true
+	}
+	type key struct {
+		t discord.ActivityType
+		n string
+	}
+	counts := make(map[key]int, len(old))
+	for _, a := range old {
+		counts[key{a.Type, a.Name}]++
+	}
+	for _, a := range new_ {
+		k := key{a.Type, a.Name}
+		if counts[k] <= 0 {
+			return true
+		}
+		counts[k]--
+	}
+	return false
+}
+
+// hasProfileFields reports whether the partial presence user carries any
+// field beyond the mandatory ID, indicating a profile change.
+func hasProfileFields(u discord.PartialPresenceUser) bool {
+	return u.Username != nil || u.Discriminator != nil ||
+		u.GlobalName != nil || u.AvatarHash != nil ||
+		u.Bot != nil || u.PublicFlags != nil
 }
 
 // deriveVoiceSyntheticEvents derives 0 or 1 voice synthetic events from a

@@ -225,6 +225,18 @@ func (d *Client) OnVoiceServerUpdate(h func(*Client, *events.VoiceServerUpdateEv
 func (d *Client) OnVoiceChannelEffectSend(h func(*Client, *events.VoiceChannelEffectSendEvent)) {
 	_ = d.OnEvent(events.EventVoiceChannelEffectSend, h)
 }
+func (d *Client) OnUserOnline(h func(*Client, *events.UserOnlineEvent)) {
+	_ = d.OnEvent(events.EventWrapperUserOnline, h)
+}
+func (d *Client) OnUserOffline(h func(*Client, *events.UserOfflineEvent)) {
+	_ = d.OnEvent(events.EventWrapperUserOffline, h)
+}
+func (d *Client) OnUserActivityChange(h func(*Client, *events.UserActivityChangeEvent)) {
+	_ = d.OnEvent(events.EventWrapperUserActivityChange, h)
+}
+func (d *Client) OnUserProfileUpdate(h func(*Client, *events.UserProfileUpdateEvent)) {
+	_ = d.OnEvent(events.EventWrapperUserUpdate, h)
+}
 func (d *Client) OnGuildMemberRoleAdd(h func(*Client, *events.GuildMemberRoleAddEvent)) {
 	_ = d.OnEvent(events.EventWrapperGuildMemberRoleAdd, h)
 }
