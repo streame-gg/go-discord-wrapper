@@ -38,6 +38,13 @@ type FetchMembersOptions struct {
 	Limit *int
 }
 
+// FetchBansOptions configures BanManager.FetchAll.
+type FetchBansOptions struct {
+	Before *Snowflake
+	After  *Snowflake
+	Limit  *int
+}
+
 // AuditLogOptions configures Guild.FetchAuditLog.
 type AuditLogOptions struct {
 	UserID     *Snowflake
@@ -81,17 +88,17 @@ func (g *Guild) IsHydrated() bool { return g.hClient != nil }
 
 // hydrateNested injects the client into sub-entities embedded in this guild.
 func (g *Guild) hydrateNested(c EntityClient) {
-	for i := range g.Roles {
-		g.Roles[i].GuildID = g.ID
-		g.Roles[i].Hydrate(c)
+	for i := range g.RawRoles {
+		g.RawRoles[i].GuildID = g.ID
+		g.RawRoles[i].Hydrate(c)
 	}
-	for i := range g.Emojis {
-		g.Emojis[i].GuildID = g.ID
-		g.Emojis[i].Hydrate(c)
+	for i := range g.RawEmojis {
+		g.RawEmojis[i].GuildID = g.ID
+		g.RawEmojis[i].Hydrate(c)
 	}
-	if g.Stickers != nil {
-		for i := range *g.Stickers {
-			(*g.Stickers)[i].Hydrate(c)
+	if g.RawStickers != nil {
+		for i := range *g.RawStickers {
+			(*g.RawStickers)[i].Hydrate(c)
 		}
 	}
 }

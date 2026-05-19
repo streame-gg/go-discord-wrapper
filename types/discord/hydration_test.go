@@ -216,6 +216,87 @@ func (s *stubClient) DeleteGuildSoundboardSound(ctx context.Context, guildID, so
 func (s *stubClient) DeleteGuildIntegration(ctx context.Context, guildID, integrationID discord.Snowflake, reason *string) error {
 	return nil
 }
+func (s *stubClient) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) ([]*discord.Integration, error) {
+	return nil, nil
+}
+func (s *stubClient) GetGuildMember(ctx context.Context, guildID, userID discord.Snowflake) (*discord.GuildMember, error) {
+	return nil, nil
+}
+func (s *stubClient) GetGuildRole(ctx context.Context, guildID, roleID discord.Snowflake) (*discord.Role, error) {
+	return nil, nil
+}
+func (s *stubClient) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) ([]*discord.Role, error) {
+	return nil, nil
+}
+func (s *stubClient) GetChannel(ctx context.Context, channelID discord.Snowflake) (*discord.Channel, error) {
+	return nil, nil
+}
+func (s *stubClient) GetGuildChannels(ctx context.Context, guildID discord.Snowflake) ([]*discord.Channel, error) {
+	return nil, nil
+}
+func (s *stubClient) GetGuildEmoji(ctx context.Context, guildID, emojiID discord.Snowflake) (*discord.Emoji, error) {
+	return nil, nil
+}
+func (s *stubClient) ListGuildEmojis(ctx context.Context, guildID discord.Snowflake) ([]*discord.Emoji, error) {
+	return nil, nil
+}
+func (s *stubClient) GetGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake) (*discord.Sticker, error) {
+	return nil, nil
+}
+func (s *stubClient) ListGuildStickers(ctx context.Context, guildID discord.Snowflake) ([]*discord.Sticker, error) {
+	return nil, nil
+}
+func (s *stubClient) GetGuildBan(ctx context.Context, guildID, userID discord.Snowflake) (*discord.Ban, error) {
+	return nil, nil
+}
+func (s *stubClient) GetGuildBans(ctx context.Context, guildID discord.Snowflake, opts discord.FetchBansOptions) ([]*discord.Ban, error) {
+	return nil, nil
+}
+func (s *stubClient) RemoveGuildBan(ctx context.Context, guildID, userID discord.Snowflake, reason *string) error {
+	return nil
+}
+func (s *stubClient) GetGuildScheduledEvent(ctx context.Context, guildID, eventID discord.Snowflake) (*discord.GuildScheduledEvent, error) {
+	return nil, nil
+}
+func (s *stubClient) ListGuildScheduledEvents(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildScheduledEvent, error) {
+	return nil, nil
+}
+func (s *stubClient) GetStageInstance(ctx context.Context, channelID discord.Snowflake) (*discord.StageInstance, error) {
+	return nil, nil
+}
+func (s *stubClient) CreateStageInstance(ctx context.Context, opts discord.StageCreateOptions) (*discord.StageInstance, error) {
+	return nil, nil
+}
+func (s *stubClient) GetGuildSoundboardSound(ctx context.Context, guildID, soundID discord.Snowflake) (*discord.SoundboardSound, error) {
+	return nil, nil
+}
+func (s *stubClient) ListGuildSoundboardSounds(ctx context.Context, guildID discord.Snowflake) ([]*discord.SoundboardSound, error) {
+	return nil, nil
+}
+func (s *stubClient) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) ([]*discord.Invite, error) {
+	return nil, nil
+}
+func (s *stubClient) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
+	return nil, nil
+}
+func (s *stubClient) GetAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake) (*discord.AutoModerationRule, error) {
+	return nil, nil
+}
+func (s *stubClient) ListAutoModerationRules(ctx context.Context, guildID discord.Snowflake) ([]*discord.AutoModerationRule, error) {
+	return nil, nil
+}
+func (s *stubClient) CreateAutoModerationRule(ctx context.Context, guildID discord.Snowflake, opts discord.RuleCreateOptions) (*discord.AutoModerationRule, error) {
+	return nil, nil
+}
+func (s *stubClient) GetMessage(ctx context.Context, channelID, messageID discord.Snowflake) (*discord.Message, error) {
+	return nil, nil
+}
+func (s *stubClient) GetGuild(ctx context.Context, guildID discord.Snowflake) (*discord.Guild, error) {
+	return nil, nil
+}
+func (s *stubClient) ClientCache() discord.Cache {
+	return nil
+}
 
 var _ discord.EntityClient = (*stubClient)(nil)
 
@@ -347,21 +428,21 @@ func TestHydrate_PropagatesAuthorHydration(t *testing.T) {
 func TestGuildHydrate_PropagatesRolesAndEmojis(t *testing.T) {
 	c := &stubClient{}
 	g := &discord.Guild{
-		ID:    "1",
-		Roles: []discord.Role{{ID: "r1"}, {ID: "r2"}},
-		Emojis: []discord.Emoji{{ID: "e1"}},
+		ID:        "1",
+		RawRoles:  []discord.Role{{ID: "r1"}, {ID: "r2"}},
+		RawEmojis: []discord.Emoji{{ID: "e1"}},
 	}
 	g.Hydrate(c)
 
 	if !g.IsHydrated() {
 		t.Fatal("guild should be hydrated")
 	}
-	for _, r := range g.Roles {
+	for _, r := range g.RawRoles {
 		if !r.IsHydrated() {
 			t.Fatalf("role %s should be hydrated after Guild.Hydrate", r.ID)
 		}
 	}
-	for _, e := range g.Emojis {
+	for _, e := range g.RawEmojis {
 		if !e.IsHydrated() {
 			t.Fatalf("emoji %s should be hydrated after Guild.Hydrate", e.ID)
 		}

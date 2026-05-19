@@ -41,7 +41,24 @@ type AnyGuild interface {
 }
 
 type Guild struct {
-	hClient                     EntityClient
+	hClient EntityClient
+
+	// Sub-managers populated by the connection layer after hydration.
+	members          MemberManager
+	roles            RoleManager
+	channels         GuildChannelManager
+	emojis           EmojiManager
+	stickers         StickerManager
+	bans             BanManager
+	scheduledEvents  ScheduledEventManager
+	stageInstances   StageInstanceManager
+	soundboardSounds SoundboardManager
+	invites          GuildInviteManager
+	voiceStates      VoiceStateManager
+	autoModRules     AutoModRuleManager
+	webhooks         GuildWebhookManager
+	integrations     IntegrationManager
+
 	ID                          Snowflake                       `json:"id"`
 	Name                        string                          `json:"name"`
 	IconHash                    *string                         `json:"icon,omitempty"`
@@ -59,8 +76,8 @@ type Guild struct {
 	VerificationLevel           GuildVerificationLevel          `json:"verification_level,omitempty"`
 	DefaultMessageNotifications DefaultMessageNotificationLevel `json:"default_message_notifications,omitempty"`
 	ExplicitContentFilter       GuildExplicitContentFilterLevel `json:"explicit_content_filter,omitempty"`
-	Roles                       []Role                          `json:"roles,omitempty"`
-	Emojis                      []Emoji                         `json:"emojis,omitempty"`
+	RawRoles                    []Role                          `json:"roles,omitempty"`
+	RawEmojis                   []Emoji                         `json:"emojis,omitempty"`
 	Features                    []GuildFeatures                 `json:"features,omitempty"`
 	MfaLevel                    GuildMFALevel                   `json:"mfa_level,omitempty"`
 	ApplicationID               *Snowflake                      `json:"application_id,omitempty"`
@@ -80,7 +97,7 @@ type Guild struct {
 	ApproximatePresenceCount    *int                            `json:"approximate_presence_count,omitempty"`
 	WelcomeScreen               *GuildWelcomeScreen             `json:"welcome_screen,omitempty"`
 	NSFWLevel                   GuildNSFWLevel                  `json:"nsfw_level,omitempty"`
-	Stickers                    *[]Sticker                      `json:"stickers,omitempty"`
+	RawStickers                 *[]Sticker                      `json:"stickers,omitempty"`
 	PremiumProgressBarEnabled   bool                            `json:"premium_progress_bar_enabled,omitempty"`
 	SafetyAlertsChannelID       *Snowflake                      `json:"safety_alerts_channel_id,omitempty"`
 	IncidentsData               *GuildIncidentsData             `json:"incidents_data,omitempty"`

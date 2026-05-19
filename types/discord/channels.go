@@ -38,7 +38,12 @@ type ChannelTag struct {
 }
 
 type Channel struct {
-	hClient                       EntityClient
+	hClient EntityClient
+
+	// Sub-managers populated by the connection layer after hydration.
+	messages MessageManager
+	threads  ThreadManager
+
 	ID                            Snowflake                    `json:"id"`
 	Type                          ChannelType                  `json:"type"`
 	GuildID                       *Snowflake                   `json:"guild_id,omitempty"`

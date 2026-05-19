@@ -4,6 +4,16 @@ import "context"
 
 // ── Options ───────────────────────────────────────────────────────────────────
 
+// StageCreateOptions configures StageInstanceManager.Create.
+type StageCreateOptions struct {
+	ChannelID             Snowflake
+	Topic                 string
+	PrivacyLevel          *StageInstancePrivacyLevel
+	GuildScheduledEventID *Snowflake
+	SendStartNotification *bool
+	AuditLogReason        *string
+}
+
 // StageEditOptions configures StageInstance.Edit.
 type StageEditOptions struct {
 	Topic          *string

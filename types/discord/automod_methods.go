@@ -4,6 +4,19 @@ import "context"
 
 // ── Options ───────────────────────────────────────────────────────────────────
 
+// RuleCreateOptions configures AutoModRuleManager.Create.
+type RuleCreateOptions struct {
+	Name            string
+	EventType       AutoModerationEventType
+	TriggerType     AutoModerationTriggerType
+	TriggerMetadata *AutoModerationTriggerMetadata
+	Actions         []AutoModerationAction
+	Enabled         *bool
+	ExemptRoles     []Snowflake
+	ExemptChannels  []Snowflake
+	AuditLogReason  *string
+}
+
 // RuleEditOptions configures AutoModerationRule.Edit.
 type RuleEditOptions struct {
 	Name            *string
