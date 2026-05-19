@@ -225,6 +225,27 @@ func (d *Client) OnVoiceServerUpdate(h func(*Client, *events.VoiceServerUpdateEv
 func (d *Client) OnVoiceChannelEffectSend(h func(*Client, *events.VoiceChannelEffectSendEvent)) {
 	_ = d.OnEvent(events.EventVoiceChannelEffectSend, h)
 }
+func (d *Client) OnGuildEmojiAdd(h func(*Client, *events.GuildEmojiAddEvent)) {
+	_ = d.OnEvent(events.EventWrapperGuildEmojiAdd, h)
+}
+func (d *Client) OnGuildEmojiRemove(h func(*Client, *events.GuildEmojiRemoveEvent)) {
+	_ = d.OnEvent(events.EventWrapperGuildEmojiRemove, h)
+}
+func (d *Client) OnGuildEmojiUpdate(h func(*Client, *events.GuildEmojiUpdateEvent)) {
+	_ = d.OnEvent(events.EventWrapperGuildEmojiUpdate, h)
+}
+func (d *Client) OnGuildStickerAdd(h func(*Client, *events.GuildStickerAddEvent)) {
+	_ = d.OnEvent(events.EventWrapperGuildStickerAdd, h)
+}
+func (d *Client) OnGuildStickerRemove(h func(*Client, *events.GuildStickerRemoveEvent)) {
+	_ = d.OnEvent(events.EventWrapperGuildStickerRemove, h)
+}
+func (d *Client) OnGuildStickerUpdate(h func(*Client, *events.GuildStickerUpdateEvent)) {
+	_ = d.OnEvent(events.EventWrapperGuildStickerUpdate, h)
+}
+func (d *Client) OnGuildRolePermissionsChange(h func(*Client, *events.GuildRolePermissionsChangeEvent)) {
+	_ = d.OnEvent(events.EventWrapperGuildRolePermissionsChange, h)
+}
 func (d *Client) OnUserOnline(h func(*Client, *events.UserOnlineEvent)) {
 	_ = d.OnEvent(events.EventWrapperUserOnline, h)
 }

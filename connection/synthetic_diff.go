@@ -16,8 +16,124 @@ func (d *Client) deriveSyntheticEvents(ev events.Event) []events.Event {
 		return deriveGuildMemberSyntheticEvents(e)
 	case *events.PresenceUpdateEvent:
 		return derivePresenceSyntheticEvents(e)
+	case *events.GuildEmojisUpdateEvent:
+		return deriveGuildEmojiSyntheticEvents(e)
+	case *events.GuildStickersUpdateEvent:
+		return deriveGuildStickerSyntheticEvents(e)
+	case *events.GuildRoleUpdateEvent:
+		return deriveGuildRoleSyntheticEvents(e)
 	}
 	return nil
+}
+
+// deriveGuildEmojiSyntheticEvents diffs the old and new emoji sets from a
+// GUILD_EMOJIS_UPDATE and fires Add/Remove/Update events per changed emoji.
+// Returns nil when OldEmojis is nil (cache cold).
+func deriveGuildEmojiSyntheticEvents(ev *events.GuildEmojisUpdateEvent) []events.Event {
+	if ev.OldEmojis == nil {
+		return nil
+	}
+
+	oldByID := make(map[discord.Snowflake]*discord.Emoji, len(ev.OldEmojis))
+	for _, e := range ev.OldEmojis {
+		oldByID[e.ID] = e
+	}
+	newByID := make(map[discord.Snowflake]*discord.Emoji, len(ev.Emojis))
+	for i := range ev.Emojis {
+		newByID[ev.Emojis[i].ID] = &ev.Emojis[i]
+	}
+
+	var result []events.Event
+
+	for id, newEmoji := range newByID {
+		if old, exists := oldByID[id]; !exists {
+			result = append(result, &events.GuildEmojiAddEvent{
+				GuildID: ev.GuildID,
+				Emoji:   newEmoji,
+			})
+		} else if old.Name != newEmoji.Name {
+			result = append(result, &events.GuildEmojiUpdateEvent{
+				GuildID:  ev.GuildID,
+				OldEmoji: old,
+				NewEmoji: newEmoji,
+			})
+		}
+	}
+	for id, oldEmoji := range oldByID {
+		if _, exists := newByID[id]; !exists {
+			result = append(result, &events.GuildEmojiRemoveEvent{
+				GuildID: ev.GuildID,
+				Emoji:   oldEmoji,
+			})
+		}
+	}
+
+	return result
+}
+
+// deriveGuildStickerSyntheticEvents diffs the old and new sticker sets from a
+// GUILD_STICKERS_UPDATE and fires Add/Remove/Update events per changed sticker.
+// Returns nil when OldStickers is nil (cache cold).
+func deriveGuildStickerSyntheticEvents(ev *events.GuildStickersUpdateEvent) []events.Event {
+	if ev.OldStickers == nil {
+		return nil
+	}
+
+	oldByID := make(map[discord.Snowflake]*discord.Sticker, len(ev.OldStickers))
+	for _, s := range ev.OldStickers {
+		oldByID[s.ID] = s
+	}
+	newByID := make(map[discord.Snowflake]*discord.Sticker, len(ev.Stickers))
+	for i := range ev.Stickers {
+		newByID[ev.Stickers[i].ID] = &ev.Stickers[i]
+	}
+
+	var result []events.Event
+
+	for id, newSticker := range newByID {
+		if old, exists := oldByID[id]; !exists {
+			result = append(result, &events.GuildStickerAddEvent{
+				GuildID: ev.GuildID,
+				Sticker: newSticker,
+			})
+		} else if old.Name != newSticker.Name {
+			result = append(result, &events.GuildStickerUpdateEvent{
+				GuildID:    ev.GuildID,
+				OldSticker: old,
+				NewSticker: newSticker,
+			})
+		}
+	}
+	for id, oldSticker := range oldByID {
+		if _, exists := newByID[id]; !exists {
+			result = append(result, &events.GuildStickerRemoveEvent{
+				GuildID: ev.GuildID,
+				Sticker: oldSticker,
+			})
+		}
+	}
+
+	return result
+}
+
+// deriveGuildRoleSyntheticEvents fires GuildRolePermissionsChangeEvent when a
+// role's Permissions bitfield changes. Returns nil when OldRole is nil (cache cold).
+func deriveGuildRoleSyntheticEvents(ev *events.GuildRoleUpdateEvent) []events.Event {
+	if ev.OldRole == nil {
+		return nil
+	}
+	if ev.OldRole.Permissions == ev.Role.Permissions {
+		return nil
+	}
+	role := ev.Role
+	return []events.Event{&events.GuildRolePermissionsChangeEvent{
+		GuildID:        ev.GuildID,
+		RoleID:         ev.Role.ID,
+		OldPermissions: ev.OldRole.Permissions,
+		NewPermissions: ev.Role.Permissions,
+		OldRole:        ev.OldRole,
+		NewRole:        &role,
+	}}
 }
 
 // deriveGuildMemberSyntheticEvents derives member synthetic events from a
