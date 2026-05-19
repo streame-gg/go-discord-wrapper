@@ -796,6 +796,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 
 				if d.cacheEnabled() {
+					if guild.ID != "" {
+						guild.Hydrate(d)
+					}
+
 					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryGuilds) {
 						gcopy := guild
 						d.Cache.Guilds().Set(&gcopy)
@@ -862,6 +866,11 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 							d.Cache.Members().DeleteGuild(guildID)
 							for i := range gatewayGuild.Members {
 								m := gatewayGuild.Members[i]
+								m.GuildID = guildID
+								if m.User != nil {
+									m.UserID = m.User.ID
+								}
+								m.Hydrate(d)
 								d.Cache.Members().Set(guildID, &m)
 							}
 						}
@@ -872,6 +881,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 									continue
 								}
 								u := *gatewayGuild.Members[i].User
+								u.Hydrate(d)
 								d.Cache.Users().Set(&u)
 							}
 						}
@@ -908,6 +918,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 							sounds := make([]*discord.SoundboardSound, 0, len(gatewayGuild.SoundboardSounds))
 							for i := range gatewayGuild.SoundboardSounds {
 								s := gatewayGuild.SoundboardSounds[i]
+								s.Hydrate(d)
 								sounds = append(sounds, &s)
 							}
 							d.Cache.Soundboard().SetAll(guildID, sounds)
@@ -918,6 +929,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 							d.Cache.ScheduledEvents().DeleteGuild(guildID)
 							for i := range gatewayGuild.GuildScheduledEvents {
 								ev := gatewayGuild.GuildScheduledEvents[i]
+								ev.Hydrate(d)
 								d.Cache.ScheduledEvents().Set(&ev)
 							}
 						}
@@ -926,6 +938,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 							d.Cache.StageInstances().DeleteGuild(guildID)
 							for i := range gatewayGuild.StageInstances {
 								instance := gatewayGuild.StageInstances[i]
+								instance.Hydrate(d)
 								d.Cache.StageInstances().Set(&instance)
 							}
 						}
@@ -1153,6 +1166,11 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				if ev.Flags != nil {
 					m.Flags = *ev.Flags
 				}
+				m.GuildID = ev.GuildID
+				if m.User != nil {
+					m.UserID = m.User.ID
+				}
+				m.Hydrate(d)
 				d.Cache.Members().Set(ev.GuildID, &m)
 			}
 		}
@@ -1165,6 +1183,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				role := ev.Role
+				role.GuildID = ev.GuildID
+				role.Hydrate(d)
 				d.Cache.Roles().Set(ev.GuildID, &role)
 			}
 		}
@@ -1177,6 +1197,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				role := ev.Role
+				role.GuildID = ev.GuildID
+				role.Hydrate(d)
 				d.Cache.Roles().Set(ev.GuildID, &role)
 			}
 		}
@@ -1230,6 +1252,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				scheduled := ev.GuildScheduledEvent
+				scheduled.Hydrate(d)
 				d.Cache.ScheduledEvents().Set(&scheduled)
 			}
 		}
@@ -1242,6 +1265,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				scheduled := ev.GuildScheduledEvent
+				scheduled.Hydrate(d)
 				d.Cache.ScheduledEvents().Set(&scheduled)
 			}
 		}
@@ -1265,6 +1289,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				instance := ev.StageInstance
+				instance.Hydrate(d)
 				d.Cache.StageInstances().Set(&instance)
 			}
 		}
@@ -1277,6 +1302,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				instance := ev.StageInstance
+				instance.Hydrate(d)
 				d.Cache.StageInstances().Set(&instance)
 			}
 		}
@@ -1300,6 +1326,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				sound := ev.SoundboardSound
+				sound.Hydrate(d)
 				if sound.GuildID != nil {
 					d.Cache.Soundboard().Set(*sound.GuildID, &sound)
 				}
@@ -1314,6 +1341,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				sound := ev.SoundboardSound
+				sound.Hydrate(d)
 				if sound.GuildID != nil {
 					d.Cache.Soundboard().Set(*sound.GuildID, &sound)
 				}
@@ -1341,6 +1369,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				sounds := make([]*discord.SoundboardSound, 0, len(ev.SoundboardSounds))
 				for i := range ev.SoundboardSounds {
 					sound := ev.SoundboardSounds[i]
+					sound.Hydrate(d)
 					sounds = append(sounds, &sound)
 				}
 				d.Cache.Soundboard().SetAll(ev.GuildID, sounds)
@@ -1357,6 +1386,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				sounds := make([]*discord.SoundboardSound, 0, len(ev.SoundboardSounds))
 				for i := range ev.SoundboardSounds {
 					sound := ev.SoundboardSounds[i]
+					sound.Hydrate(d)
 					sounds = append(sounds, &sound)
 				}
 				d.Cache.Soundboard().SetAll(ev.GuildID, sounds)
@@ -1657,6 +1687,74 @@ func (d *Client) Shutdown() error {
 		}
 	})
 	return errors.Join(errs...)
+}
+
+// ── Event entity hydration ────────────────────────────────────────────────────
+
+// hydrateEvent injects the client reference into entities embedded in event
+// payloads so that users can call convenience methods (e.g. ev.Edit) on them
+// directly without an explicit client argument.
+func (d *Client) hydrateEvent(event events.Event) {
+	switch ev := event.(type) {
+	case *events.MessageCreateEvent:
+		ev.Message.Hydrate(d)
+		if ev.Member != nil {
+			if ev.GuildID != nil {
+				ev.Member.GuildID = *ev.GuildID
+			}
+			ev.Member.Hydrate(d)
+		}
+	case *events.MessageUpdateEvent:
+		ev.Message.Hydrate(d)
+	case *events.ChannelCreateEvent:
+		ev.Channel.Hydrate(d)
+	case *events.ChannelUpdateEvent:
+		ev.Channel.Hydrate(d)
+	case *events.ChannelDeleteEvent:
+		ev.Channel.Hydrate(d)
+	case *events.ThreadCreateEvent:
+		ev.Channel.Hydrate(d)
+	case *events.ThreadUpdateEvent:
+		ev.Channel.Hydrate(d)
+	case *events.GuildUpdateEvent:
+		ev.Guild.Hydrate(d)
+	case *events.GuildMemberAddEvent:
+		ev.GuildMember.GuildID = ev.GuildID
+		if ev.GuildMember.User != nil {
+			ev.GuildMember.UserID = ev.GuildMember.User.ID
+		}
+		ev.GuildMember.Hydrate(d)
+	case *events.GuildRoleCreateEvent:
+		ev.Role.GuildID = ev.GuildID
+		ev.Role.Hydrate(d)
+	case *events.GuildRoleUpdateEvent:
+		ev.Role.GuildID = ev.GuildID
+		ev.Role.Hydrate(d)
+	case *events.GuildScheduledEventCreateEvent:
+		ev.GuildScheduledEvent.Hydrate(d)
+	case *events.GuildScheduledEventUpdateEvent:
+		ev.GuildScheduledEvent.Hydrate(d)
+	case *events.GuildScheduledEventDeleteEvent:
+		ev.GuildScheduledEvent.Hydrate(d)
+	case *events.AutoModerationRuleCreateEvent:
+		ev.AutoModerationRule.Hydrate(d)
+	case *events.AutoModerationRuleUpdateEvent:
+		ev.AutoModerationRule.Hydrate(d)
+	case *events.AutoModerationRuleDeleteEvent:
+		ev.AutoModerationRule.Hydrate(d)
+	case *events.StageInstanceCreateEvent:
+		ev.StageInstance.Hydrate(d)
+	case *events.StageInstanceUpdateEvent:
+		ev.StageInstance.Hydrate(d)
+	case *events.StageInstanceDeleteEvent:
+		ev.StageInstance.Hydrate(d)
+	case *events.UserUpdateEvent:
+		ev.User.Hydrate(d)
+	case *events.GuildSoundboardSoundCreateEvent:
+		ev.SoundboardSound.Hydrate(d)
+	case *events.GuildSoundboardSoundUpdateEvent:
+		ev.SoundboardSound.Hydrate(d)
+	}
 }
 
 // ── Client lifecycle event emitters ─────────────────────────────────────────

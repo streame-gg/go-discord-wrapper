@@ -466,6 +466,7 @@ func (d *Client) listenWebsocket() error {
 			}()
 
 			if canDispatch {
+				d.hydrateEvent(event)
 				job := dispatchJob{event: event}
 				if d.eventCh != nil {
 					// Worker-pool mode: enqueue or drop if queue is full.
