@@ -1832,14 +1832,19 @@ func (d *Client) hydrateEvent(event events.Event) {
 		ev.Message.Hydrate(d)
 	case *events.ChannelCreateEvent:
 		ev.Channel.Hydrate(d)
+		d.setChannelManagers(&ev.Channel)
 	case *events.ChannelUpdateEvent:
 		ev.Channel.Hydrate(d)
+		d.setChannelManagers(&ev.Channel)
 	case *events.ChannelDeleteEvent:
 		ev.Channel.Hydrate(d)
+		d.setChannelManagers(&ev.Channel)
 	case *events.ThreadCreateEvent:
 		ev.Channel.Hydrate(d)
+		d.setChannelManagers(&ev.Channel)
 	case *events.ThreadUpdateEvent:
 		ev.Channel.Hydrate(d)
+		d.setChannelManagers(&ev.Channel)
 	case *events.GuildCreateEvent:
 		switch g := ev.Guild.(type) {
 		case discord.GatewayGuild:

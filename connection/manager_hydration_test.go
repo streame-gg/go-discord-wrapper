@@ -493,6 +493,54 @@ func TestInteractionCreate_NilGuildStub(t *testing.T) {
 
 // ── Manager fetch without cache ───────────────────────────────────────────────
 
+// ── Fix 7: channel/thread sub-managers in hydrateEvent ──────────────────────
+
+func TestHydrateEvent_ChannelCreate_HasSubManagers(t *testing.T) {
+	c := newClientWithCache(t)
+	ev := &events.ChannelCreateEvent{}
+	ev.Channel.ID = "ch-create-1"
+	c.hydrateEvent(ev)
+	assert.NotNil(t, ev.Channel.Messages(), "ChannelCreate: Messages() must not be nil after hydrateEvent")
+	assert.NotNil(t, ev.Channel.Threads(), "ChannelCreate: Threads() must not be nil after hydrateEvent")
+	assert.True(t, ev.Channel.IsHydrated(), "ChannelCreate: channel must be hydrated after hydrateEvent")
+}
+
+func TestHydrateEvent_ChannelUpdate_HasSubManagers(t *testing.T) {
+	c := newClientWithCache(t)
+	ev := &events.ChannelUpdateEvent{}
+	ev.Channel.ID = "ch-update-1"
+	c.hydrateEvent(ev)
+	assert.NotNil(t, ev.Channel.Messages(), "ChannelUpdate: Messages() must not be nil after hydrateEvent")
+	assert.NotNil(t, ev.Channel.Threads(), "ChannelUpdate: Threads() must not be nil after hydrateEvent")
+}
+
+func TestHydrateEvent_ChannelDelete_HasSubManagers(t *testing.T) {
+	c := newClientWithCache(t)
+	ev := &events.ChannelDeleteEvent{}
+	ev.Channel.ID = "ch-delete-1"
+	c.hydrateEvent(ev)
+	assert.NotNil(t, ev.Channel.Messages(), "ChannelDelete: Messages() must not be nil after hydrateEvent")
+	assert.NotNil(t, ev.Channel.Threads(), "ChannelDelete: Threads() must not be nil after hydrateEvent")
+}
+
+func TestHydrateEvent_ThreadCreate_HasSubManagers(t *testing.T) {
+	c := newClientWithCache(t)
+	ev := &events.ThreadCreateEvent{}
+	ev.Channel.ID = "thread-create-1"
+	c.hydrateEvent(ev)
+	assert.NotNil(t, ev.Channel.Messages(), "ThreadCreate: Messages() must not be nil after hydrateEvent")
+	assert.NotNil(t, ev.Channel.Threads(), "ThreadCreate: Threads() must not be nil after hydrateEvent")
+}
+
+func TestHydrateEvent_ThreadUpdate_HasSubManagers(t *testing.T) {
+	c := newClientWithCache(t)
+	ev := &events.ThreadUpdateEvent{}
+	ev.Channel.ID = "thread-update-1"
+	c.hydrateEvent(ev)
+	assert.NotNil(t, ev.Channel.Messages(), "ThreadUpdate: Messages() must not be nil after hydrateEvent")
+	assert.NotNil(t, ev.Channel.Threads(), "ThreadUpdate: Threads() must not be nil after hydrateEvent")
+}
+
 func TestManagerFetch_WorksWithoutCache(t *testing.T) {
 	guildID := discord.Snowflake("777888999000111222")
 
