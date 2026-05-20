@@ -22,7 +22,11 @@ type GuildMember struct {
 	User                       *User      `json:"user,omitempty"`
 }
 
-func (m GuildMember) DisplayName() string {
+func (m *GuildMember) DisplayName() string {
+	if m == nil {
+		return ""
+	}
+
 	if m.Nick != nil {
 		return *m.Nick
 	}

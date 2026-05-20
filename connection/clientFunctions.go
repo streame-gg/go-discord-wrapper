@@ -122,6 +122,8 @@ func (d *Client) GetOriginalResponse(ctx context.Context, i *interactions.Intera
 	}
 	msg, err := d.RestClient.GetOriginalInteractionResponse(ctx, appID, i.Token)
 	if err == nil {
+		msg.Hydrate(d)
+
 		d.cacheMessage(msg)
 	}
 	return msg, err
@@ -170,6 +172,8 @@ func (d *Client) GetFollowup(ctx context.Context, i *interactions.Interaction, m
 	}
 	msg, err := d.RestClient.GetFollowupMessage(ctx, appID, i.Token, messageID)
 	if err == nil {
+		msg.Hydrate(d)
+
 		d.cacheMessage(msg)
 	}
 	return msg, err
@@ -202,7 +206,10 @@ func (d *Client) DeleteFollowup(ctx context.Context, i *interactions.Interaction
 func (d *Client) GetMessages(ctx context.Context, channelID discord.Snowflake, params api.GetMessagesParams) ([]*discord.Message, error) {
 	msgs, err := d.RestClient.GetMessages(ctx, channelID, params)
 	if err == nil {
-		d.cacheMessages(msgs)
+		for _, msg := range msgs {
+			msg.Hydrate(d)
+			d.cacheMessage(msg)
+		}
 	}
 	return msgs, err
 }
@@ -210,6 +217,7 @@ func (d *Client) GetMessages(ctx context.Context, channelID discord.Snowflake, p
 func (d *Client) GetMessage(ctx context.Context, channelID, messageID discord.Snowflake) (*discord.Message, error) {
 	msg, err := d.RestClient.GetMessage(ctx, channelID, messageID)
 	if err == nil {
+		msg.Hydrate(d)
 		d.cacheMessage(msg)
 	}
 	return msg, err
@@ -218,6 +226,7 @@ func (d *Client) GetMessage(ctx context.Context, channelID, messageID discord.Sn
 func (d *Client) SendMessage(ctx context.Context, channelID discord.Snowflake, params api.CreateMessageParams) (*discord.Message, error) {
 	msg, err := d.RestClient.CreateMessage(ctx, channelID, params)
 	if err == nil {
+		msg.Hydrate(d)
 		d.cacheMessage(msg)
 	}
 	return msg, err
@@ -226,6 +235,7 @@ func (d *Client) SendMessage(ctx context.Context, channelID discord.Snowflake, p
 func (d *Client) EditMessageRaw(ctx context.Context, channelID, messageID discord.Snowflake, params api.EditMessageParams) (*discord.Message, error) {
 	msg, err := d.RestClient.EditMessage(ctx, channelID, messageID, params)
 	if err == nil {
+		msg.Hydrate(d)
 		d.cacheMessage(msg)
 	}
 	return msg, err
@@ -266,7 +276,10 @@ func (d *Client) CrosspostMessage(ctx context.Context, channelID, messageID disc
 func (d *Client) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
 	msgs, err := d.RestClient.GetPinnedMessages(ctx, channelID)
 	if err == nil {
-		d.cacheMessages(msgs)
+		for _, msg := range msgs {
+			msg.Hydrate(d)
+			d.cacheMessage(msg)
+		}
 	}
 	return msgs, err
 }
@@ -302,7 +315,10 @@ func (d *Client) DeleteUserReaction(ctx context.Context, channelID, messageID di
 func (d *Client) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params api.GetReactionsParams) ([]*discord.User, error) {
 	users, err := d.RestClient.GetReactions(ctx, channelID, messageID, emoji, params)
 	if err == nil {
-		d.cacheUsers(users)
+		for _, user := range users {
+			user.Hydrate(d)
+			d.cacheUser(user)
+		}
 	}
 	return users, err
 }
@@ -320,6 +336,7 @@ func (d *Client) DeleteAllReactionsForEmoji(ctx context.Context, channelID, mess
 func (d *Client) GetChannel(ctx context.Context, channelID discord.Snowflake) (*discord.Channel, error) {
 	channel, err := d.RestClient.GetChannel(ctx, channelID)
 	if err == nil {
+		channel.Hydrate(d)
 		d.cacheChannel(channel)
 	}
 	return channel, err
@@ -370,13 +387,20 @@ func (d *Client) TriggerTypingIndicator(ctx context.Context, channelID discord.S
 func (d *Client) GetGuild(ctx context.Context, guildID discord.Snowflake) (*discord.Guild, error) {
 	guild, err := d.RestClient.GetGuild(ctx, guildID, false)
 	if err == nil {
+		guild.Hydrate(d)
 		d.cacheGuild(guild)
 	}
 	return guild, err
 }
 
 func (d *Client) GetGuildPreview(ctx context.Context, guildID discord.Snowflake) (*discord.Guild, error) {
-	return d.RestClient.GetGuildPreview(ctx, guildID)
+	guild, err := d.RestClient.GetGuildPreview(ctx, guildID)
+	if err == nil {
+		guild.Hydrate(d)
+		d.cacheGuild(guild)
+	}
+
+	return guild, err
 }
 
 func (d *Client) ModifyGuildRaw(ctx context.Context, guildID discord.Snowflake, params api.ModifyGuildParams) (*discord.Guild, error) {
@@ -405,7 +429,10 @@ func (d *Client) GetGuildChannels(ctx context.Context, guildID discord.Snowflake
 				d.Cache.Messages().DeleteChannel(oldID)
 			}
 		}
-		d.cacheChannels(channels)
+		for _, channel := range channels {
+			channel.Hydrate(d)
+			d.cacheChannel(channel)
+		}
 	}
 	return channels, err
 }
@@ -429,14 +456,20 @@ func (d *Client) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) (
 			// Remove stale roles deleted since the last cache fill (Bug 25).
 			d.Cache.Roles().DeleteGuild(guildID)
 		}
-		d.cacheRoles(guildID, roles)
+
+		for _, role := range roles {
+			role.Hydrate(d)
+			d.cacheRole(guildID, role)
+		}
 	}
+
 	return roles, err
 }
 
 func (d *Client) GetGuildRole(ctx context.Context, guildID, roleID discord.Snowflake) (*discord.Role, error) {
 	role, err := d.RestClient.GetGuildRole(ctx, guildID, roleID)
 	if err == nil {
+		role.Hydrate(d)
 		d.cacheRole(guildID, role)
 	}
 	return role, err
@@ -548,6 +581,7 @@ func (d *Client) GetGuildRoleMemberCounts(ctx context.Context, guildID discord.S
 func (d *Client) GetGuildMember(ctx context.Context, guildID, userID discord.Snowflake) (*discord.GuildMember, error) {
 	member, err := d.RestClient.GetGuildMember(ctx, guildID, userID)
 	if err == nil {
+		member.Hydrate(d)
 		d.cacheMember(guildID, member)
 	}
 	return member, err
@@ -556,7 +590,10 @@ func (d *Client) GetGuildMember(ctx context.Context, guildID, userID discord.Sno
 func (d *Client) ListGuildMembersRaw(ctx context.Context, guildID discord.Snowflake, params api.GetGuildMembersParams) ([]*discord.GuildMember, error) {
 	members, err := d.RestClient.ListGuildMembers(ctx, guildID, params)
 	if err == nil {
-		d.cacheMembers(guildID, members)
+		for _, member := range members {
+			member.Hydrate(d)
+			d.cacheMember(guildID, member)
+		}
 	}
 	return members, err
 }
@@ -564,7 +601,10 @@ func (d *Client) ListGuildMembersRaw(ctx context.Context, guildID discord.Snowfl
 func (d *Client) SearchGuildMembers(ctx context.Context, guildID discord.Snowflake, params api.SearchGuildMembersParams) ([]*discord.GuildMember, error) {
 	members, err := d.RestClient.SearchGuildMembers(ctx, guildID, params)
 	if err == nil {
-		d.cacheMembers(guildID, members)
+		for _, member := range members {
+			member.Hydrate(d)
+			d.cacheMember(guildID, member)
+		}
 	}
 	return members, err
 }
@@ -572,6 +612,7 @@ func (d *Client) SearchGuildMembers(ctx context.Context, guildID discord.Snowfla
 func (d *Client) ModifyGuildMemberRaw(ctx context.Context, guildID, userID discord.Snowflake, params api.ModifyGuildMemberParams) (*discord.GuildMember, error) {
 	member, err := d.RestClient.ModifyGuildMember(ctx, guildID, userID, params, nil)
 	if err == nil {
+		member.Hydrate(d)
 		d.cacheMember(guildID, member)
 	}
 	return member, err
@@ -580,6 +621,7 @@ func (d *Client) ModifyGuildMemberRaw(ctx context.Context, guildID, userID disco
 func (d *Client) ModifyCurrentMember(ctx context.Context, guildID discord.Snowflake, params api.ModifyCurrentMemberParams) (*discord.GuildMember, error) {
 	member, err := d.RestClient.ModifyCurrentMember(ctx, guildID, params)
 	if err == nil {
+		member.Hydrate(d)
 		d.cacheMember(guildID, member)
 	}
 	return member, err
@@ -618,7 +660,10 @@ func (d *Client) RemoveGuildMember(ctx context.Context, guildID, userID discord.
 func (d *Client) FetchAllGuildMembers(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildMember, error) {
 	members, err := d.RestClient.FetchAllGuildMembers(ctx, guildID)
 	if err == nil {
-		d.cacheMembers(guildID, members)
+		for _, member := range members {
+			member.Hydrate(d)
+			d.cacheMember(guildID, member)
+		}
 	}
 	return members, err
 }
@@ -924,7 +969,10 @@ func (d *Client) GetSKUSubscription(ctx context.Context, skuID, subscriptionID d
 func (d *Client) GetPollAnswerVoters(ctx context.Context, channelID, messageID discord.Snowflake, answerID int, params api.GetPollAnswerVotersParams) (*api.GetPollAnswerVotersResponse, error) {
 	users, err := d.RestClient.GetPollAnswerVoters(ctx, channelID, messageID, answerID, params)
 	if err == nil {
-		d.cacheUsers(users.Users)
+		for _, user := range users.Users {
+			user.Hydrate(d)
+			d.cacheUser(user)
+		}
 	}
 	return users, err
 }
@@ -932,6 +980,7 @@ func (d *Client) GetPollAnswerVoters(ctx context.Context, channelID, messageID d
 func (d *Client) EndPoll(ctx context.Context, channelID, messageID discord.Snowflake) (*discord.Message, error) {
 	msg, err := d.RestClient.EndPoll(ctx, channelID, messageID)
 	if err == nil {
+		msg.Hydrate(d)
 		d.cacheMessage(msg)
 	}
 	return msg, err
@@ -966,6 +1015,7 @@ func (d *Client) RemoveGroupDMRecipient(ctx context.Context, channelID, userID d
 func (d *Client) CreateGuild(ctx context.Context, params api.CreateGuildParams) (*discord.Guild, error) {
 	guild, err := d.RestClient.CreateGuild(ctx, params)
 	if err == nil {
+		guild.Hydrate(d)
 		d.cacheGuild(guild)
 	}
 	return guild, err
@@ -974,6 +1024,7 @@ func (d *Client) CreateGuild(ctx context.Context, params api.CreateGuildParams) 
 func (d *Client) AddGuildMember(ctx context.Context, guildID, userID discord.Snowflake, params api.AddGuildMemberParams) (*discord.GuildMember, error) {
 	member, err := d.RestClient.AddGuildMember(ctx, guildID, userID, params)
 	if err == nil {
+		member.Hydrate(d)
 		d.cacheMember(guildID, member)
 	}
 	return member, err
@@ -1005,11 +1056,23 @@ func (d *Client) DeleteGuildIntegration(ctx context.Context, guildID, integratio
 // ── Additional voice methods ──────────────────────────────────────────────────
 
 func (d *Client) GetCurrentUserVoiceState(ctx context.Context, guildID discord.Snowflake) (*discord.VoiceState, error) {
-	return d.RestClient.GetCurrentUserVoiceState(ctx, guildID)
+	state, err := d.RestClient.GetCurrentUserVoiceState(ctx, guildID)
+	if err == nil {
+		if d.Cache != nil {
+			d.Cache.VoiceStates().Set(guildID, state)
+		}
+	}
+	return state, err
 }
 
 func (d *Client) GetUserVoiceState(ctx context.Context, guildID, userID discord.Snowflake) (*discord.VoiceState, error) {
-	return d.RestClient.GetUserVoiceState(ctx, guildID, userID)
+	state, err := d.RestClient.GetUserVoiceState(ctx, guildID, userID)
+	if err == nil {
+		if d.Cache != nil {
+			d.Cache.VoiceStates().Set(guildID, state)
+		}
+	}
+	return state, err
 }
 
 // ── Additional sticker methods ────────────────────────────────────────────────
@@ -1025,7 +1088,11 @@ func (d *Client) CreateGuildStickerRaw(ctx context.Context, guildID discord.Snow
 // ── Invite methods ────────────────────────────────────────────────────────────
 
 func (d *Client) GetInvite(ctx context.Context, code string, params api.GetInviteParams) (*discord.Invite, error) {
-	return d.RestClient.GetInvite(ctx, code, params)
+	invite, err := d.RestClient.GetInvite(ctx, code, params)
+	if err == nil {
+		invite.Hydrate(d)
+	}
+	return invite, err
 }
 
 func (d *Client) DeleteInvite(ctx context.Context, code string, reason *string) (*discord.Invite, error) {
