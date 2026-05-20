@@ -612,7 +612,6 @@ func (d *Client) GetGuildSticker(ctx context.Context, guildID, stickerID discord
 	sticker, err := d.RestClient.GetGuildSticker(ctx, guildID, stickerID)
 	if err == nil {
 		sticker.Hydrate(d)
-		//TODO: check if this is really necessary as documented here: https://docs.discord.com/developers/resources/sticker#sticker-resource
 		sticker.GuildID = &guildID
 
 		if d.Cache != nil {
