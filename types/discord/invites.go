@@ -16,6 +16,7 @@ const (
 )
 
 type Invite struct {
+	hClient                  EntityClient
 	Code                     string                `json:"code"`
 	Guild                    *Guild                `json:"guild,omitempty"`
 	Channel                  *Channel              `json:"channel,omitempty"`

@@ -2,6 +2,7 @@ package discord
 
 // SoundboardSound represents a sound in a guild's soundboard or the default Discord soundboard.
 type SoundboardSound struct {
+	hClient   EntityClient
 	Name      string     `json:"name"`
 	SoundID   Snowflake  `json:"sound_id"`
 	Volume    float64    `json:"volume"`

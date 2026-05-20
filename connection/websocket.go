@@ -466,42 +466,14 @@ func (d *Client) listenWebsocket() error {
 			}()
 
 			if canDispatch {
-				job := dispatchJob{event: event}
-				if d.eventCh != nil {
-					// Worker-pool mode: enqueue or drop if queue is full.
-					// shutdownCh case prevents sending on a closed channel after Shutdown.
-					select {
-					case d.eventCh <- job:
-					case <-d.shutdownCh:
+				d.hydrateEvent(event)
+				if d.enqueueOrDispatch(event) {
+					return nil
+				}
+				for _, syn := range d.deriveSyntheticEvents(event) {
+					if d.enqueueOrDispatch(syn) {
 						return nil
-					default:
-						d.Logger.Warn("Event queue full, dropping event",
-							slog.String("type", string(payload.T)),
-							slog.Int("queueCap", cap(d.eventCh)),
-						)
 					}
-				} else {
-					// Unlimited mode (default): spawn one goroutine per event.
-					// Track via eventWg so Shutdown can drain before returning.
-					// Do not register new event work once shutdown has begun.
-					select {
-					case <-d.shutdownCh:
-						return nil
-					default:
-					}
-
-					d.eventWg.Add(1)
-					go func() {
-						defer d.eventWg.Done()
-
-						select {
-						case <-d.shutdownCh:
-							return
-						default:
-						}
-
-						d.processEvent(job)
-					}()
 				}
 			}
 		}

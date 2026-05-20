@@ -9,6 +9,7 @@ const (
 )
 
 type Webhook struct {
+	hClient       EntityClient
 	ID            Snowflake   `json:"id"`
 	Type          WebhookType `json:"type"`
 	GuildID       *Snowflake  `json:"guild_id,omitempty"`

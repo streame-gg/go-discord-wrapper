@@ -10,6 +10,7 @@ type GuildScheduledEventCreateEvent struct {
 
 type GuildScheduledEventUpdateEvent struct {
 	discord.GuildScheduledEvent
+	OldEvent *discord.GuildScheduledEvent `json:"old_event,omitempty"`
 }
 
 type GuildScheduledEventDeleteEvent struct {

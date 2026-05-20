@@ -8,6 +8,7 @@ type StageInstanceCreateEvent struct {
 
 type StageInstanceUpdateEvent struct {
 	discord.StageInstance
+	OldInstance *discord.StageInstance `json:"old_instance,omitempty"`
 }
 
 type StageInstanceDeleteEvent struct {

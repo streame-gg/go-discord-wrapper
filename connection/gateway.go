@@ -289,6 +289,42 @@ func (d *Client) runEventWorker() {
 	}
 }
 
+// enqueueOrDispatch submits event for handler dispatch.
+// In pool mode it enqueues to eventCh; in unlimited mode it spawns a goroutine.
+// Returns true if shutdown is in progress (caller should return nil from listenWebsocket).
+func (d *Client) enqueueOrDispatch(event events.Event) bool {
+	job := dispatchJob{event: event}
+	if d.eventCh != nil {
+		select {
+		case d.eventCh <- job:
+		case <-d.shutdownCh:
+			return true
+		default:
+			d.Logger.Warn("Event queue full, dropping event",
+				slog.String("type", string(event.Event())),
+				slog.Int("queueCap", cap(d.eventCh)),
+			)
+		}
+		return false
+	}
+	select {
+	case <-d.shutdownCh:
+		return true
+	default:
+	}
+	d.eventWg.Add(1)
+	go func() {
+		defer d.eventWg.Done()
+		select {
+		case <-d.shutdownCh:
+			return
+		default:
+		}
+		d.processEvent(job)
+	}()
+	return false
+}
+
 // ── Shard messaging ─────────────────────────────────────────────────────────
 
 // OnShardMessage registers a persistent handler for messages received from
@@ -796,35 +832,47 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 
 				if d.cacheEnabled() {
+					if guild.ID != "" {
+						guild.Hydrate(d)
+						d.setGuildManagers(&guild)
+					}
+
 					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryGuilds) {
-						gcopy := guild
-						d.Cache.Guilds().Set(&gcopy)
+						d.Cache.Guilds().Set(&guild)
 					}
 
 					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryRoles) {
 						// Delete stale roles before re-adding so removed roles don't persist.
 						d.Cache.Roles().DeleteGuild(guild.ID)
-						for i := range guild.Roles {
-							role := guild.Roles[i]
+						for i := range guild.RawRoles {
+							role := guild.RawRoles[i]
+							role.GuildID = guild.ID
+							role.Hydrate(d)
 							d.Cache.Roles().Set(guild.ID, &role)
 						}
 					}
 
 					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryEmojis) {
-						emojis := make([]*discord.Emoji, 0, len(guild.Emojis))
-						for i := range guild.Emojis {
-							emoji := guild.Emojis[i]
+						emojis := make([]*discord.Emoji, 0, len(guild.RawEmojis))
+						for i := range guild.RawEmojis {
+							emoji := guild.RawEmojis[i]
 							if emoji.ID != "" {
+								emoji.GuildID = guild.ID
+								emoji.Hydrate(d)
 								emojis = append(emojis, &emoji)
 							}
 						}
 						d.Cache.Emojis().SetAll(guild.ID, emojis)
 					}
-					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryStickers) && guild.Stickers != nil {
-						stickers := make([]*discord.Sticker, 0, len(*guild.Stickers))
-						for i := range *guild.Stickers {
-							sticker := (*guild.Stickers)[i]
+					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryStickers) && len(guild.RawStickers) > 0 {
+						stickers := make([]*discord.Sticker, 0, len(guild.RawStickers))
+						for i := range guild.RawStickers {
+							sticker := guild.RawStickers[i]
 							if sticker.ID != "" {
+								if sticker.GuildID == nil {
+									sticker.GuildID = &guild.ID
+								}
+								sticker.Hydrate(d)
 								stickers = append(stickers, &sticker)
 							}
 						}
@@ -862,6 +910,11 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 							d.Cache.Members().DeleteGuild(guildID)
 							for i := range gatewayGuild.Members {
 								m := gatewayGuild.Members[i]
+								m.GuildID = guildID
+								if m.User != nil {
+									m.UserID = m.User.ID
+								}
+								m.Hydrate(d)
 								d.Cache.Members().Set(guildID, &m)
 							}
 						}
@@ -872,6 +925,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 									continue
 								}
 								u := *gatewayGuild.Members[i].User
+								u.Hydrate(d)
 								d.Cache.Users().Set(&u)
 							}
 						}
@@ -908,6 +962,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 							sounds := make([]*discord.SoundboardSound, 0, len(gatewayGuild.SoundboardSounds))
 							for i := range gatewayGuild.SoundboardSounds {
 								s := gatewayGuild.SoundboardSounds[i]
+								s.Hydrate(d)
 								sounds = append(sounds, &s)
 							}
 							d.Cache.Soundboard().SetAll(guildID, sounds)
@@ -918,6 +973,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 							d.Cache.ScheduledEvents().DeleteGuild(guildID)
 							for i := range gatewayGuild.GuildScheduledEvents {
 								ev := gatewayGuild.GuildScheduledEvents[i]
+								ev.Hydrate(d)
 								d.Cache.ScheduledEvents().Set(&ev)
 							}
 						}
@@ -926,6 +982,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 							d.Cache.StageInstances().DeleteGuild(guildID)
 							for i := range gatewayGuild.StageInstances {
 								instance := gatewayGuild.StageInstances[i]
+								instance.Hydrate(d)
 								d.Cache.StageInstances().Set(&instance)
 							}
 						}
@@ -1011,16 +1068,19 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				u := ev.User
+				u.Hydrate(d)
 				d.Cache.Users().Set(&u)
 			}
 		}
 	case events.EventPresenceUpdate:
 		{
+			ev, ok := event.(*events.PresenceUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryPresences) {
-				var ev events.PresenceUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal PRESENCE_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.Presences().Get(ev.GuildID, ev.User.ID); exists {
+					ev.OldPresence = old
 				}
 				presence := discord.Presence{
 					User:         ev.User,
@@ -1034,37 +1094,45 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildUpdate:
 		{
-			if d.cacheStoreEnabled(cache.CategoryGuilds) || d.cacheStoreEnabled(cache.CategoryRoles) {
-				var ev events.GuildUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_UPDATE event", slog.Any("err", err))
-					return false
+			ev, ok := event.(*events.GuildUpdateEvent)
+			if !ok {
+				return false
+			}
+			g := ev.Guild
+			g.Hydrate(d)
+			d.setGuildManagers(&g)
+			if d.cacheStoreEnabled(cache.CategoryGuilds) {
+				if old, exists := d.Cache.Guilds().Get(g.ID); exists {
+					ev.OldGuild = old
 				}
-				g := ev.Guild
-				if d.cacheStoreEnabled(cache.CategoryGuilds) {
-					d.Cache.Guilds().Set(&g)
-				}
-				if d.cacheStoreEnabled(cache.CategoryRoles) {
-					// Delete stale roles before re-adding so removed roles don't persist.
-					d.Cache.Roles().DeleteGuild(g.ID)
-					for i := range g.Roles {
-						role := g.Roles[i]
-						d.Cache.Roles().Set(g.ID, &role)
-					}
+				d.Cache.Guilds().Set(&g)
+			}
+			if d.cacheStoreEnabled(cache.CategoryRoles) {
+				// Delete stale roles before re-adding so removed roles don't persist.
+				d.Cache.Roles().DeleteGuild(g.ID)
+				for i := range g.RawRoles {
+					role := g.RawRoles[i]
+					role.GuildID = g.ID
+					role.Hydrate(d)
+					d.Cache.Roles().Set(g.ID, &role)
 				}
 			}
 		}
 	case events.EventGuildEmojisUpdate:
 		{
+			ev, ok := event.(*events.GuildEmojisUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryEmojis) {
-				var ev events.GuildEmojisUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_EMOJIS_UPDATE event", slog.Any("err", err))
-					return false
+				if col := d.Cache.Emojis().GetByGuild(ev.GuildID); col != nil && col.Len() > 0 {
+					ev.OldEmojis = col.Values()
 				}
 				emojis := make([]*discord.Emoji, 0, len(ev.Emojis))
 				for i := range ev.Emojis {
 					emoji := ev.Emojis[i]
+					emoji.GuildID = ev.GuildID
+					emoji.Hydrate(d)
 					emojis = append(emojis, &emoji)
 				}
 				d.Cache.Emojis().SetAll(ev.GuildID, emojis)
@@ -1072,15 +1140,21 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildStickersUpdate:
 		{
+			ev, ok := event.(*events.GuildStickersUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryStickers) {
-				var ev events.GuildStickersUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_STICKERS_UPDATE event", slog.Any("err", err))
-					return false
+				if col := d.Cache.Stickers().GetByGuild(ev.GuildID); col != nil && col.Len() > 0 {
+					ev.OldStickers = col.Values()
 				}
 				stickers := make([]*discord.Sticker, 0, len(ev.Stickers))
 				for i := range ev.Stickers {
 					sticker := ev.Stickers[i]
+					if sticker.GuildID == nil {
+						sticker.GuildID = &ev.GuildID
+					}
+					sticker.Hydrate(d)
 					stickers = append(stickers, &sticker)
 				}
 				d.Cache.Stickers().SetAll(ev.GuildID, stickers)
@@ -1116,17 +1190,17 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildMemberUpdate:
 		{
+			ev, ok := event.(*events.GuildMemberUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryMembers) {
-				var ev events.GuildMemberUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_MEMBER_UPDATE event", slog.Any("err", err))
-					return false
-				}
 				// Copy the cached entry rather than mutating the stored pointer in-place.
 				// Mutating the stored pointer without a lock produces data races with
 				// concurrent Get() callers that read the same pointer.
 				var m discord.GuildMember
-				if existing, ok := d.Cache.Members().Get(ev.GuildID, ev.User.ID); ok {
+				if existing, exists := d.Cache.Members().Get(ev.GuildID, ev.User.ID); exists {
+					ev.OldMember = existing
 					m = *existing
 				}
 				m.User = &ev.User
@@ -1153,6 +1227,11 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				if ev.Flags != nil {
 					m.Flags = *ev.Flags
 				}
+				m.GuildID = ev.GuildID
+				if m.User != nil {
+					m.UserID = m.User.ID
+				}
+				m.Hydrate(d)
 				d.Cache.Members().Set(ev.GuildID, &m)
 			}
 		}
@@ -1165,18 +1244,24 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				role := ev.Role
+				role.GuildID = ev.GuildID
+				role.Hydrate(d)
 				d.Cache.Roles().Set(ev.GuildID, &role)
 			}
 		}
 	case events.EventGuildRoleUpdate:
 		{
+			ev, ok := event.(*events.GuildRoleUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryRoles) {
-				var ev events.GuildRoleUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_ROLE_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.Roles().Get(ev.Role.ID); exists {
+					ev.OldRole = old
 				}
 				role := ev.Role
+				role.GuildID = ev.GuildID
+				role.Hydrate(d)
 				d.Cache.Roles().Set(ev.GuildID, &role)
 			}
 		}
@@ -1230,18 +1315,22 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				scheduled := ev.GuildScheduledEvent
+				scheduled.Hydrate(d)
 				d.Cache.ScheduledEvents().Set(&scheduled)
 			}
 		}
 	case events.EventGuildScheduledEventUpdate:
 		{
+			ev, ok := event.(*events.GuildScheduledEventUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
-				var ev events.GuildScheduledEventUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_SCHEDULED_EVENT_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.ScheduledEvents().Get(ev.ID); exists {
+					ev.OldEvent = old
 				}
 				scheduled := ev.GuildScheduledEvent
+				scheduled.Hydrate(d)
 				d.Cache.ScheduledEvents().Set(&scheduled)
 			}
 		}
@@ -1265,18 +1354,22 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				instance := ev.StageInstance
+				instance.Hydrate(d)
 				d.Cache.StageInstances().Set(&instance)
 			}
 		}
 	case events.EventStageInstanceUpdate:
 		{
+			ev, ok := event.(*events.StageInstanceUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryStageInstances) {
-				var ev events.StageInstanceUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal STAGE_INSTANCE_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.StageInstances().Get(ev.ID); exists {
+					ev.OldInstance = old
 				}
 				instance := ev.StageInstance
+				instance.Hydrate(d)
 				d.Cache.StageInstances().Set(&instance)
 			}
 		}
@@ -1300,6 +1393,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				sound := ev.SoundboardSound
+				sound.Hydrate(d)
 				if sound.GuildID != nil {
 					d.Cache.Soundboard().Set(*sound.GuildID, &sound)
 				}
@@ -1307,13 +1401,16 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventGuildSoundboardSoundUpdate:
 		{
+			ev, ok := event.(*events.GuildSoundboardSoundUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategorySoundboard) {
-				var ev events.GuildSoundboardSoundUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal GUILD_SOUNDBOARD_SOUND_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.Soundboard().Get(ev.SoundID); exists {
+					ev.OldSound = old
 				}
 				sound := ev.SoundboardSound
+				sound.Hydrate(d)
 				if sound.GuildID != nil {
 					d.Cache.Soundboard().Set(*sound.GuildID, &sound)
 				}
@@ -1341,6 +1438,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				sounds := make([]*discord.SoundboardSound, 0, len(ev.SoundboardSounds))
 				for i := range ev.SoundboardSounds {
 					sound := ev.SoundboardSounds[i]
+					sound.Hydrate(d)
 					sounds = append(sounds, &sound)
 				}
 				d.Cache.Soundboard().SetAll(ev.GuildID, sounds)
@@ -1357,6 +1455,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				sounds := make([]*discord.SoundboardSound, 0, len(ev.SoundboardSounds))
 				for i := range ev.SoundboardSounds {
 					sound := ev.SoundboardSounds[i]
+					sound.Hydrate(d)
 					sounds = append(sounds, &sound)
 				}
 				d.Cache.Soundboard().SetAll(ev.GuildID, sounds)
@@ -1376,11 +1475,13 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventChannelUpdate:
 		{
+			ev, ok := event.(*events.ChannelUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryChannels) {
-				var ev events.ChannelUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal CHANNEL_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.Channels().Get(ev.ID); exists {
+					ev.OldChannel = old
 				}
 				ch := ev.Channel
 				d.cacheChannel(&ch)
@@ -1413,12 +1514,19 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 	case events.EventThreadUpdate:
 		{
 			if d.cacheStoreEnabled(cache.CategoryChannels) {
-				var ev events.ThreadUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal THREAD_UPDATE event", slog.Any("err", err))
-					return false
+				var ch discord.Channel
+				if ev, ok := event.(*events.ThreadUpdateEvent); ok {
+					if old, exists := d.Cache.Channels().Get(ev.ID); exists {
+						ev.OldThread = old
+					}
+					ch = ev.Channel
+				} else {
+					var fallback events.ThreadUpdateEvent
+					if err := json.Unmarshal(msg, &fallback); err != nil {
+						return false
+					}
+					ch = fallback.Channel
 				}
-				ch := ev.Channel
 				d.cacheChannel(&ch)
 				d.trackThread(&ch)
 			}
@@ -1493,22 +1601,26 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				msg := ev.Message
 				if d.cacheStoreEnabled(cache.CategoryMessages) {
+					msg.Hydrate(d)
 					d.Cache.Messages().Add(&msg)
 				}
 				if ev.Author != nil && d.cacheStoreEnabled(cache.CategoryUsers) {
-					d.Cache.Users().Set(ev.Author)
+					d.cacheUser(ev.Author)
 				}
 			}
 		}
 	case events.EventMessageUpdate:
 		{
+			ev, ok := event.(*events.MessageUpdateEvent)
+			if !ok {
+				return false
+			}
 			if d.cacheStoreEnabled(cache.CategoryMessages) {
-				var ev events.MessageUpdateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal MESSAGE_UPDATE event", slog.Any("err", err))
-					return false
+				if old, exists := d.Cache.Messages().Get(ev.ChannelID, ev.ID); exists {
+					ev.OldMessage = old
 				}
 				msg := ev.Message
+				msg.Hydrate(d)
 				d.Cache.Messages().Update(&msg)
 			}
 		}
@@ -1544,10 +1656,14 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				for i := range ev.Members {
 					m := ev.Members[i]
+					m.GuildID = ev.GuildID
+					if m.User != nil {
+						m.UserID = m.User.ID
+					}
+					m.Hydrate(d)
 					d.Cache.Members().Set(ev.GuildID, &m)
 					if d.cacheStoreEnabled(cache.CategoryUsers) && m.User != nil {
-						u := *m.User
-						d.Cache.Users().Set(&u)
+						d.cacheUser(m.User)
 					}
 				}
 				d.Logger.Debug("Cached guild members chunk",
@@ -1577,6 +1693,44 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 	case events.EventInteractionCreate:
 		if ev, ok := event.(*events.InteractionCreateEvent); ok {
 			ev.Hydrate(d, context.Background())
+			// Resolve Guild from cache so handlers get the fully hydrated object
+			// with sub-managers. The payload only carries a partial Guild stub.
+			if ev.GuildID != nil {
+				var resolvedGuild *discord.Guild
+				if d.cacheEnabled() {
+					resolvedGuild, _ = d.Cache.Guilds().Get(*ev.GuildID)
+				}
+				if resolvedGuild == nil {
+					// Cache miss or cache disabled. Use the partial stub if Discord
+					// sent one; otherwise synthesize a minimal stub with just the ID.
+					// Either way, inject managers so accessor methods never panic.
+					if ev.Guild != nil {
+						resolvedGuild = ev.Guild
+					} else {
+						resolvedGuild = &discord.Guild{ID: *ev.GuildID}
+					}
+					resolvedGuild.Hydrate(d)
+					d.setGuildManagers(resolvedGuild)
+				}
+				ev.Guild = resolvedGuild
+			}
+			// Hydrate the invoking member and the channel if present.
+			if ev.Member != nil {
+				if ev.GuildID != nil {
+					ev.Member.GuildID = *ev.GuildID
+					if ev.Member.User != nil {
+						ev.Member.UserID = ev.Member.User.ID
+					}
+				}
+				ev.Member.Hydrate(d)
+			}
+			if ev.User != nil {
+				ev.User.Hydrate(d)
+			}
+			if ev.Channel != nil {
+				ev.Channel.Hydrate(d)
+				d.setChannelManagers(ev.Channel)
+			}
 		}
 		return true
 
@@ -1657,6 +1811,100 @@ func (d *Client) Shutdown() error {
 		}
 	})
 	return errors.Join(errs...)
+}
+
+// ── Event entity hydration ────────────────────────────────────────────────────
+
+// hydrateEvent injects the client reference into entities embedded in event
+// payloads so that users can call convenience methods (e.g. ev.Edit) on them
+// directly without an explicit client argument.
+func (d *Client) hydrateEvent(event events.Event) {
+	switch ev := event.(type) {
+	case *events.MessageCreateEvent:
+		ev.Hydrate(d)
+		if ev.Member != nil {
+			if ev.GuildID != nil {
+				ev.Member.GuildID = *ev.GuildID
+			}
+			ev.Member.Hydrate(d)
+		}
+	case *events.MessageUpdateEvent:
+		ev.Hydrate(d)
+	case *events.ChannelCreateEvent:
+		ev.Hydrate(d)
+		d.setChannelManagers(&ev.Channel)
+	case *events.ChannelUpdateEvent:
+		ev.Hydrate(d)
+		d.setChannelManagers(&ev.Channel)
+	case *events.ChannelDeleteEvent:
+		ev.Hydrate(d)
+		d.setChannelManagers(&ev.Channel)
+	case *events.ThreadCreateEvent:
+		ev.Hydrate(d)
+		d.setChannelManagers(&ev.Channel)
+	case *events.ThreadUpdateEvent:
+		ev.Hydrate(d)
+		d.setChannelManagers(&ev.Channel)
+	case *events.GuildCreateEvent:
+		switch g := ev.Guild.(type) {
+		case discord.GatewayGuild:
+			g.Hydrate(d)
+			d.setGuildManagers(&g.Guild)
+			ev.Guild = g
+		case discord.Guild:
+			g.Hydrate(d)
+			d.setGuildManagers(&g)
+			ev.Guild = g
+		}
+	case *events.GuildUpdateEvent:
+		ev.Hydrate(d)
+		d.setGuildManagers(&ev.Guild)
+	case *events.GuildMemberAddEvent:
+		ev.GuildMember.GuildID = ev.GuildID
+		if ev.User != nil {
+			ev.UserID = ev.User.ID
+		}
+		ev.Hydrate(d)
+	case *events.GuildRoleCreateEvent:
+		ev.Role.GuildID = ev.GuildID
+		ev.Role.Hydrate(d)
+	case *events.GuildRoleUpdateEvent:
+		ev.Role.GuildID = ev.GuildID
+		ev.Role.Hydrate(d)
+	case *events.GuildScheduledEventCreateEvent:
+		ev.Hydrate(d)
+	case *events.GuildScheduledEventUpdateEvent:
+		ev.Hydrate(d)
+	case *events.GuildScheduledEventDeleteEvent:
+		ev.Hydrate(d)
+	case *events.AutoModerationRuleCreateEvent:
+		ev.Hydrate(d)
+	case *events.AutoModerationRuleUpdateEvent:
+		ev.Hydrate(d)
+	case *events.AutoModerationRuleDeleteEvent:
+		ev.Hydrate(d)
+	case *events.StageInstanceCreateEvent:
+		ev.Hydrate(d)
+	case *events.StageInstanceUpdateEvent:
+		ev.Hydrate(d)
+	case *events.StageInstanceDeleteEvent:
+		ev.Hydrate(d)
+	case *events.UserUpdateEvent:
+		ev.Hydrate(d)
+	case *events.GuildSoundboardSoundCreateEvent:
+		ev.Hydrate(d)
+	case *events.GuildSoundboardSoundUpdateEvent:
+		ev.Hydrate(d)
+	case *events.GuildMemberUpdateEvent:
+		ev.User.Hydrate(d)
+	case *events.GuildMemberRemoveEvent:
+		ev.User.Hydrate(d)
+	case *events.ThreadListSyncEvent:
+		for i := range ev.Threads {
+			ev.Threads[i].Hydrate(d)
+			d.setChannelManagers(&ev.Threads[i])
+		}
+	}
 }
 
 // ── Client lifecycle event emitters ─────────────────────────────────────────

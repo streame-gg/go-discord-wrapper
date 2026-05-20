@@ -39,7 +39,7 @@ type AuditLogEntryOptions struct {
 	AutoModerationRuleName        *string                                `json:"auto_moderation_rule_name,omitempty"`
 	AutoModerationRuleTriggerType *AutoModerationTriggerType             `json:"auto_moderation_rule_trigger_type,omitempty"`
 	ChannelID                     *Snowflake                             `json:"channel_id,omitempty"`
-	Count                         *int                                   `json:"count,omitempty"`
+	Count                         *string                                `json:"count,omitempty"`
 	DeleteMemberDays              *string                                `json:"delete_member_days,omitempty"`
 	ID                            *Snowflake                             `json:"id,omitempty"`
 	MembersRemoved                *string                                `json:"members_removed,omitempty"`

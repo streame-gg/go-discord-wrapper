@@ -5,6 +5,9 @@ import (
 )
 
 type GuildMember struct {
+	hClient                    EntityClient
+	GuildID                    Snowflake  `json:"-"`
+	UserID                     Snowflake  `json:"-"`
 	AvatarHash                 *string    `json:"avatar,omitempty"`
 	BannerHash                 *string    `json:"banner,omitempty"`
 	CommunicationDisabledUntil *string    `json:"communication_disabled_until,omitempty"`
@@ -19,7 +22,11 @@ type GuildMember struct {
 	User                       *User      `json:"user,omitempty"`
 }
 
-func (m GuildMember) DisplayName() string {
+func (m *GuildMember) DisplayName() string {
+	if m == nil {
+		return ""
+	}
+
 	if m.Nick != nil {
 		return *m.Nick
 	}

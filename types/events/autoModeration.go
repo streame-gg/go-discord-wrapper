@@ -10,6 +10,8 @@ type AutoModerationRuleCreateEvent struct {
 
 type AutoModerationRuleUpdateEvent struct {
 	discord.AutoModerationRule
+	// OldRule is nil when the rule was not previously cached (no automod rule store exists).
+	OldRule *discord.AutoModerationRule `json:"old_rule,omitempty"`
 }
 
 type AutoModerationRuleDeleteEvent struct {

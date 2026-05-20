@@ -17,6 +17,7 @@ type ResolvedData struct {
 }
 
 type Message struct {
+	hClient              EntityClient
 	Activity             *Activity                   `json:"activity,omitempty"`
 	Application          *Application                `json:"application,omitempty"`
 	ApplicationID        *string                     `json:"application_id,omitempty"`

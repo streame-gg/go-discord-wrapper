@@ -10,6 +10,8 @@ func (d *Client) cacheChannel(channel *discord.Channel) {
 		return
 	}
 
+	channel.Hydrate(d)
+	d.setChannelManagers(channel)
 	d.trackChannel(channel)
 	d.Cache.Channels().Set(channel)
 	if channel.Recipients == nil {
@@ -34,9 +36,13 @@ func (d *Client) cacheGuild(guild *discord.Guild) {
 		return
 	}
 
+	guild.Hydrate(d)
+	d.setGuildManagers(guild)
 	d.Cache.Guilds().Set(guild)
-	for i := range guild.Roles {
-		role := guild.Roles[i]
+	for i := range guild.RawRoles {
+		role := guild.RawRoles[i]
+		role.GuildID = guild.ID
+		role.Hydrate(d)
 		d.Cache.Roles().Set(guild.ID, &role)
 	}
 }
@@ -45,6 +51,9 @@ func (d *Client) cacheMember(guildID discord.Snowflake, member *discord.GuildMem
 	if member == nil || member.User == nil {
 		return
 	}
+	member.GuildID = guildID
+	member.UserID = member.User.ID
+	member.Hydrate(d)
 	if d.cacheStoreEnabled(cache.CategoryMembers) {
 		d.Cache.Members().Set(guildID, member)
 	}
@@ -64,6 +73,7 @@ func (d *Client) cacheMessage(msg *discord.Message) {
 		return
 	}
 
+	msg.Hydrate(d)
 	d.Cache.Messages().Add(msg)
 	if msg.Author != nil {
 		d.cacheUser(msg.Author)
@@ -81,6 +91,8 @@ func (d *Client) cacheRole(guildID discord.Snowflake, role *discord.Role) {
 		return
 	}
 
+	role.GuildID = guildID
+	role.Hydrate(d)
 	d.Cache.Roles().Set(guildID, role)
 }
 
@@ -95,13 +107,8 @@ func (d *Client) cacheUser(user *discord.User) {
 		return
 	}
 
+	user.Hydrate(d)
 	d.Cache.Users().Set(user)
-}
-
-func (d *Client) cacheUsers(users []*discord.User) {
-	for _, user := range users {
-		d.cacheUser(user)
-	}
 }
 
 func (d *Client) removeChannelFromCache(channelID discord.Snowflake) {

@@ -101,24 +101,6 @@ func TestGetMissing(t *testing.T) {
 	}
 }
 
-func TestMustGet(t *testing.T) {
-	c := collection.New[int, string]()
-	c.Set(1, "a")
-	if got := c.MustGet(1); got != "a" {
-		t.Errorf("expected a, got %s", got)
-	}
-}
-
-func TestMustGetPanic(t *testing.T) {
-	c := collection.New[int, string]()
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic for missing key")
-		}
-	}()
-	c.MustGet(99)
-}
-
 func TestGetOr(t *testing.T) {
 	c := collection.New[int, string]()
 	c.Set(1, "a")

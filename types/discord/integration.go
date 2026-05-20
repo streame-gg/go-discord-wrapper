@@ -34,6 +34,8 @@ type IntegrationApplication struct {
 }
 
 type Integration struct {
+	hClient           EntityClient
+	GuildID           Snowflake                  `json:"-"`
 	ID                Snowflake                  `json:"id"`
 	Name              string                     `json:"name"`
 	Type              IntegrationType            `json:"type"`

@@ -11,6 +11,7 @@ type ThreadCreateEvent struct {
 
 type ThreadUpdateEvent struct {
 	discord.Channel
+	OldThread *discord.Channel `json:"old_thread,omitempty"`
 }
 
 type ThreadDeleteEvent struct {

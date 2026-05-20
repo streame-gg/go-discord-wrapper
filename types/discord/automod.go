@@ -55,6 +55,7 @@ const (
 )
 
 type AutoModerationRule struct {
+	hClient         EntityClient
 	ID              Snowflake                     `json:"id"`
 	GuildID         Snowflake                     `json:"guild_id"`
 	Name            string                        `json:"name"`
