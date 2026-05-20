@@ -31,16 +31,7 @@ func (m *scheduledEventManager) Get(eventID discord.Snowflake) (*discord.GuildSc
 }
 
 func (m *scheduledEventManager) Fetch(ctx context.Context, eventID discord.Snowflake) (*discord.GuildScheduledEvent, error) {
-	event, err := m.client.GetGuildScheduledEvent(ctx, m.guildID, eventID)
-	if err == nil {
-		event.Hydrate(m.client)
-
-		if m.client.ClientCache() != nil && m.client.ClientCache().ScheduledEvents() != nil {
-			m.client.ClientCache().ScheduledEvents().GetByGuild(event.GuildID).Set(eventID, event)
-		}
-	}
-
-	return event, err
+	return m.client.GetGuildScheduledEvent(ctx, m.guildID, eventID)
 }
 
 func (m *scheduledEventManager) FetchAll(ctx context.Context) (*collection.Collection[discord.Snowflake, *discord.GuildScheduledEvent], error) {
