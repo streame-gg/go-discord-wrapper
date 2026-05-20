@@ -524,6 +524,41 @@ func TestStickerHydration_GuildIDSet(t *testing.T) {
 
 // ── Fix 7: channel/thread sub-managers in hydrateEvent ──────────────────────
 
+// ── Fix 8: bonus — GuildMemberUpdate/Remove User hydration + ThreadListSync ──
+
+func TestHydrateEvent_GuildMemberUpdate_UserHydrated(t *testing.T) {
+	c := newClientWithCache(t)
+	ev := &events.GuildMemberUpdateEvent{}
+	ev.User.ID = "user-update-1"
+	c.hydrateEvent(ev)
+	assert.True(t, ev.User.IsHydrated(), "GuildMemberUpdate: ev.User must be hydrated after hydrateEvent")
+}
+
+func TestHydrateEvent_GuildMemberRemove_UserHydrated(t *testing.T) {
+	c := newClientWithCache(t)
+	ev := &events.GuildMemberRemoveEvent{}
+	ev.User.ID = "user-remove-1"
+	c.hydrateEvent(ev)
+	assert.True(t, ev.User.IsHydrated(), "GuildMemberRemove: ev.User must be hydrated after hydrateEvent")
+}
+
+func TestHydrateEvent_ThreadListSync_ChannelsHaveSubManagers(t *testing.T) {
+	c := newClientWithCache(t)
+	ev := &events.ThreadListSyncEvent{
+		GuildID: discord.Snowflake("g1"),
+		Threads: []discord.Channel{
+			{ID: "thread-sync-1"},
+			{ID: "thread-sync-2"},
+		},
+	}
+	c.hydrateEvent(ev)
+	for i, ch := range ev.Threads {
+		assert.NotNil(t, ch.Messages(), "ThreadListSync: Threads[%d].Messages() must not be nil", i)
+		assert.NotNil(t, ch.Threads(), "ThreadListSync: Threads[%d].Threads() must not be nil", i)
+		assert.True(t, ch.IsHydrated(), "ThreadListSync: Threads[%d] must be hydrated", i)
+	}
+}
+
 func TestHydrateEvent_ChannelCreate_HasSubManagers(t *testing.T) {
 	c := newClientWithCache(t)
 	ev := &events.ChannelCreateEvent{}

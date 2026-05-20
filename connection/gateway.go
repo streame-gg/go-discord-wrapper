@@ -1895,6 +1895,15 @@ func (d *Client) hydrateEvent(event events.Event) {
 		ev.SoundboardSound.Hydrate(d)
 	case *events.GuildSoundboardSoundUpdateEvent:
 		ev.SoundboardSound.Hydrate(d)
+	case *events.GuildMemberUpdateEvent:
+		ev.User.Hydrate(d)
+	case *events.GuildMemberRemoveEvent:
+		ev.User.Hydrate(d)
+	case *events.ThreadListSyncEvent:
+		for i := range ev.Threads {
+			ev.Threads[i].Hydrate(d)
+			d.setChannelManagers(&ev.Threads[i])
+		}
 	}
 }
 
