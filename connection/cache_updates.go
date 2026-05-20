@@ -111,12 +111,6 @@ func (d *Client) cacheUser(user *discord.User) {
 	d.Cache.Users().Set(user)
 }
 
-func (d *Client) cacheUsers(users []*discord.User) {
-	for _, user := range users {
-		d.cacheUser(user)
-	}
-}
-
 func (d *Client) removeChannelFromCache(channelID discord.Snowflake) {
 	if d.Cache == nil {
 		return
