@@ -493,6 +493,35 @@ func TestInteractionCreate_NilGuildStub(t *testing.T) {
 
 // ── Manager fetch without cache ───────────────────────────────────────────────
 
+// ── Fix 4+5: Sticker.GuildID set during guild hydration ─────────────────────
+
+// TestStickerHydration_GuildIDSet verifies that stickers embedded directly in a
+// Guild struct (via RawStickers) have GuildID set after Hydrate, so that
+// Sticker.Edit/Delete work without error on stickers accessed from the guild object.
+func TestStickerHydration_GuildIDSet(t *testing.T) {
+	guildID := discord.Snowflake("111000111000111000")
+	stickerID := discord.Snowflake("222000222000222000")
+
+	// Build a guild with an embedded sticker directly (bypassing JSON unmarshal).
+	g := &discord.Guild{
+		ID: guildID,
+		RawStickers: []discord.Sticker{
+			{ID: stickerID, Name: "test_sticker"},
+		},
+	}
+
+	c, err := NewClient("test-token", discord.IntentGuilds)
+	require.NoError(t, err)
+
+	g.Hydrate(c)
+
+	require.Len(t, g.RawStickers, 1)
+	s := g.RawStickers[0]
+	require.NotNil(t, s.GuildID, "Sticker.GuildID must not be nil after Guild.Hydrate")
+	assert.Equal(t, guildID, *s.GuildID, "Sticker.GuildID must equal the parent guild ID")
+	assert.True(t, s.IsHydrated(), "sticker must be hydrated")
+}
+
 // ── Fix 7: channel/thread sub-managers in hydrateEvent ──────────────────────
 
 func TestHydrateEvent_ChannelCreate_HasSubManagers(t *testing.T) {

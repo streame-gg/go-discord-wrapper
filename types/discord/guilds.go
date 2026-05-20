@@ -97,7 +97,7 @@ type Guild struct {
 	ApproximatePresenceCount    *int                            `json:"approximate_presence_count,omitempty"`
 	WelcomeScreen               *GuildWelcomeScreen             `json:"welcome_screen,omitempty"`
 	NSFWLevel                   GuildNSFWLevel                  `json:"nsfw_level,omitempty"`
-	RawStickers                 *[]Sticker                      `json:"stickers,omitempty"`
+	RawStickers                 []Sticker                       `json:"stickers,omitempty"`
 	PremiumProgressBarEnabled   bool                            `json:"premium_progress_bar_enabled,omitempty"`
 	SafetyAlertsChannelID       *Snowflake                      `json:"safety_alerts_channel_id,omitempty"`
 	IncidentsData               *GuildIncidentsData             `json:"incidents_data,omitempty"`

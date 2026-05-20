@@ -864,10 +864,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						}
 						d.Cache.Emojis().SetAll(guild.ID, emojis)
 					}
-					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryStickers) && guild.RawStickers != nil {
-						stickers := make([]*discord.Sticker, 0, len(*guild.RawStickers))
-						for i := range *guild.RawStickers {
-							sticker := (*guild.RawStickers)[i]
+					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryStickers) && len(guild.RawStickers) > 0 {
+						stickers := make([]*discord.Sticker, 0, len(guild.RawStickers))
+						for i := range guild.RawStickers {
+							sticker := guild.RawStickers[i]
 							if sticker.ID != "" {
 								if sticker.GuildID == nil {
 									sticker.GuildID = &guild.ID
