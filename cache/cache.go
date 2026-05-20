@@ -393,6 +393,7 @@ type PresenceStore interface {
 // Cache is the top-level caching interface for Discord entities.
 // All methods and the stores they return are safe for concurrent use.
 // Close stops background goroutines; the cache must not be used after it returns.
+// TODO: Automod Rule Cache
 type Cache interface {
 	Guilds() GuildStore
 	Channels() ChannelStore

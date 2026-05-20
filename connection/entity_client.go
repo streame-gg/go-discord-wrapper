@@ -684,7 +684,13 @@ func (d *Client) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake
 }
 
 func (d *Client) GetAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake) (*discord.AutoModerationRule, error) {
-	return d.RestClient.GetAutoModerationRule(ctx, guildID, ruleID)
+	automoderationRule, err := d.RestClient.GetAutoModerationRule(ctx, guildID, ruleID)
+
+	if err == nil {
+		automoderationRule.Hydrate(d)
+	}
+
+	return automoderationRule, err
 }
 
 func (d *Client) ListAutoModerationRules(ctx context.Context, guildID discord.Snowflake) ([]*discord.AutoModerationRule, error) {
