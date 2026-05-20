@@ -31,7 +31,17 @@ func (m *stageInstanceManager) Get(instanceID discord.Snowflake) (*discord.Stage
 }
 
 func (m *stageInstanceManager) Fetch(ctx context.Context, channelID discord.Snowflake) (*discord.StageInstance, error) {
-	return m.client.GetStageInstance(ctx, channelID)
+	stageInstance, err := m.client.GetStageInstance(ctx, channelID)
+
+	if err == nil {
+		stageInstance.Hydrate(m.client)
+
+		if m.client.ClientCache() != nil && m.client.ClientCache().StageInstances() != nil {
+			m.client.ClientCache().StageInstances().GetByGuild(stageInstance.GuildID).Set(channelID, stageInstance)
+		}
+	}
+
+	return stageInstance, err
 }
 
 func (m *stageInstanceManager) Create(ctx context.Context, opts discord.StageCreateOptions) (*discord.StageInstance, error) {
