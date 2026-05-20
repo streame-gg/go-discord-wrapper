@@ -834,11 +834,11 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				if d.cacheEnabled() {
 					if guild.ID != "" {
 						guild.Hydrate(d)
+						d.setGuildManagers(&guild)
 					}
 
 					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryGuilds) {
-						gcopy := guild
-						d.Cache.Guilds().Set(&gcopy)
+						d.Cache.Guilds().Set(&guild)
 					}
 
 					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryRoles) {
@@ -846,6 +846,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						d.Cache.Roles().DeleteGuild(guild.ID)
 						for i := range guild.RawRoles {
 							role := guild.RawRoles[i]
+							role.GuildID = guild.ID
+							role.Hydrate(d)
 							d.Cache.Roles().Set(guild.ID, &role)
 						}
 					}
@@ -855,6 +857,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						for i := range guild.RawEmojis {
 							emoji := guild.RawEmojis[i]
 							if emoji.ID != "" {
+								emoji.GuildID = guild.ID
+								emoji.Hydrate(d)
 								emojis = append(emojis, &emoji)
 							}
 						}
@@ -865,6 +869,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						for i := range *guild.RawStickers {
 							sticker := (*guild.RawStickers)[i]
 							if sticker.ID != "" {
+								if sticker.GuildID == nil {
+									sticker.GuildID = &guild.ID
+								}
+								sticker.Hydrate(d)
 								stickers = append(stickers, &sticker)
 							}
 						}
@@ -1060,6 +1068,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				u := ev.User
+				u.Hydrate(d)
 				d.Cache.Users().Set(&u)
 			}
 		}
@@ -1090,6 +1099,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			g := ev.Guild
+			g.Hydrate(d)
+			d.setGuildManagers(&g)
 			if d.cacheStoreEnabled(cache.CategoryGuilds) {
 				if old, exists := d.Cache.Guilds().Get(g.ID); exists {
 					ev.OldGuild = old
@@ -1101,6 +1112,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				d.Cache.Roles().DeleteGuild(g.ID)
 				for i := range g.RawRoles {
 					role := g.RawRoles[i]
+					role.GuildID = g.ID
+					role.Hydrate(d)
 					d.Cache.Roles().Set(g.ID, &role)
 				}
 			}
@@ -1118,6 +1131,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				emojis := make([]*discord.Emoji, 0, len(ev.Emojis))
 				for i := range ev.Emojis {
 					emoji := ev.Emojis[i]
+					emoji.GuildID = ev.GuildID
+					emoji.Hydrate(d)
 					emojis = append(emojis, &emoji)
 				}
 				d.Cache.Emojis().SetAll(ev.GuildID, emojis)
@@ -1136,6 +1151,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				stickers := make([]*discord.Sticker, 0, len(ev.Stickers))
 				for i := range ev.Stickers {
 					sticker := ev.Stickers[i]
+					if sticker.GuildID == nil {
+						sticker.GuildID = &ev.GuildID
+					}
+					sticker.Hydrate(d)
 					stickers = append(stickers, &sticker)
 				}
 				d.Cache.Stickers().SetAll(ev.GuildID, stickers)
@@ -1582,10 +1601,11 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				msg := ev.Message
 				if d.cacheStoreEnabled(cache.CategoryMessages) {
+					msg.Hydrate(d)
 					d.Cache.Messages().Add(&msg)
 				}
 				if ev.Author != nil && d.cacheStoreEnabled(cache.CategoryUsers) {
-					d.Cache.Users().Set(ev.Author)
+					d.cacheUser(ev.Author)
 				}
 			}
 		}
@@ -1600,6 +1620,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					ev.OldMessage = old
 				}
 				msg := ev.Message
+				msg.Hydrate(d)
 				d.Cache.Messages().Update(&msg)
 			}
 		}
@@ -1635,10 +1656,14 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				for i := range ev.Members {
 					m := ev.Members[i]
+					m.GuildID = ev.GuildID
+					if m.User != nil {
+						m.UserID = m.User.ID
+					}
+					m.Hydrate(d)
 					d.Cache.Members().Set(ev.GuildID, &m)
 					if d.cacheStoreEnabled(cache.CategoryUsers) && m.User != nil {
-						u := *m.User
-						d.Cache.Users().Set(&u)
+						d.cacheUser(m.User)
 					}
 				}
 				d.Logger.Debug("Cached guild members chunk",
@@ -1777,8 +1802,20 @@ func (d *Client) hydrateEvent(event events.Event) {
 		ev.Channel.Hydrate(d)
 	case *events.ThreadUpdateEvent:
 		ev.Channel.Hydrate(d)
+	case *events.GuildCreateEvent:
+		switch g := ev.Guild.(type) {
+		case discord.GatewayGuild:
+			g.Guild.Hydrate(d)
+			d.setGuildManagers(&g.Guild)
+			ev.Guild = g
+		case discord.Guild:
+			g.Hydrate(d)
+			d.setGuildManagers(&g)
+			ev.Guild = g
+		}
 	case *events.GuildUpdateEvent:
 		ev.Guild.Hydrate(d)
+		d.setGuildManagers(&ev.Guild)
 	case *events.GuildMemberAddEvent:
 		ev.GuildMember.GuildID = ev.GuildID
 		if ev.GuildMember.User != nil {

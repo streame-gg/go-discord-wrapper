@@ -41,6 +41,8 @@ func (d *Client) cacheGuild(guild *discord.Guild) {
 	d.Cache.Guilds().Set(guild)
 	for i := range guild.RawRoles {
 		role := guild.RawRoles[i]
+		role.GuildID = guild.ID
+		role.Hydrate(d)
 		d.Cache.Roles().Set(guild.ID, &role)
 	}
 }
