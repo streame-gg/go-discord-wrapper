@@ -250,7 +250,10 @@ bot.OnVoiceMemberJoin(func(c *connection.Client, ev *events.VoiceMemberJoinEvent
 })
 ```
 
-Raw events always fire first; synthetics follow in the same serial order.
+Raw events are dispatched/enqueued before any derived synthetic events. If dispatch is
+configured to run serially (single-threaded), handlers observe that same order; in
+concurrent modes, synthetic handlers may run before the corresponding raw handler has
+finished.
 
 ### Voice events (source: `VOICE_STATE_UPDATE`)
 
