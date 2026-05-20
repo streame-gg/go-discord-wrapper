@@ -609,7 +609,18 @@ func (d *Client) ListGuildEmojis(ctx context.Context, guildID discord.Snowflake)
 }
 
 func (d *Client) GetGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake) (*discord.Sticker, error) {
-	return d.RestClient.GetGuildSticker(ctx, guildID, stickerID)
+	sticker, err := d.RestClient.GetGuildSticker(ctx, guildID, stickerID)
+	if err == nil {
+		sticker.Hydrate(d)
+		//TODO: check if this is really necessary as documented here: https://docs.discord.com/developers/resources/sticker#sticker-resource
+		sticker.GuildID = &guildID
+
+		if d.Cache != nil {
+			d.Cache.Stickers().Set(guildID, sticker)
+		}
+	}
+
+	return sticker, err
 }
 
 func (d *Client) ListGuildStickers(ctx context.Context, guildID discord.Snowflake) ([]*discord.Sticker, error) {
