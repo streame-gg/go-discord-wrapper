@@ -11,7 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 #### Synthetic events (Sprint E)
 
 21 high-level events derived by the wrapper from raw Discord gateway events.
-Synthetic events fire **after** their parent raw event in the same serial order.
+Synthetic events are enqueued **after** their parent raw event is processed by
+the wrapper. In concurrent dispatch configurations, synthetic handlers may run
+before the parent raw event handler completes; strict serial ordering requires
+single-worker/serial dispatch.
 Most require the cache to be enabled; when prior state is unavailable the event
 is silently skipped.
 
