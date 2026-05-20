@@ -977,6 +977,7 @@ func (d *Client) GetGuildIntegrations(ctx context.Context, guildID discord.Snowf
 	integrations, err := d.RestClient.GetGuildIntegrations(ctx, guildID)
 	if err == nil {
 		for _, i := range integrations {
+			i.GuildID = guildID
 			i.Hydrate(d)
 		}
 	}
