@@ -96,16 +96,16 @@ type StickerStore interface {
 // interface — mutation methods (Set, Delete, Close) are intentionally absent.
 // Returns nil from EntityClient.ClientCache if no cache is configured.
 type Cache interface {
-	Guilds()          GuildStore
-	Channels()        ChannelStore
-	Users()           UserStore
-	Members()         MemberStore
-	Messages()        MessageStore
-	Roles()           RoleStore
-	VoiceStates()     VoiceStateStore
-	Soundboard()      SoundboardStore
+	Guilds() GuildStore
+	Channels() ChannelStore
+	Users() UserStore
+	Members() MemberStore
+	Messages() MessageStore
+	Roles() RoleStore
+	VoiceStates() VoiceStateStore
+	Soundboard() SoundboardStore
 	ScheduledEvents() ScheduledEventStore
-	StageInstances()  StageInstanceStore
-	Emojis()          EmojiStore
-	Stickers()        StickerStore
+	StageInstances() StageInstanceStore
+	Emojis() EmojiStore
+	Stickers() StickerStore
 }

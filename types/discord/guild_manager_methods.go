@@ -2,24 +2,24 @@ package discord
 
 // ── Guild sub-manager setters (called by connection layer) ────────────────────
 
-func (g *Guild) SetMembersManager(m MemberManager)         { g.members = m }
-func (g *Guild) SetRolesManager(m RoleManager)             { g.roles = m }
-func (g *Guild) SetChannelsManager(m GuildChannelManager)  { g.channels = m }
-func (g *Guild) SetEmojisManager(m EmojiManager)           { g.emojis = m }
-func (g *Guild) SetStickersManager(m StickerManager)       { g.stickers = m }
-func (g *Guild) SetBansManager(m BanManager)               { g.bans = m }
+func (g *Guild) SetMembersManager(m MemberManager)        { g.members = m }
+func (g *Guild) SetRolesManager(m RoleManager)            { g.roles = m }
+func (g *Guild) SetChannelsManager(m GuildChannelManager) { g.channels = m }
+func (g *Guild) SetEmojisManager(m EmojiManager)          { g.emojis = m }
+func (g *Guild) SetStickersManager(m StickerManager)      { g.stickers = m }
+func (g *Guild) SetBansManager(m BanManager)              { g.bans = m }
 func (g *Guild) SetScheduledEventsManager(m ScheduledEventManager) {
 	g.scheduledEvents = m
 }
 func (g *Guild) SetStageInstancesManager(m StageInstanceManager) {
 	g.stageInstances = m
 }
-func (g *Guild) SetSoundboardManager(m SoundboardManager)      { g.soundboardSounds = m }
-func (g *Guild) SetInvitesManager(m GuildInviteManager)        { g.invites = m }
-func (g *Guild) SetVoiceStatesManager(m VoiceStateManager)     { g.voiceStates = m }
-func (g *Guild) SetAutoModRulesManager(m AutoModRuleManager)   { g.autoModRules = m }
-func (g *Guild) SetWebhooksManager(m GuildWebhookManager)      { g.webhooks = m }
-func (g *Guild) SetIntegrationsManager(m IntegrationManager)   { g.integrations = m }
+func (g *Guild) SetSoundboardManager(m SoundboardManager)    { g.soundboardSounds = m }
+func (g *Guild) SetInvitesManager(m GuildInviteManager)      { g.invites = m }
+func (g *Guild) SetVoiceStatesManager(m VoiceStateManager)   { g.voiceStates = m }
+func (g *Guild) SetAutoModRulesManager(m AutoModRuleManager) { g.autoModRules = m }
+func (g *Guild) SetWebhooksManager(m GuildWebhookManager)    { g.webhooks = m }
+func (g *Guild) SetIntegrationsManager(m IntegrationManager) { g.integrations = m }
 
 // ── Guild sub-manager getters ─────────────────────────────────────────────────
 

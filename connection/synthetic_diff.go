@@ -208,7 +208,7 @@ func deriveGuildMemberSyntheticEvents(ev *events.GuildMemberUpdateEvent) []event
 	// Boost end.
 	if ev.PremiumSince == nil && ev.OldMember.PremiumSince != nil {
 		result = append(result, &events.GuildMemberBoostEndEvent{
-			GuildID:   ev.GuildID, UserID: ev.User.ID,
+			GuildID: ev.GuildID, UserID: ev.User.ID,
 			OldMember: ev.OldMember, NewMember: newMember,
 		})
 	}

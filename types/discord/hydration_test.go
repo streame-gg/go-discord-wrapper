@@ -14,7 +14,7 @@ import (
 // stubClient implements discord.EntityClient with zero-value returns.
 // Override specific fields on a spy wrapper when you need recorded calls.
 type stubClient struct {
-	editMessageFn func(ctx context.Context, channelID, messageID discord.Snowflake, opts discord.MessageEditOptions) (*discord.Message, error)
+	editMessageFn   func(ctx context.Context, channelID, messageID discord.Snowflake, opts discord.MessageEditOptions) (*discord.Message, error)
 	deleteMessageFn func(ctx context.Context, channelID, messageID discord.Snowflake, reason *string) error
 	createMessageFn func(ctx context.Context, channelID discord.Snowflake, opts discord.MessageCreateOptions) (*discord.Message, error)
 	modifyGuildFn   func(ctx context.Context, guildID discord.Snowflake, opts discord.GuildEditOptions) (*discord.Guild, error)

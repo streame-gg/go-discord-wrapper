@@ -148,12 +148,12 @@ func TestEventHydration_MessageCreateIsHydrated(t *testing.T) {
 
 func TestEventHydration_GuildMemberAddIsHydrated(t *testing.T) {
 	memberPacket := dispatchPacket("GUILD_MEMBER_ADD", map[string]interface{}{
-		"guild_id": "g1",
-		"user":     map[string]interface{}{"id": "u1", "username": "bob", "discriminator": "0"},
-		"roles":    []string{},
+		"guild_id":  "g1",
+		"user":      map[string]interface{}{"id": "u1", "username": "bob", "discriminator": "0"},
+		"roles":     []string{},
 		"joined_at": "2024-01-01T00:00:00Z",
-		"deaf":     false,
-		"mute":     false,
+		"deaf":      false,
+		"mute":      false,
 	})
 
 	wsURL, closeServer := mockGateway(t, memberPacket)

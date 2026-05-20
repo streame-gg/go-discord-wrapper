@@ -255,8 +255,8 @@ type RoleColors struct {
 }
 
 type Role struct {
-	hClient     EntityClient
-	GuildID     Snowflake   `json:"-"`
+	hClient      EntityClient
+	GuildID      Snowflake  `json:"-"`
 	ID           Snowflake  `json:"id"`
 	Name         string     `json:"name"`
 	Colors       RoleColors `json:"colors,omitempty"`
