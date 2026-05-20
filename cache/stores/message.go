@@ -35,7 +35,7 @@ func newMsgRing(cap int) *msgRing {
 // add inserts or updates msg. Returns the net change in ring length:
 //   - 0  → updated existing entry, or ring was full (evict one, add one)
 //   - +1 → new entry added to a ring with available space
-func (r *msgRing) add(msg *discord.Message, ttl time.Duration, strat EvictionStrategy) int {
+func (r *msgRing) add(msg *discord.Message, ttl time.Duration, strategy EvictionStrategy) int {
 	now := time.Now()
 	for _, it := range r.items {
 		if it.msg.ID == msg.ID {
@@ -50,7 +50,7 @@ func (r *msgRing) add(msg *discord.Message, ttl time.Duration, strat EvictionStr
 	}
 	if len(r.items) >= r.cap {
 		// Evict one, then add one: net 0.
-		r.evictOne(strat)
+		r.evictOne(strategy)
 		r.items = append(r.items, it)
 		r.accessedAt = now
 		return 0
@@ -61,13 +61,13 @@ func (r *msgRing) add(msg *discord.Message, ttl time.Duration, strat EvictionStr
 	return 1
 }
 
-func (r *msgRing) evictOne(strat EvictionStrategy) {
+func (r *msgRing) evictOne(strategy EvictionStrategy) {
 	if len(r.items) == 0 {
 		return
 	}
 	idx := 0
 	for i := 1; i < len(r.items); i++ {
-		if isBetterMsgVictim(r.items[i], r.items[idx], strat) {
+		if isBetterMsgVictim(r.items[i], r.items[idx], strategy) {
 			idx = i
 		}
 	}
@@ -76,8 +76,8 @@ func (r *msgRing) evictOne(strat EvictionStrategy) {
 	r.items = r.items[:len(r.items)-1]
 }
 
-func isBetterMsgVictim(candidate, current *msgItem, strat EvictionStrategy) bool {
-	switch strat {
+func isBetterMsgVictim(candidate, current *msgItem, strategy EvictionStrategy) bool {
+	switch strategy {
 	case EvictLFU:
 		return candidate.hitCount < current.hitCount
 	case EvictFIFO:

@@ -52,14 +52,14 @@ func NewMemoryCache(opts Options) *MemoryCache {
 		opts.OnOverflow.Target = CategoryAll
 	}
 
-	strat := clearByToStrategy(opts.OnOverflow.ClearBy)
+	strategy := clearByToStrategy(opts.OnOverflow.ClearBy)
 	trackBytes := opts.Limits.MaxSizeMB > 0
 
 	sc := func(maxItems int) stores.StoreOptions {
 		return stores.StoreOptions{
 			MaxItems:         maxItems,
 			TTL:              opts.TTL,
-			EvictionStrategy: strat,
+			EvictionStrategy: strategy,
 			TrackBytes:       trackBytes,
 		}
 	}
@@ -75,7 +75,7 @@ func NewMemoryCache(opts Options) *MemoryCache {
 			MaxItems:         opts.Messages.MaxPerChannel,
 			MaxTotal:         opts.Limits.MaxMessages,
 			TTL:              opts.Messages.TTL,
-			EvictionStrategy: strat,
+			EvictionStrategy: strategy,
 		}),
 		voiceStates:     stores.NewVoiceStateStore(sc(0)),
 		soundboard:      stores.NewSoundboardStore(sc(0)),
