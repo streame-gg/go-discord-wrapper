@@ -581,7 +581,17 @@ func (d *Client) ClientCache() discord.Cache {
 // ── Fetch (read) — used by sub-managers, not yet in clientFunctions.go ──────
 
 func (d *Client) GetGuildEmoji(ctx context.Context, guildID, emojiID discord.Snowflake) (*discord.Emoji, error) {
-	return d.RestClient.GetGuildEmoji(ctx, guildID, emojiID)
+	emoji, err := d.RestClient.GetGuildEmoji(ctx, guildID, emojiID)
+	if err == nil {
+		emoji.GuildID = guildID
+		emoji.Hydrate(d)
+
+		if d.Cache != nil {
+			d.Cache.Emojis().Set(guildID, emoji)
+		}
+	}
+
+	return emoji, err
 }
 
 func (d *Client) ListGuildEmojis(ctx context.Context, guildID discord.Snowflake) ([]*discord.Emoji, error) {
