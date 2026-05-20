@@ -646,7 +646,7 @@ func (d *Client) ListGuildScheduledEvents(ctx context.Context, guildID discord.S
 	if err == nil {
 		for _, e := range events {
 			e.Hydrate(d)
-			if d.Cache != nil {
+			if d.Cache.ScheduledEvents() != nil {
 				d.Cache.ScheduledEvents().Set(e)
 			}
 		}
@@ -655,7 +655,15 @@ func (d *Client) ListGuildScheduledEvents(ctx context.Context, guildID discord.S
 }
 
 func (d *Client) GetStageInstance(ctx context.Context, channelID discord.Snowflake) (*discord.StageInstance, error) {
-	return d.RestClient.GetStageInstance(ctx, channelID)
+	stageInstance, err := d.RestClient.GetStageInstance(ctx, channelID)
+	if err == nil {
+		stageInstance.Hydrate(d)
+		if d.Cache != nil {
+			d.Cache.StageInstances().Set(stageInstance)
+		}
+	}
+
+	return stageInstance, err
 }
 
 func (d *Client) CreateStageInstance(ctx context.Context, opts discord.StageCreateOptions) (*discord.StageInstance, error) {
