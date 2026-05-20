@@ -483,11 +483,17 @@ func (d *Client) DeleteGuildRole(ctx context.Context, guildID, roleID discord.Sn
 }
 
 func (d *Client) GetGuildBans(ctx context.Context, guildID discord.Snowflake, opts discord.FetchBansOptions) ([]*discord.Ban, error) {
-	return d.RestClient.GetGuildBans(ctx, guildID, api.GetGuildBansParams{
+	bans, err := d.RestClient.GetGuildBans(ctx, guildID, api.GetGuildBansParams{
 		Before: opts.Before,
 		After:  opts.After,
 		Limit:  opts.Limit,
 	})
+	if err == nil {
+		for _, ban := range bans {
+			ban.User.Hydrate(d)
+		}
+	}
+	return bans, err
 }
 
 func (d *Client) GetGuildBan(ctx context.Context, guildID, userID discord.Snowflake) (*discord.Ban, error) {
@@ -515,7 +521,13 @@ func (d *Client) BeginGuildPrune(ctx context.Context, guildID discord.Snowflake,
 }
 
 func (d *Client) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) ([]*discord.Invite, error) {
-	return d.RestClient.GetGuildInvites(ctx, guildID)
+	invites, err := d.RestClient.GetGuildInvites(ctx, guildID)
+	if err == nil {
+		for _, i := range invites {
+			i.Hydrate(d)
+		}
+	}
+	return invites, err
 }
 
 func (d *Client) GetGuildVanityURL(ctx context.Context, guildID discord.Snowflake) (*discord.GuildVanityURL, error) {
@@ -772,7 +784,14 @@ func (d *Client) ListGuildSoundboardSounds(ctx context.Context, guildID discord.
 	if err != nil {
 		return nil, err
 	}
-	return resp.Items, nil
+	sounds := resp.Items
+	for _, s := range sounds {
+		s.Hydrate(d)
+	}
+	if d.Cache != nil {
+		d.Cache.Soundboard().SetAll(guildID, sounds)
+	}
+	return sounds, nil
 }
 
 func (d *Client) GetGuildSoundboardSound(ctx context.Context, guildID, soundID discord.Snowflake) (*discord.SoundboardSound, error) {
@@ -955,7 +974,13 @@ func (d *Client) BulkBanGuildMembers(ctx context.Context, guildID discord.Snowfl
 }
 
 func (d *Client) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) ([]*discord.Integration, error) {
-	return d.RestClient.GetGuildIntegrations(ctx, guildID)
+	integrations, err := d.RestClient.GetGuildIntegrations(ctx, guildID)
+	if err == nil {
+		for _, i := range integrations {
+			i.Hydrate(d)
+		}
+	}
+	return integrations, err
 }
 
 func (d *Client) DeleteGuildIntegration(ctx context.Context, guildID, integrationID discord.Snowflake, reason *string) error {

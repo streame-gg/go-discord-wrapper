@@ -585,7 +585,17 @@ func (d *Client) GetGuildEmoji(ctx context.Context, guildID, emojiID discord.Sno
 }
 
 func (d *Client) ListGuildEmojis(ctx context.Context, guildID discord.Snowflake) ([]*discord.Emoji, error) {
-	return d.RestClient.ListGuildEmojis(ctx, guildID)
+	emojis, err := d.RestClient.ListGuildEmojis(ctx, guildID)
+	if err == nil {
+		for _, e := range emojis {
+			e.GuildID = guildID
+			e.Hydrate(d)
+		}
+		if d.Cache != nil {
+			d.Cache.Emojis().SetAll(guildID, emojis)
+		}
+	}
+	return emojis, err
 }
 
 func (d *Client) GetGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake) (*discord.Sticker, error) {
@@ -593,7 +603,17 @@ func (d *Client) GetGuildSticker(ctx context.Context, guildID, stickerID discord
 }
 
 func (d *Client) ListGuildStickers(ctx context.Context, guildID discord.Snowflake) ([]*discord.Sticker, error) {
-	return d.RestClient.ListGuildStickers(ctx, guildID)
+	stickers, err := d.RestClient.ListGuildStickers(ctx, guildID)
+	if err == nil {
+		for _, s := range stickers {
+			s.GuildID = &guildID
+			s.Hydrate(d)
+		}
+		if d.Cache != nil {
+			d.Cache.Stickers().SetAll(guildID, stickers)
+		}
+	}
+	return stickers, err
 }
 
 func (d *Client) GetGuildScheduledEvent(ctx context.Context, guildID, eventID discord.Snowflake) (*discord.GuildScheduledEvent, error) {
@@ -601,7 +621,16 @@ func (d *Client) GetGuildScheduledEvent(ctx context.Context, guildID, eventID di
 }
 
 func (d *Client) ListGuildScheduledEvents(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildScheduledEvent, error) {
-	return d.RestClient.ListGuildScheduledEvents(ctx, guildID, false)
+	events, err := d.RestClient.ListGuildScheduledEvents(ctx, guildID, false)
+	if err == nil {
+		for _, e := range events {
+			e.Hydrate(d)
+			if d.Cache != nil {
+				d.Cache.ScheduledEvents().Set(e)
+			}
+		}
+	}
+	return events, err
 }
 
 func (d *Client) GetStageInstance(ctx context.Context, channelID discord.Snowflake) (*discord.StageInstance, error) {
@@ -624,7 +653,13 @@ func (d *Client) CreateStageInstance(ctx context.Context, opts discord.StageCrea
 }
 
 func (d *Client) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
-	return d.RestClient.GetGuildWebhooks(ctx, guildID)
+	webhooks, err := d.RestClient.GetGuildWebhooks(ctx, guildID)
+	if err == nil {
+		for _, w := range webhooks {
+			w.Hydrate(d)
+		}
+	}
+	return webhooks, err
 }
 
 func (d *Client) GetAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake) (*discord.AutoModerationRule, error) {
@@ -632,7 +667,13 @@ func (d *Client) GetAutoModerationRule(ctx context.Context, guildID, ruleID disc
 }
 
 func (d *Client) ListAutoModerationRules(ctx context.Context, guildID discord.Snowflake) ([]*discord.AutoModerationRule, error) {
-	return d.RestClient.ListAutoModerationRules(ctx, guildID)
+	rules, err := d.RestClient.ListAutoModerationRules(ctx, guildID)
+	if err == nil {
+		for _, r := range rules {
+			r.Hydrate(d)
+		}
+	}
+	return rules, err
 }
 
 func (d *Client) CreateAutoModerationRule(ctx context.Context, guildID discord.Snowflake, opts discord.RuleCreateOptions) (*discord.AutoModerationRule, error) {
