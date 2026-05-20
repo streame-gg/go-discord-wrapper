@@ -638,7 +638,16 @@ func (d *Client) ListGuildStickers(ctx context.Context, guildID discord.Snowflak
 }
 
 func (d *Client) GetGuildScheduledEvent(ctx context.Context, guildID, eventID discord.Snowflake) (*discord.GuildScheduledEvent, error) {
-	return d.RestClient.GetGuildScheduledEvent(ctx, guildID, eventID, false)
+	event, err := d.RestClient.GetGuildScheduledEvent(ctx, guildID, eventID, false)
+
+	if err == nil {
+		event.Hydrate(d)
+		if d.Cache.ScheduledEvents() != nil {
+			d.Cache.ScheduledEvents().Set(event)
+		}
+	}
+
+	return event, err
 }
 
 func (d *Client) ListGuildScheduledEvents(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildScheduledEvent, error) {
