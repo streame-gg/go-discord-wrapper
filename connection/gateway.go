@@ -1695,13 +1695,24 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			ev.Hydrate(d, context.Background())
 			// Resolve Guild from cache so handlers get the fully hydrated object
 			// with sub-managers. The payload only carries a partial Guild stub.
-			if ev.GuildID != nil && d.cacheEnabled() {
-				if cached, ok := d.Cache.Guilds().Get(*ev.GuildID); ok {
-					ev.Guild = cached
-				} else if ev.Guild != nil {
-					ev.Guild.Hydrate(d)
-					d.setGuildManagers(ev.Guild)
+			if ev.GuildID != nil {
+				var resolvedGuild *discord.Guild
+				if d.cacheEnabled() {
+					resolvedGuild, _ = d.Cache.Guilds().Get(*ev.GuildID)
 				}
+				if resolvedGuild == nil {
+					// Cache miss or cache disabled. Use the partial stub if Discord
+					// sent one; otherwise synthesize a minimal stub with just the ID.
+					// Either way, inject managers so accessor methods never panic.
+					if ev.Guild != nil {
+						resolvedGuild = ev.Guild
+					} else {
+						resolvedGuild = &discord.Guild{ID: *ev.GuildID}
+					}
+					resolvedGuild.Hydrate(d)
+					d.setGuildManagers(resolvedGuild)
+				}
+				ev.Guild = resolvedGuild
 			}
 			// Hydrate the invoking member and the channel if present.
 			if ev.Member != nil {

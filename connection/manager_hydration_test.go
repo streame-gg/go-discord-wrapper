@@ -359,6 +359,138 @@ func TestEntityHydrationCompleteness_Guild_Reflection(t *testing.T) {
 	}
 }
 
+// ── Interaction: guild members accessible via cache ──────────────────────────
+
+// TestInteractionCreate_GuildMembersAccessible is the end-to-end proof that
+// interaction.Guild.Members().Cache().Get(someUserID) works after GUILD_CREATE.
+// This is a regression test for the production panic reported when guild sub-managers
+// were nil on ev.Guild in OnInteractionCreate handlers.
+func TestInteractionCreate_GuildMembersAccessible(t *testing.T) {
+	c := newClientWithCache(t)
+
+	guildID := discord.Snowflake("111222333444555666")
+	applicationID := discord.Snowflake("999888777666555444") // bot's user ID == its ApplicationID
+
+	payload := guildCreatePayload(string(guildID), map[string]any{
+		"members": []any{
+			map[string]any{
+				"user":      map[string]any{"id": string(applicationID), "username": "TestBot", "discriminator": "0"},
+				"roles":     []any{},
+				"joined_at": "2024-01-01T00:00:00Z",
+				"deaf":      false,
+				"mute":      false,
+			},
+		},
+	})
+	dispatchGuildCreate(t, c, payload)
+
+	// Verify the member is in cache before dispatching the interaction.
+	_, memberOK := c.Cache.Members().Get(guildID, applicationID)
+	require.True(t, memberOK, "bot member must be in cache after GUILD_CREATE")
+
+	// Build and dispatch a synthetic INTERACTION_CREATE.
+	interactionPayload := map[string]any{
+		"id":             "interaction1",
+		"application_id": string(applicationID),
+		"type":           2,
+		"guild_id":       string(guildID),
+		"guild":          map[string]any{"id": string(guildID)},
+		"channel_id":     "chan1",
+		"member": map[string]any{
+			"user":      map[string]any{"id": "invokerUser", "username": "invoker", "discriminator": "0"},
+			"roles":     []any{},
+			"joined_at": "2024-01-01T00:00:00Z",
+			"deaf":      false,
+			"mute":      false,
+		},
+		"token":   "mytoken",
+		"version": 1,
+		"data":    map[string]any{"id": "cmd1", "name": "test", "type": 1},
+	}
+	raw, err := json.Marshal(interactionPayload)
+	require.NoError(t, err)
+
+	ev := &events.InteractionCreateEvent{}
+	require.NoError(t, json.Unmarshal(raw, ev))
+
+	c.internalEventHandler(json.RawMessage(raw), events.EventInteractionCreate, ev)
+
+	// Core assertion: Guild must be resolved from cache with all sub-managers.
+	require.NotNil(t, ev.Guild, "interaction.Guild must not be nil after INTERACTION_CREATE")
+	require.NotNil(t, ev.Guild.Members(), "interaction.Guild.Members() must not be nil")
+
+	// The exact scenario from the user's proof-of-concept:
+	// interaction.Guild.Members().Cache().Get(interaction.ApplicationID)
+	memberFromCache, ok := ev.Guild.Members().Cache().Get(applicationID)
+	assert.True(t, ok, "bot member must be retrievable via interaction.Guild.Members().Cache().Get(applicationID)")
+	assert.NotNil(t, memberFromCache)
+
+	// Also verify .Get() works (the manager-level API).
+	memberViaGet, okGet := ev.Guild.Members().Get(applicationID)
+	assert.True(t, okGet, "bot member must be retrievable via interaction.Guild.Members().Get(applicationID)")
+	assert.NotNil(t, memberViaGet)
+}
+
+// TestInteractionCreate_NilGuildStub verifies that when Discord omits the
+// guild object from the interaction payload (which happens for some interaction
+// types), the library synthesizes a stub so accessor methods never panic.
+func TestInteractionCreate_NilGuildStub(t *testing.T) {
+	c := newClientWithCache(t)
+
+	guildID := discord.Snowflake("111222333444555000")
+	applicationID := discord.Snowflake("999888777666000111")
+
+	// GUILD_CREATE so the guild IS in the member cache.
+	payload := guildCreatePayload(string(guildID), map[string]any{
+		"members": []any{
+			map[string]any{
+				"user":      map[string]any{"id": string(applicationID), "username": "Bot", "discriminator": "0"},
+				"roles":     []any{},
+				"joined_at": "2024-01-01T00:00:00Z",
+				"deaf":      false,
+				"mute":      false,
+			},
+		},
+	})
+	dispatchGuildCreate(t, c, payload)
+
+	// Interaction payload WITHOUT the "guild" field — Discord omits it in some cases.
+	interactionPayload := map[string]any{
+		"id":             "interaction2",
+		"application_id": string(applicationID),
+		"type":           2,
+		"guild_id":       string(guildID),
+		// "guild" intentionally omitted
+		"channel_id": "chan2",
+		"member": map[string]any{
+			"user":      map[string]any{"id": "invoker2", "username": "invoker", "discriminator": "0"},
+			"roles":     []any{},
+			"joined_at": "2024-01-01T00:00:00Z",
+			"deaf":      false,
+			"mute":      false,
+		},
+		"token":   "tok2",
+		"version": 1,
+		"data":    map[string]any{"id": "cmd2", "name": "test", "type": 1},
+	}
+	raw, err := json.Marshal(interactionPayload)
+	require.NoError(t, err)
+
+	ev := &events.InteractionCreateEvent{}
+	require.NoError(t, json.Unmarshal(raw, ev))
+	require.Nil(t, ev.Guild, "pre-condition: guild must be nil before internalEventHandler runs")
+
+	c.internalEventHandler(json.RawMessage(raw), events.EventInteractionCreate, ev)
+
+	require.NotNil(t, ev.Guild, "Guild must be synthesized even when absent from payload")
+	require.NotNil(t, ev.Guild.Members(), "Members() must not be nil on synthesized stub")
+
+	// Member lookup should still work via the global member cache.
+	member, ok := ev.Guild.Members().Get(applicationID)
+	assert.True(t, ok, "bot member must be findable after interaction even with no guild stub")
+	assert.NotNil(t, member)
+}
+
 // ── Manager fetch without cache ───────────────────────────────────────────────
 
 func TestManagerFetch_WorksWithoutCache(t *testing.T) {
