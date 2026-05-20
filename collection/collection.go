@@ -84,16 +84,6 @@ func (c *Collection[K, V]) Get(key K) (V, bool) {
 	return v, ok
 }
 
-// MustGet returns the value for key. Panics if the key is not present.
-// Use Get if you need to handle missing keys.
-func (c *Collection[K, V]) MustGet(key K) V {
-	v, ok := c.items[key]
-	if !ok {
-		panic("collection: key not found")
-	}
-	return v
-}
-
 // GetOr returns the value for key, or fallback if the key is not present.
 func (c *Collection[K, V]) GetOr(key K, fallback V) V {
 	if v, ok := c.items[key]; ok {
