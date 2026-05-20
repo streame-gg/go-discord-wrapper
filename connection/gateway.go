@@ -1693,6 +1693,33 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 	case events.EventInteractionCreate:
 		if ev, ok := event.(*events.InteractionCreateEvent); ok {
 			ev.Hydrate(d, context.Background())
+			// Resolve Guild from cache so handlers get the fully hydrated object
+			// with sub-managers. The payload only carries a partial Guild stub.
+			if ev.GuildID != nil && d.cacheEnabled() {
+				if cached, ok := d.Cache.Guilds().Get(*ev.GuildID); ok {
+					ev.Guild = cached
+				} else if ev.Guild != nil {
+					ev.Guild.Hydrate(d)
+					d.setGuildManagers(ev.Guild)
+				}
+			}
+			// Hydrate the invoking member and the channel if present.
+			if ev.Member != nil {
+				if ev.GuildID != nil {
+					ev.Member.GuildID = *ev.GuildID
+					if ev.Member.User != nil {
+						ev.Member.UserID = ev.Member.User.ID
+					}
+				}
+				ev.Member.Hydrate(d)
+			}
+			if ev.User != nil {
+				ev.User.Hydrate(d)
+			}
+			if ev.Channel != nil {
+				ev.Channel.Hydrate(d)
+				d.setChannelManagers(ev.Channel)
+			}
 		}
 		return true
 
