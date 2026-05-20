@@ -795,7 +795,17 @@ func (d *Client) ListGuildSoundboardSounds(ctx context.Context, guildID discord.
 }
 
 func (d *Client) GetGuildSoundboardSound(ctx context.Context, guildID, soundID discord.Snowflake) (*discord.SoundboardSound, error) {
-	return d.RestClient.GetGuildSoundboardSound(ctx, guildID, soundID)
+	soundboardSounds, err := d.RestClient.GetGuildSoundboardSound(ctx, guildID, soundID)
+	if err == nil {
+		soundboardSounds.Hydrate(d)
+		soundboardSounds.GuildID = &guildID
+
+		if d.Cache != nil {
+			d.Cache.Soundboard().Set(guildID, soundboardSounds)
+		}
+	}
+
+	return soundboardSounds, err
 }
 
 func (d *Client) CreateGuildSoundboardSound(ctx context.Context, guildID discord.Snowflake, params api.CreateGuildSoundboardSoundParams) (*discord.SoundboardSound, error) {
