@@ -14,10 +14,12 @@ import (
 
 func newPUEvent(guildID, userID string, status discord.PresenceStatus, activities []discord.FullActivity, old *discord.Presence) *events.PresenceUpdateEvent {
 	return &events.PresenceUpdateEvent{
-		User:        discord.PartialPresenceUser{ID: snowflake(userID)},
-		GuildID:     snowflake(guildID),
-		Status:      status,
-		Activities:  activities,
+		NewPresence: discord.Presence{
+			User:       discord.PartialPresenceUser{ID: snowflake(userID)},
+			GuildID:    snowflake(guildID),
+			Status:     status,
+			Activities: activities,
+		},
 		OldPresence: old,
 	}
 }
@@ -159,7 +161,7 @@ func TestPresenceSynthetic_ActivityNotFired_NoOldPresence(t *testing.T) {
 func TestPresenceSynthetic_UserProfileUpdateFires(t *testing.T) {
 	name := "newname"
 	ev := newPUEvent("g1", "u1", discord.PresenceStatusOnline, nil, nil)
-	ev.User.Username = &name
+	ev.NewPresence.User.Username = &name
 	result := derivePresenceSyntheticEvents(ev)
 	require.Len(t, result, 1)
 	pu, ok := result[0].(*events.UserProfileUpdateEvent)
@@ -180,7 +182,7 @@ func TestPresenceSynthetic_MultipleEventsOneUpdate(t *testing.T) {
 	ev := newPUEvent("g1", "u1", discord.PresenceStatusOnline,
 		[]discord.FullActivity{activity("Spotify", discord.ActivityTypeListening)},
 		oldPresence(discord.PresenceStatusOffline, nil))
-	ev.User.Username = &name
+	ev.NewPresence.User.Username = &name
 
 	result := derivePresenceSyntheticEvents(ev)
 	typeCount := map[events.EventType]int{}
@@ -276,7 +278,7 @@ func TestPresenceSynthetic_OnUserProfileUpdate_Dispatches(t *testing.T) {
 
 	name := "renamed"
 	ev := newPUEvent("g1", "u1", discord.PresenceStatusOnline, nil, nil)
-	ev.User.Username = &name
+	ev.NewPresence.User.Username = &name
 	for _, syn := range client.deriveSyntheticEvents(ev) {
 		_ = client.enqueueOrDispatch(syn)
 	}

@@ -1067,7 +1067,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal USER_UPDATE event", slog.Any("err", err))
 					return false
 				}
-				u := ev.User
+				u := ev.NewUser
 				u.Hydrate(d)
 				d.Cache.Users().Set(&u)
 			}
@@ -1079,16 +1079,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryPresences) {
-				if old, exists := d.Cache.Presences().Get(ev.GuildID, ev.User.ID); exists {
+				if old, exists := d.Cache.Presences().Get(ev.NewPresence.GuildID, ev.NewPresence.User.ID); exists {
 					ev.OldPresence = old
 				}
-				presence := discord.Presence{
-					User:         ev.User,
-					GuildID:      ev.GuildID,
-					Status:       ev.Status,
-					Activities:   ev.Activities,
-					ClientStatus: ev.ClientStatus,
-				}
+				presence := ev.NewPresence
 				d.Cache.Presences().Set(&presence)
 			}
 		}
@@ -1098,9 +1092,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			if !ok {
 				return false
 			}
-			g := ev.Guild
+			g := ev.NewGuild
 			g.Hydrate(d)
 			d.setGuildManagers(&g)
+			ev.NewGuild = g
 			if d.cacheStoreEnabled(cache.CategoryGuilds) {
 				if old, exists := d.Cache.Guilds().Get(g.ID); exists {
 					ev.OldGuild = old
@@ -1128,14 +1123,11 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				if col := d.Cache.Emojis().GetByGuild(ev.GuildID); col != nil && col.Len() > 0 {
 					ev.OldEmojis = col.Values()
 				}
-				emojis := make([]*discord.Emoji, 0, len(ev.Emojis))
-				for i := range ev.Emojis {
-					emoji := ev.Emojis[i]
+				for _, emoji := range ev.NewEmojis {
 					emoji.GuildID = ev.GuildID
 					emoji.Hydrate(d)
-					emojis = append(emojis, &emoji)
 				}
-				d.Cache.Emojis().SetAll(ev.GuildID, emojis)
+				d.Cache.Emojis().SetAll(ev.GuildID, ev.NewEmojis)
 			}
 		}
 	case events.EventGuildStickersUpdate:
@@ -1148,16 +1140,13 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				if col := d.Cache.Stickers().GetByGuild(ev.GuildID); col != nil && col.Len() > 0 {
 					ev.OldStickers = col.Values()
 				}
-				stickers := make([]*discord.Sticker, 0, len(ev.Stickers))
-				for i := range ev.Stickers {
-					sticker := ev.Stickers[i]
+				for _, sticker := range ev.NewStickers {
 					if sticker.GuildID == nil {
 						sticker.GuildID = &ev.GuildID
 					}
 					sticker.Hydrate(d)
-					stickers = append(stickers, &sticker)
 				}
-				d.Cache.Stickers().SetAll(ev.GuildID, stickers)
+				d.Cache.Stickers().SetAll(ev.GuildID, ev.NewStickers)
 			}
 		}
 	case events.EventGuildMemberAdd:
@@ -1195,38 +1184,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryMembers) {
-				// Copy the cached entry rather than mutating the stored pointer in-place.
-				// Mutating the stored pointer without a lock produces data races with
-				// concurrent Get() callers that read the same pointer.
-				var m discord.GuildMember
-				if existing, exists := d.Cache.Members().Get(ev.GuildID, ev.User.ID); exists {
+				if existing, exists := d.Cache.Members().Get(ev.GuildID, ev.NewMember.UserID); exists {
 					ev.OldMember = existing
-					m = *existing
 				}
-				m.User = &ev.User
-				m.Nick = ev.Nick
-				m.AvatarHash = ev.AvatarHash
-				m.PremiumSince = ev.PremiumSince
-				m.CommunicationDisabledUntil = ev.CommunicationDisabledUntil
-				m.Roles = make([]string, 0, len(ev.Roles))
-				for _, r := range ev.Roles {
-					m.Roles = append(m.Roles, r.String())
-				}
-				if ev.JoinedAt != nil {
-					m.JoinedAt = *ev.JoinedAt
-				}
-				if ev.Deaf != nil {
-					m.Deaf = *ev.Deaf
-				}
-				if ev.Mute != nil {
-					m.Mute = *ev.Mute
-				}
-				if ev.Pending != nil {
-					m.Pending = *ev.Pending
-				}
-				if ev.Flags != nil {
-					m.Flags = *ev.Flags
-				}
+				m := ev.NewMember
 				m.GuildID = ev.GuildID
 				if m.User != nil {
 					m.UserID = m.User.ID
@@ -1256,10 +1217,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryRoles) {
-				if old, exists := d.Cache.Roles().Get(ev.Role.ID); exists {
+				if old, exists := d.Cache.Roles().Get(ev.NewRole.ID); exists {
 					ev.OldRole = old
 				}
-				role := ev.Role
+				role := ev.NewRole
 				role.GuildID = ev.GuildID
 				role.Hydrate(d)
 				d.Cache.Roles().Set(ev.GuildID, &role)
@@ -1326,10 +1287,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
-				if old, exists := d.Cache.ScheduledEvents().Get(ev.ID); exists {
+				if old, exists := d.Cache.ScheduledEvents().Get(ev.NewEvent.ID); exists {
 					ev.OldEvent = old
 				}
-				scheduled := ev.GuildScheduledEvent
+				scheduled := ev.NewEvent
 				scheduled.Hydrate(d)
 				d.Cache.ScheduledEvents().Set(&scheduled)
 			}
@@ -1365,10 +1326,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryStageInstances) {
-				if old, exists := d.Cache.StageInstances().Get(ev.ID); exists {
+				if old, exists := d.Cache.StageInstances().Get(ev.NewInstance.ID); exists {
 					ev.OldInstance = old
 				}
-				instance := ev.StageInstance
+				instance := ev.NewInstance
 				instance.Hydrate(d)
 				d.Cache.StageInstances().Set(&instance)
 			}
@@ -1406,10 +1367,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategorySoundboard) {
-				if old, exists := d.Cache.Soundboard().Get(ev.SoundID); exists {
+				if old, exists := d.Cache.Soundboard().Get(ev.NewSound.SoundID); exists {
 					ev.OldSound = old
 				}
-				sound := ev.SoundboardSound
+				sound := ev.NewSound
 				sound.Hydrate(d)
 				if sound.GuildID != nil {
 					d.Cache.Soundboard().Set(*sound.GuildID, &sound)
@@ -1435,13 +1396,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal GUILD_SOUNDBOARD_SOUNDS_UPDATE event", slog.Any("err", err))
 					return false
 				}
-				sounds := make([]*discord.SoundboardSound, 0, len(ev.SoundboardSounds))
-				for i := range ev.SoundboardSounds {
-					sound := ev.SoundboardSounds[i]
+				for _, sound := range ev.NewSoundboardSounds {
 					sound.Hydrate(d)
-					sounds = append(sounds, &sound)
 				}
-				d.Cache.Soundboard().SetAll(ev.GuildID, sounds)
+				d.Cache.Soundboard().SetAll(ev.GuildID, ev.NewSoundboardSounds)
 			}
 		}
 	case events.EventSoundboardSounds:
@@ -1480,10 +1438,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryChannels) {
-				if old, exists := d.Cache.Channels().Get(ev.ID); exists {
+				if old, exists := d.Cache.Channels().Get(ev.NewChannel.ID); exists {
 					ev.OldChannel = old
 				}
-				ch := ev.Channel
+				ch := ev.NewChannel
 				d.cacheChannel(&ch)
 			}
 		}
@@ -1516,16 +1474,16 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			if d.cacheStoreEnabled(cache.CategoryChannels) {
 				var ch discord.Channel
 				if ev, ok := event.(*events.ThreadUpdateEvent); ok {
-					if old, exists := d.Cache.Channels().Get(ev.ID); exists {
+					if old, exists := d.Cache.Channels().Get(ev.NewThread.ID); exists {
 						ev.OldThread = old
 					}
-					ch = ev.Channel
+					ch = ev.NewThread
 				} else {
 					var fallback events.ThreadUpdateEvent
 					if err := json.Unmarshal(msg, &fallback); err != nil {
 						return false
 					}
-					ch = fallback.Channel
+					ch = fallback.NewThread
 				}
 				d.cacheChannel(&ch)
 				d.trackThread(&ch)
@@ -1616,10 +1574,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryMessages) {
-				if old, exists := d.Cache.Messages().Get(ev.ChannelID, ev.ID); exists {
+				if old, exists := d.Cache.Messages().Get(ev.NewMessage.ChannelID, ev.NewMessage.ID); exists {
 					ev.OldMessage = old
 				}
-				msg := ev.Message
+				msg := ev.NewMessage
 				msg.Hydrate(d)
 				d.Cache.Messages().Update(&msg)
 			}
@@ -1829,13 +1787,13 @@ func (d *Client) hydrateEvent(event events.Event) {
 			ev.Member.Hydrate(d)
 		}
 	case *events.MessageUpdateEvent:
-		ev.Hydrate(d)
+		ev.NewMessage.Hydrate(d)
 	case *events.ChannelCreateEvent:
 		ev.Hydrate(d)
 		d.setChannelManagers(&ev.Channel)
 	case *events.ChannelUpdateEvent:
-		ev.Hydrate(d)
-		d.setChannelManagers(&ev.Channel)
+		ev.NewChannel.Hydrate(d)
+		d.setChannelManagers(&ev.NewChannel)
 	case *events.ChannelDeleteEvent:
 		ev.Hydrate(d)
 		d.setChannelManagers(&ev.Channel)
@@ -1843,8 +1801,8 @@ func (d *Client) hydrateEvent(event events.Event) {
 		ev.Hydrate(d)
 		d.setChannelManagers(&ev.Channel)
 	case *events.ThreadUpdateEvent:
-		ev.Hydrate(d)
-		d.setChannelManagers(&ev.Channel)
+		ev.NewThread.Hydrate(d)
+		d.setChannelManagers(&ev.NewThread)
 	case *events.GuildCreateEvent:
 		switch g := ev.Guild.(type) {
 		case discord.GatewayGuild:
@@ -1857,8 +1815,8 @@ func (d *Client) hydrateEvent(event events.Event) {
 			ev.Guild = g
 		}
 	case *events.GuildUpdateEvent:
-		ev.Hydrate(d)
-		d.setGuildManagers(&ev.Guild)
+		ev.NewGuild.Hydrate(d)
+		d.setGuildManagers(&ev.NewGuild)
 	case *events.GuildMemberAddEvent:
 		ev.GuildMember.GuildID = ev.GuildID
 		if ev.User != nil {
@@ -1869,34 +1827,37 @@ func (d *Client) hydrateEvent(event events.Event) {
 		ev.Role.GuildID = ev.GuildID
 		ev.Role.Hydrate(d)
 	case *events.GuildRoleUpdateEvent:
-		ev.Role.GuildID = ev.GuildID
-		ev.Role.Hydrate(d)
+		ev.NewRole.GuildID = ev.GuildID
+		ev.NewRole.Hydrate(d)
 	case *events.GuildScheduledEventCreateEvent:
 		ev.Hydrate(d)
 	case *events.GuildScheduledEventUpdateEvent:
-		ev.Hydrate(d)
+		ev.NewEvent.Hydrate(d)
 	case *events.GuildScheduledEventDeleteEvent:
 		ev.Hydrate(d)
 	case *events.AutoModerationRuleCreateEvent:
 		ev.Hydrate(d)
 	case *events.AutoModerationRuleUpdateEvent:
-		ev.Hydrate(d)
+		ev.NewRule.Hydrate(d)
 	case *events.AutoModerationRuleDeleteEvent:
 		ev.Hydrate(d)
 	case *events.StageInstanceCreateEvent:
 		ev.Hydrate(d)
 	case *events.StageInstanceUpdateEvent:
-		ev.Hydrate(d)
+		ev.NewInstance.Hydrate(d)
 	case *events.StageInstanceDeleteEvent:
 		ev.Hydrate(d)
 	case *events.UserUpdateEvent:
-		ev.Hydrate(d)
+		ev.NewUser.Hydrate(d)
 	case *events.GuildSoundboardSoundCreateEvent:
 		ev.Hydrate(d)
 	case *events.GuildSoundboardSoundUpdateEvent:
-		ev.Hydrate(d)
+		ev.NewSound.Hydrate(d)
 	case *events.GuildMemberUpdateEvent:
-		ev.User.Hydrate(d)
+		if ev.NewMember.User != nil {
+			ev.NewMember.User.Hydrate(d)
+		}
+		ev.NewMember.Hydrate(d)
 	case *events.GuildMemberRemoveEvent:
 		ev.User.Hydrate(d)
 	case *events.ThreadListSyncEvent:

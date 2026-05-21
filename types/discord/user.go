@@ -1,5 +1,10 @@
 package discord
 
+import (
+	"strconv"
+	"time"
+)
+
 type AvatarDecorationData struct {
 	Asset     string `json:"asset"`
 	ExpiresAt int64  `json:"expires_at"`
@@ -37,6 +42,11 @@ func (u *User) DisplayName() string {
 	}
 
 	return u.Username
+}
+
+func (u *User) CreatedAt() time.Time {
+	id, _ := strconv.ParseInt(u.ID.String(), 10, 64)
+	return time.Unix((id>>22)+Epoch, 0)
 }
 
 // UserConnection represents an external account linked to a Discord user.

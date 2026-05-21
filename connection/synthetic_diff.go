@@ -38,9 +38,9 @@ func deriveGuildEmojiSyntheticEvents(ev *events.GuildEmojisUpdateEvent) []events
 	for _, e := range ev.OldEmojis {
 		oldByID[e.ID] = e
 	}
-	newByID := make(map[discord.Snowflake]*discord.Emoji, len(ev.Emojis))
-	for i := range ev.Emojis {
-		newByID[ev.Emojis[i].ID] = &ev.Emojis[i]
+	newByID := make(map[discord.Snowflake]*discord.Emoji, len(ev.NewEmojis))
+	for _, e := range ev.NewEmojis {
+		newByID[e.ID] = e
 	}
 
 	var result []events.Event
@@ -83,9 +83,9 @@ func deriveGuildStickerSyntheticEvents(ev *events.GuildStickersUpdateEvent) []ev
 	for _, s := range ev.OldStickers {
 		oldByID[s.ID] = s
 	}
-	newByID := make(map[discord.Snowflake]*discord.Sticker, len(ev.Stickers))
-	for i := range ev.Stickers {
-		newByID[ev.Stickers[i].ID] = &ev.Stickers[i]
+	newByID := make(map[discord.Snowflake]*discord.Sticker, len(ev.NewStickers))
+	for _, s := range ev.NewStickers {
+		newByID[s.ID] = s
 	}
 
 	var result []events.Event
@@ -122,15 +122,15 @@ func deriveGuildRoleSyntheticEvents(ev *events.GuildRoleUpdateEvent) []events.Ev
 	if ev.OldRole == nil {
 		return nil
 	}
-	if ev.OldRole.Permissions == ev.Role.Permissions {
+	if ev.OldRole.Permissions == ev.NewRole.Permissions {
 		return nil
 	}
-	role := ev.Role
+	role := ev.NewRole
 	return []events.Event{&events.GuildRolePermissionsChangeEvent{
 		GuildID:        ev.GuildID,
-		RoleID:         ev.Role.ID,
+		RoleID:         ev.NewRole.ID,
 		OldPermissions: ev.OldRole.Permissions,
-		NewPermissions: ev.Role.Permissions,
+		NewPermissions: ev.NewRole.Permissions,
 		OldRole:        ev.OldRole,
 		NewRole:        &role,
 	}}
@@ -144,23 +144,23 @@ func deriveGuildMemberSyntheticEvents(ev *events.GuildMemberUpdateEvent) []event
 		return nil
 	}
 
-	newMember := buildNewMember(ev)
+	newMember := &ev.NewMember
 	var result []events.Event
 
-	// Role diff — compare old []string with new []Snowflake.
+	// Role diff.
 	oldRoles := make(map[string]struct{}, len(ev.OldMember.Roles))
 	for _, r := range ev.OldMember.Roles {
 		oldRoles[r] = struct{}{}
 	}
-	newRoles := make(map[string]struct{}, len(ev.Roles))
-	for _, r := range ev.Roles {
-		newRoles[string(r)] = struct{}{}
+	newRoles := make(map[string]struct{}, len(ev.NewMember.Roles))
+	for _, r := range ev.NewMember.Roles {
+		newRoles[r] = struct{}{}
 	}
 
 	for r := range newRoles {
 		if _, exists := oldRoles[r]; !exists {
 			result = append(result, &events.GuildMemberRoleAddEvent{
-				GuildID: ev.GuildID, UserID: ev.User.ID,
+				GuildID: ev.GuildID, UserID: ev.NewMember.UserID,
 				RoleID:    discord.Snowflake(r),
 				OldMember: ev.OldMember, NewMember: newMember,
 			})
@@ -169,7 +169,7 @@ func deriveGuildMemberSyntheticEvents(ev *events.GuildMemberUpdateEvent) []event
 	for r := range oldRoles {
 		if _, exists := newRoles[r]; !exists {
 			result = append(result, &events.GuildMemberRoleRemoveEvent{
-				GuildID: ev.GuildID, UserID: ev.User.ID,
+				GuildID: ev.GuildID, UserID: ev.NewMember.UserID,
 				RoleID:    discord.Snowflake(r),
 				OldMember: ev.OldMember, NewMember: newMember,
 			})
@@ -177,80 +177,43 @@ func deriveGuildMemberSyntheticEvents(ev *events.GuildMemberUpdateEvent) []event
 	}
 
 	// Nick change.
-	if nickDiffers(ev.OldMember.Nick, ev.Nick) {
+	if nickDiffers(ev.OldMember.Nick, ev.NewMember.Nick) {
 		result = append(result, &events.GuildMemberNickChangeEvent{
-			GuildID: ev.GuildID, UserID: ev.User.ID,
-			OldNick: ev.OldMember.Nick, NewNick: ev.Nick,
+			GuildID: ev.GuildID, UserID: ev.NewMember.UserID,
+			OldNick: ev.OldMember.Nick, NewNick: ev.NewMember.Nick,
 			OldMember: ev.OldMember, NewMember: newMember,
 		})
 	}
 
 	// Timeout applied or extended.
-	if ev.CommunicationDisabledUntil != nil &&
+	if ev.NewMember.CommunicationDisabledUntil != nil &&
 		(ev.OldMember.CommunicationDisabledUntil == nil ||
-			*ev.OldMember.CommunicationDisabledUntil != *ev.CommunicationDisabledUntil) {
+			*ev.OldMember.CommunicationDisabledUntil != *ev.NewMember.CommunicationDisabledUntil) {
 		result = append(result, &events.GuildMemberTimeoutEvent{
-			GuildID: ev.GuildID, UserID: ev.User.ID,
-			CommunicationDisabledUntil: *ev.CommunicationDisabledUntil,
+			GuildID: ev.GuildID, UserID: ev.NewMember.UserID,
+			CommunicationDisabledUntil: *ev.NewMember.CommunicationDisabledUntil,
 			OldMember:                  ev.OldMember, NewMember: newMember,
 		})
 	}
 
 	// Boost start.
-	if ev.PremiumSince != nil && ev.OldMember.PremiumSince == nil {
+	if ev.NewMember.PremiumSince != nil && ev.OldMember.PremiumSince == nil {
 		result = append(result, &events.GuildMemberBoostStartEvent{
-			GuildID: ev.GuildID, UserID: ev.User.ID,
-			PremiumSince: *ev.PremiumSince,
+			GuildID: ev.GuildID, UserID: ev.NewMember.UserID,
+			PremiumSince: *ev.NewMember.PremiumSince,
 			OldMember:    ev.OldMember, NewMember: newMember,
 		})
 	}
 
 	// Boost end.
-	if ev.PremiumSince == nil && ev.OldMember.PremiumSince != nil {
+	if ev.NewMember.PremiumSince == nil && ev.OldMember.PremiumSince != nil {
 		result = append(result, &events.GuildMemberBoostEndEvent{
-			GuildID: ev.GuildID, UserID: ev.User.ID,
+			GuildID: ev.GuildID, UserID: ev.NewMember.UserID,
 			OldMember: ev.OldMember, NewMember: newMember,
 		})
 	}
 
 	return result
-}
-
-// buildNewMember constructs the post-update GuildMember from a GUILD_MEMBER_UPDATE event,
-// starting from OldMember as a base and applying the update fields on top.
-func buildNewMember(ev *events.GuildMemberUpdateEvent) *discord.GuildMember {
-	var m discord.GuildMember
-	if ev.OldMember != nil {
-		m = *ev.OldMember
-	}
-	m.GuildID = ev.GuildID
-	m.User = &ev.User
-	m.UserID = ev.User.ID
-	m.Nick = ev.Nick
-	m.AvatarHash = ev.AvatarHash
-	m.PremiumSince = ev.PremiumSince
-	m.CommunicationDisabledUntil = ev.CommunicationDisabledUntil
-	roles := make([]string, len(ev.Roles))
-	for i, r := range ev.Roles {
-		roles[i] = string(r)
-	}
-	m.Roles = roles
-	if ev.JoinedAt != nil {
-		m.JoinedAt = *ev.JoinedAt
-	}
-	if ev.Deaf != nil {
-		m.Deaf = *ev.Deaf
-	}
-	if ev.Mute != nil {
-		m.Mute = *ev.Mute
-	}
-	if ev.Pending != nil {
-		m.Pending = *ev.Pending
-	}
-	if ev.Flags != nil {
-		m.Flags = *ev.Flags
-	}
-	return &m
 }
 
 func nickDiffers(a, b *string) bool {
@@ -267,44 +230,38 @@ func nickDiffers(a, b *string) bool {
 // PresenceUpdateEvent. Status transitions require OldPresence (cache hit);
 // UserProfileUpdate fires whenever ev.User carries any non-ID field.
 func derivePresenceSyntheticEvents(ev *events.PresenceUpdateEvent) []events.Event {
-	newPresence := &discord.Presence{
-		User:         ev.User,
-		GuildID:      ev.GuildID,
-		Status:       ev.Status,
-		Activities:   ev.Activities,
-		ClientStatus: ev.ClientStatus,
-	}
+	newPresence := &ev.NewPresence
 
 	var result []events.Event
 
 	// Status transitions — only meaningful when we have an old baseline.
 	if ev.OldPresence != nil {
 		wasOffline := ev.OldPresence.Status == discord.PresenceStatusOffline
-		isOffline := ev.Status == discord.PresenceStatusOffline
+		isOffline := ev.NewPresence.Status == discord.PresenceStatusOffline
 
 		if wasOffline && !isOffline {
 			result = append(result, &events.UserOnlineEvent{
-				GuildID:     ev.GuildID,
-				UserID:      ev.User.ID,
-				Status:      ev.Status,
+				GuildID:     ev.NewPresence.GuildID,
+				UserID:      ev.NewPresence.User.ID,
+				Status:      ev.NewPresence.Status,
 				OldPresence: ev.OldPresence,
 				NewPresence: newPresence,
 			})
 		} else if !wasOffline && isOffline {
 			result = append(result, &events.UserOfflineEvent{
-				GuildID:     ev.GuildID,
-				UserID:      ev.User.ID,
+				GuildID:     ev.NewPresence.GuildID,
+				UserID:      ev.NewPresence.User.ID,
 				OldPresence: ev.OldPresence,
 				NewPresence: newPresence,
 			})
 		}
 
-		if activitiesChanged(ev.OldPresence.Activities, ev.Activities) {
+		if activitiesChanged(ev.OldPresence.Activities, ev.NewPresence.Activities) {
 			result = append(result, &events.UserActivityChangeEvent{
-				GuildID:       ev.GuildID,
-				UserID:        ev.User.ID,
+				GuildID:       ev.NewPresence.GuildID,
+				UserID:        ev.NewPresence.User.ID,
 				OldActivities: ev.OldPresence.Activities,
-				NewActivities: ev.Activities,
+				NewActivities: ev.NewPresence.Activities,
 				OldPresence:   ev.OldPresence,
 				NewPresence:   newPresence,
 			})
@@ -312,11 +269,11 @@ func derivePresenceSyntheticEvents(ev *events.PresenceUpdateEvent) []events.Even
 	}
 
 	// Profile update — Discord only includes changed fields in the partial user.
-	if hasProfileFields(ev.User) {
+	if hasProfileFields(ev.NewPresence.User) {
 		result = append(result, &events.UserProfileUpdateEvent{
-			GuildID:     ev.GuildID,
-			UserID:      ev.User.ID,
-			User:        ev.User,
+			GuildID:     ev.NewPresence.GuildID,
+			UserID:      ev.NewPresence.User.ID,
+			User:        ev.NewPresence.User,
 			OldPresence: ev.OldPresence,
 			NewPresence: newPresence,
 		})

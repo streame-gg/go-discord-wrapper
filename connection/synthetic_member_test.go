@@ -15,14 +15,13 @@ import (
 func strPtr(s string) *string { return &s }
 
 func newGMUEvent(guildID, userID string, newRoles []string, oldMember *discord.GuildMember) *events.GuildMemberUpdateEvent {
-	roles := make([]discord.Snowflake, len(newRoles))
-	for i, r := range newRoles {
-		roles[i] = snowflake(r)
-	}
 	return &events.GuildMemberUpdateEvent{
-		GuildID:   snowflake(guildID),
-		User:      discord.User{ID: snowflake(userID)},
-		Roles:     roles,
+		GuildID: snowflake(guildID),
+		NewMember: discord.GuildMember{
+			UserID: snowflake(userID),
+			User:   &discord.User{ID: snowflake(userID)},
+			Roles:  newRoles,
+		},
 		OldMember: oldMember,
 	}
 }
@@ -62,8 +61,7 @@ func TestMemberSynthetic_RoleRemoveFires(t *testing.T) {
 
 func TestMemberSynthetic_RoleNotFired_Unchanged(t *testing.T) {
 	ev := newGMUEvent("g1", "u1", []string{"r1", "r2"}, oldMember([]string{"r1", "r2"}))
-	result := deriveGuildMemberSyntheticEvents(ev)
-	assert.Empty(t, result)
+	assert.Empty(t, deriveGuildMemberSyntheticEvents(ev))
 }
 
 func TestMemberSynthetic_MultipleRolesAddedAndRemoved(t *testing.T) {
@@ -82,7 +80,7 @@ func TestMemberSynthetic_MultipleRolesAddedAndRemoved(t *testing.T) {
 
 func TestMemberSynthetic_NickChangeFires_SetNew(t *testing.T) {
 	ev := newGMUEvent("g1", "u1", []string{}, oldMember([]string{}))
-	ev.Nick = strPtr("newnick")
+	ev.NewMember.Nick = strPtr("newnick")
 	result := deriveGuildMemberSyntheticEvents(ev)
 	require.Len(t, result, 1)
 	nc, ok := result[0].(*events.GuildMemberNickChangeEvent)
@@ -95,7 +93,6 @@ func TestMemberSynthetic_NickChangeFires_Cleared(t *testing.T) {
 	om := oldMember([]string{})
 	om.Nick = strPtr("oldnick")
 	ev := newGMUEvent("g1", "u1", []string{}, om)
-	ev.Nick = nil
 	result := deriveGuildMemberSyntheticEvents(ev)
 	require.Len(t, result, 1)
 	nc, ok := result[0].(*events.GuildMemberNickChangeEvent)
@@ -108,7 +105,7 @@ func TestMemberSynthetic_NickChangeFires_Modified(t *testing.T) {
 	om := oldMember([]string{})
 	om.Nick = strPtr("old")
 	ev := newGMUEvent("g1", "u1", []string{}, om)
-	ev.Nick = strPtr("new")
+	ev.NewMember.Nick = strPtr("new")
 	result := deriveGuildMemberSyntheticEvents(ev)
 	require.Len(t, result, 1)
 	_, ok := result[0].(*events.GuildMemberNickChangeEvent)
@@ -117,7 +114,6 @@ func TestMemberSynthetic_NickChangeFires_Modified(t *testing.T) {
 
 func TestMemberSynthetic_NickNotFired_BothNil(t *testing.T) {
 	ev := newGMUEvent("g1", "u1", []string{}, oldMember([]string{}))
-	ev.Nick = nil
 	assert.Empty(t, deriveGuildMemberSyntheticEvents(ev))
 }
 
@@ -125,13 +121,13 @@ func TestMemberSynthetic_NickNotFired_SameValue(t *testing.T) {
 	om := oldMember([]string{})
 	om.Nick = strPtr("same")
 	ev := newGMUEvent("g1", "u1", []string{}, om)
-	ev.Nick = strPtr("same")
+	ev.NewMember.Nick = strPtr("same")
 	assert.Empty(t, deriveGuildMemberSyntheticEvents(ev))
 }
 
 func TestMemberSynthetic_TimeoutFires(t *testing.T) {
 	ev := newGMUEvent("g1", "u1", []string{}, oldMember([]string{}))
-	ev.CommunicationDisabledUntil = strPtr("2030-01-01T00:00:00Z")
+	ev.NewMember.CommunicationDisabledUntil = strPtr("2030-01-01T00:00:00Z")
 	result := deriveGuildMemberSyntheticEvents(ev)
 	require.Len(t, result, 1)
 	to, ok := result[0].(*events.GuildMemberTimeoutEvent)
@@ -143,7 +139,6 @@ func TestMemberSynthetic_TimeoutNotFired_Cleared(t *testing.T) {
 	om := oldMember([]string{})
 	om.CommunicationDisabledUntil = strPtr("2030-01-01T00:00:00Z")
 	ev := newGMUEvent("g1", "u1", []string{}, om)
-	ev.CommunicationDisabledUntil = nil
 	assert.Empty(t, deriveGuildMemberSyntheticEvents(ev))
 }
 
@@ -151,14 +146,14 @@ func TestMemberSynthetic_TimeoutNotFired_Unchanged(t *testing.T) {
 	om := oldMember([]string{})
 	om.CommunicationDisabledUntil = strPtr("2030-01-01T00:00:00Z")
 	ev := newGMUEvent("g1", "u1", []string{}, om)
-	ev.CommunicationDisabledUntil = strPtr("2030-01-01T00:00:00Z")
+	ev.NewMember.CommunicationDisabledUntil = strPtr("2030-01-01T00:00:00Z")
 	assert.Empty(t, deriveGuildMemberSyntheticEvents(ev))
 }
 
 func TestMemberSynthetic_BoostStartFires(t *testing.T) {
 	now := time.Now()
 	ev := newGMUEvent("g1", "u1", []string{}, oldMember([]string{}))
-	ev.PremiumSince = &now
+	ev.NewMember.PremiumSince = &now
 	result := deriveGuildMemberSyntheticEvents(ev)
 	require.Len(t, result, 1)
 	bs, ok := result[0].(*events.GuildMemberBoostStartEvent)
@@ -171,7 +166,6 @@ func TestMemberSynthetic_BoostEndFires(t *testing.T) {
 	om := oldMember([]string{})
 	om.PremiumSince = &then
 	ev := newGMUEvent("g1", "u1", []string{}, om)
-	ev.PremiumSince = nil
 	result := deriveGuildMemberSyntheticEvents(ev)
 	require.Len(t, result, 1)
 	_, ok := result[0].(*events.GuildMemberBoostEndEvent)
@@ -184,7 +178,7 @@ func TestMemberSynthetic_BoostNotFired_StillBoosting(t *testing.T) {
 	om.PremiumSince = &then
 	ev := newGMUEvent("g1", "u1", []string{}, om)
 	now := time.Now()
-	ev.PremiumSince = &now // still boosting, just refreshed
+	ev.NewMember.PremiumSince = &now // still boosting, just refreshed
 	assert.Empty(t, deriveGuildMemberSyntheticEvents(ev))
 }
 
@@ -193,7 +187,7 @@ func TestMemberSynthetic_MultipleEventsPerUpdate(t *testing.T) {
 	om := oldMember([]string{"r1"})
 	om.Nick = strPtr("old")
 	ev := newGMUEvent("g1", "u1", []string{"r1", "r2"}, om)
-	ev.Nick = strPtr("new")
+	ev.NewMember.Nick = strPtr("new")
 
 	result := deriveGuildMemberSyntheticEvents(ev)
 	require.Len(t, result, 2)
@@ -210,7 +204,7 @@ func TestMemberSynthetic_NewMemberReflectsUpdate(t *testing.T) {
 	om := oldMember([]string{"r1"})
 	om.Nick = strPtr("oldnick")
 	ev := newGMUEvent("g1", "u1", []string{"r1", "r2"}, om)
-	ev.Nick = strPtr("newnick")
+	ev.NewMember.Nick = strPtr("newnick")
 
 	result := deriveGuildMemberSyntheticEvents(ev)
 	for _, e := range result {
@@ -244,8 +238,11 @@ func TestMemberSynthetic_OnGuildMemberRoleAdd_Dispatches(t *testing.T) {
 
 	ev := &events.GuildMemberUpdateEvent{
 		GuildID: snowflake("g1"),
-		User:    discord.User{ID: snowflake("u1")},
-		Roles:   []discord.Snowflake{snowflake("r1"), snowflake("r2")},
+		NewMember: discord.GuildMember{
+			UserID: snowflake("u1"),
+			User:   &discord.User{ID: snowflake("u1")},
+			Roles:  []string{"r1", "r2"},
+		},
 		OldMember: &discord.GuildMember{
 			Roles: []string{"r1"},
 		},
@@ -277,10 +274,13 @@ func TestMemberSynthetic_OnGuildMemberNickChange_Dispatches(t *testing.T) {
 	om := &discord.GuildMember{Roles: []string{}}
 	om.Nick = strPtr("oldname")
 	ev := &events.GuildMemberUpdateEvent{
-		GuildID:   snowflake("g1"),
-		User:      discord.User{ID: snowflake("u1")},
-		Roles:     []discord.Snowflake{},
-		Nick:      strPtr("coolname"),
+		GuildID: snowflake("g1"),
+		NewMember: discord.GuildMember{
+			UserID: snowflake("u1"),
+			User:   &discord.User{ID: snowflake("u1")},
+			Roles:  []string{},
+			Nick:   strPtr("coolname"),
+		},
 		OldMember: om,
 	}
 	for _, syn := range client.deriveSyntheticEvents(ev) {

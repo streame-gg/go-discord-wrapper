@@ -181,10 +181,10 @@ func TestGuildUpdatePreservesSubManagers(t *testing.T) {
 	// Construct and dispatch a GUILD_UPDATE event. The handler requires a
 	// pre-typed *events.GuildUpdateEvent (not just raw JSON).
 	updateEv := &events.GuildUpdateEvent{}
-	updateEv.Guild.ID = guildID
-	updateEv.Guild.Name = "Updated Guild"
+	updateEv.NewGuild.ID = guildID
+	updateEv.NewGuild.Name = "Updated Guild"
 
-	rawUpdate, err := json.Marshal(updateEv.Guild)
+	rawUpdate, err := json.Marshal(updateEv.NewGuild)
 	require.NoError(t, err)
 	c.internalEventHandler(json.RawMessage(rawUpdate), events.EventGuildUpdate, updateEv)
 
@@ -529,9 +529,9 @@ func TestStickerHydration_GuildIDSet(t *testing.T) {
 func TestHydrateEvent_GuildMemberUpdate_UserHydrated(t *testing.T) {
 	c := newClientWithCache(t)
 	ev := &events.GuildMemberUpdateEvent{}
-	ev.User.ID = "user-update-1"
+	ev.NewMember.User = &discord.User{ID: "user-update-1"}
 	c.hydrateEvent(ev)
-	assert.True(t, ev.User.IsHydrated(), "GuildMemberUpdate: ev.User must be hydrated after hydrateEvent")
+	assert.True(t, ev.NewMember.User.IsHydrated(), "GuildMemberUpdate: ev.NewMember.User must be hydrated after hydrateEvent")
 }
 
 func TestHydrateEvent_GuildMemberRemove_UserHydrated(t *testing.T) {
@@ -572,10 +572,10 @@ func TestHydrateEvent_ChannelCreate_HasSubManagers(t *testing.T) {
 func TestHydrateEvent_ChannelUpdate_HasSubManagers(t *testing.T) {
 	c := newClientWithCache(t)
 	ev := &events.ChannelUpdateEvent{}
-	ev.Channel.ID = "ch-update-1"
+	ev.NewChannel.ID = "ch-update-1"
 	c.hydrateEvent(ev)
-	assert.NotNil(t, ev.Channel.Messages(), "ChannelUpdate: Messages() must not be nil after hydrateEvent")
-	assert.NotNil(t, ev.Channel.Threads(), "ChannelUpdate: Threads() must not be nil after hydrateEvent")
+	assert.NotNil(t, ev.NewChannel.Messages(), "ChannelUpdate: Messages() must not be nil after hydrateEvent")
+	assert.NotNil(t, ev.NewChannel.Threads(), "ChannelUpdate: Threads() must not be nil after hydrateEvent")
 }
 
 func TestHydrateEvent_ChannelDelete_HasSubManagers(t *testing.T) {
@@ -599,10 +599,10 @@ func TestHydrateEvent_ThreadCreate_HasSubManagers(t *testing.T) {
 func TestHydrateEvent_ThreadUpdate_HasSubManagers(t *testing.T) {
 	c := newClientWithCache(t)
 	ev := &events.ThreadUpdateEvent{}
-	ev.Channel.ID = "thread-update-1"
+	ev.NewThread.ID = "thread-update-1"
 	c.hydrateEvent(ev)
-	assert.NotNil(t, ev.Channel.Messages(), "ThreadUpdate: Messages() must not be nil after hydrateEvent")
-	assert.NotNil(t, ev.Channel.Threads(), "ThreadUpdate: Threads() must not be nil after hydrateEvent")
+	assert.NotNil(t, ev.NewThread.Messages(), "ThreadUpdate: Messages() must not be nil after hydrateEvent")
+	assert.NotNil(t, ev.NewThread.Threads(), "ThreadUpdate: Threads() must not be nil after hydrateEvent")
 }
 
 func TestManagerFetch_WorksWithoutCache(t *testing.T) {

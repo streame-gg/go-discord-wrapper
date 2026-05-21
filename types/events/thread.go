@@ -1,6 +1,8 @@
 package events
 
 import (
+	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -10,8 +12,20 @@ type ThreadCreateEvent struct {
 }
 
 type ThreadUpdateEvent struct {
-	discord.Channel
-	OldThread *discord.Channel `json:"old_thread,omitempty"`
+	NewThread discord.Channel  `json:"-"`
+	OldThread *discord.Channel `json:"-"`
+}
+
+func (e *ThreadUpdateEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.NewThread)
+}
+
+func (e ThreadUpdateEvent) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		discord.Channel
+		OldThread *discord.Channel `json:"old_thread,omitempty"`
+	}
+	return json.Marshal(wire{e.NewThread, e.OldThread})
 }
 
 type ThreadDeleteEvent struct {
@@ -30,8 +44,30 @@ type ThreadListSyncEvent struct {
 
 // ThreadMemberUpdateEvent is dispatched when the current user's thread member is updated.
 type ThreadMemberUpdateEvent struct {
-	discord.ThreadMember
-	GuildID discord.Snowflake `json:"guild_id"`
+	NewMember discord.ThreadMember `json:"-"`
+	GuildID   discord.Snowflake    `json:"-"`
+}
+
+func (e *ThreadMemberUpdateEvent) UnmarshalJSON(data []byte) error {
+	type wire struct {
+		GuildID discord.Snowflake `json:"guild_id"`
+		discord.ThreadMember
+	}
+	var w wire
+	if err := json.Unmarshal(data, &w); err != nil {
+		return err
+	}
+	e.GuildID = w.GuildID
+	e.NewMember = w.ThreadMember
+	return nil
+}
+
+func (e ThreadMemberUpdateEvent) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		discord.ThreadMember
+		GuildID discord.Snowflake `json:"guild_id"`
+	}
+	return json.Marshal(wire{e.NewMember, e.GuildID})
 }
 
 // ThreadMembersUpdateEvent is dispatched when thread membership for any user changes.

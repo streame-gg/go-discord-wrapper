@@ -1,6 +1,8 @@
 package events
 
 import (
+	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -9,9 +11,21 @@ type AutoModerationRuleCreateEvent struct {
 }
 
 type AutoModerationRuleUpdateEvent struct {
-	discord.AutoModerationRule
+	NewRule discord.AutoModerationRule `json:"-"`
 	// OldRule is nil when the rule was not previously cached (no automod rule store exists).
-	OldRule *discord.AutoModerationRule `json:"old_rule,omitempty"`
+	OldRule *discord.AutoModerationRule `json:"-"`
+}
+
+func (e *AutoModerationRuleUpdateEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.NewRule)
+}
+
+func (e AutoModerationRuleUpdateEvent) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		discord.AutoModerationRule
+		OldRule *discord.AutoModerationRule `json:"old_rule,omitempty"`
+	}
+	return json.Marshal(wire{e.NewRule, e.OldRule})
 }
 
 type AutoModerationRuleDeleteEvent struct {

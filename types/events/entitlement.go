@@ -1,13 +1,25 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/discord"
+import (
+	"encoding/json"
+
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type EntitlementCreateEvent struct {
 	discord.Entitlement
 }
 
 type EntitlementUpdateEvent struct {
-	discord.Entitlement
+	NewEntitlement discord.Entitlement `json:"-"`
+}
+
+func (e *EntitlementUpdateEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.NewEntitlement)
+}
+
+func (e EntitlementUpdateEvent) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&e.NewEntitlement)
 }
 
 type EntitlementDeleteEvent struct {

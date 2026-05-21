@@ -1,6 +1,8 @@
 package events
 
 import (
+	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -9,8 +11,20 @@ type GuildScheduledEventCreateEvent struct {
 }
 
 type GuildScheduledEventUpdateEvent struct {
-	discord.GuildScheduledEvent
-	OldEvent *discord.GuildScheduledEvent `json:"old_event,omitempty"`
+	NewEvent discord.GuildScheduledEvent  `json:"-"`
+	OldEvent *discord.GuildScheduledEvent `json:"-"`
+}
+
+func (e *GuildScheduledEventUpdateEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.NewEvent)
+}
+
+func (e GuildScheduledEventUpdateEvent) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		discord.GuildScheduledEvent
+		OldEvent *discord.GuildScheduledEvent `json:"old_event,omitempty"`
+	}
+	return json.Marshal(wire{e.NewEvent, e.OldEvent})
 }
 
 type GuildScheduledEventDeleteEvent struct {

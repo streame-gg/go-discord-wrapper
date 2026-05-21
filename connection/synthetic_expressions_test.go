@@ -47,7 +47,7 @@ func stickerPtrs(stickers []discord.Sticker) []*discord.Sticker {
 func newEmojiUpdateEvent(guildID string, newEmojis []discord.Emoji, oldEmojis []*discord.Emoji) *events.GuildEmojisUpdateEvent {
 	return &events.GuildEmojisUpdateEvent{
 		GuildID:   snowflake(guildID),
-		Emojis:    newEmojis,
+		NewEmojis: emojiPtrs(newEmojis),
 		OldEmojis: oldEmojis,
 	}
 }
@@ -55,7 +55,7 @@ func newEmojiUpdateEvent(guildID string, newEmojis []discord.Emoji, oldEmojis []
 func newStickerUpdateEvent(guildID string, newStickers []discord.Sticker, oldStickers []*discord.Sticker) *events.GuildStickersUpdateEvent {
 	return &events.GuildStickersUpdateEvent{
 		GuildID:     snowflake(guildID),
-		Stickers:    newStickers,
+		NewStickers: stickerPtrs(newStickers),
 		OldStickers: oldStickers,
 	}
 }
@@ -192,7 +192,7 @@ func TestRolePermSynthetic_NoOldRole_ReturnsNil(t *testing.T) {
 	role := makeRole("r1", "8")
 	ev := &events.GuildRoleUpdateEvent{
 		GuildID: snowflake("g1"),
-		Role:    role,
+		NewRole: role,
 		OldRole: nil,
 	}
 	assert.Nil(t, deriveGuildRoleSyntheticEvents(ev))
@@ -203,7 +203,7 @@ func TestRolePermSynthetic_PermissionsChangeFires(t *testing.T) {
 	newRole := makeRole("r1", "8")
 	ev := &events.GuildRoleUpdateEvent{
 		GuildID: snowflake("g1"),
-		Role:    newRole,
+		NewRole: newRole,
 		OldRole: &oldRole,
 	}
 	result := deriveGuildRoleSyntheticEvents(ev)
@@ -223,7 +223,7 @@ func TestRolePermSynthetic_NotFired_PermissionsUnchanged(t *testing.T) {
 	old := makeRole("r1", "8")
 	ev := &events.GuildRoleUpdateEvent{
 		GuildID: snowflake("g1"),
-		Role:    role,
+		NewRole: role,
 		OldRole: &old,
 	}
 	assert.Empty(t, deriveGuildRoleSyntheticEvents(ev))
@@ -234,7 +234,7 @@ func TestRolePermSynthetic_NotFired_NameChangeOnly(t *testing.T) {
 	newRole := discord.Role{ID: snowflake("r1"), Name: "new name", Permissions: "8"}
 	ev := &events.GuildRoleUpdateEvent{
 		GuildID: snowflake("g1"),
-		Role:    newRole,
+		NewRole: newRole,
 		OldRole: &oldRole,
 	}
 	assert.Empty(t, deriveGuildRoleSyntheticEvents(ev))
@@ -287,7 +287,7 @@ func TestExpressionSynthetic_OnGuildRolePermissionsChange_Dispatches(t *testing.
 	newRole := makeRole("r1", "8")
 	ev := &events.GuildRoleUpdateEvent{
 		GuildID: snowflake("g1"),
-		Role:    newRole,
+		NewRole: newRole,
 		OldRole: &oldRole,
 	}
 	for _, syn := range client.deriveSyntheticEvents(ev) {

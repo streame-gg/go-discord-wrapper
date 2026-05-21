@@ -1,6 +1,8 @@
 package events
 
 import (
+	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -11,8 +13,20 @@ type GuildSoundboardSoundCreateEvent struct {
 
 // GuildSoundboardSoundUpdateEvent is dispatched when a soundboard sound is updated.
 type GuildSoundboardSoundUpdateEvent struct {
-	discord.SoundboardSound
-	OldSound *discord.SoundboardSound `json:"old_sound,omitempty"`
+	NewSound discord.SoundboardSound  `json:"-"`
+	OldSound *discord.SoundboardSound `json:"-"`
+}
+
+func (e *GuildSoundboardSoundUpdateEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.NewSound)
+}
+
+func (e GuildSoundboardSoundUpdateEvent) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		discord.SoundboardSound
+		OldSound *discord.SoundboardSound `json:"old_sound,omitempty"`
+	}
+	return json.Marshal(wire{e.NewSound, e.OldSound})
 }
 
 // GuildSoundboardSoundDeleteEvent is dispatched when a soundboard sound is deleted.
@@ -23,8 +37,30 @@ type GuildSoundboardSoundDeleteEvent struct {
 
 // GuildSoundboardSoundsUpdateEvent is dispatched when multiple guild soundboard sounds are updated.
 type GuildSoundboardSoundsUpdateEvent struct {
-	GuildID          discord.Snowflake         `json:"guild_id"`
-	SoundboardSounds []discord.SoundboardSound `json:"soundboard_sounds"`
+	GuildID             discord.Snowflake          `json:"-"`
+	NewSoundboardSounds []*discord.SoundboardSound `json:"-"`
+}
+
+func (e *GuildSoundboardSoundsUpdateEvent) UnmarshalJSON(data []byte) error {
+	type wire struct {
+		GuildID          discord.Snowflake          `json:"guild_id"`
+		SoundboardSounds []*discord.SoundboardSound `json:"soundboard_sounds"`
+	}
+	var w wire
+	if err := json.Unmarshal(data, &w); err != nil {
+		return err
+	}
+	e.GuildID = w.GuildID
+	e.NewSoundboardSounds = w.SoundboardSounds
+	return nil
+}
+
+func (e GuildSoundboardSoundsUpdateEvent) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		GuildID          discord.Snowflake          `json:"guild_id"`
+		SoundboardSounds []*discord.SoundboardSound `json:"soundboard_sounds"`
+	}
+	return json.Marshal(wire{e.GuildID, e.NewSoundboardSounds})
 }
 
 func init() {

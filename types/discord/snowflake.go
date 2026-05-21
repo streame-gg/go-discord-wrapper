@@ -5,6 +5,8 @@ import (
 	"strconv"
 )
 
+const Epoch int64 = 1420070400000
+
 type Snowflake string
 
 func (s Snowflake) String() string {
