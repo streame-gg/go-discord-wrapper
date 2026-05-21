@@ -51,7 +51,7 @@ func (s *Sticker) Edit(ctx context.Context, opts StickerEditOptions) (*Sticker, 
 	if err != nil {
 		return nil, err
 	}
-	if s.GuildID == nil || *s.GuildID == "" {
+	if s.GuildID == nil || s.GuildID.IsEmpty() {
 		return nil, errStickerNoGuildID
 	}
 	return c.ModifyGuildSticker(ctx, *s.GuildID, s.ID, opts)
@@ -63,7 +63,7 @@ func (s *Sticker) Delete(ctx context.Context, reason *string) error {
 	if err != nil {
 		return err
 	}
-	if s.GuildID == nil || *s.GuildID == "" {
+	if s.GuildID == nil || s.GuildID.IsEmpty() {
 		return errStickerNoGuildID
 	}
 	return c.DeleteGuildSticker(ctx, *s.GuildID, s.ID, reason)

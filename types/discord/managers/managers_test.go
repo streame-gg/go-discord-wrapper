@@ -2,6 +2,7 @@ package managers_test
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	"github.com/streame-gg/go-discord-wrapper/collection"
@@ -215,223 +216,223 @@ func (s *stubEntityClient) GetUser(ctx context.Context, userID discord.Snowflake
 }
 
 // Unused but required by EntityClient interface.
-func (s *stubEntityClient) EditMessage(ctx context.Context, channelID, messageID discord.Snowflake, opts discord.MessageEditOptions) (*discord.Message, error) {
+func (s *stubEntityClient) EditMessage(_ context.Context, _, _ discord.Snowflake, _ discord.MessageEditOptions) (*discord.Message, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) DeleteMessage(ctx context.Context, channelID, messageID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) DeleteMessage(_ context.Context, _, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) CreateMessage(ctx context.Context, channelID discord.Snowflake, opts discord.MessageCreateOptions) (*discord.Message, error) {
+func (s *stubEntityClient) CreateMessage(_ context.Context, _ discord.Snowflake, _ discord.MessageCreateOptions) (*discord.Message, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) PinMessage(ctx context.Context, channelID, messageID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) PinMessage(_ context.Context, _, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) UnpinMessage(ctx context.Context, channelID, messageID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) UnpinMessage(_ context.Context, _, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) CrosspostMessage(ctx context.Context, channelID, messageID discord.Snowflake) (*discord.Message, error) {
+func (s *stubEntityClient) CrosspostMessage(_ context.Context, _, _ discord.Snowflake) (*discord.Message, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) AddReaction(ctx context.Context, channelID, messageID discord.Snowflake, emoji string) error {
+func (s *stubEntityClient) AddReaction(_ context.Context, _, _ discord.Snowflake, _ string) error {
 	return nil
 }
-func (s *stubEntityClient) ModifyChannel(ctx context.Context, channelID discord.Snowflake, opts discord.ChannelEditOptions) (*discord.Channel, error) {
+func (s *stubEntityClient) ModifyChannel(_ context.Context, _ discord.Snowflake, _ discord.ChannelEditOptions) (*discord.Channel, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) DeleteChannel(ctx context.Context, channelID discord.Snowflake, reason *string) (*discord.Channel, error) {
+func (s *stubEntityClient) DeleteChannel(_ context.Context, _ discord.Snowflake, _ *string) (*discord.Channel, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) BulkDeleteMessages(ctx context.Context, channelID discord.Snowflake, messageIDs []discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) BulkDeleteMessages(_ context.Context, _ discord.Snowflake, _ []discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) GetChannelMessages(ctx context.Context, channelID discord.Snowflake, opts discord.FetchMessagesOptions) ([]*discord.Message, error) {
+func (s *stubEntityClient) GetChannelMessages(_ context.Context, _ discord.Snowflake, _ discord.FetchMessagesOptions) ([]*discord.Message, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) TriggerTypingIndicator(ctx context.Context, channelID discord.Snowflake) error {
+func (s *stubEntityClient) TriggerTypingIndicator(_ context.Context, _ discord.Snowflake) error {
 	return nil
 }
-func (s *stubEntityClient) SetVoiceChannelStatus(ctx context.Context, channelID discord.Snowflake, status *string) error {
+func (s *stubEntityClient) SetVoiceChannelStatus(_ context.Context, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) CreateChannelInvite(ctx context.Context, channelID discord.Snowflake, opts discord.InviteCreateOptions) (*discord.Invite, error) {
+func (s *stubEntityClient) CreateChannelInvite(_ context.Context, _ discord.Snowflake, _ discord.InviteCreateOptions) (*discord.Invite, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ModifyGuild(ctx context.Context, guildID discord.Snowflake, opts discord.GuildEditOptions) (*discord.Guild, error) {
+func (s *stubEntityClient) ModifyGuild(_ context.Context, _ discord.Snowflake, _ discord.GuildEditOptions) (*discord.Guild, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) LeaveGuild(ctx context.Context, guildID discord.Snowflake) error {
+func (s *stubEntityClient) LeaveGuild(_ context.Context, _ discord.Snowflake) error {
 	return nil
 }
-func (s *stubEntityClient) ListGuildMembers(ctx context.Context, guildID discord.Snowflake, opts discord.FetchMembersOptions) ([]*discord.GuildMember, error) {
+func (s *stubEntityClient) ListGuildMembers(_ context.Context, _ discord.Snowflake, _ discord.FetchMembersOptions) ([]*discord.GuildMember, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) CreateGuildRole(ctx context.Context, guildID discord.Snowflake, opts discord.RoleCreateOptions) (*discord.Role, error) {
+func (s *stubEntityClient) CreateGuildRole(_ context.Context, _ discord.Snowflake, _ discord.RoleCreateOptions) (*discord.Role, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) CreateGuildChannel(ctx context.Context, guildID discord.Snowflake, opts discord.ChannelCreateOptions) (*discord.Channel, error) {
+func (s *stubEntityClient) CreateGuildChannel(_ context.Context, _ discord.Snowflake, _ discord.ChannelCreateOptions) (*discord.Channel, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) CreateGuildEmoji(ctx context.Context, guildID discord.Snowflake, opts discord.EmojiCreateOptions) (*discord.Emoji, error) {
+func (s *stubEntityClient) CreateGuildEmoji(_ context.Context, _ discord.Snowflake, _ discord.EmojiCreateOptions) (*discord.Emoji, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) CreateGuildSticker(ctx context.Context, guildID discord.Snowflake, opts discord.StickerCreateOptions) (*discord.Sticker, error) {
+func (s *stubEntityClient) CreateGuildSticker(_ context.Context, _ discord.Snowflake, _ discord.StickerCreateOptions) (*discord.Sticker, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildAuditLog(ctx context.Context, guildID discord.Snowflake, opts discord.AuditLogOptions) (*discord.AuditLog, error) {
+func (s *stubEntityClient) GetGuildAuditLog(_ context.Context, _ discord.Snowflake, _ discord.AuditLogOptions) (*discord.AuditLog, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) CreateGuildScheduledEvent(ctx context.Context, guildID discord.Snowflake, opts discord.ScheduledEventCreateOptions) (*discord.GuildScheduledEvent, error) {
+func (s *stubEntityClient) CreateGuildScheduledEvent(_ context.Context, _ discord.Snowflake, _ discord.ScheduledEventCreateOptions) (*discord.GuildScheduledEvent, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ModifyGuildMember(ctx context.Context, guildID, userID discord.Snowflake, opts discord.MemberEditOptions) (*discord.GuildMember, error) {
+func (s *stubEntityClient) ModifyGuildMember(_ context.Context, _, _ discord.Snowflake, _ discord.MemberEditOptions) (*discord.GuildMember, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) KickGuildMember(ctx context.Context, guildID, userID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) KickGuildMember(_ context.Context, _, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) CreateGuildBan(ctx context.Context, guildID, userID discord.Snowflake, opts discord.BanOptions) error {
+func (s *stubEntityClient) CreateGuildBan(_ context.Context, _, _ discord.Snowflake, _ discord.BanOptions) error {
 	return nil
 }
-func (s *stubEntityClient) AddGuildMemberRole(ctx context.Context, guildID, userID, roleID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) AddGuildMemberRole(_ context.Context, _, _, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) RemoveGuildMemberRole(ctx context.Context, guildID, userID, roleID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) RemoveGuildMemberRole(_ context.Context, _, _, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) ModifyGuildRole(ctx context.Context, guildID, roleID discord.Snowflake, opts discord.RoleEditOptions) (*discord.Role, error) {
+func (s *stubEntityClient) ModifyGuildRole(_ context.Context, _, _ discord.Snowflake, _ discord.RoleEditOptions) (*discord.Role, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) DeleteGuildRole(ctx context.Context, guildID, roleID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) DeleteGuildRole(_ context.Context, _, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) ModifyGuildRolePositions(ctx context.Context, guildID discord.Snowflake, opts discord.RolePositionOptions) ([]*discord.Role, error) {
+func (s *stubEntityClient) ModifyGuildRolePositions(_ context.Context, _ discord.Snowflake, _ discord.RolePositionOptions) ([]*discord.Role, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) CreateDM(ctx context.Context, recipientID discord.Snowflake) (*discord.Channel, error) {
+func (s *stubEntityClient) CreateDM(_ context.Context, _ discord.Snowflake) (*discord.Channel, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ModifyGuildEmoji(ctx context.Context, guildID, emojiID discord.Snowflake, opts discord.EmojiEditOptions) (*discord.Emoji, error) {
+func (s *stubEntityClient) ModifyGuildEmoji(_ context.Context, _, _ discord.Snowflake, _ discord.EmojiEditOptions) (*discord.Emoji, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) DeleteGuildEmoji(ctx context.Context, guildID, emojiID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) DeleteGuildEmoji(_ context.Context, _, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) ModifyWebhook(ctx context.Context, webhookID discord.Snowflake, opts discord.WebhookEditOptions) (*discord.Webhook, error) {
+func (s *stubEntityClient) ModifyWebhook(_ context.Context, _ discord.Snowflake, _ discord.WebhookEditOptions) (*discord.Webhook, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) DeleteWebhook(ctx context.Context, webhookID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) DeleteWebhook(_ context.Context, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) ExecuteWebhook(ctx context.Context, webhookID discord.Snowflake, token string, opts discord.WebhookExecuteOptions) (*discord.Message, error) {
+func (s *stubEntityClient) ExecuteWebhook(_ context.Context, _ discord.Snowflake, _ string, _ discord.WebhookExecuteOptions) (*discord.Message, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetWebhookMessage(ctx context.Context, webhookID discord.Snowflake, token string, messageID discord.Snowflake) (*discord.Message, error) {
+func (s *stubEntityClient) GetWebhookMessage(_ context.Context, _ discord.Snowflake, _ string, _ discord.Snowflake) (*discord.Message, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) DeleteInvite(ctx context.Context, code string, reason *string) (*discord.Invite, error) {
+func (s *stubEntityClient) DeleteInvite(_ context.Context, _ string, _ *string) (*discord.Invite, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ModifyStageInstance(ctx context.Context, channelID discord.Snowflake, opts discord.StageEditOptions) (*discord.StageInstance, error) {
+func (s *stubEntityClient) ModifyStageInstance(_ context.Context, _ discord.Snowflake, _ discord.StageEditOptions) (*discord.StageInstance, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) DeleteStageInstance(ctx context.Context, channelID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) DeleteStageInstance(_ context.Context, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) ModifyGuildScheduledEvent(ctx context.Context, guildID, eventID discord.Snowflake, opts discord.ScheduledEventEditOptions) (*discord.GuildScheduledEvent, error) {
+func (s *stubEntityClient) ModifyGuildScheduledEvent(_ context.Context, _, _ discord.Snowflake, _ discord.ScheduledEventEditOptions) (*discord.GuildScheduledEvent, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) DeleteGuildScheduledEvent(ctx context.Context, guildID, eventID discord.Snowflake) error {
+func (s *stubEntityClient) DeleteGuildScheduledEvent(_ context.Context, _, _ discord.Snowflake) error {
 	return nil
 }
-func (s *stubEntityClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, opts discord.FetchUsersOptions) ([]*discord.GuildScheduledEventUser, error) {
+func (s *stubEntityClient) GetGuildScheduledEventUsers(_ context.Context, _, _ discord.Snowflake, _ discord.FetchUsersOptions) ([]*discord.GuildScheduledEventUser, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ModifyGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake, opts discord.StickerEditOptions) (*discord.Sticker, error) {
+func (s *stubEntityClient) ModifyGuildSticker(_ context.Context, _, _ discord.Snowflake, _ discord.StickerEditOptions) (*discord.Sticker, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) DeleteGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) DeleteGuildSticker(_ context.Context, _, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) ModifyAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake, opts discord.RuleEditOptions) (*discord.AutoModerationRule, error) {
+func (s *stubEntityClient) ModifyAutoModerationRule(_ context.Context, _, _ discord.Snowflake, _ discord.RuleEditOptions) (*discord.AutoModerationRule, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) DeleteAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake) error {
+func (s *stubEntityClient) DeleteAutoModerationRule(_ context.Context, _, _ discord.Snowflake) error {
 	return nil
 }
-func (s *stubEntityClient) ModifyGuildSoundboardSound(ctx context.Context, guildID, soundID discord.Snowflake, opts discord.SoundEditOptions) (*discord.SoundboardSound, error) {
+func (s *stubEntityClient) ModifyGuildSoundboardSound(_ context.Context, _, _ discord.Snowflake, _ discord.SoundEditOptions) (*discord.SoundboardSound, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) DeleteGuildSoundboardSound(ctx context.Context, guildID, soundID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) DeleteGuildSoundboardSound(_ context.Context, _, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) DeleteGuildIntegration(ctx context.Context, guildID, integrationID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) DeleteGuildIntegration(_ context.Context, _, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) ([]*discord.Integration, error) {
+func (s *stubEntityClient) GetGuildIntegrations(_ context.Context, _ discord.Snowflake) ([]*discord.Integration, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) ([]*discord.Role, error) {
+func (s *stubEntityClient) GetGuildRoles(_ context.Context, _ discord.Snowflake) ([]*discord.Role, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetChannel(ctx context.Context, channelID discord.Snowflake) (*discord.Channel, error) {
+func (s *stubEntityClient) GetChannel(_ context.Context, _ discord.Snowflake) (*discord.Channel, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildChannels(ctx context.Context, guildID discord.Snowflake) ([]*discord.Channel, error) {
+func (s *stubEntityClient) GetGuildChannels(_ context.Context, _ discord.Snowflake) ([]*discord.Channel, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildEmoji(ctx context.Context, guildID, emojiID discord.Snowflake) (*discord.Emoji, error) {
+func (s *stubEntityClient) GetGuildEmoji(_ context.Context, _, _ discord.Snowflake) (*discord.Emoji, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ListGuildEmojis(ctx context.Context, guildID discord.Snowflake) ([]*discord.Emoji, error) {
+func (s *stubEntityClient) ListGuildEmojis(_ context.Context, _ discord.Snowflake) ([]*discord.Emoji, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake) (*discord.Sticker, error) {
+func (s *stubEntityClient) GetGuildSticker(_ context.Context, _, _ discord.Snowflake) (*discord.Sticker, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ListGuildStickers(ctx context.Context, guildID discord.Snowflake) ([]*discord.Sticker, error) {
+func (s *stubEntityClient) ListGuildStickers(_ context.Context, _ discord.Snowflake) ([]*discord.Sticker, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildBan(ctx context.Context, guildID, userID discord.Snowflake) (*discord.Ban, error) {
+func (s *stubEntityClient) GetGuildBan(_ context.Context, _, _ discord.Snowflake) (*discord.Ban, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildBans(ctx context.Context, guildID discord.Snowflake, opts discord.FetchBansOptions) ([]*discord.Ban, error) {
+func (s *stubEntityClient) GetGuildBans(_ context.Context, _ discord.Snowflake, _ discord.FetchBansOptions) ([]*discord.Ban, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) RemoveGuildBan(ctx context.Context, guildID, userID discord.Snowflake, reason *string) error {
+func (s *stubEntityClient) RemoveGuildBan(_ context.Context, _, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) GetGuildScheduledEvent(ctx context.Context, guildID, eventID discord.Snowflake) (*discord.GuildScheduledEvent, error) {
+func (s *stubEntityClient) GetGuildScheduledEvent(_ context.Context, _, _ discord.Snowflake) (*discord.GuildScheduledEvent, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ListGuildScheduledEvents(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildScheduledEvent, error) {
+func (s *stubEntityClient) ListGuildScheduledEvents(_ context.Context, _ discord.Snowflake) ([]*discord.GuildScheduledEvent, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetStageInstance(ctx context.Context, channelID discord.Snowflake) (*discord.StageInstance, error) {
+func (s *stubEntityClient) GetStageInstance(_ context.Context, _ discord.Snowflake) (*discord.StageInstance, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) CreateStageInstance(ctx context.Context, opts discord.StageCreateOptions) (*discord.StageInstance, error) {
+func (s *stubEntityClient) CreateStageInstance(_ context.Context, _ discord.StageCreateOptions) (*discord.StageInstance, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildSoundboardSound(ctx context.Context, guildID, soundID discord.Snowflake) (*discord.SoundboardSound, error) {
+func (s *stubEntityClient) GetGuildSoundboardSound(_ context.Context, _, _ discord.Snowflake) (*discord.SoundboardSound, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ListGuildSoundboardSounds(ctx context.Context, guildID discord.Snowflake) ([]*discord.SoundboardSound, error) {
+func (s *stubEntityClient) ListGuildSoundboardSounds(_ context.Context, _ discord.Snowflake) ([]*discord.SoundboardSound, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) ([]*discord.Invite, error) {
+func (s *stubEntityClient) GetGuildInvites(_ context.Context, _ discord.Snowflake) ([]*discord.Invite, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
+func (s *stubEntityClient) GetGuildWebhooks(_ context.Context, _ discord.Snowflake) ([]*discord.Webhook, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake) (*discord.AutoModerationRule, error) {
+func (s *stubEntityClient) GetAutoModerationRule(_ context.Context, _, _ discord.Snowflake) (*discord.AutoModerationRule, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ListAutoModerationRules(ctx context.Context, guildID discord.Snowflake) ([]*discord.AutoModerationRule, error) {
+func (s *stubEntityClient) ListAutoModerationRules(_ context.Context, _ discord.Snowflake) ([]*discord.AutoModerationRule, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) CreateAutoModerationRule(ctx context.Context, guildID discord.Snowflake, opts discord.RuleCreateOptions) (*discord.AutoModerationRule, error) {
+func (s *stubEntityClient) CreateAutoModerationRule(_ context.Context, _ discord.Snowflake, _ discord.RuleCreateOptions) (*discord.AutoModerationRule, error) {
 	return nil, nil
 }
 
@@ -440,8 +441,8 @@ var _ discord.EntityClient = (*stubEntityClient)(nil)
 // ── MemberManager tests ───────────────────────────────────────────────────────
 
 func TestMemberManager_Cache_ReturnsGuildMembers(t *testing.T) {
-	const guildID discord.Snowflake = "g1"
-	const userID discord.Snowflake = "u1"
+	const guildID discord.Snowflake = 1
+	const userID discord.Snowflake = 2
 	cache := newStubCache()
 	cache.members.members[guildID] = map[discord.Snowflake]*discord.GuildMember{
 		userID: {UserID: userID, GuildID: guildID},
@@ -455,8 +456,8 @@ func TestMemberManager_Cache_ReturnsGuildMembers(t *testing.T) {
 }
 
 func TestMemberManager_Get_HitAndMiss(t *testing.T) {
-	const guildID discord.Snowflake = "g1"
-	const userID discord.Snowflake = "u1"
+	const guildID discord.Snowflake = 1
+	const userID discord.Snowflake = 2
 	cache := newStubCache()
 	cache.members.members[guildID] = map[discord.Snowflake]*discord.GuildMember{
 		userID: {UserID: userID},
@@ -466,22 +467,22 @@ func TestMemberManager_Get_HitAndMiss(t *testing.T) {
 	if _, ok := m.Get(userID); !ok {
 		t.Fatal("expected Get to return member")
 	}
-	if _, ok := m.Get("unknown"); ok {
+	if _, ok := m.Get(123); ok {
 		t.Fatal("expected Get to return false for unknown ID")
 	}
 }
 
 func TestMemberManager_Get_NoCache(t *testing.T) {
-	m := managers.NewMemberManager("g1", &stubEntityClient{cache: nil})
-	_, ok := m.Get("u1")
+	m := managers.NewMemberManager(1, &stubEntityClient{cache: nil})
+	_, ok := m.Get(2)
 	if ok {
 		t.Fatal("expected false when no cache")
 	}
 }
 
 func TestMemberManager_Fetch_CallsClient(t *testing.T) {
-	const guildID discord.Snowflake = "g1"
-	const userID discord.Snowflake = "u1"
+	const guildID discord.Snowflake = 1
+	const userID discord.Snowflake = 2
 	want := &discord.GuildMember{UserID: userID}
 	called := false
 	client := &stubEntityClient{
@@ -504,29 +505,29 @@ func TestMemberManager_Fetch_CallsClient(t *testing.T) {
 }
 
 func TestMemberManager_Resolve(t *testing.T) {
-	const guildID discord.Snowflake = "g1"
-	const userID discord.Snowflake = "u1"
+	const guildID discord.Snowflake = 1
+	const userID discord.Snowflake = 2
 	mem := &discord.GuildMember{UserID: userID}
 	cache := newStubCache()
 	cache.members.members[guildID] = map[discord.Snowflake]*discord.GuildMember{userID: mem}
 	m := managers.NewMemberManager(guildID, &stubEntityClient{cache: cache})
 
-	if got := m.Resolve(mem); got != mem {
+	if got, _ := m.Resolve(mem); got != mem {
 		t.Fatal("Resolve(*GuildMember) should return it directly")
 	}
-	if got := m.Resolve(userID); got != mem {
+	if got, _ := m.Resolve(userID); got != mem {
 		t.Fatalf("Resolve(Snowflake) should return cached member, got %v", got)
 	}
-	if got := m.Resolve(string(userID)); got != mem {
+	if got, _ := m.Resolve(strconv.FormatUint(uint64(userID), 10)); got != mem {
 		t.Fatalf("Resolve(string) should return cached member, got %v", got)
 	}
-	if got := m.Resolve(42); got != nil {
+	if got, _ := m.Resolve(42); got != nil {
 		t.Fatal("Resolve with unknown type should return nil")
 	}
 }
 
 func TestMemberManager_Size_NoCache(t *testing.T) {
-	m := managers.NewMemberManager("g1", &stubEntityClient{})
+	m := managers.NewMemberManager(1, &stubEntityClient{})
 	if s := m.Size(); s != 0 {
 		t.Fatalf("expected size 0 with no cache, got %d", s)
 	}
@@ -535,11 +536,11 @@ func TestMemberManager_Size_NoCache(t *testing.T) {
 // ── RoleManager tests ─────────────────────────────────────────────────────────
 
 func TestRoleManager_Cache_ReturnsGuildRoles(t *testing.T) {
-	const guildID discord.Snowflake = "g1"
+	const guildID discord.Snowflake = 1
 	cache := newStubCache()
 	cache.roles.roles[guildID] = map[discord.Snowflake]*discord.Role{
-		"r1": {ID: "r1"},
-		"r2": {ID: "r2"},
+		2: {ID: 2},
+		3: {ID: 3},
 	}
 	m := managers.NewRoleManager(guildID, &stubEntityClient{cache: cache})
 
@@ -550,8 +551,8 @@ func TestRoleManager_Cache_ReturnsGuildRoles(t *testing.T) {
 }
 
 func TestRoleManager_Get(t *testing.T) {
-	const guildID discord.Snowflake = "g1"
-	const roleID discord.Snowflake = "r1"
+	const guildID discord.Snowflake = 1
+	const roleID discord.Snowflake = 2
 	cache := newStubCache()
 	cache.roles.roles[guildID] = map[discord.Snowflake]*discord.Role{roleID: {ID: roleID}}
 	m := managers.NewRoleManager(guildID, &stubEntityClient{cache: cache})
@@ -562,20 +563,20 @@ func TestRoleManager_Get(t *testing.T) {
 }
 
 func TestRoleManager_Resolve(t *testing.T) {
-	const guildID discord.Snowflake = "g1"
-	const roleID discord.Snowflake = "r1"
+	const guildID discord.Snowflake = 10
+	const roleID discord.Snowflake = 11
 	role := &discord.Role{ID: roleID}
 	cache := newStubCache()
 	cache.roles.roles[guildID] = map[discord.Snowflake]*discord.Role{roleID: role}
 	m := managers.NewRoleManager(guildID, &stubEntityClient{cache: cache})
 
-	if got := m.Resolve(role); got != role {
+	if got, _ := m.Resolve(role); got != role {
 		t.Fatal("Resolve(*Role) should return it directly")
 	}
-	if got := m.Resolve(roleID); got != role {
+	if got, _ := m.Resolve(roleID); got != role {
 		t.Fatalf("Resolve(Snowflake) returned %v", got)
 	}
-	if got := m.Resolve(nil); got != nil {
+	if got, _ := m.Resolve(nil); got != nil {
 		t.Fatal("Resolve(nil) should return nil")
 	}
 }
@@ -583,8 +584,8 @@ func TestRoleManager_Resolve(t *testing.T) {
 // ── MessageManager tests ──────────────────────────────────────────────────────
 
 func TestMessageManager_Cache_ReturnsChannelMessages(t *testing.T) {
-	const channelID discord.Snowflake = "ch1"
-	const msgID discord.Snowflake = "m1"
+	const channelID discord.Snowflake = 12
+	const msgID discord.Snowflake = 13
 	cache := newStubCache()
 	cache.messages.messages[channelID] = map[discord.Snowflake]*discord.Message{
 		msgID: {ID: msgID},
@@ -598,8 +599,8 @@ func TestMessageManager_Cache_ReturnsChannelMessages(t *testing.T) {
 }
 
 func TestMessageManager_Get(t *testing.T) {
-	const channelID discord.Snowflake = "ch1"
-	const msgID discord.Snowflake = "m1"
+	const channelID discord.Snowflake = 12
+	const msgID discord.Snowflake = 13
 	cache := newStubCache()
 	cache.messages.messages[channelID] = map[discord.Snowflake]*discord.Message{
 		msgID: {ID: msgID},
@@ -609,14 +610,14 @@ func TestMessageManager_Get(t *testing.T) {
 	if _, ok := m.Get(msgID); !ok {
 		t.Fatal("expected Get to find message")
 	}
-	if _, ok := m.Get("unknown"); ok {
+	if _, ok := m.Get(123); ok {
 		t.Fatal("expected Get to miss unknown message")
 	}
 }
 
 func TestMessageManager_Fetch_CallsClient(t *testing.T) {
-	const channelID discord.Snowflake = "ch1"
-	const msgID discord.Snowflake = "m1"
+	const channelID discord.Snowflake = 12
+	const msgID discord.Snowflake = 13
 	want := &discord.Message{ID: msgID}
 	client := &stubEntityClient{
 		fetchMessage: func(_ context.Context, chID, mID discord.Snowflake) (*discord.Message, error) {
@@ -640,7 +641,7 @@ func TestClientGuildManager_Cache_Empty(t *testing.T) {
 }
 
 func TestClientGuildManager_Fetch(t *testing.T) {
-	const guildID discord.Snowflake = "g1"
+	const guildID discord.Snowflake = 10
 	want := &discord.Guild{ID: guildID}
 	client := &stubEntityClient{
 		fetchGuild: func(_ context.Context, gid discord.Snowflake) (*discord.Guild, error) {
@@ -656,7 +657,7 @@ func TestClientGuildManager_Fetch(t *testing.T) {
 
 func TestClientGuildManager_Resolve_NoCache(t *testing.T) {
 	m := managers.NewClientGuildManager(&stubEntityClient{})
-	if got := m.Resolve("g1"); got != nil {
+	if got, _ := m.Resolve(10); got != nil {
 		t.Fatal("Resolve with no cache should return nil")
 	}
 }
@@ -664,7 +665,7 @@ func TestClientGuildManager_Resolve_NoCache(t *testing.T) {
 // ── ClientUserManager tests ───────────────────────────────────────────────────
 
 func TestClientUserManager_Fetch(t *testing.T) {
-	const userID discord.Snowflake = "u1"
+	const userID discord.Snowflake = 13123
 	want := &discord.User{ID: userID}
 	client := &stubEntityClient{
 		fetchUser: func(_ context.Context, uid discord.Snowflake) (*discord.User, error) {
@@ -681,7 +682,7 @@ func TestClientUserManager_Fetch(t *testing.T) {
 // ── Nil cache guard ───────────────────────────────────────────────────────────
 
 func TestMemberManager_CacheReturnsEmpty_WhenNilCache(t *testing.T) {
-	m := managers.NewMemberManager("g1", &stubEntityClient{cache: nil})
+	m := managers.NewMemberManager(10, &stubEntityClient{cache: nil})
 	coll := m.Cache()
 	if coll == nil {
 		t.Fatal("Cache() should return non-nil empty collection when cache is nil")

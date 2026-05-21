@@ -279,13 +279,13 @@ type MessageInteractionMetadataModalSubmitTriggering struct {
 
 func (d *MessageInteractionMetadataModalSubmitTriggering) UnmarshalJSON(data []byte) error {
 	var a MessageInteractionMetadataApplicationCommand
-	if err := json.Unmarshal(data, &a); err == nil && a.ID != "" {
+	if err := json.Unmarshal(data, &a); err == nil && !a.ID.IsEmpty() {
 		d.AnyMessageInteractionMetadataModalSubmitTriggeringInteractionMetadata = &a
 		return nil
 	}
 
 	var b MessageInteractionMetadataMessageComponent
-	if err := json.Unmarshal(data, &b); err == nil && b.ID != "" {
+	if err := json.Unmarshal(data, &b); err == nil && !b.ID.IsEmpty() {
 		d.AnyMessageInteractionMetadataModalSubmitTriggeringInteractionMetadata = &b
 		return nil
 	}
@@ -300,19 +300,19 @@ func (d *MessageInteractionMetadata) UnmarshalJSON(data []byte) error {
 	}
 
 	var a MessageInteractionMetadataApplicationCommand
-	if err := json.Unmarshal(data, &a); err == nil && a.ID != "" {
+	if err := json.Unmarshal(data, &a); err == nil && !a.ID.IsEmpty() {
 		d.Value = &a
 		return nil
 	}
 
 	var b MessageInteractionMetadataMessageComponent
-	if err := json.Unmarshal(data, &b); err == nil && b.ID != "" {
+	if err := json.Unmarshal(data, &b); err == nil && !b.ID.IsEmpty() {
 		d.Value = &b
 		return nil
 	}
 
 	var c MessageInteractionMetadataModalSubmit
-	if err := json.Unmarshal(data, &c); err == nil && c.ID != "" {
+	if err := json.Unmarshal(data, &c); err == nil && !c.ID.IsEmpty() {
 		d.Value = &c
 		return nil
 	}

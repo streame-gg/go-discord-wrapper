@@ -30,7 +30,7 @@ func (i *Integration) Delete(ctx context.Context, reason *string) error {
 	if err != nil {
 		return err
 	}
-	if i.GuildID == "" {
+	if i.GuildID.IsEmpty() {
 		return errIntegrationNoGuildID
 	}
 	return c.DeleteGuildIntegration(ctx, i.GuildID, i.ID, reason)

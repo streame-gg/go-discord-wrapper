@@ -12,7 +12,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 )
 
-func snowflake(s string) discord.Snowflake { return discord.Snowflake(s) }
+func snowflake(s string) discord.Snowflake { return mustSnowflake(s) }
 func sf(s string) *discord.Snowflake       { v := snowflake(s); return &v }
 
 // newVSUEvent builds a VoiceStateUpdateEvent with the given guild/user/channel IDs

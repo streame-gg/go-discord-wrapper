@@ -1,6 +1,12 @@
 package discord
 
-import "github.com/streame-gg/go-discord-wrapper/collection"
+import (
+	"errors"
+
+	"github.com/streame-gg/go-discord-wrapper/collection"
+)
+
+var ErrNotConvertable = errors.New("unable to resolve from input")
 
 // ── Read-only store interfaces ────────────────────────────────────────────────
 

@@ -821,7 +821,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.voiceStatesMu.Lock()
 					for i := range gatewayGuild.VoiceStates {
 						vs := gatewayGuild.VoiceStates[i]
-						key := string(guildID) + ":" + string(vs.UserID)
+						key := guildID.String() + ":" + vs.UserID.String()
 						vscopy := vs
 						if vscopy.GuildID == nil {
 							vscopy.GuildID = &guildID
@@ -832,16 +832,16 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 
 				if d.cacheEnabled() {
-					if guild.ID != "" {
+					if !guild.ID.IsEmpty() {
 						guild.Hydrate(d)
 						d.setGuildManagers(&guild)
 					}
 
-					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryGuilds) {
+					if !guild.ID.IsEmpty() && d.cacheStoreEnabled(cache.CategoryGuilds) {
 						d.Cache.Guilds().Set(&guild)
 					}
 
-					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryRoles) {
+					if !guild.ID.IsEmpty() && d.cacheStoreEnabled(cache.CategoryRoles) {
 						// Delete stale roles before re-adding so removed roles don't persist.
 						d.Cache.Roles().DeleteGuild(guild.ID)
 						for i := range guild.RawRoles {
@@ -852,11 +852,11 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						}
 					}
 
-					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryEmojis) {
+					if !guild.ID.IsEmpty() && d.cacheStoreEnabled(cache.CategoryEmojis) {
 						emojis := make([]*discord.Emoji, 0, len(guild.RawEmojis))
 						for i := range guild.RawEmojis {
 							emoji := guild.RawEmojis[i]
-							if emoji.ID != "" {
+							if !emoji.ID.IsEmpty() {
 								emoji.GuildID = guild.ID
 								emoji.Hydrate(d)
 								emojis = append(emojis, &emoji)
@@ -864,11 +864,11 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						}
 						d.Cache.Emojis().SetAll(guild.ID, emojis)
 					}
-					if guild.ID != "" && d.cacheStoreEnabled(cache.CategoryStickers) && len(guild.RawStickers) > 0 {
+					if !guild.ID.IsEmpty() && d.cacheStoreEnabled(cache.CategoryStickers) && len(guild.RawStickers) > 0 {
 						stickers := make([]*discord.Sticker, 0, len(guild.RawStickers))
 						for i := range guild.RawStickers {
 							sticker := guild.RawStickers[i]
-							if sticker.ID != "" {
+							if !sticker.ID.IsEmpty() {
 								if sticker.GuildID == nil {
 									sticker.GuildID = &guild.ID
 								}
@@ -1024,7 +1024,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			// Bot was kicked or the guild was deleted.
 			d.removeGuildFromCache(guildDeleteEvent.ID)
 
-			prefix := string(guildDeleteEvent.ID) + ":"
+			prefix := guildDeleteEvent.ID.String() + ":"
 			d.voiceStatesMu.Lock()
 			for key := range d.voiceStates {
 				if strings.HasPrefix(key, prefix) {
@@ -1036,7 +1036,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 	case events.EventVoiceStateUpdate:
 		{
 			if vse, ok := event.(*events.VoiceStateUpdateEvent); ok && vse.GuildID != nil {
-				key := string(*vse.GuildID) + ":" + string(vse.UserID)
+				key := vse.GuildID.String() + ":" + vse.UserID.String()
 
 				d.voiceStatesMu.Lock()
 				vse.OldState = d.voiceStates[key]

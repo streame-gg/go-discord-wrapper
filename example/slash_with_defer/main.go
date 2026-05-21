@@ -96,7 +96,7 @@ func main() {
 		}
 
 		// Pretend we extracted the target user ID from the command options.
-		targetID := discord.Snowflake("123456789")
+		targetID := discord.Snowflake(123456789012345678)
 
 		go func() {
 			err := c.CreateGuildBanRaw(context.Background(), *ev.GuildID, targetID, api.CreateGuildBanParams{})

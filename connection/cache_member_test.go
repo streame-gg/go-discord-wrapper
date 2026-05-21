@@ -2,6 +2,7 @@ package connection
 
 import (
 	"encoding/json"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,13 +25,13 @@ func TestBug5_CacheMemberRespectsStoreEnabled(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	guildID := discord.Snowflake("111222333444555666")
-	userID := discord.Snowflake("999888777666555444")
+	guildID := discord.Snowflake(111222333444555666)
+	userID := discord.Snowflake(999888777666555444)
 
 	payload := map[string]any{
-		"guild_id": string(guildID),
+		"guild_id": strconv.FormatUint(uint64(guildID), 10),
 		"user": map[string]any{
-			"id":            string(userID),
+			"id":            strconv.FormatUint(uint64(userID), 10),
 			"username":      "testuser",
 			"discriminator": "0000",
 		},
@@ -57,13 +58,13 @@ func TestBug5_CacheMemberWorksWhenEnabled(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	guildID := discord.Snowflake("111222333444555666")
-	userID := discord.Snowflake("999888777666555444")
+	guildID := discord.Snowflake(111222333444555666)
+	userID := discord.Snowflake(999888777666555444)
 
 	payload := map[string]any{
-		"guild_id": string(guildID),
+		"guild_id": strconv.FormatUint(uint64(guildID), 10),
 		"user": map[string]any{
-			"id":            string(userID),
+			"id":            strconv.FormatUint(uint64(userID), 10),
 			"username":      "testuser",
 			"discriminator": "0000",
 		},

@@ -1,7 +1,6 @@
 package mongocache
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 
@@ -24,15 +23,13 @@ func TestBug21MsgChannelMuCleanedOnDeleteChannel(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(n)
 	for i := 0; i < n; i++ {
-		i := i
 		go func() {
 			defer wg.Done()
-			cid := discord.Snowflake(fmt.Sprintf("ch%d", i))
 			// LoadOrStore directly, mimicking Add().
-			c.msgChannelMu.LoadOrStore(string(cid), &sync.Mutex{})
+			c.msgChannelMu.LoadOrStore(i, &sync.Mutex{})
 			// Then DeleteChannel removes it.
 			store := &mongoMessageStore{c: c}
-			store.DeleteChannel(cid)
+			store.DeleteChannel(discord.Snowflake(i))
 		}()
 	}
 	wg.Wait()

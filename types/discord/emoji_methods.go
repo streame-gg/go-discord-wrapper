@@ -49,7 +49,7 @@ func (e *Emoji) Edit(ctx context.Context, opts EmojiEditOptions) (*Emoji, error)
 	if err != nil {
 		return nil, err
 	}
-	if e.GuildID == "" {
+	if e.GuildID.IsEmpty() {
 		return nil, errEmojiNoGuildID
 	}
 	return c.ModifyGuildEmoji(ctx, e.GuildID, e.ID, opts)
@@ -61,7 +61,7 @@ func (e *Emoji) Delete(ctx context.Context, reason *string) error {
 	if err != nil {
 		return err
 	}
-	if e.GuildID == "" {
+	if e.GuildID.IsEmpty() {
 		return errEmojiNoGuildID
 	}
 	return c.DeleteGuildEmoji(ctx, e.GuildID, e.ID, reason)

@@ -3,9 +3,11 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"hash/fnv"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -16,6 +18,16 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
+
+func mustSnowflake(s string) discord.Snowflake {
+	n, err := strconv.ParseUint(s, 10, 64)
+	if err == nil {
+		return discord.Snowflake(n)
+	}
+	h := fnv.New64a()
+	h.Write([]byte(s))
+	return discord.Snowflake(h.Sum64())
+}
 
 func newPaginationClient(ts *httptest.Server) *RestClient {
 	rc, err := NewRestClient("test-token",
@@ -43,18 +55,16 @@ func makeMembersPage(n int, startID int) []*discord.GuildMember {
 	return members
 }
 
-// jsonIntStr formats an int as a string Snowflake.
+// jsonIntStr converts an int to a Snowflake.
 func jsonIntStr(n int) discord.Snowflake {
-	b, _ := json.Marshal(n)
-	s := string(b)
-	return discord.Snowflake(s)
+	return discord.Snowflake(uint64(n))
 }
 
 func makeMembersPageWithIDs(ids []string) []*discord.GuildMember {
 	members := make([]*discord.GuildMember, len(ids))
 	for i, id := range ids {
 		members[i] = &discord.GuildMember{
-			User: &discord.User{ID: discord.Snowflake(id)},
+			User: &discord.User{ID: mustSnowflake(id)},
 		}
 	}
 	return members
@@ -64,7 +74,7 @@ func makeBanPage(userIDs []string) []*discord.Ban {
 	bans := make([]*discord.Ban, len(userIDs))
 	for i, id := range userIDs {
 		bans[i] = &discord.Ban{
-			User: discord.User{ID: discord.Snowflake(id)},
+			User: discord.User{ID: mustSnowflake(id)},
 		}
 	}
 	return bans
@@ -74,8 +84,8 @@ func makeMessagePage(ids []string, channelID string) []*discord.Message {
 	msgs := make([]*discord.Message, len(ids))
 	for i, id := range ids {
 		msgs[i] = &discord.Message{
-			ID:        discord.Snowflake(id),
-			ChannelID: discord.Snowflake(channelID),
+			ID:        mustSnowflake(id),
+			ChannelID: mustSnowflake(channelID),
 		}
 	}
 	return msgs
@@ -88,7 +98,7 @@ func TestFetchAllGuildMembersOnePage(t *testing.T) {
 	page := make([]*discord.GuildMember, 5)
 	for i := range page {
 		page[i] = &discord.GuildMember{
-			User: &discord.User{ID: discord.Snowflake(string(rune('a' + i)))},
+			User: &discord.User{ID: mustSnowflake(string(rune('a' + i)))},
 		}
 	}
 
@@ -101,7 +111,7 @@ func TestFetchAllGuildMembersOnePage(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	members, err := client.FetchAllGuildMembers(context.Background(), "1234567890123456789")
+	members, err := client.FetchAllGuildMembers(context.Background(), discord.Snowflake(1234567890123456789))
 
 	require.NoError(t, err)
 	assert.Len(t, members, 5)
@@ -113,7 +123,7 @@ func TestFetchAllGuildMembersMultiplePages(t *testing.T) {
 	page1 := make([]*discord.GuildMember, 1000)
 	for i := range page1 {
 		page1[i] = &discord.GuildMember{
-			User: &discord.User{ID: discord.Snowflake(intToSnowflake(i + 1))},
+			User: &discord.User{ID: discord.Snowflake(uint64(i + 1))},
 		}
 	}
 	lastPage1ID := page1[999].User.ID
@@ -122,7 +132,7 @@ func TestFetchAllGuildMembersMultiplePages(t *testing.T) {
 	page2 := make([]*discord.GuildMember, 5)
 	for i := range page2 {
 		page2[i] = &discord.GuildMember{
-			User: &discord.User{ID: discord.Snowflake(intToSnowflake(1001 + i))},
+			User: &discord.User{ID: discord.Snowflake(uint64(1001 + i))},
 		}
 	}
 
@@ -146,12 +156,12 @@ func TestFetchAllGuildMembersMultiplePages(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	members, err := client.FetchAllGuildMembers(context.Background(), "1234567890123456789")
+	members, err := client.FetchAllGuildMembers(context.Background(), discord.Snowflake(1234567890123456789))
 
 	require.NoError(t, err)
 	assert.Len(t, members, 1005)
 	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
-	assert.Equal(t, string(lastPage1ID), secondRequestAfter, "second request should advance cursor past last member of page 1")
+	assert.Equal(t, lastPage1ID.String(), secondRequestAfter, "second request should advance cursor past last member of page 1")
 }
 
 func intToSnowflake(n int) string {
@@ -164,19 +174,19 @@ func TestFetchAllMessagesMultiplePages(t *testing.T) {
 	page1 := make([]*discord.Message, 100)
 	for i := range page1 {
 		page1[i] = &discord.Message{
-			ID:        discord.Snowflake(intToSnowflake(100 - i)),
-			ChannelID: "1234567890123456789",
+			ID:        discord.Snowflake(uint64(100 - i)),
+			ChannelID: discord.Snowflake(1234567890123456789),
 			Author:    &discord.User{},
 		}
 	}
-	oldestPage1ID := page1[99].ID // "1"
+	oldestPage1ID := page1[99].ID // Snowflake(1)
 
 	// Page 2: 10 messages
 	page2 := make([]*discord.Message, 10)
 	for i := range page2 {
 		page2[i] = &discord.Message{
-			ID:        discord.Snowflake(intToSnowflake(-(i + 1))),
-			ChannelID: "1234567890123456789",
+			ID:        mustSnowflake(intToSnowflake(-(i + 1))),
+			ChannelID: discord.Snowflake(1234567890123456789),
 			Author:    &discord.User{},
 		}
 	}
@@ -201,12 +211,12 @@ func TestFetchAllMessagesMultiplePages(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	msgs, err := client.FetchAllMessages(context.Background(), "1234567890123456789")
+	msgs, err := client.FetchAllMessages(context.Background(), discord.Snowflake(1234567890123456789))
 
 	require.NoError(t, err)
 	assert.Len(t, msgs, 110)
 	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
-	assert.Equal(t, string(oldestPage1ID), secondRequestBefore, "second request should use before=last_id_of_page1")
+	assert.Equal(t, oldestPage1ID.String(), secondRequestBefore, "second request should use before=last_id_of_page1")
 }
 
 func TestFetchAllGuildBansOnePage(t *testing.T) {
@@ -214,7 +224,7 @@ func TestFetchAllGuildBansOnePage(t *testing.T) {
 	for i := range bans {
 		bans[i] = &discord.Ban{
 			User: discord.User{
-				ID:            discord.Snowflake(intToSnowflake(i + 1)),
+				ID:            discord.Snowflake(uint64(i + 1)),
 				Discriminator: "0",
 			},
 		}
@@ -230,7 +240,7 @@ func TestFetchAllGuildBansOnePage(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	result, err := client.FetchAllGuildBans(context.Background(), "1234567890123456789")
+	result, err := client.FetchAllGuildBans(context.Background(), discord.Snowflake(1234567890123456789))
 
 	require.NoError(t, err)
 	assert.Len(t, result, 7)
@@ -238,7 +248,7 @@ func TestFetchAllGuildBansOnePage(t *testing.T) {
 
 	// verify IDs round-trip
 	first := result[0]
-	assert.Equal(t, discord.Snowflake("1"), first.User.ID)
+	assert.Equal(t, discord.Snowflake(1), first.User.ID)
 
 	// suppress unused import
 	_ = time.Second
@@ -249,7 +259,7 @@ func TestFetchAllGuildBansOnePage(t *testing.T) {
 func makeAuditLogPage(ids []string) *discord.AuditLog {
 	entries := make([]discord.AuditLogEntry, len(ids))
 	for i, id := range ids {
-		entries[i] = discord.AuditLogEntry{ID: discord.Snowflake(id)}
+		entries[i] = discord.AuditLogEntry{ID: mustSnowflake(id)}
 	}
 	return &discord.AuditLog{AuditLogEntries: entries}
 }
@@ -267,7 +277,7 @@ func TestFetchAllAuditLogEntriesOnePage(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	entries, err := client.FetchAllAuditLogEntries(context.Background(), "1234567890123456789", GetGuildAuditLogParams{})
+	entries, err := client.FetchAllAuditLogEntries(context.Background(), discord.Snowflake(1234567890123456789), GetGuildAuditLogParams{})
 
 	require.NoError(t, err)
 	assert.Len(t, entries, 5)
@@ -304,7 +314,7 @@ func TestFetchAllAuditLogEntriesMultiplePages(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	entries, err := client.FetchAllAuditLogEntries(context.Background(), "1234567890123456789", GetGuildAuditLogParams{})
+	entries, err := client.FetchAllAuditLogEntries(context.Background(), discord.Snowflake(1234567890123456789), GetGuildAuditLogParams{})
 
 	require.NoError(t, err)
 	assert.Len(t, entries, 103)
@@ -317,7 +327,7 @@ func TestFetchAllAuditLogEntriesMultiplePages(t *testing.T) {
 func makeEntitlementPage(ids []string) []*discord.Entitlement {
 	page := make([]*discord.Entitlement, len(ids))
 	for i, id := range ids {
-		page[i] = &discord.Entitlement{ID: discord.Snowflake(id)}
+		page[i] = &discord.Entitlement{ID: mustSnowflake(id)}
 	}
 	return page
 }
@@ -335,7 +345,7 @@ func TestFetchAllEntitlementsOnePage(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	result, err := client.FetchAllEntitlements(context.Background(), "1234567890123456789", ListEntitlementsParams{})
+	result, err := client.FetchAllEntitlements(context.Background(), discord.Snowflake(1234567890123456789), ListEntitlementsParams{})
 
 	require.NoError(t, err)
 	assert.Len(t, result, 3)
@@ -369,7 +379,7 @@ func TestFetchAllEntitlementsMultiplePages(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	result, err := client.FetchAllEntitlements(context.Background(), "1234567890123456789", ListEntitlementsParams{})
+	result, err := client.FetchAllEntitlements(context.Background(), discord.Snowflake(1234567890123456789), ListEntitlementsParams{})
 
 	require.NoError(t, err)
 	assert.Len(t, result, 102)
@@ -383,7 +393,7 @@ func makeScheduledEventUsersPage(userIDs []string) []*discord.GuildScheduledEven
 	page := make([]*discord.GuildScheduledEventUser, len(userIDs))
 	for i, id := range userIDs {
 		page[i] = &discord.GuildScheduledEventUser{
-			User: discord.User{ID: discord.Snowflake(id)},
+			User: discord.User{ID: mustSnowflake(id)},
 		}
 	}
 	return page
@@ -402,7 +412,7 @@ func TestFetchAllScheduledEventUsersOnePage(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	result, err := client.FetchAllScheduledEventUsers(context.Background(), "1234567890123456789", "1234567890123456789", false)
+	result, err := client.FetchAllScheduledEventUsers(context.Background(), discord.Snowflake(1234567890123456789), discord.Snowflake(1234567890123456789), false)
 
 	require.NoError(t, err)
 	assert.Len(t, result, 3)
@@ -436,7 +446,7 @@ func TestFetchAllScheduledEventUsersMultiplePages(t *testing.T) {
 	defer ts.Close()
 
 	client := newPaginationClient(ts)
-	result, err := client.FetchAllScheduledEventUsers(context.Background(), "1234567890123456789", "1234567890123456789", false)
+	result, err := client.FetchAllScheduledEventUsers(context.Background(), discord.Snowflake(1234567890123456789), discord.Snowflake(1234567890123456789), false)
 
 	require.NoError(t, err)
 	assert.Len(t, result, 102)

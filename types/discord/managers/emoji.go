@@ -48,18 +48,23 @@ func (m *emojiManager) Create(ctx context.Context, opts discord.EmojiCreateOptio
 	return m.client.CreateGuildEmoji(ctx, m.guildID, opts)
 }
 
-func (m *emojiManager) Resolve(input any) *discord.Emoji {
+func (m *emojiManager) Resolve(input any) (*discord.Emoji, error) {
 	switch v := input.(type) {
 	case *discord.Emoji:
-		return v
+		return v, nil
 	case discord.Snowflake:
 		e, _ := m.Get(v)
-		return e
+		return e, nil
 	case string:
-		e, _ := m.Get(discord.Snowflake(v))
-		return e
+		snowflake, err := discord.ParseSnowflake(v)
+		if err != nil {
+			return nil, err
+		}
+		mem, _ := m.Get(*snowflake)
+
+		return mem, nil
 	}
-	return nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *emojiManager) Size() int {

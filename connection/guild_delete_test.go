@@ -31,7 +31,7 @@ func newClientWithCache(t *testing.T) *Client {
 // for guildID, simulating the gateway receiving the event.
 func dispatchGuildDelete(t *testing.T, c *Client, guildID discord.Snowflake) {
 	t.Helper()
-	payload := map[string]any{"id": string(guildID)}
+	payload := map[string]any{"id": guildID.String()}
 	raw, err := json.Marshal(payload)
 	require.NoError(t, err)
 	c.internalEventHandler(json.RawMessage(raw), events.EventGuildDelete, nil)
@@ -42,8 +42,8 @@ func dispatchGuildDelete(t *testing.T, c *Client, guildID discord.Snowflake) {
 func TestGuildDelete_CleansCacheChannels(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("111000111000111")
-	chID := discord.Snowflake("222000222000222")
+	guildID := discord.Snowflake(111000111000111)
+	chID := discord.Snowflake(222000222000222)
 
 	ch := &discord.Channel{
 		ID:      chID,
@@ -65,9 +65,9 @@ func TestGuildDelete_CleansCacheChannels(t *testing.T) {
 func TestGuildDelete_CleansChannelIndex(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("333000333000333")
-	ch1 := discord.Snowflake("444000444000444")
-	ch2 := discord.Snowflake("555000555000555")
+	guildID := discord.Snowflake(333000333000333)
+	ch1 := discord.Snowflake(444000444000444)
+	ch2 := discord.Snowflake(555000555000555)
 
 	c.trackChannel(&discord.Channel{ID: ch1, GuildID: &guildID})
 	c.trackChannel(&discord.Channel{ID: ch2, GuildID: &guildID})
@@ -93,9 +93,9 @@ func TestGuildDelete_CleansChannelIndex(t *testing.T) {
 func TestGuildDelete_CleansMessageCache(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("666000666000666")
-	chID := discord.Snowflake("777000777000777")
-	msgID := discord.Snowflake("888000888000888")
+	guildID := discord.Snowflake(666000666000666)
+	chID := discord.Snowflake(777000777000777)
+	msgID := discord.Snowflake(888000888000888)
 
 	ch := &discord.Channel{ID: chID, GuildID: &guildID}
 	c.cacheChannel(ch)
@@ -115,8 +115,8 @@ func TestGuildDelete_CleansMessageCache(t *testing.T) {
 func TestGuildDelete_CleansGuildAndMembers(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("999000999000999")
-	userID := discord.Snowflake("101010101010101")
+	guildID := discord.Snowflake(999000999000999)
+	userID := discord.Snowflake(101010101010101)
 
 	c.Cache.Guilds().Set(&discord.Guild{ID: guildID})
 	c.Cache.Members().Set(guildID, &discord.GuildMember{
@@ -140,12 +140,12 @@ func TestGuildDelete_CleansGuildAndMembers(t *testing.T) {
 func TestGuildDelete_UnavailableIsNoop(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("121212121212121")
+	guildID := discord.Snowflake(121212121212121)
 
 	c.Cache.Guilds().Set(&discord.Guild{ID: guildID})
 
 	unavailable := true
-	payload := map[string]any{"id": string(guildID), "unavailable": unavailable}
+	payload := map[string]any{"id": guildID.String(), "unavailable": unavailable}
 	raw, err := json.Marshal(payload)
 	require.NoError(t, err)
 	c.internalEventHandler(json.RawMessage(raw), events.EventGuildDelete, nil)

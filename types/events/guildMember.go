@@ -2,6 +2,7 @@ package events
 
 import (
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -64,7 +65,7 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	e.NewMember.CommunicationDisabledUntil = w.CommunicationDisabledUntil
 	e.NewMember.Roles = make([]string, len(w.Roles))
 	for i, r := range w.Roles {
-		e.NewMember.Roles[i] = string(r)
+		e.NewMember.Roles[i] = strconv.FormatUint(uint64(r), 10)
 	}
 	if w.JoinedAt != nil {
 		e.NewMember.JoinedAt = *w.JoinedAt
@@ -88,7 +89,11 @@ func (e GuildMemberUpdateEvent) MarshalJSON() ([]byte, error) {
 	m := e.NewMember
 	roles := make([]discord.Snowflake, len(m.Roles))
 	for i, r := range m.Roles {
-		roles[i] = discord.Snowflake(r)
+		snowflake, err := discord.ParseSnowflake(r)
+		if err != nil {
+			return nil, err
+		}
+		roles[i] = *snowflake
 	}
 	type wire struct {
 		GuildID                    discord.Snowflake    `json:"guild_id"`

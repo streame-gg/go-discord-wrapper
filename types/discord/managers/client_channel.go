@@ -33,18 +33,22 @@ func (m *clientChannelManager) Fetch(ctx context.Context, channelID discord.Snow
 	return m.client.GetChannel(ctx, channelID)
 }
 
-func (m *clientChannelManager) Resolve(input any) *discord.Channel {
+func (m *clientChannelManager) Resolve(input any) (*discord.Channel, error) {
 	switch v := input.(type) {
 	case *discord.Channel:
-		return v
+		return v, nil
 	case discord.Snowflake:
 		ch, _ := m.Get(v)
-		return ch
+		return ch, nil
 	case string:
-		ch, _ := m.Get(discord.Snowflake(v))
-		return ch
+		converted, err := discord.ParseSnowflake(v)
+		if err != nil {
+			return nil, err
+		}
+		ch, _ := m.Get(*converted)
+		return ch, nil
 	}
-	return nil
+	return nil, nil
 }
 
 func (m *clientChannelManager) Size() int {

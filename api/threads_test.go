@@ -57,7 +57,7 @@ func TestP0_10_CreateForumThreadWithFiles(t *testing.T) {
 		},
 	}
 
-	channelID := discord.Snowflake("123456789012345678")
+	channelID := discord.Snowflake(123456789012345678)
 	_, err := c.CreateForumThread(context.Background(), channelID, params, nil)
 	require.NoError(t, err)
 
@@ -99,7 +99,7 @@ func TestP0_10_CreateForumThreadWithoutFiles(t *testing.T) {
 		},
 	}
 
-	channelID := discord.Snowflake("123456789012345678")
+	channelID := discord.Snowflake(123456789012345678)
 	_, err := c.CreateForumThread(context.Background(), channelID, params, nil)
 	require.NoError(t, err)
 
@@ -133,7 +133,7 @@ func TestP0_10_CreateForumThreadWithReason(t *testing.T) {
 	}
 	opts := &CreateForumThreadOptions{Reason: "automated thread creation"}
 
-	channelID := discord.Snowflake("123456789012345678")
+	channelID := discord.Snowflake(123456789012345678)
 	_, err := c.CreateForumThread(context.Background(), channelID, params, opts)
 	require.NoError(t, err)
 

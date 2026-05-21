@@ -33,18 +33,22 @@ func (m *clientUserManager) Fetch(ctx context.Context, userID discord.Snowflake)
 	return m.client.GetUser(ctx, userID)
 }
 
-func (m *clientUserManager) Resolve(input any) *discord.User {
+func (m *clientUserManager) Resolve(input any) (*discord.User, error) {
 	switch v := input.(type) {
 	case *discord.User:
-		return v
+		return v, nil
 	case discord.Snowflake:
 		u, _ := m.Get(v)
-		return u
+		return u, nil
 	case string:
-		u, _ := m.Get(discord.Snowflake(v))
-		return u
+		snowflake, err := discord.ParseSnowflake(v)
+		if err != nil {
+			return nil, err
+		}
+		mem, _ := m.Get(*snowflake)
+		return mem, nil
 	}
-	return nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *clientUserManager) Size() int {

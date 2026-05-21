@@ -3,8 +3,10 @@ package mongocache_test
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -62,6 +64,16 @@ func TestMain(m *testing.M) {
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
+func mustSnowflake(s string) discord.Snowflake {
+	n, err := strconv.ParseUint(s, 10, 64)
+	if err == nil {
+		return discord.Snowflake(n)
+	}
+	h := fnv.New64a()
+	h.Write([]byte(s))
+	return discord.Snowflake(h.Sum64())
+}
+
 // newCache creates a MongoDBCache backed by a fresh database named after the
 // test. The database is dropped in t.Cleanup so tests are fully isolated.
 func newCache(t *testing.T, opts cache.Options) *mongocache.MongoDBCache {
@@ -78,15 +90,15 @@ func newCache(t *testing.T, opts cache.Options) *mongocache.MongoDBCache {
 }
 
 func guild(id string) *discord.Guild {
-	return &discord.Guild{ID: discord.Snowflake(id), Name: "guild-" + id}
+	return &discord.Guild{ID: mustSnowflake(id), Name: "guild-" + id}
 }
 
 func channel(id string) *discord.Channel {
-	return &discord.Channel{ID: discord.Snowflake(id), Name: "chan-" + id}
+	return &discord.Channel{ID: mustSnowflake(id), Name: "chan-" + id}
 }
 
 func user(id string) *discord.User {
-	return &discord.User{ID: discord.Snowflake(id), Username: "user-" + id}
+	return &discord.User{ID: mustSnowflake(id), Username: "user-" + id}
 }
 
 func member(userID string) *discord.GuildMember {
@@ -94,13 +106,13 @@ func member(userID string) *discord.GuildMember {
 }
 
 func sticker(id string) *discord.Sticker {
-	return &discord.Sticker{ID: discord.Snowflake(id), Name: "sticker-" + id}
+	return &discord.Sticker{ID: mustSnowflake(id), Name: "sticker-" + id}
 }
 
 func message(id, channelID string) *discord.Message {
 	return &discord.Message{
-		ID:        discord.Snowflake(id),
-		ChannelID: discord.Snowflake(channelID),
+		ID:        mustSnowflake(id),
+		ChannelID: mustSnowflake(channelID),
 		Content:   "msg-" + id,
 	}
 }
@@ -112,16 +124,16 @@ func TestGuildStore_SetGetDelete(t *testing.T) {
 
 	c.Guilds().Set(guild("1"))
 
-	got, ok := c.Guilds().Get("1")
-	if !ok || got.ID != "1" {
+	got, ok := c.Guilds().Get(1)
+	if !ok || got.ID != 1 {
 		t.Fatalf("expected guild 1, ok=%v", ok)
 	}
 	if got.Name != "guild-1" {
 		t.Fatalf("expected name 'guild-1', got %q", got.Name)
 	}
 
-	c.Guilds().Delete("1")
-	if _, ok := c.Guilds().Get("1"); ok {
+	c.Guilds().Delete(1)
+	if _, ok := c.Guilds().Get(1); ok {
 		t.Fatal("expected guild deleted")
 	}
 }
@@ -146,7 +158,7 @@ func TestGuildStore_Size(t *testing.T) {
 	if s := c.Guilds().Size(); s != 3 {
 		t.Fatalf("expected size 3, got %d", s)
 	}
-	c.Guilds().Delete("2")
+	c.Guilds().Delete(2)
 	if s := c.Guilds().Size(); s != 2 {
 		t.Fatalf("expected size 2 after delete, got %d", s)
 	}
@@ -155,10 +167,10 @@ func TestGuildStore_Size(t *testing.T) {
 func TestGuildStore_Overwrite(t *testing.T) {
 	c := newCache(t, cache.Options{})
 
-	c.Guilds().Set(&discord.Guild{ID: "1", Name: "old"})
-	c.Guilds().Set(&discord.Guild{ID: "1", Name: "new"})
+	c.Guilds().Set(&discord.Guild{ID: 1, Name: "old"})
+	c.Guilds().Set(&discord.Guild{ID: 1, Name: "new"})
 
-	got, ok := c.Guilds().Get("1")
+	got, ok := c.Guilds().Get(1)
 	if !ok || got.Name != "new" {
 		t.Fatalf("expected overwritten name 'new', got %q (ok=%v)", got.Name, ok)
 	}
@@ -173,13 +185,13 @@ func TestGuildStore_TTL(t *testing.T) {
 	c := newCache(t, cache.Options{TTL: 150 * time.Millisecond})
 
 	c.Guilds().Set(guild("1"))
-	if _, ok := c.Guilds().Get("1"); !ok {
+	if _, ok := c.Guilds().Get(1); !ok {
 		t.Fatal("expected guild before TTL")
 	}
 
 	time.Sleep(300 * time.Millisecond)
 
-	if _, ok := c.Guilds().Get("1"); ok {
+	if _, ok := c.Guilds().Get(1); ok {
 		t.Fatal("expected guild not returned after TTL (expires_at filter)")
 	}
 	if n := c.Guilds().Size(); n != 0 {
@@ -196,11 +208,11 @@ func TestChannelStore_CRUD(t *testing.T) {
 	c := newCache(t, cache.Options{})
 
 	c.Channels().Set(channel("10"))
-	if _, ok := c.Channels().Get("10"); !ok {
+	if _, ok := c.Channels().Get(10); !ok {
 		t.Fatal("expected channel 10")
 	}
-	c.Channels().Delete("10")
-	if _, ok := c.Channels().Get("10"); ok {
+	c.Channels().Delete(10)
+	if _, ok := c.Channels().Get(10); ok {
 		t.Fatal("expected channel deleted")
 	}
 }
@@ -221,7 +233,7 @@ func TestChannelStore_TTL(t *testing.T) {
 
 	c.Channels().Set(channel("1"))
 	time.Sleep(300 * time.Millisecond)
-	if _, ok := c.Channels().Get("1"); ok {
+	if _, ok := c.Channels().Get(1); ok {
 		t.Fatal("expected channel expired after TTL")
 	}
 }
@@ -232,12 +244,12 @@ func TestUserStore_CRUD(t *testing.T) {
 	c := newCache(t, cache.Options{})
 
 	c.Users().Set(user("42"))
-	got, ok := c.Users().Get("42")
+	got, ok := c.Users().Get(42)
 	if !ok || got.Username != "user-42" {
 		t.Fatalf("expected user-42, ok=%v", ok)
 	}
-	c.Users().Delete("42")
-	if _, ok := c.Users().Get("42"); ok {
+	c.Users().Delete(42)
+	if _, ok := c.Users().Get(42); ok {
 		t.Fatal("expected user deleted")
 	}
 }
@@ -257,9 +269,9 @@ func TestUserStore_All(t *testing.T) {
 func TestMemberStore_SetGet(t *testing.T) {
 	c := newCache(t, cache.Options{})
 
-	c.Members().Set("guild1", member("99"))
-	got, ok := c.Members().Get("guild1", "99")
-	if !ok || got.User.ID != "99" {
+	c.Members().Set(mustSnowflake("guild1"), member("99"))
+	got, ok := c.Members().Get(mustSnowflake("guild1"), 99)
+	if !ok || got.User.ID != 99 {
 		t.Fatalf("expected member 99, ok=%v", ok)
 	}
 }
@@ -267,9 +279,9 @@ func TestMemberStore_SetGet(t *testing.T) {
 func TestMemberStore_Delete(t *testing.T) {
 	c := newCache(t, cache.Options{})
 
-	c.Members().Set("g1", member("5"))
-	c.Members().Delete("g1", "5")
-	if _, ok := c.Members().Get("g1", "5"); ok {
+	c.Members().Set(mustSnowflake("g1"), member("5"))
+	c.Members().Delete(mustSnowflake("g1"), 5)
+	if _, ok := c.Members().Get(mustSnowflake("g1"), 5); ok {
 		t.Fatal("expected member deleted")
 	}
 }
@@ -278,16 +290,16 @@ func TestMemberStore_DeleteGuild(t *testing.T) {
 	c := newCache(t, cache.Options{})
 
 	for i := 1; i <= 5; i++ {
-		c.Members().Set("guild1", member(fmt.Sprintf("%d", i)))
+		c.Members().Set(mustSnowflake("guild1"), member(fmt.Sprintf("%d", i)))
 	}
-	c.Members().Set("guild2", member("99"))
+	c.Members().Set(mustSnowflake("guild2"), member("99"))
 
-	c.Members().DeleteGuild("guild1")
+	c.Members().DeleteGuild(mustSnowflake("guild1"))
 
-	if n := c.Members().AllInGuild("guild1").Len(); n != 0 {
+	if n := c.Members().AllInGuild(mustSnowflake("guild1")).Len(); n != 0 {
 		t.Fatalf("expected 0 members in guild1 after DeleteGuild, got %d", n)
 	}
-	if n := c.Members().AllInGuild("guild2").Len(); n != 1 {
+	if n := c.Members().AllInGuild(mustSnowflake("guild2")).Len(); n != 1 {
 		t.Fatalf("guild2 should be unaffected, got %d members", n)
 	}
 }
@@ -296,14 +308,14 @@ func TestMemberStore_AllInGuild(t *testing.T) {
 	c := newCache(t, cache.Options{})
 
 	for i := 1; i <= 3; i++ {
-		c.Members().Set("g1", member(fmt.Sprintf("%d", i)))
+		c.Members().Set(mustSnowflake("g1"), member(fmt.Sprintf("%d", i)))
 	}
-	c.Members().Set("g2", member("99"))
+	c.Members().Set(mustSnowflake("g2"), member("99"))
 
-	if n := c.Members().AllInGuild("g1").Len(); n != 3 {
+	if n := c.Members().AllInGuild(mustSnowflake("g1")).Len(); n != 3 {
 		t.Fatalf("expected 3 members in g1, got %d", n)
 	}
-	if n := c.Members().AllInGuild("g2").Len(); n != 1 {
+	if n := c.Members().AllInGuild(mustSnowflake("g2")).Len(); n != 1 {
 		t.Fatalf("expected 1 member in g2, got %d", n)
 	}
 }
@@ -311,7 +323,7 @@ func TestMemberStore_AllInGuild(t *testing.T) {
 func TestMemberStore_NilUser(t *testing.T) {
 	c := newCache(t, cache.Options{})
 
-	c.Members().Set("g1", &discord.GuildMember{})
+	c.Members().Set(mustSnowflake("g1"), &discord.GuildMember{})
 	if c.Members().Size() != 0 {
 		t.Fatal("expected size 0 when member.User is nil")
 	}
@@ -320,9 +332,9 @@ func TestMemberStore_NilUser(t *testing.T) {
 func TestMemberStore_TTL(t *testing.T) {
 	c := newCache(t, cache.Options{TTL: 150 * time.Millisecond})
 
-	c.Members().Set("g1", member("1"))
+	c.Members().Set(mustSnowflake("g1"), member("1"))
 	time.Sleep(300 * time.Millisecond)
-	if _, ok := c.Members().Get("g1", "1"); ok {
+	if _, ok := c.Members().Get(mustSnowflake("g1"), 1); ok {
 		t.Fatal("expected member expired after TTL")
 	}
 }
@@ -332,27 +344,27 @@ func TestMemberStore_TTL(t *testing.T) {
 func TestStickerStore_CRUDAndSetAll(t *testing.T) {
 	c := newCache(t, cache.Options{})
 
-	c.Stickers().Set("guild1", sticker("s1"))
-	got, ok := c.Stickers().Get("s1")
-	if !ok || got.ID != "s1" {
+	c.Stickers().Set(mustSnowflake("guild1"), sticker("s1"))
+	got, ok := c.Stickers().Get(mustSnowflake("s1"))
+	if !ok || got.ID != mustSnowflake("s1") {
 		t.Fatalf("expected sticker s1, ok=%v", ok)
 	}
 
-	c.Stickers().SetAll("guild1", []*discord.Sticker{sticker("s2"), sticker("s3")})
-	if _, ok := c.Stickers().Get("s1"); ok {
+	c.Stickers().SetAll(mustSnowflake("guild1"), []*discord.Sticker{sticker("s2"), sticker("s3")})
+	if _, ok := c.Stickers().Get(mustSnowflake("s1")); ok {
 		t.Fatal("expected old guild stickers replaced by SetAll")
 	}
-	if n := c.Stickers().GetByGuild("guild1").Len(); n != 2 {
+	if n := c.Stickers().GetByGuild(mustSnowflake("guild1")).Len(); n != 2 {
 		t.Fatalf("expected 2 stickers in guild1, got %d", n)
 	}
 
-	c.Stickers().Delete("s2")
-	if _, ok := c.Stickers().Get("s2"); ok {
+	c.Stickers().Delete(mustSnowflake("s2"))
+	if _, ok := c.Stickers().Get(mustSnowflake("s2")); ok {
 		t.Fatal("expected sticker s2 deleted")
 	}
 
-	c.Stickers().DeleteGuild("guild1")
-	if n := c.Stickers().GetByGuild("guild1").Len(); n != 0 {
+	c.Stickers().DeleteGuild(mustSnowflake("guild1"))
+	if n := c.Stickers().GetByGuild(mustSnowflake("guild1")).Len(); n != 0 {
 		t.Fatalf("expected guild stickers deleted, got %d", n)
 	}
 }
@@ -365,8 +377,8 @@ func TestMessageStore_AddGet(t *testing.T) {
 	c := newCache(t, defaultMsgOpts)
 
 	c.Messages().Add(message("m1", "c1"))
-	got, ok := c.Messages().Get("c1", "m1")
-	if !ok || got.ID != "m1" {
+	got, ok := c.Messages().Get(mustSnowflake("c1"), mustSnowflake("m1"))
+	if !ok || got.ID != mustSnowflake("m1") {
 		t.Fatalf("expected msg m1, ok=%v", ok)
 	}
 }
@@ -381,7 +393,7 @@ func TestMessageStore_Update(t *testing.T) {
 	updated.Content = "edited"
 	c.Messages().Update(&updated)
 
-	got, _ := c.Messages().Get("c1", "m1")
+	got, _ := c.Messages().Get(mustSnowflake("c1"), mustSnowflake("m1"))
 	if got.Content != "edited" {
 		t.Fatalf("expected updated content, got %q", got.Content)
 	}
@@ -401,13 +413,13 @@ func TestMessageStore_Update_PreservesInsertedAt(t *testing.T) {
 	updated.Content = "edited"
 	c.Messages().Update(updated)
 
-	msgs := c.Messages().Channel("c1")
+	msgs := c.Messages().Channel(mustSnowflake("c1"))
 	if msgs.Len() != 3 {
 		t.Fatalf("expected 3 messages, got %d", msgs.Len())
 	}
 	// m3 was added last, so it must be first (newest).
-	if msgs.Values()[0].ID != "m3" {
-		t.Fatalf("expected m3 first (newest), got %s", msgs.Values()[0].ID)
+	if msgs.Values()[0].ID != mustSnowflake("m3") {
+		t.Fatalf("expected m3 first (newest), got %v", msgs.Values()[0].ID)
 	}
 }
 
@@ -415,8 +427,8 @@ func TestMessageStore_Delete(t *testing.T) {
 	c := newCache(t, defaultMsgOpts)
 
 	c.Messages().Add(message("m1", "c1"))
-	c.Messages().Delete("c1", "m1")
-	if _, ok := c.Messages().Get("c1", "m1"); ok {
+	c.Messages().Delete(mustSnowflake("c1"), mustSnowflake("m1"))
+	if _, ok := c.Messages().Get(mustSnowflake("c1"), mustSnowflake("m1")); ok {
 		t.Fatal("expected message deleted")
 	}
 }
@@ -427,16 +439,16 @@ func TestMessageStore_DeleteBulk(t *testing.T) {
 	for i := 1; i <= 5; i++ {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
 	}
-	c.Messages().DeleteBulk("c1", []discord.Snowflake{"m1", "m3", "m5"})
+	c.Messages().DeleteBulk(mustSnowflake("c1"), []discord.Snowflake{mustSnowflake("m1"), mustSnowflake("m3"), mustSnowflake("m5")})
 
-	for _, id := range []discord.Snowflake{"m1", "m3", "m5"} {
-		if _, ok := c.Messages().Get("c1", id); ok {
-			t.Fatalf("expected message %s deleted", id)
+	for _, id := range []discord.Snowflake{mustSnowflake("m1"), mustSnowflake("m3"), mustSnowflake("m5")} {
+		if _, ok := c.Messages().Get(mustSnowflake("c1"), id); ok {
+			t.Fatalf("expected message %v deleted", id)
 		}
 	}
-	for _, id := range []discord.Snowflake{"m2", "m4"} {
-		if _, ok := c.Messages().Get("c1", id); !ok {
-			t.Fatalf("expected message %s present", id)
+	for _, id := range []discord.Snowflake{mustSnowflake("m2"), mustSnowflake("m4")} {
+		if _, ok := c.Messages().Get(mustSnowflake("c1"), id); !ok {
+			t.Fatalf("expected message %v present", id)
 		}
 	}
 }
@@ -447,15 +459,15 @@ func TestMessageStore_Channel_NewestFirst(t *testing.T) {
 	for i := 1; i <= 5; i++ {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
 	}
-	msgs := c.Messages().Channel("c1")
+	msgs := c.Messages().Channel(mustSnowflake("c1"))
 	if msgs.Len() != 5 {
 		t.Fatalf("expected 5 messages, got %d", msgs.Len())
 	}
-	if msgs.Values()[0].ID != "m5" {
-		t.Fatalf("expected newest first (m5), got %s", msgs.Values()[0].ID)
+	if msgs.Values()[0].ID != mustSnowflake("m5") {
+		t.Fatalf("expected newest first (m5), got %v", msgs.Values()[0].ID)
 	}
-	if msgs.Values()[4].ID != "m1" {
-		t.Fatalf("expected oldest last (m1), got %s", msgs.Values()[4].ID)
+	if msgs.Values()[4].ID != mustSnowflake("m1") {
+		t.Fatalf("expected oldest last (m1), got %v", msgs.Values()[4].ID)
 	}
 }
 
@@ -465,12 +477,12 @@ func TestMessageStore_DeleteChannel(t *testing.T) {
 	c.Messages().Add(message("m1", "c1"))
 	c.Messages().Add(message("m2", "c2"))
 
-	c.Messages().DeleteChannel("c1")
+	c.Messages().DeleteChannel(mustSnowflake("c1"))
 
-	if n := c.Messages().Channel("c1").Len(); n != 0 {
+	if n := c.Messages().Channel(mustSnowflake("c1")).Len(); n != 0 {
 		t.Fatalf("expected c1 messages deleted, got %d", n)
 	}
-	if n := c.Messages().Channel("c2").Len(); n != 1 {
+	if n := c.Messages().Channel(mustSnowflake("c2")).Len(); n != 1 {
 		t.Fatal("c2 should be unaffected")
 	}
 }
@@ -484,13 +496,13 @@ func TestMessageStore_RingCap(t *testing.T) {
 		c.Messages().Add(message(fmt.Sprintf("m%d", i), "c1"))
 	}
 
-	msgs := c.Messages().Channel("c1")
+	msgs := c.Messages().Channel(mustSnowflake("c1"))
 	if msgs.Len() != 3 {
 		t.Fatalf("expected ring cap of 3, got %d", msgs.Len())
 	}
 	for _, m := range msgs.Values() {
-		if m.ID == "m1" || m.ID == "m2" {
-			t.Fatalf("message %s (oldest) should have been evicted", m.ID)
+		if m.ID == mustSnowflake("m1") || m.ID == mustSnowflake("m2") {
+			t.Fatalf("message %v (oldest) should have been evicted", m.ID)
 		}
 	}
 }
@@ -504,16 +516,16 @@ func TestMessageStore_TTL(t *testing.T) {
 	})
 
 	c.Messages().Add(message("m1", "c1"))
-	if _, ok := c.Messages().Get("c1", "m1"); !ok {
+	if _, ok := c.Messages().Get(mustSnowflake("c1"), mustSnowflake("m1")); !ok {
 		t.Fatal("expected message before TTL")
 	}
 
 	time.Sleep(300 * time.Millisecond)
 
-	if _, ok := c.Messages().Get("c1", "m1"); ok {
+	if _, ok := c.Messages().Get(mustSnowflake("c1"), mustSnowflake("m1")); ok {
 		t.Fatal("expected message expired after TTL (expires_at filter)")
 	}
-	if n := c.Messages().Channel("c1").Len(); n != 0 {
+	if n := c.Messages().Channel(mustSnowflake("c1")).Len(); n != 0 {
 		t.Fatalf("expected no messages after TTL, got %d", n)
 	}
 }
@@ -530,7 +542,7 @@ func TestMessageStore_SizeAccuracy(t *testing.T) {
 	if s := c.Messages().Size(); s != 7 {
 		t.Fatalf("expected size 7, got %d", s)
 	}
-	c.Messages().DeleteChannel("c1")
+	c.Messages().DeleteChannel(mustSnowflake("c1"))
 	if s := c.Messages().Size(); s != 3 {
 		t.Fatalf("expected size 3 after DeleteChannel, got %d", s)
 	}
@@ -565,18 +577,21 @@ func TestConcurrent_NoRace(t *testing.T) {
 		g := g
 		go func() {
 			defer wg.Done()
-			gid := discord.Snowflake(fmt.Sprintf("g%d", g%3))
-			uid := discord.Snowflake(fmt.Sprintf("u%d", g%4))
-			cid := discord.Snowflake(fmt.Sprintf("c%d", g%2))
-			mid := discord.Snowflake(fmt.Sprintf("msg%d", g))
+			gid := mustSnowflake(fmt.Sprintf("g%d", g%3))
+			cid := mustSnowflake(fmt.Sprintf("c%d", g%2))
+			mid := mustSnowflake(fmt.Sprintf("msg%d", g))
+			gidStr := fmt.Sprintf("g%d", g%3)
+			uidStr := fmt.Sprintf("u%d", g%4)
+			cidStr := fmt.Sprintf("c%d", g%2)
+			midStr := fmt.Sprintf("msg%d", g)
 			for i := 0; i < ops; i++ {
-				c.Guilds().Set(guild(string(gid)))
+				c.Guilds().Set(guild(gidStr))
 				c.Guilds().Get(gid)
-				c.Users().Set(user(string(uid)))
-				c.Channels().Set(channel(string(cid)))
-				c.Messages().Add(message(string(mid), string(cid)))
+				c.Users().Set(user(uidStr))
+				c.Channels().Set(channel(cidStr))
+				c.Messages().Add(message(midStr, cidStr))
 				c.Messages().Get(cid, mid)
-				c.Members().Set(gid, member(string(uid)))
+				c.Members().Set(gid, member(uidStr))
 				c.Members().AllInGuild(gid)
 			}
 		}()
@@ -590,13 +605,13 @@ func TestConcurrent_NoRace(t *testing.T) {
 func TestBug50SetAllIsAtomic(t *testing.T) {
 	c := newCache(t, cache.Options{})
 
-	const guildID = discord.Snowflake("g1")
+	guildID := mustSnowflake("g1")
 	const workers = 50
 
 	initial := []*discord.Emoji{
-		{ID: "e1", Name: "emoji1"},
-		{ID: "e2", Name: "emoji2"},
-		{ID: "e3", Name: "emoji3"},
+		{ID: mustSnowflake("e1"), Name: "emoji1"},
+		{ID: mustSnowflake("e2"), Name: "emoji2"},
+		{ID: mustSnowflake("e3"), Name: "emoji3"},
 	}
 	c.Emojis().SetAll(guildID, initial)
 
@@ -624,9 +639,9 @@ func TestBug50SetAllIsAtomic(t *testing.T) {
 	}
 
 	newSet := []*discord.Emoji{
-		{ID: "n1", Name: "new1"}, {ID: "n2", Name: "new2"},
-		{ID: "n3", Name: "new3"}, {ID: "n4", Name: "new4"},
-		{ID: "n5", Name: "new5"},
+		{ID: mustSnowflake("n1"), Name: "new1"}, {ID: mustSnowflake("n2"), Name: "new2"},
+		{ID: mustSnowflake("n3"), Name: "new3"}, {ID: mustSnowflake("n4"), Name: "new4"},
+		{ID: mustSnowflake("n5"), Name: "new5"},
 	}
 	for i := 0; i < 10; i++ {
 		c.Emojis().SetAll(guildID, newSet)
@@ -650,7 +665,7 @@ func TestBug36MaxPerChannelZeroDisables(t *testing.T) {
 	c.Messages().Add(message("m1", "ch1"))
 	c.Messages().Add(message("m2", "ch1"))
 
-	ch := c.Messages().Channel("ch1")
+	ch := c.Messages().Channel(mustSnowflake("ch1"))
 	if ch.Len() != 0 {
 		t.Errorf("MaxPerChannel=0 should disable caching, got %d messages (Bug 36)", ch.Len())
 	}

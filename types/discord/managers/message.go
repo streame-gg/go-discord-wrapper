@@ -48,18 +48,22 @@ func (m *messageManager) Create(ctx context.Context, opts discord.MessageCreateO
 	return m.client.CreateMessage(ctx, m.channelID, opts)
 }
 
-func (m *messageManager) Resolve(input any) *discord.Message {
+func (m *messageManager) Resolve(input any) (*discord.Message, error) {
 	switch v := input.(type) {
 	case *discord.Message:
-		return v
+		return v, nil
 	case discord.Snowflake:
 		msg, _ := m.Get(v)
-		return msg
+		return msg, nil
 	case string:
-		msg, _ := m.Get(discord.Snowflake(v))
-		return msg
+		snowflake, err := discord.ParseSnowflake(v)
+		if err != nil {
+			return nil, err
+		}
+		mem, _ := m.Get(*snowflake)
+		return mem, nil
 	}
-	return nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *messageManager) Size() int {

@@ -69,7 +69,7 @@ func TestClientManagers_WorkWithoutCache(t *testing.T) {
 	assert.Equal(t, 0, c.Users().Size(), "Size() must return 0 without cache")
 	assert.Equal(t, 0, c.Channels().Size(), "Size() must return 0 without cache")
 
-	g, ok := c.Guilds().Get("anyid")
+	g, ok := c.Guilds().Get(mustSnowflake("anyid"))
 	assert.Nil(t, g)
 	assert.False(t, ok, "Get() must return (nil, false) without cache")
 
@@ -82,8 +82,8 @@ func TestClientManagers_WorkWithoutCache(t *testing.T) {
 func TestGuildFromCache_HasAllSubManagers(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("111222333444555666")
-	dispatchGuildCreate(t, c, guildCreatePayload(string(guildID)))
+	guildID := discord.Snowflake(111222333444555666)
+	dispatchGuildCreate(t, c, guildCreatePayload(guildID.String()))
 
 	g, ok := c.Cache.Guilds().Get(guildID)
 	require.True(t, ok, "guild must be in cache after GUILD_CREATE")
@@ -112,8 +112,8 @@ func TestGuildFromGuildCreateCallback_HasAllSubManagers(t *testing.T) {
 	c, err := NewClient("test-token", discord.IntentGuilds, options.WithCache(mc))
 	require.NoError(t, err)
 
-	guildID := discord.Snowflake("111222333444555666")
-	packet := dispatchPacket("GUILD_CREATE", guildCreatePayload(string(guildID)))
+	guildID := discord.Snowflake(111222333444555666)
+	packet := dispatchPacket("GUILD_CREATE", guildCreatePayload(guildID.String()))
 	wsURL, closeServer := mockGateway(t, packet)
 	defer closeServer()
 
@@ -170,8 +170,8 @@ func TestGuildFromGuildCreateCallback_HasAllSubManagers(t *testing.T) {
 func TestGuildUpdatePreservesSubManagers(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("111222333444555666")
-	dispatchGuildCreate(t, c, guildCreatePayload(string(guildID)))
+	guildID := discord.Snowflake(111222333444555666)
+	dispatchGuildCreate(t, c, guildCreatePayload(guildID.String()))
 
 	// Verify baseline sub-managers after GUILD_CREATE.
 	g, ok := c.Cache.Guilds().Get(guildID)
@@ -203,14 +203,14 @@ func TestGuildUpdatePreservesSubManagers(t *testing.T) {
 func TestChannelFromCache_HasSubManagers(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("222333444")
-	channelID := discord.Snowflake("888999000")
+	guildID := discord.Snowflake(222333444)
+	channelID := discord.Snowflake(888999000)
 
-	payload := guildCreatePayload(string(guildID), map[string]any{
+	payload := guildCreatePayload(guildID.String(), map[string]any{
 		"channels": []any{
 			map[string]any{
-				"id":       string(channelID),
-				"guild_id": string(guildID),
+				"id":       channelID.String(),
+				"guild_id": guildID.String(),
 				"type":     0,
 				"name":     "general",
 			},
@@ -232,13 +232,13 @@ func TestChannelFromCache_HasSubManagers(t *testing.T) {
 func TestNestedHydration_GuildMembers(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("333444555")
-	userID := discord.Snowflake("777888999")
+	guildID := discord.Snowflake(333444555)
+	userID := discord.Snowflake(777888999)
 
-	payload := guildCreatePayload(string(guildID), map[string]any{
+	payload := guildCreatePayload(guildID.String(), map[string]any{
 		"members": []any{
 			map[string]any{
-				"user":      map[string]any{"id": string(userID), "username": "alice", "discriminator": "0"},
+				"user":      map[string]any{"id": userID.String(), "username": "alice", "discriminator": "0"},
 				"roles":     []any{},
 				"joined_at": "2024-01-01T00:00:00Z",
 				"deaf":      false,
@@ -262,16 +262,16 @@ func TestNestedHydration_GuildMembers(t *testing.T) {
 func TestNestedHydration_GuildMembersChunk(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("444555666")
-	userID := discord.Snowflake("111000111")
+	guildID := discord.Snowflake(444555666)
+	userID := discord.Snowflake(111000111)
 
 	chunkPayload := map[string]any{
-		"guild_id":    string(guildID),
+		"guild_id":    guildID.String(),
 		"chunk_index": 0,
 		"chunk_count": 1,
 		"members": []any{
 			map[string]any{
-				"user":      map[string]any{"id": string(userID), "username": "bob", "discriminator": "0"},
+				"user":      map[string]any{"id": userID.String(), "username": "bob", "discriminator": "0"},
 				"roles":     []any{},
 				"joined_at": "2024-01-01T00:00:00Z",
 				"deaf":      false,
@@ -308,11 +308,11 @@ func TestNestedHydration_MessageCreate(t *testing.T) {
 	require.NoError(t, err)
 	c.internalEventHandler(json.RawMessage(raw), events.EventMessageCreate, nil)
 
-	msg, ok := c.Cache.Messages().Get("ch1", "msg1")
+	msg, ok := c.Cache.Messages().Get(mustSnowflake("ch1"), mustSnowflake("msg1"))
 	require.True(t, ok, "message must be cached after MESSAGE_CREATE")
 	assert.True(t, msg.IsHydrated(), "message must be hydrated after MESSAGE_CREATE")
 
-	u, uok := c.Cache.Users().Get("u1")
+	u, uok := c.Cache.Users().Get(mustSnowflake("u1"))
 	require.True(t, uok, "author must be cached after MESSAGE_CREATE")
 	assert.True(t, u.IsHydrated(), "author must be hydrated after MESSAGE_CREATE")
 }
@@ -328,8 +328,8 @@ func TestNestedHydration_MessageCreate(t *testing.T) {
 func TestEntityHydrationCompleteness_Guild_Reflection(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("999888777")
-	dispatchGuildCreate(t, c, guildCreatePayload(string(guildID)))
+	guildID := discord.Snowflake(999888777)
+	dispatchGuildCreate(t, c, guildCreatePayload(guildID.String()))
 
 	g, ok := c.Cache.Guilds().Get(guildID)
 	require.True(t, ok, "guild must be in cache")
@@ -368,13 +368,13 @@ func TestEntityHydrationCompleteness_Guild_Reflection(t *testing.T) {
 func TestInteractionCreate_GuildMembersAccessible(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("111222333444555666")
-	applicationID := discord.Snowflake("999888777666555444") // bot's user ID == its ApplicationID
+	guildID := discord.Snowflake(111222333444555666)
+	applicationID := discord.Snowflake(999888777666555444) // bot's user ID == its ApplicationID
 
-	payload := guildCreatePayload(string(guildID), map[string]any{
+	payload := guildCreatePayload(guildID.String(), map[string]any{
 		"members": []any{
 			map[string]any{
-				"user":      map[string]any{"id": string(applicationID), "username": "TestBot", "discriminator": "0"},
+				"user":      map[string]any{"id": applicationID.String(), "username": "TestBot", "discriminator": "0"},
 				"roles":     []any{},
 				"joined_at": "2024-01-01T00:00:00Z",
 				"deaf":      false,
@@ -391,10 +391,10 @@ func TestInteractionCreate_GuildMembersAccessible(t *testing.T) {
 	// Build and dispatch a synthetic INTERACTION_CREATE.
 	interactionPayload := map[string]any{
 		"id":             "interaction1",
-		"application_id": string(applicationID),
+		"application_id": applicationID.String(),
 		"type":           2,
-		"guild_id":       string(guildID),
-		"guild":          map[string]any{"id": string(guildID)},
+		"guild_id":       guildID.String(),
+		"guild":          map[string]any{"id": guildID.String()},
 		"channel_id":     "chan1",
 		"member": map[string]any{
 			"user":      map[string]any{"id": "invokerUser", "username": "invoker", "discriminator": "0"},
@@ -437,14 +437,14 @@ func TestInteractionCreate_GuildMembersAccessible(t *testing.T) {
 func TestInteractionCreate_NilGuildStub(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("111222333444555000")
-	applicationID := discord.Snowflake("999888777666000111")
+	guildID := discord.Snowflake(111222333444555000)
+	applicationID := discord.Snowflake(999888777666000111)
 
 	// GUILD_CREATE so the guild IS in the member cache.
-	payload := guildCreatePayload(string(guildID), map[string]any{
+	payload := guildCreatePayload(guildID.String(), map[string]any{
 		"members": []any{
 			map[string]any{
-				"user":      map[string]any{"id": string(applicationID), "username": "Bot", "discriminator": "0"},
+				"user":      map[string]any{"id": applicationID.String(), "username": "Bot", "discriminator": "0"},
 				"roles":     []any{},
 				"joined_at": "2024-01-01T00:00:00Z",
 				"deaf":      false,
@@ -457,9 +457,9 @@ func TestInteractionCreate_NilGuildStub(t *testing.T) {
 	// Interaction payload WITHOUT the "guild" field — Discord omits it in some cases.
 	interactionPayload := map[string]any{
 		"id":             "interaction2",
-		"application_id": string(applicationID),
+		"application_id": applicationID.String(),
 		"type":           2,
-		"guild_id":       string(guildID),
+		"guild_id":       guildID.String(),
 		// "guild" intentionally omitted
 		"channel_id": "chan2",
 		"member": map[string]any{
@@ -499,8 +499,8 @@ func TestInteractionCreate_NilGuildStub(t *testing.T) {
 // Guild struct (via RawStickers) have GuildID set after Hydrate, so that
 // Sticker.Edit/Delete work without error on stickers accessed from the guild object.
 func TestStickerHydration_GuildIDSet(t *testing.T) {
-	guildID := discord.Snowflake("111000111000111000")
-	stickerID := discord.Snowflake("222000222000222000")
+	guildID := discord.Snowflake(111000111000111000)
+	stickerID := discord.Snowflake(222000222000222000)
 
 	// Build a guild with an embedded sticker directly (bypassing JSON unmarshal).
 	g := &discord.Guild{
@@ -529,7 +529,7 @@ func TestStickerHydration_GuildIDSet(t *testing.T) {
 func TestHydrateEvent_GuildMemberUpdate_UserHydrated(t *testing.T) {
 	c := newClientWithCache(t)
 	ev := &events.GuildMemberUpdateEvent{}
-	ev.NewMember.User = &discord.User{ID: "user-update-1"}
+	ev.NewMember.User = &discord.User{ID: mustSnowflake("user-update-1")}
 	c.hydrateEvent(ev)
 	assert.True(t, ev.NewMember.User.IsHydrated(), "GuildMemberUpdate: ev.NewMember.User must be hydrated after hydrateEvent")
 }
@@ -537,7 +537,7 @@ func TestHydrateEvent_GuildMemberUpdate_UserHydrated(t *testing.T) {
 func TestHydrateEvent_GuildMemberRemove_UserHydrated(t *testing.T) {
 	c := newClientWithCache(t)
 	ev := &events.GuildMemberRemoveEvent{}
-	ev.User.ID = "user-remove-1"
+	ev.User.ID = mustSnowflake("user-remove-1")
 	c.hydrateEvent(ev)
 	assert.True(t, ev.User.IsHydrated(), "GuildMemberRemove: ev.User must be hydrated after hydrateEvent")
 }
@@ -545,10 +545,10 @@ func TestHydrateEvent_GuildMemberRemove_UserHydrated(t *testing.T) {
 func TestHydrateEvent_ThreadListSync_ChannelsHaveSubManagers(t *testing.T) {
 	c := newClientWithCache(t)
 	ev := &events.ThreadListSyncEvent{
-		GuildID: discord.Snowflake("g1"),
+		GuildID: mustSnowflake("g1"),
 		Threads: []discord.Channel{
-			{ID: "thread-sync-1"},
-			{ID: "thread-sync-2"},
+			{ID: mustSnowflake("thread-sync-1")},
+			{ID: mustSnowflake("thread-sync-2")},
 		},
 	}
 	c.hydrateEvent(ev)
@@ -562,7 +562,7 @@ func TestHydrateEvent_ThreadListSync_ChannelsHaveSubManagers(t *testing.T) {
 func TestHydrateEvent_ChannelCreate_HasSubManagers(t *testing.T) {
 	c := newClientWithCache(t)
 	ev := &events.ChannelCreateEvent{}
-	ev.Channel.ID = "ch-create-1"
+	ev.Channel.ID = mustSnowflake("ch-create-1")
 	c.hydrateEvent(ev)
 	assert.NotNil(t, ev.Channel.Messages(), "ChannelCreate: Messages() must not be nil after hydrateEvent")
 	assert.NotNil(t, ev.Channel.Threads(), "ChannelCreate: Threads() must not be nil after hydrateEvent")
@@ -572,7 +572,7 @@ func TestHydrateEvent_ChannelCreate_HasSubManagers(t *testing.T) {
 func TestHydrateEvent_ChannelUpdate_HasSubManagers(t *testing.T) {
 	c := newClientWithCache(t)
 	ev := &events.ChannelUpdateEvent{}
-	ev.NewChannel.ID = "ch-update-1"
+	ev.NewChannel.ID = mustSnowflake("ch-update-1")
 	c.hydrateEvent(ev)
 	assert.NotNil(t, ev.NewChannel.Messages(), "ChannelUpdate: Messages() must not be nil after hydrateEvent")
 	assert.NotNil(t, ev.NewChannel.Threads(), "ChannelUpdate: Threads() must not be nil after hydrateEvent")
@@ -581,7 +581,7 @@ func TestHydrateEvent_ChannelUpdate_HasSubManagers(t *testing.T) {
 func TestHydrateEvent_ChannelDelete_HasSubManagers(t *testing.T) {
 	c := newClientWithCache(t)
 	ev := &events.ChannelDeleteEvent{}
-	ev.Channel.ID = "ch-delete-1"
+	ev.Channel.ID = mustSnowflake("ch-delete-1")
 	c.hydrateEvent(ev)
 	assert.NotNil(t, ev.Channel.Messages(), "ChannelDelete: Messages() must not be nil after hydrateEvent")
 	assert.NotNil(t, ev.Channel.Threads(), "ChannelDelete: Threads() must not be nil after hydrateEvent")
@@ -590,7 +590,7 @@ func TestHydrateEvent_ChannelDelete_HasSubManagers(t *testing.T) {
 func TestHydrateEvent_ThreadCreate_HasSubManagers(t *testing.T) {
 	c := newClientWithCache(t)
 	ev := &events.ThreadCreateEvent{}
-	ev.Channel.ID = "thread-create-1"
+	ev.Channel.ID = mustSnowflake("thread-create-1")
 	c.hydrateEvent(ev)
 	assert.NotNil(t, ev.Channel.Messages(), "ThreadCreate: Messages() must not be nil after hydrateEvent")
 	assert.NotNil(t, ev.Channel.Threads(), "ThreadCreate: Threads() must not be nil after hydrateEvent")
@@ -599,17 +599,17 @@ func TestHydrateEvent_ThreadCreate_HasSubManagers(t *testing.T) {
 func TestHydrateEvent_ThreadUpdate_HasSubManagers(t *testing.T) {
 	c := newClientWithCache(t)
 	ev := &events.ThreadUpdateEvent{}
-	ev.NewThread.ID = "thread-update-1"
+	ev.NewThread.ID = mustSnowflake("thread-update-1")
 	c.hydrateEvent(ev)
 	assert.NotNil(t, ev.NewThread.Messages(), "ThreadUpdate: Messages() must not be nil after hydrateEvent")
 	assert.NotNil(t, ev.NewThread.Threads(), "ThreadUpdate: Threads() must not be nil after hydrateEvent")
 }
 
 func TestManagerFetch_WorksWithoutCache(t *testing.T) {
-	guildID := discord.Snowflake("777888999000111222")
+	guildID := discord.Snowflake(777888999000111222)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := map[string]any{"id": string(guildID), "name": "Fetched Guild", "roles": []any{}, "emojis": []any{}}
+		resp := map[string]any{"id": guildID.String(), "name": "Fetched Guild", "roles": []any{}, "emojis": []any{}}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(resp)
 	}))

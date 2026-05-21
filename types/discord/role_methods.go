@@ -68,7 +68,7 @@ func (r *Role) Edit(ctx context.Context, opts RoleEditOptions) (*Role, error) {
 	if err != nil {
 		return nil, err
 	}
-	if r.GuildID == "" {
+	if r.GuildID.IsEmpty() {
 		return nil, errRoleNoGuildID
 	}
 	return c.ModifyGuildRole(ctx, r.GuildID, r.ID, opts)
@@ -80,7 +80,7 @@ func (r *Role) Delete(ctx context.Context, reason *string) error {
 	if err != nil {
 		return err
 	}
-	if r.GuildID == "" {
+	if r.GuildID.IsEmpty() {
 		return errRoleNoGuildID
 	}
 	return c.DeleteGuildRole(ctx, r.GuildID, r.ID, reason)
@@ -93,7 +93,7 @@ func (r *Role) SetPosition(ctx context.Context, opts RolePositionOptions) ([]*Ro
 	if err != nil {
 		return nil, err
 	}
-	if r.GuildID == "" {
+	if r.GuildID.IsEmpty() {
 		return nil, errRoleNoGuildID
 	}
 	return c.ModifyGuildRolePositions(ctx, r.GuildID, opts)

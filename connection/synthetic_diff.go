@@ -159,18 +159,20 @@ func deriveGuildMemberSyntheticEvents(ev *events.GuildMemberUpdateEvent) []event
 
 	for r := range newRoles {
 		if _, exists := oldRoles[r]; !exists {
+			snowflake, _ := discord.ParseSnowflake(r)
 			result = append(result, &events.GuildMemberRoleAddEvent{
 				GuildID: ev.GuildID, UserID: ev.NewMember.UserID,
-				RoleID:    discord.Snowflake(r),
+				RoleID:    *snowflake,
 				OldMember: ev.OldMember, NewMember: newMember,
 			})
 		}
 	}
 	for r := range oldRoles {
 		if _, exists := newRoles[r]; !exists {
+			snowflake, _ := discord.ParseSnowflake(r)
 			result = append(result, &events.GuildMemberRoleRemoveEvent{
 				GuildID: ev.GuildID, UserID: ev.NewMember.UserID,
-				RoleID:    discord.Snowflake(r),
+				RoleID:    *snowflake,
 				OldMember: ev.OldMember, NewMember: newMember,
 			})
 		}

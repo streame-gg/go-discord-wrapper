@@ -16,9 +16,9 @@ import (
 func TestBug25GetGuildRolesEvictsStaleRoles(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("111222333444555")
-	roleA := &discord.Role{ID: "aaa111222333444"}
-	roleB := &discord.Role{ID: "bbb111222333444"}
+	guildID := discord.Snowflake(111222333444555)
+	roleA := &discord.Role{ID: mustSnowflake("aaa111222333444")}
+	roleB := &discord.Role{ID: mustSnowflake("bbb111222333444")}
 
 	c.cacheRole(guildID, roleA)
 	c.cacheRole(guildID, roleB)
@@ -43,9 +43,9 @@ func TestBug25GetGuildRolesEvictsStaleRoles(t *testing.T) {
 func TestBug25GetGuildChannelsEvictsStaleChannels(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guildID := discord.Snowflake("222333444555666")
-	chA := discord.Snowflake("aaa222333444555")
-	chB := discord.Snowflake("bbb222333444555")
+	guildID := discord.Snowflake(222333444555666)
+	chA := mustSnowflake("aaa222333444555")
+	chB := mustSnowflake("bbb222333444555")
 
 	c.cacheChannel(&discord.Channel{ID: chA, GuildID: &guildID})
 	c.cacheChannel(&discord.Channel{ID: chB, GuildID: &guildID})
