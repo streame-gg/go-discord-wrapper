@@ -1245,7 +1245,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					for _, m := range d.Cache.Members().AllInGuild(ev.GuildID).Values() {
 						found := false
 						for _, r := range m.Roles {
-							if r == roleStr {
+							if r.String() == roleStr {
 								found = true
 								break
 							}
@@ -1255,9 +1255,9 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						}
 						// Copy and filter — never mutate the cached pointer directly.
 						updated := *m
-						filtered := make([]string, 0, len(m.Roles)-1)
+						filtered := make([]discord.Snowflake, 0, len(m.Roles)-1)
 						for _, r := range m.Roles {
-							if r != roleStr {
+							if r.String() != roleStr {
 								filtered = append(filtered, r)
 							}
 						}

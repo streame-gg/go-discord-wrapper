@@ -298,9 +298,9 @@ func TestNestedHydration_MessageCreate(t *testing.T) {
 	c := newClientWithCache(t)
 
 	msgPayload := map[string]any{
-		"id":         "msg1",
-		"channel_id": "ch1",
-		"author":     map[string]any{"id": "u1", "username": "carol", "discriminator": "0"},
+		"id":         10,
+		"channel_id": 11,
+		"author":     map[string]any{"id": 12, "username": "carol", "discriminator": "0"},
 		"content":    "hello",
 		"timestamp":  "2024-01-01T00:00:00Z",
 	}
@@ -308,11 +308,11 @@ func TestNestedHydration_MessageCreate(t *testing.T) {
 	require.NoError(t, err)
 	c.internalEventHandler(json.RawMessage(raw), events.EventMessageCreate, nil)
 
-	msg, ok := c.Cache.Messages().Get(mustSnowflake("ch1"), mustSnowflake("msg1"))
+	msg, ok := c.Cache.Messages().Get(11, 10)
 	require.True(t, ok, "message must be cached after MESSAGE_CREATE")
 	assert.True(t, msg.IsHydrated(), "message must be hydrated after MESSAGE_CREATE")
 
-	u, uok := c.Cache.Users().Get(mustSnowflake("u1"))
+	u, uok := c.Cache.Users().Get(12)
 	require.True(t, uok, "author must be cached after MESSAGE_CREATE")
 	assert.True(t, u.IsHydrated(), "author must be hydrated after MESSAGE_CREATE")
 }
@@ -390,14 +390,14 @@ func TestInteractionCreate_GuildMembersAccessible(t *testing.T) {
 
 	// Build and dispatch a synthetic INTERACTION_CREATE.
 	interactionPayload := map[string]any{
-		"id":             "interaction1",
+		"id":             1123,
 		"application_id": applicationID.String(),
 		"type":           2,
 		"guild_id":       guildID.String(),
 		"guild":          map[string]any{"id": guildID.String()},
-		"channel_id":     "chan1",
+		"channel_id":     213,
 		"member": map[string]any{
-			"user":      map[string]any{"id": "invokerUser", "username": "invoker", "discriminator": "0"},
+			"user":      map[string]any{"id": 12312312321321, "username": "invoker", "discriminator": "0"},
 			"roles":     []any{},
 			"joined_at": "2024-01-01T00:00:00Z",
 			"deaf":      false,
@@ -405,7 +405,7 @@ func TestInteractionCreate_GuildMembersAccessible(t *testing.T) {
 		},
 		"token":   "mytoken",
 		"version": 1,
-		"data":    map[string]any{"id": "cmd1", "name": "test", "type": 1},
+		"data":    map[string]any{"id": 12312321, "name": "test", "type": 1},
 	}
 	raw, err := json.Marshal(interactionPayload)
 	require.NoError(t, err)
@@ -413,7 +413,7 @@ func TestInteractionCreate_GuildMembersAccessible(t *testing.T) {
 	ev := &events.InteractionCreateEvent{}
 	require.NoError(t, json.Unmarshal(raw, ev))
 
-	c.internalEventHandler(json.RawMessage(raw), events.EventInteractionCreate, ev)
+	c.internalEventHandler(raw, events.EventInteractionCreate, ev)
 
 	// Core assertion: Guild must be resolved from cache with all sub-managers.
 	require.NotNil(t, ev.Guild, "interaction.Guild must not be nil after INTERACTION_CREATE")
@@ -456,14 +456,14 @@ func TestInteractionCreate_NilGuildStub(t *testing.T) {
 
 	// Interaction payload WITHOUT the "guild" field — Discord omits it in some cases.
 	interactionPayload := map[string]any{
-		"id":             "interaction2",
+		"id":             231231231213213,
 		"application_id": applicationID.String(),
 		"type":           2,
 		"guild_id":       guildID.String(),
 		// "guild" intentionally omitted
-		"channel_id": "chan2",
+		"channel_id": 12321131233,
 		"member": map[string]any{
-			"user":      map[string]any{"id": "invoker2", "username": "invoker", "discriminator": "0"},
+			"user":      map[string]any{"id": 321123213123, "username": "invoker", "discriminator": "0"},
 			"roles":     []any{},
 			"joined_at": "2024-01-01T00:00:00Z",
 			"deaf":      false,
@@ -471,7 +471,7 @@ func TestInteractionCreate_NilGuildStub(t *testing.T) {
 		},
 		"token":   "tok2",
 		"version": 1,
-		"data":    map[string]any{"id": "cmd2", "name": "test", "type": 1},
+		"data":    map[string]any{"id": 12312321, "name": "test", "type": 1},
 	}
 	raw, err := json.Marshal(interactionPayload)
 	require.NoError(t, err)
