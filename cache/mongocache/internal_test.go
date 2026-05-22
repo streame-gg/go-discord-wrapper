@@ -1,6 +1,7 @@
 package mongocache
 
 import (
+	"strconv"
 	"sync"
 	"testing"
 
@@ -26,7 +27,7 @@ func TestBug21MsgChannelMuCleanedOnDeleteChannel(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			// LoadOrStore directly, mimicking Add().
-			c.msgChannelMu.LoadOrStore(i, &sync.Mutex{})
+			c.msgChannelMu.LoadOrStore(strconv.Itoa(i), &sync.Mutex{})
 			// Then DeleteChannel removes it.
 			store := &mongoMessageStore{c: c}
 			store.DeleteChannel(discord.Snowflake(i))
