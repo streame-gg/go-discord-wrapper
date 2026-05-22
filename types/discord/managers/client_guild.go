@@ -48,7 +48,7 @@ func (m *clientGuildManager) Resolve(input any) (*discord.Guild, error) {
 		mem, _ := m.Get(*snowflake)
 		return mem, nil
 	}
-	return nil, nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *clientGuildManager) Size() int {
