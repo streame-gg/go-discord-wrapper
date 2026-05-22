@@ -489,7 +489,7 @@ func TestMemberManager_Fetch_CallsClient(t *testing.T) {
 		fetchMember: func(_ context.Context, gid, uid discord.Snowflake) (*discord.GuildMember, error) {
 			called = true
 			if gid != guildID || uid != userID {
-				t.Errorf("unexpected IDs: guild=%s user=%s", gid, uid)
+				t.Errorf("unexpected IDs: guild=%s user=%s", &gid, &uid)
 			}
 			return want, nil
 		},

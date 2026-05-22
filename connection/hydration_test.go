@@ -77,10 +77,10 @@ func TestCacheMember_IsHydratedAfterStore(t *testing.T) {
 		t.Fatal("member from cache is not hydrated")
 	}
 	if got.GuildID != mustSnowflake("g1") {
-		t.Fatalf("expected GuildID g1, got %s", got.GuildID)
+		t.Fatalf("expected GuildID g1, got %s", got.GuildID.String())
 	}
 	if got.UserID != mustSnowflake("u1") {
-		t.Fatalf("expected UserID u1, got %s", got.UserID)
+		t.Fatalf("expected UserID u1, got %s", got.UserID.String())
 	}
 }
 
@@ -101,7 +101,7 @@ func TestCacheRole_IsHydratedAfterStore(t *testing.T) {
 		t.Fatal("role from cache is not hydrated")
 	}
 	if got.GuildID != mustSnowflake("g1") {
-		t.Fatalf("expected GuildID g1, got %s", got.GuildID)
+		t.Fatalf("expected GuildID g1, got %s", got.GuildID.String())
 	}
 }
 

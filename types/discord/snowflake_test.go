@@ -22,7 +22,7 @@ func TestSnowflakeFromInt(t *testing.T) {
 				t.Errorf("SnowflakeFromInt(%v): %v", tc.in, err)
 			}
 			if *got != tc.want {
-				t.Errorf("got %q, want %q", got, tc.want)
+				t.Errorf("got %d, want %d", got, tc.want)
 			}
 		})
 	}
@@ -42,7 +42,7 @@ func TestSnowflakeFromUint(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := SnowflakeFromUint(tc.in)
 			if got != tc.want {
-				t.Errorf("got %q, want %q", got, tc.want)
+				t.Errorf("got %d, want %d", got, tc.want)
 			}
 		})
 	}

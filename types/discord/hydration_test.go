@@ -439,12 +439,12 @@ func TestGuildHydrate_PropagatesRolesAndEmojis(t *testing.T) {
 	}
 	for _, r := range g.RawRoles {
 		if !r.IsHydrated() {
-			t.Fatalf("role %s should be hydrated after Guild.Hydrate", r.ID)
+			t.Fatalf("role %s should be hydrated after Guild.Hydrate", r.ID.String())
 		}
 	}
 	for _, e := range g.RawEmojis {
 		if !e.IsHydrated() {
-			t.Fatalf("emoji %s should be hydrated after Guild.Hydrate", e.ID)
+			t.Fatalf("emoji %s should be hydrated after Guild.Hydrate", e.ID.String())
 		}
 	}
 }
@@ -456,7 +456,7 @@ func TestMessageEdit_Smoke(t *testing.T) {
 	c := &stubClient{
 		editMessageFn: func(_ context.Context, chID, msgID discord.Snowflake, opts discord.MessageEditOptions) (*discord.Message, error) {
 			if chID != 11 || msgID != 12 {
-				t.Errorf("unexpected IDs: channelID=%s messageID=%s", chID, msgID)
+				t.Errorf("unexpected IDs: channelID=%s messageID=%s", chID.String(), msgID.String())
 			}
 			return want, nil
 		},
@@ -504,7 +504,7 @@ func TestGuildLeave_Smoke(t *testing.T) {
 		t.Fatalf("Leave: %v", err)
 	}
 	if gotID != 12 {
-		t.Fatalf("expected guildID g1, got %s", gotID)
+		t.Fatalf("expected guildID g1, got %s", gotID.String())
 	}
 }
 
@@ -513,7 +513,7 @@ func TestRoleDelete_Smoke(t *testing.T) {
 	c := &stubClient{
 		deleteRoleFn: func(_ context.Context, guildID, roleID discord.Snowflake, _ *string) error {
 			if guildID != 12 || roleID != 11 {
-				t.Errorf("unexpected IDs: guildID=%s roleID=%s", guildID, roleID)
+				t.Errorf("unexpected IDs: guildID=%s roleID=%s", guildID.String(), roleID.String())
 			}
 			called = true
 			return nil
@@ -535,7 +535,7 @@ func TestMemberKick_Smoke(t *testing.T) {
 	c := &stubClient{
 		kickMemberFn: func(_ context.Context, guildID, userID discord.Snowflake, _ *string) error {
 			if guildID != 11 || userID != 12 {
-				t.Errorf("unexpected IDs: guildID=%s userID=%s", guildID, userID)
+				t.Errorf("unexpected IDs: guildID=%s userID=%s", guildID.String(), userID.Validate())
 			}
 			called = true
 			return nil
@@ -557,7 +557,7 @@ func TestChannelEdit_Smoke(t *testing.T) {
 	c := &stubClient{
 		modifyChannelFn: func(_ context.Context, chID discord.Snowflake, opts discord.ChannelEditOptions) (*discord.Channel, error) {
 			if chID != 13 {
-				t.Errorf("unexpected channelID: %s", chID)
+				t.Errorf("unexpected channelID: %s", chID.String())
 			}
 			return want, nil
 		},

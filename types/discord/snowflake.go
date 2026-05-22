@@ -1,34 +1,67 @@
 package discord
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
 	"strconv"
-
-	"github.com/streame-gg/go-discord-wrapper/util"
 )
 
 const Epoch uint64 = 1420070400000
 
 type Snowflake uint64
 
-func (s Snowflake) String() string {
-	return strconv.FormatUint(uint64(s), 10)
+func (s *Snowflake) UnmarshalJSON(data []byte) error {
+	if len(data) > 0 && data[0] == '"' {
+		var str string
+		if err := json.Unmarshal(data, &str); err != nil {
+			return err
+		}
+		v, err := strconv.ParseUint(str, 10, 64)
+		if err != nil {
+			return err
+		}
+		*s = Snowflake(v)
+		return nil
+	}
+
+	// numeric case: 123...
+	var v uint64
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	*s = Snowflake(v)
+	return nil
 }
 
-func (s Snowflake) IsEmpty() bool {
-	return uint64(s) == 0
+func (s *Snowflake) String() string {
+	if s == nil {
+		return ""
+	}
+	return strconv.FormatUint(uint64(*s), 10)
 }
 
-func (s Snowflake) IsValid() bool {
+func (s *Snowflake) IsEmpty() bool {
+	if s == nil {
+		return true
+	}
+
+	return uint64(*s) == 0
+}
+
+func (s *Snowflake) IsValid() bool {
 	return s.Validate() == nil
 }
 
 // Validate returns an error if s is not a valid Discord Snowflake (15–20 decimal digits).
 // Use this to sanitize user-supplied IDs before embedding them in API paths.
-func (s Snowflake) Validate() error {
-	if s < 0 || s > math.MaxUint64 {
+func (s *Snowflake) Validate() error {
+	if s == nil {
+		return errors.New("nil snowflake")
+	}
+
+	if *s < 0 || *s > math.MaxUint64 {
 		return errors.New("snowflake value out of range")
 	}
 
@@ -49,14 +82,16 @@ func (s Snowflake) Validate() error {
 // Returns an error if out of range or otherwise invalid.
 func SnowflakeFromInt(id int64) (*Snowflake, error) {
 	if id < 0 {
-		return nil, fmt.Errorf("snowflake %q: id out of range", id)
+		return nil, fmt.Errorf("snowflake %d: id out of range", id)
 	}
 
-	if err := Snowflake(id).Validate(); err != nil {
+	snowflake := Snowflake(id)
+
+	if err := snowflake.Validate(); err != nil {
 		return nil, err
 	}
 
-	return util.PointerOf(Snowflake(id)), nil
+	return &snowflake, nil
 }
 
 // SnowflakeFromUint converts an unsigned 64-bit integer to a Snowflake.
