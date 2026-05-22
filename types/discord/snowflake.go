@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -28,7 +29,7 @@ func (s Snowflake) IsValid() bool {
 // Use this to sanitize user-supplied IDs before embedding them in API paths.
 func (s Snowflake) Validate() error {
 	if s < 0 || s > math.MaxUint64 {
-		return fmt.Errorf("snowflake value out of range: 0..%d", math.MaxUint64)
+		return errors.New("snowflake value out of range")
 	}
 
 	str := s.String()
