@@ -48,7 +48,7 @@ func TestGetChannel(t *testing.T) {
 			name:       "success",
 			statusCode: http.StatusOK,
 			body:       `{"id":"123456789","name":"general","type":0}`,
-			wantID:     "123456789",
+			wantID:     123456789,
 			wantName:   "general",
 		},
 		{
@@ -87,7 +87,7 @@ func TestGetChannel(t *testing.T) {
 			defer ts.Close()
 
 			client := newTestClient(ts)
-			ch, err := client.GetChannel(context.Background(), "123456789012345678")
+			ch, err := client.GetChannel(context.Background(), discord.Snowflake(123456789012345678))
 
 			if tc.wantErr != nil {
 				require.Error(t, err)
@@ -114,8 +114,8 @@ func TestCreateMessage(t *testing.T) {
 			_ = err
 
 			resp := discord.Message{
-				ID:        "987654321",
-				ChannelID: "111222333",
+				ID:        987654321,
+				ChannelID: 111222333,
 				Content:   "hello world",
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -126,11 +126,11 @@ func TestCreateMessage(t *testing.T) {
 
 		client := newTestClient(ts)
 		params := CreateMessageParams{Content: "hello world"}
-		msg, err := client.CreateMessage(context.Background(), "111222333444555666", params)
+		msg, err := client.CreateMessage(context.Background(), discord.Snowflake(111222333444555666), params)
 
 		require.NoError(t, err)
 		require.NotNil(t, msg)
-		assert.Equal(t, discord.Snowflake("987654321"), msg.ID)
+		assert.Equal(t, discord.Snowflake(987654321), msg.ID)
 		assert.Equal(t, "hello world", msg.Content)
 
 		var decoded map[string]interface{}
@@ -147,7 +147,7 @@ func TestCreateMessage(t *testing.T) {
 		defer ts.Close()
 
 		client := newTestClient(ts)
-		msg, err := client.CreateMessage(context.Background(), "111222333444555666", CreateMessageParams{Content: "hello"})
+		msg, err := client.CreateMessage(context.Background(), discord.Snowflake(111222333444555666), CreateMessageParams{Content: "hello"})
 
 		require.Error(t, err)
 		assert.Nil(t, msg)
@@ -161,7 +161,7 @@ func TestCreateMessage(t *testing.T) {
 func TestGetGuild(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := discord.Guild{
-			ID:   "777888999",
+			ID:   777888999,
 			Name: "Test Server",
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -171,11 +171,11 @@ func TestGetGuild(t *testing.T) {
 	defer ts.Close()
 
 	client := newTestClient(ts)
-	guild, err := client.GetGuild(context.Background(), "777888999000111222", false)
+	guild, err := client.GetGuild(context.Background(), discord.Snowflake(777888999000111222), false)
 
 	require.NoError(t, err)
 	require.NotNil(t, guild)
-	assert.Equal(t, discord.Snowflake("777888999"), guild.ID)
+	assert.Equal(t, discord.Snowflake(777888999), guild.ID)
 	assert.Equal(t, "Test Server", guild.Name)
 }
 
@@ -191,7 +191,7 @@ func TestContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 
-	_, err := client.GetChannel(ctx, "100000000000000001")
+	_, err := client.GetChannel(ctx, discord.Snowflake(100000000000000001))
 	require.Error(t, err)
 	assert.True(t,
 		errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded),
@@ -228,7 +228,7 @@ func TestRetryOn429(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	ch, err := client.GetChannel(context.Background(), "100000000000000001")
+	ch, err := client.GetChannel(context.Background(), discord.Snowflake(100000000000000001))
 	require.NoError(t, err)
 	require.NotNil(t, ch)
 	assert.Equal(t, int32(2), atomic.LoadInt32(&callCount), "expected exactly 2 requests")
@@ -255,7 +255,7 @@ func TestNoRetryWhenDisabled(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	_, err = client.GetChannel(context.Background(), "100000000000000001")
+	_, err = client.GetChannel(context.Background(), discord.Snowflake(100000000000000001))
 	require.Error(t, err)
 	assert.Equal(t, int32(1), atomic.LoadInt32(&callCount), "expected exactly 1 request")
 }
@@ -269,7 +269,7 @@ func TestDecodeAPIError(t *testing.T) {
 	defer ts.Close()
 
 	client := newTestClient(ts)
-	_, err := client.GetChannel(context.Background(), "100000000000000001")
+	_, err := client.GetChannel(context.Background(), discord.Snowflake(100000000000000001))
 
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, ErrNotFound), "expected ErrNotFound")
@@ -302,7 +302,7 @@ func TestBug3a_EventHandlerBodyCloseDoesNotBreakDecode(t *testing.T) {
 		}
 	})
 
-	ch, err := client.GetChannel(context.Background(), "111222333444555666")
+	ch, err := client.GetChannel(context.Background(), discord.Snowflake(111222333444555666))
 	require.NoError(t, err, "decode must succeed even after event handler closes resp.Body (Bug 3a)")
 	require.NotNil(t, ch)
 	assert.Equal(t, "bug3-channel", ch.Name)
@@ -319,7 +319,7 @@ func TestBug3b_BadJSONReturnsError(t *testing.T) {
 	defer ts.Close()
 
 	client := newTestClient(ts)
-	ch, err := client.GetChannel(context.Background(), "111222333444555667")
+	ch, err := client.GetChannel(context.Background(), discord.Snowflake(111222333444555667))
 	assert.Error(t, err, "invalid JSON body must return an error (Bug 3b)")
 	assert.Nil(t, ch)
 }

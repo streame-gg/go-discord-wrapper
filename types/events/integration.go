@@ -1,6 +1,8 @@
 package events
 
 import (
+	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -10,8 +12,30 @@ type IntegrationCreateEvent struct {
 }
 
 type IntegrationUpdateEvent struct {
-	discord.Integration
-	GuildID discord.Snowflake `json:"guild_id"`
+	GuildID        discord.Snowflake   `json:"-"`
+	NewIntegration discord.Integration `json:"-"`
+}
+
+func (e *IntegrationUpdateEvent) UnmarshalJSON(data []byte) error {
+	type wire struct {
+		GuildID discord.Snowflake `json:"guild_id"`
+		discord.Integration
+	}
+	var w wire
+	if err := json.Unmarshal(data, &w); err != nil {
+		return err
+	}
+	e.GuildID = w.GuildID
+	e.NewIntegration = w.Integration
+	return nil
+}
+
+func (e IntegrationUpdateEvent) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		discord.Integration
+		GuildID discord.Snowflake `json:"guild_id"`
+	}
+	return json.Marshal(wire{e.NewIntegration, e.GuildID})
 }
 
 type IntegrationDeleteEvent struct {

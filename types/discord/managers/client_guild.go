@@ -33,18 +33,22 @@ func (m *clientGuildManager) Fetch(ctx context.Context, guildID discord.Snowflak
 	return m.client.GetGuild(ctx, guildID)
 }
 
-func (m *clientGuildManager) Resolve(input any) *discord.Guild {
+func (m *clientGuildManager) Resolve(input any) (*discord.Guild, error) {
 	switch v := input.(type) {
 	case *discord.Guild:
-		return v
+		return v, nil
 	case discord.Snowflake:
 		g, _ := m.Get(v)
-		return g
+		return g, nil
 	case string:
-		g, _ := m.Get(discord.Snowflake(v))
-		return g
+		snowflake, err := discord.ParseSnowflake(v)
+		if err != nil {
+			return nil, err
+		}
+		mem, _ := m.Get(*snowflake)
+		return mem, nil
 	}
-	return nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *clientGuildManager) Size() int {

@@ -2,6 +2,7 @@ package connection
 
 import (
 	"encoding/json"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,8 +18,8 @@ import (
 func TestReconnect_CleansStaleGuildMemberCount(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guild1 := discord.Snowflake("111111111111111")
-	guild2 := discord.Snowflake("222222222222222") // will be absent from the reconnect READY
+	guild1 := discord.Snowflake(111111111111111)
+	guild2 := discord.Snowflake(222222222222222) // will be absent from the reconnect READY
 
 	// Seed both guilds into the cache and the member-count map.
 	c.Cache.Guilds().Set(&discord.Guild{ID: guild1})
@@ -41,7 +42,7 @@ func TestReconnect_CleansStaleGuildMemberCount(t *testing.T) {
 		"user":               map[string]any{"id": "1"},
 		"session_id":         "sess-reconnect",
 		"resume_gateway_url": "wss://fake.discord.gg",
-		"guilds":             []map[string]any{{"id": string(guild1)}},
+		"guilds":             []map[string]any{{"id": strconv.FormatUint(uint64(guild1), 10)}},
 	}
 	raw, err := json.Marshal(readyPayload)
 	require.NoError(t, err)
@@ -57,8 +58,8 @@ func TestReconnect_CleansStaleGuildMemberCount_NoCache(t *testing.T) {
 	c, err := NewClient("test-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
-	guild1 := discord.Snowflake("111111111111111")
-	guild2 := discord.Snowflake("222222222222222") // will be absent from the reconnect READY
+	guild1 := discord.Snowflake(111111111111111)
+	guild2 := discord.Snowflake(222222222222222) // will be absent from the reconnect READY
 
 	c.guildMu.Lock()
 	c.guildMemberCounts[guild1] = 5
@@ -78,7 +79,7 @@ func TestReconnect_CleansStaleGuildMemberCount_NoCache(t *testing.T) {
 		"user":               map[string]any{"id": "1"},
 		"session_id":         "sess-reconnect",
 		"resume_gateway_url": "wss://fake.discord.gg",
-		"guilds":             []map[string]any{{"id": string(guild1)}},
+		"guilds":             []map[string]any{{"id": strconv.FormatUint(uint64(guild1), 10)}},
 	}
 	raw, err := json.Marshal(readyPayload)
 	require.NoError(t, err)
@@ -93,8 +94,8 @@ func TestReconnect_CleansStaleGuildMemberCount_NoCache(t *testing.T) {
 func TestGuildDelete_CleansGuildMemberCount(t *testing.T) {
 	c := newClientWithCache(t)
 
-	guild1 := discord.Snowflake("333333333333333")
-	guild2 := discord.Snowflake("444444444444444")
+	guild1 := discord.Snowflake(333333333333333)
+	guild2 := discord.Snowflake(444444444444444)
 
 	c.guildMu.Lock()
 	c.guildMemberCounts[guild1] = 10

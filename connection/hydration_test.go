@@ -1,6 +1,8 @@
 package connection
 
 import (
+	"hash/fnv"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -10,6 +12,16 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 )
 
+func mustSnowflake(s string) discord.Snowflake {
+	n, err := strconv.ParseUint(s, 10, 64)
+	if err == nil {
+		return discord.Snowflake(n)
+	}
+	h := fnv.New64a()
+	h.Write([]byte(s))
+	return discord.Snowflake(h.Sum64())
+}
+
 // ── Cache hydration: entities retrieved from cache are hydrated ───────────────
 
 func TestCacheMessage_IsHydratedAfterStore(t *testing.T) {
@@ -18,10 +30,10 @@ func TestCacheMessage_IsHydratedAfterStore(t *testing.T) {
 	c.Cache = cache.NewMemoryCache(cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 100}})
 	defer c.Cache.Close()
 
-	msg := &discord.Message{ID: "1", ChannelID: "2"}
+	msg := &discord.Message{ID: 1, ChannelID: 2}
 	c.cacheMessage(msg)
 
-	got, ok := c.Cache.Messages().Get("2", "1")
+	got, ok := c.Cache.Messages().Get(2, 1)
 	if !ok {
 		t.Fatal("message not in cache")
 	}
@@ -36,10 +48,10 @@ func TestCacheUser_IsHydratedAfterStore(t *testing.T) {
 	c.Cache = cache.NewMemoryCache(cache.Options{})
 	defer c.Cache.Close()
 
-	user := &discord.User{ID: "u1"}
+	user := &discord.User{ID: mustSnowflake("u1")}
 	c.cacheUser(user)
 
-	got, ok := c.Cache.Users().Get("u1")
+	got, ok := c.Cache.Users().Get(mustSnowflake("u1"))
 	if !ok {
 		t.Fatal("user not in cache")
 	}
@@ -54,21 +66,21 @@ func TestCacheMember_IsHydratedAfterStore(t *testing.T) {
 	c.Cache = cache.NewMemoryCache(cache.Options{})
 	defer c.Cache.Close()
 
-	member := &discord.GuildMember{User: &discord.User{ID: "u1"}}
-	c.cacheMember("g1", member)
+	member := &discord.GuildMember{User: &discord.User{ID: mustSnowflake("u1")}}
+	c.cacheMember(mustSnowflake("g1"), member)
 
-	got, ok := c.Cache.Members().Get("g1", "u1")
+	got, ok := c.Cache.Members().Get(mustSnowflake("g1"), mustSnowflake("u1"))
 	if !ok {
 		t.Fatal("member not in cache")
 	}
 	if !got.IsHydrated() {
 		t.Fatal("member from cache is not hydrated")
 	}
-	if got.GuildID != "g1" {
-		t.Fatalf("expected GuildID g1, got %s", got.GuildID)
+	if got.GuildID != mustSnowflake("g1") {
+		t.Fatalf("expected GuildID g1, got %s", got.GuildID.String())
 	}
-	if got.UserID != "u1" {
-		t.Fatalf("expected UserID u1, got %s", got.UserID)
+	if got.UserID != mustSnowflake("u1") {
+		t.Fatalf("expected UserID u1, got %s", got.UserID.String())
 	}
 }
 
@@ -78,18 +90,18 @@ func TestCacheRole_IsHydratedAfterStore(t *testing.T) {
 	c.Cache = cache.NewMemoryCache(cache.Options{})
 	defer c.Cache.Close()
 
-	role := &discord.Role{ID: "r1"}
-	c.cacheRole("g1", role)
+	role := &discord.Role{ID: mustSnowflake("r1")}
+	c.cacheRole(mustSnowflake("g1"), role)
 
-	got, ok := c.Cache.Roles().Get("r1")
+	got, ok := c.Cache.Roles().Get(mustSnowflake("r1"))
 	if !ok {
 		t.Fatal("role not in cache")
 	}
 	if !got.IsHydrated() {
 		t.Fatal("role from cache is not hydrated")
 	}
-	if got.GuildID != "g1" {
-		t.Fatalf("expected GuildID g1, got %s", got.GuildID)
+	if got.GuildID != mustSnowflake("g1") {
+		t.Fatalf("expected GuildID g1, got %s", got.GuildID.String())
 	}
 }
 
@@ -99,10 +111,10 @@ func TestCacheChannel_IsHydratedAfterStore(t *testing.T) {
 	c.Cache = cache.NewMemoryCache(cache.Options{})
 	defer c.Cache.Close()
 
-	ch := &discord.Channel{ID: "ch1"}
+	ch := &discord.Channel{ID: mustSnowflake("ch1")}
 	c.cacheChannel(ch)
 
-	got, ok := c.Cache.Channels().Get("ch1")
+	got, ok := c.Cache.Channels().Get(mustSnowflake("ch1"))
 	if !ok {
 		t.Fatal("channel not in cache")
 	}
@@ -148,8 +160,8 @@ func TestEventHydration_MessageCreateIsHydrated(t *testing.T) {
 
 func TestEventHydration_GuildMemberAddIsHydrated(t *testing.T) {
 	memberPacket := dispatchPacket("GUILD_MEMBER_ADD", map[string]interface{}{
-		"guild_id":  "g1",
-		"user":      map[string]interface{}{"id": "u1", "username": "bob", "discriminator": "0"},
+		"guild_id":  "123123",
+		"user":      map[string]interface{}{"id": "123", "username": "bob", "discriminator": "0"},
 		"roles":     []string{},
 		"joined_at": "2024-01-01T00:00:00Z",
 		"deaf":      false,

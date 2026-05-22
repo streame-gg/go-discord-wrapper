@@ -1,16 +1,26 @@
 package events
 
 import (
+	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type PresenceUpdateEvent struct {
-	User         discord.PartialPresenceUser `json:"user"`
-	GuildID      discord.Snowflake           `json:"guild_id"`
-	Status       discord.PresenceStatus      `json:"status"`
-	Activities   []discord.FullActivity      `json:"activities"`
-	ClientStatus discord.ClientStatus        `json:"client_status"`
-	OldPresence  *discord.Presence           `json:"old_presence,omitempty"`
+	NewPresence discord.Presence  `json:"-"`
+	OldPresence *discord.Presence `json:"-"`
+}
+
+func (e *PresenceUpdateEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.NewPresence)
+}
+
+func (e PresenceUpdateEvent) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		discord.Presence
+		OldPresence *discord.Presence `json:"old_presence,omitempty"`
+	}
+	return json.Marshal(wire{e.NewPresence, e.OldPresence})
 }
 
 func init() { RegisterEvent(PresenceUpdateEvent{}) }

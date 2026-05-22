@@ -1,14 +1,30 @@
 package events
 
-import "github.com/streame-gg/go-discord-wrapper/types/discord"
+import (
+	"encoding/json"
+
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+)
 
 type StageInstanceCreateEvent struct {
 	discord.StageInstance
 }
 
 type StageInstanceUpdateEvent struct {
-	discord.StageInstance
-	OldInstance *discord.StageInstance `json:"old_instance,omitempty"`
+	NewInstance discord.StageInstance  `json:"-"`
+	OldInstance *discord.StageInstance `json:"-"`
+}
+
+func (e *StageInstanceUpdateEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.NewInstance)
+}
+
+func (e StageInstanceUpdateEvent) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		discord.StageInstance
+		OldInstance *discord.StageInstance `json:"old_instance,omitempty"`
+	}
+	return json.Marshal(wire{e.NewInstance, e.OldInstance})
 }
 
 type StageInstanceDeleteEvent struct {

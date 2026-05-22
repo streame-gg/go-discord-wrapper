@@ -48,18 +48,22 @@ func (m *scheduledEventManager) Create(ctx context.Context, opts discord.Schedul
 	return m.client.CreateGuildScheduledEvent(ctx, m.guildID, opts)
 }
 
-func (m *scheduledEventManager) Resolve(input any) *discord.GuildScheduledEvent {
+func (m *scheduledEventManager) Resolve(input any) (*discord.GuildScheduledEvent, error) {
 	switch v := input.(type) {
 	case *discord.GuildScheduledEvent:
-		return v
+		return v, nil
 	case discord.Snowflake:
 		e, _ := m.Get(v)
-		return e
+		return e, nil
 	case string:
-		e, _ := m.Get(discord.Snowflake(v))
-		return e
+		snowflake, err := discord.ParseSnowflake(v)
+		if err != nil {
+			return nil, err
+		}
+		mem, _ := m.Get(*snowflake)
+		return mem, nil
 	}
-	return nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *scheduledEventManager) Size() int {

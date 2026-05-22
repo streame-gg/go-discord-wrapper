@@ -44,18 +44,22 @@ func (m *memberManager) FetchAll(ctx context.Context, opts discord.FetchMembersO
 	}), nil
 }
 
-func (m *memberManager) Resolve(input any) *discord.GuildMember {
+func (m *memberManager) Resolve(input any) (*discord.GuildMember, error) {
 	switch v := input.(type) {
 	case *discord.GuildMember:
-		return v
+		return v, nil
 	case discord.Snowflake:
 		mem, _ := m.Get(v)
-		return mem
+		return mem, nil
 	case string:
-		mem, _ := m.Get(discord.Snowflake(v))
-		return mem
+		snowflake, err := discord.ParseSnowflake(v)
+		if err != nil {
+			return nil, err
+		}
+		mem, _ := m.Get(*snowflake)
+		return mem, nil
 	}
-	return nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *memberManager) Size() int {

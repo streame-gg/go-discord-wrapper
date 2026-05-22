@@ -48,18 +48,22 @@ func (m *roleManager) Create(ctx context.Context, opts discord.RoleCreateOptions
 	return m.client.CreateGuildRole(ctx, m.guildID, opts)
 }
 
-func (m *roleManager) Resolve(input any) *discord.Role {
+func (m *roleManager) Resolve(input any) (*discord.Role, error) {
 	switch v := input.(type) {
 	case *discord.Role:
-		return v
+		return v, nil
 	case discord.Snowflake:
 		role, _ := m.Get(v)
-		return role
+		return role, nil
 	case string:
-		role, _ := m.Get(discord.Snowflake(v))
-		return role
+		snowflake, err := discord.ParseSnowflake(v)
+		if err != nil {
+			return nil, err
+		}
+		mem, _ := m.Get(*snowflake)
+		return mem, nil
 	}
-	return nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *roleManager) Size() int {

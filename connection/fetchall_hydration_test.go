@@ -48,12 +48,12 @@ func newClientWithCacheAndServer(t *testing.T, baseURL string) *Client {
 // ── Fix 6: emojiManager ───────────────────────────────────────────────────────
 
 func TestEmojiManager_FetchAll_HydratesAndSetsGuildID(t *testing.T) {
-	guildID := discord.Snowflake("111222333444555666")
-	emojiID := discord.Snowflake("222333444555666777")
+	guildID := discord.Snowflake(111222333444555666)
+	emojiID := discord.Snowflake(222333444555666777)
 
 	baseURL, stop := routeServer(t, map[string]any{
-		"/v10/guilds/" + string(guildID) + "/emojis": []any{
-			map[string]any{"id": string(emojiID), "name": "wave", "animated": false},
+		"/v10/guilds/" + guildID.String() + "/emojis": []any{
+			map[string]any{"id": emojiID.String(), "name": "wave", "animated": false},
 		},
 	})
 	defer stop()
@@ -72,12 +72,12 @@ func TestEmojiManager_FetchAll_HydratesAndSetsGuildID(t *testing.T) {
 }
 
 func TestEmojiManager_FetchAll_CachesResults(t *testing.T) {
-	guildID := discord.Snowflake("111222333444555667")
-	emojiID := discord.Snowflake("222333444555666778")
+	guildID := discord.Snowflake(111222333444555667)
+	emojiID := discord.Snowflake(222333444555666778)
 
 	baseURL, stop := routeServer(t, map[string]any{
-		"/v10/guilds/" + string(guildID) + "/emojis": []any{
-			map[string]any{"id": string(emojiID), "name": "fire"},
+		"/v10/guilds/" + guildID.String() + "/emojis": []any{
+			map[string]any{"id": emojiID.String(), "name": "fire"},
 		},
 	})
 	defer stop()
@@ -97,12 +97,12 @@ func TestEmojiManager_FetchAll_CachesResults(t *testing.T) {
 // ── Fix 6: stickerManager ─────────────────────────────────────────────────────
 
 func TestStickerManager_FetchAll_HydratesAndSetsGuildID(t *testing.T) {
-	guildID := discord.Snowflake("333444555666777888")
-	stickerID := discord.Snowflake("444555666777888999")
+	guildID := discord.Snowflake(333444555666777888)
+	stickerID := discord.Snowflake(444555666777888999)
 
 	baseURL, stop := routeServer(t, map[string]any{
-		"/v10/guilds/" + string(guildID) + "/stickers": []any{
-			map[string]any{"id": string(stickerID), "name": "doge", "type": 2, "format_type": 1, "tags": "dog"},
+		"/v10/guilds/" + guildID.String() + "/stickers": []any{
+			map[string]any{"id": stickerID.String(), "name": "doge", "type": 2, "format_type": 1, "tags": "dog"},
 		},
 	})
 	defer stop()
@@ -122,12 +122,12 @@ func TestStickerManager_FetchAll_HydratesAndSetsGuildID(t *testing.T) {
 }
 
 func TestStickerManager_FetchAll_CachesResults(t *testing.T) {
-	guildID := discord.Snowflake("333444555666777889")
-	stickerID := discord.Snowflake("444555666777889000")
+	guildID := discord.Snowflake(333444555666777889)
+	stickerID := discord.Snowflake(444555666777889000)
 
 	baseURL, stop := routeServer(t, map[string]any{
-		"/v10/guilds/" + string(guildID) + "/stickers": []any{
-			map[string]any{"id": string(stickerID), "name": "cat", "type": 2, "format_type": 1, "tags": "cat"},
+		"/v10/guilds/" + guildID.String() + "/stickers": []any{
+			map[string]any{"id": stickerID.String(), "name": "cat", "type": 2, "format_type": 1, "tags": "cat"},
 		},
 	})
 	defer stop()
@@ -146,13 +146,13 @@ func TestStickerManager_FetchAll_CachesResults(t *testing.T) {
 // ── Fix 6: soundboardManager ─────────────────────────────────────────────────
 
 func TestSoundboardManager_FetchAll_Hydrates(t *testing.T) {
-	guildID := discord.Snowflake("555666777888999000")
-	soundID := discord.Snowflake("666777888999000111")
+	guildID := discord.Snowflake(555666777888999000)
+	soundID := discord.Snowflake(666777888999000111)
 
 	baseURL, stop := routeServer(t, map[string]any{
-		"/v10/guilds/" + string(guildID) + "/soundboard-sounds": map[string]any{
+		"/v10/guilds/" + guildID.String() + "/soundboard-sounds": map[string]any{
 			"items": []any{
-				map[string]any{"sound_id": string(soundID), "name": "clap", "volume": 1.0},
+				map[string]any{"sound_id": soundID.String(), "name": "clap", "volume": 1.0},
 			},
 		},
 	})
@@ -173,14 +173,14 @@ func TestSoundboardManager_FetchAll_Hydrates(t *testing.T) {
 // ── Fix 6: scheduledEventManager ─────────────────────────────────────────────
 
 func TestScheduledEventManager_FetchAll_Hydrates(t *testing.T) {
-	guildID := discord.Snowflake("777888999000111222")
-	eventID := discord.Snowflake("888999000111222333")
+	guildID := discord.Snowflake(777888999000111222)
+	eventID := discord.Snowflake(888999000111222333)
 
 	baseURL, stop := routeServer(t, map[string]any{
-		"/v10/guilds/" + string(guildID) + "/scheduled-events": []any{
+		"/v10/guilds/" + guildID.String() + "/scheduled-events": []any{
 			map[string]any{
-				"id":                   string(eventID),
-				"guild_id":             string(guildID),
+				"id":                   eventID.String(),
+				"guild_id":             guildID.String(),
 				"name":                 "party",
 				"privacy_level":        2,
 				"status":               1,
@@ -206,14 +206,14 @@ func TestScheduledEventManager_FetchAll_Hydrates(t *testing.T) {
 // ── Fix 6: autoModRuleManager ────────────────────────────────────────────────
 
 func TestAutoModRuleManager_FetchAll_Hydrates(t *testing.T) {
-	guildID := discord.Snowflake("999000111222333444")
-	ruleID := discord.Snowflake("100011112222333445")
+	guildID := discord.Snowflake(999000111222333444)
+	ruleID := discord.Snowflake(100011112222333445)
 
 	baseURL, stop := routeServer(t, map[string]any{
-		"/v10/guilds/" + string(guildID) + "/auto-moderation/rules": []any{
+		"/v10/guilds/" + guildID.String() + "/auto-moderation/rules": []any{
 			map[string]any{
-				"id":           string(ruleID),
-				"guild_id":     string(guildID),
+				"id":           ruleID.String(),
+				"guild_id":     guildID.String(),
 				"name":         "no spam",
 				"creator_id":   "100011112222333446",
 				"event_type":   1,
@@ -237,12 +237,12 @@ func TestAutoModRuleManager_FetchAll_Hydrates(t *testing.T) {
 // ── Fix 6: guildWebhookManager ───────────────────────────────────────────────
 
 func TestWebhookManager_FetchAll_Hydrates(t *testing.T) {
-	guildID := discord.Snowflake("111222333444555668")
-	webhookID := discord.Snowflake("222333444555666779")
+	guildID := discord.Snowflake(111222333444555668)
+	webhookID := discord.Snowflake(222333444555666779)
 
 	baseURL, stop := routeServer(t, map[string]any{
-		"/v10/guilds/" + string(guildID) + "/webhooks": []any{
-			map[string]any{"id": string(webhookID), "type": 1, "name": "logger"},
+		"/v10/guilds/" + guildID.String() + "/webhooks": []any{
+			map[string]any{"id": webhookID.String(), "type": 1, "name": "logger"},
 		},
 	})
 	defer stop()
@@ -259,12 +259,12 @@ func TestWebhookManager_FetchAll_Hydrates(t *testing.T) {
 // ── Fix 6: integrationManager ────────────────────────────────────────────────
 
 func TestIntegrationManager_FetchAll_Hydrates(t *testing.T) {
-	guildID := discord.Snowflake("333444555666777890")
-	integID := discord.Snowflake("444555666777889001")
+	guildID := discord.Snowflake(333444555666777890)
+	integID := discord.Snowflake(444555666777889001)
 
 	baseURL, stop := routeServer(t, map[string]any{
-		"/v10/guilds/" + string(guildID) + "/integrations": []any{
-			map[string]any{"id": string(integID), "name": "Twitch", "type": "twitch", "enabled": true},
+		"/v10/guilds/" + guildID.String() + "/integrations": []any{
+			map[string]any{"id": integID.String(), "name": "Twitch", "type": "twitch", "enabled": true},
 		},
 	})
 	defer stop()
@@ -281,10 +281,10 @@ func TestIntegrationManager_FetchAll_Hydrates(t *testing.T) {
 // ── Fix 6: guildInviteManager ────────────────────────────────────────────────
 
 func TestInviteManager_FetchAll_Hydrates(t *testing.T) {
-	guildID := discord.Snowflake("555666777889000111")
+	guildID := discord.Snowflake(555666777889000111)
 
 	baseURL, stop := routeServer(t, map[string]any{
-		"/v10/guilds/" + string(guildID) + "/invites": []any{
+		"/v10/guilds/" + guildID.String() + "/invites": []any{
 			map[string]any{"code": "abc123", "type": 0},
 		},
 	})
@@ -302,13 +302,13 @@ func TestInviteManager_FetchAll_Hydrates(t *testing.T) {
 // ── Fix 6: banManager ────────────────────────────────────────────────────────
 
 func TestBanManager_FetchAll_HydratesUser(t *testing.T) {
-	guildID := discord.Snowflake("666777888999111222")
-	userID := discord.Snowflake("777888999111222333")
+	guildID := discord.Snowflake(666777888999111222)
+	userID := discord.Snowflake(777888999111222333)
 
 	baseURL, stop := routeServer(t, map[string]any{
-		"/v10/guilds/" + string(guildID) + "/bans": []any{
+		"/v10/guilds/" + guildID.String() + "/bans": []any{
 			map[string]any{
-				"user": map[string]any{"id": string(userID), "username": "badguy", "discriminator": "0"},
+				"user": map[string]any{"id": userID.String(), "username": "badguy", "discriminator": "0"},
 			},
 		},
 	})

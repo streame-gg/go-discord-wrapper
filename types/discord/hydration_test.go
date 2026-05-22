@@ -387,8 +387,8 @@ func TestWithClient_ReturnsHydratedCopy(t *testing.T) {
 
 func TestHydrate_JSONOmitsClient(t *testing.T) {
 	msg := &discord.Message{
-		ID:        "123",
-		ChannelID: "456",
+		ID:        123,
+		ChannelID: 456,
 	}
 	msg.Hydrate(&stubClient{})
 
@@ -407,7 +407,7 @@ func TestHydrate_JSONOmitsClient(t *testing.T) {
 	if out.IsHydrated() {
 		t.Fatal("deserialized message must not be hydrated (hClient is internal)")
 	}
-	if out.ID != "123" || out.ChannelID != "456" {
+	if out.ID != 123 || out.ChannelID != 456 {
 		t.Fatalf("JSON round-trip lost fields: %+v", out)
 	}
 }
@@ -416,7 +416,7 @@ func TestHydrate_JSONOmitsClient(t *testing.T) {
 
 func TestHydrate_PropagatesAuthorHydration(t *testing.T) {
 	c := &stubClient{}
-	author := &discord.User{ID: "9"}
+	author := &discord.User{ID: 9}
 	msg := &discord.Message{Author: author}
 	msg.Hydrate(c)
 
@@ -428,9 +428,9 @@ func TestHydrate_PropagatesAuthorHydration(t *testing.T) {
 func TestGuildHydrate_PropagatesRolesAndEmojis(t *testing.T) {
 	c := &stubClient{}
 	g := &discord.Guild{
-		ID:        "1",
-		RawRoles:  []discord.Role{{ID: "r1"}, {ID: "r2"}},
-		RawEmojis: []discord.Emoji{{ID: "e1"}},
+		ID:        1,
+		RawRoles:  []discord.Role{{ID: 12}, {ID: 123}},
+		RawEmojis: []discord.Emoji{{ID: 1234}},
 	}
 	g.Hydrate(c)
 
@@ -439,12 +439,12 @@ func TestGuildHydrate_PropagatesRolesAndEmojis(t *testing.T) {
 	}
 	for _, r := range g.RawRoles {
 		if !r.IsHydrated() {
-			t.Fatalf("role %s should be hydrated after Guild.Hydrate", r.ID)
+			t.Fatalf("role %s should be hydrated after Guild.Hydrate", r.ID.String())
 		}
 	}
 	for _, e := range g.RawEmojis {
 		if !e.IsHydrated() {
-			t.Fatalf("emoji %s should be hydrated after Guild.Hydrate", e.ID)
+			t.Fatalf("emoji %s should be hydrated after Guild.Hydrate", e.ID.String())
 		}
 	}
 }
@@ -452,16 +452,16 @@ func TestGuildHydrate_PropagatesRolesAndEmojis(t *testing.T) {
 // ── Smoke tests: method routes to correct EntityClient call ───────────────────
 
 func TestMessageEdit_Smoke(t *testing.T) {
-	want := &discord.Message{ID: "edited"}
+	want := &discord.Message{ID: 1}
 	c := &stubClient{
 		editMessageFn: func(_ context.Context, chID, msgID discord.Snowflake, opts discord.MessageEditOptions) (*discord.Message, error) {
-			if chID != "ch1" || msgID != "msg1" {
-				t.Errorf("unexpected IDs: channelID=%s messageID=%s", chID, msgID)
+			if chID != 11 || msgID != 12 {
+				t.Errorf("unexpected IDs: channelID=%s messageID=%s", chID.String(), msgID.String())
 			}
 			return want, nil
 		},
 	}
-	msg := &discord.Message{ID: "msg1", ChannelID: "ch1"}
+	msg := &discord.Message{ID: 12, ChannelID: 11}
 	msg.Hydrate(c)
 
 	got, err := msg.Edit(context.Background(), discord.MessageEditOptions{})
@@ -478,7 +478,7 @@ func TestMessageDelete_Smoke(t *testing.T) {
 			return nil
 		},
 	}
-	msg := &discord.Message{ID: "msg1", ChannelID: "ch1"}
+	msg := &discord.Message{ID: 11, ChannelID: 12}
 	msg.Hydrate(c)
 
 	if err := msg.Delete(context.Background(), nil); err != nil {
@@ -497,14 +497,14 @@ func TestGuildLeave_Smoke(t *testing.T) {
 			return nil
 		},
 	}
-	g := &discord.Guild{ID: "g1"}
+	g := &discord.Guild{ID: 12}
 	g.Hydrate(c)
 
 	if err := g.Leave(context.Background()); err != nil {
 		t.Fatalf("Leave: %v", err)
 	}
-	if gotID != "g1" {
-		t.Fatalf("expected guildID g1, got %s", gotID)
+	if gotID != 12 {
+		t.Fatalf("expected guildID g1, got %s", gotID.String())
 	}
 }
 
@@ -512,14 +512,14 @@ func TestRoleDelete_Smoke(t *testing.T) {
 	var called bool
 	c := &stubClient{
 		deleteRoleFn: func(_ context.Context, guildID, roleID discord.Snowflake, _ *string) error {
-			if guildID != "g1" || roleID != "r1" {
-				t.Errorf("unexpected IDs: guildID=%s roleID=%s", guildID, roleID)
+			if guildID != 12 || roleID != 11 {
+				t.Errorf("unexpected IDs: guildID=%s roleID=%s", guildID.String(), roleID.String())
 			}
 			called = true
 			return nil
 		},
 	}
-	r := &discord.Role{ID: "r1", GuildID: "g1"}
+	r := &discord.Role{ID: 11, GuildID: 12}
 	r.Hydrate(c)
 
 	if err := r.Delete(context.Background(), nil); err != nil {
@@ -534,14 +534,14 @@ func TestMemberKick_Smoke(t *testing.T) {
 	var called bool
 	c := &stubClient{
 		kickMemberFn: func(_ context.Context, guildID, userID discord.Snowflake, _ *string) error {
-			if guildID != "g1" || userID != "u1" {
-				t.Errorf("unexpected IDs: guildID=%s userID=%s", guildID, userID)
+			if guildID != 11 || userID != 12 {
+				t.Errorf("unexpected IDs: guildID=%s userID=%s", guildID.String(), userID.Validate())
 			}
 			called = true
 			return nil
 		},
 	}
-	m := &discord.GuildMember{GuildID: "g1", UserID: "u1"}
+	m := &discord.GuildMember{GuildID: 11, UserID: 12}
 	m.Hydrate(c)
 
 	if err := m.Kick(context.Background(), nil); err != nil {
@@ -553,16 +553,16 @@ func TestMemberKick_Smoke(t *testing.T) {
 }
 
 func TestChannelEdit_Smoke(t *testing.T) {
-	want := &discord.Channel{ID: "ch1"}
+	want := &discord.Channel{ID: 13}
 	c := &stubClient{
 		modifyChannelFn: func(_ context.Context, chID discord.Snowflake, opts discord.ChannelEditOptions) (*discord.Channel, error) {
-			if chID != "ch1" {
-				t.Errorf("unexpected channelID: %s", chID)
+			if chID != 13 {
+				t.Errorf("unexpected channelID: %s", chID.String())
 			}
 			return want, nil
 		},
 	}
-	ch := &discord.Channel{ID: "ch1"}
+	ch := &discord.Channel{ID: 13}
 	ch.Hydrate(c)
 
 	got, err := ch.Edit(context.Background(), discord.ChannelEditOptions{})

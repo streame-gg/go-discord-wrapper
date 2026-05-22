@@ -48,18 +48,22 @@ func (m *stickerManager) Create(ctx context.Context, opts discord.StickerCreateO
 	return m.client.CreateGuildSticker(ctx, m.guildID, opts)
 }
 
-func (m *stickerManager) Resolve(input any) *discord.Sticker {
+func (m *stickerManager) Resolve(input any) (*discord.Sticker, error) {
 	switch v := input.(type) {
 	case *discord.Sticker:
-		return v
+		return v, nil
 	case discord.Snowflake:
 		s, _ := m.Get(v)
-		return s
+		return s, nil
 	case string:
-		s, _ := m.Get(discord.Snowflake(v))
-		return s
+		snowflake, err := discord.ParseSnowflake(v)
+		if err != nil {
+			return nil, err
+		}
+		mem, _ := m.Get(*snowflake)
+		return mem, nil
 	}
-	return nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *stickerManager) Size() int {

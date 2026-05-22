@@ -46,7 +46,7 @@ func (s *SoundboardSound) Edit(ctx context.Context, opts SoundEditOptions) (*Sou
 	if err != nil {
 		return nil, err
 	}
-	if s.GuildID == nil || *s.GuildID == "" {
+	if s.GuildID == nil || s.GuildID.IsEmpty() {
 		return nil, errSoundNoGuildID
 	}
 	return c.ModifyGuildSoundboardSound(ctx, *s.GuildID, s.SoundID, opts)
@@ -58,7 +58,7 @@ func (s *SoundboardSound) Delete(ctx context.Context, reason *string) error {
 	if err != nil {
 		return err
 	}
-	if s.GuildID == nil || *s.GuildID == "" {
+	if s.GuildID == nil || s.GuildID.IsEmpty() {
 		return errSoundNoGuildID
 	}
 	return c.DeleteGuildSoundboardSound(ctx, *s.GuildID, s.SoundID, reason)

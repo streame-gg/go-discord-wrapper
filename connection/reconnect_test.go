@@ -162,7 +162,7 @@ func TestBug19RequestGuildMembersRaceSafe(t *testing.T) {
 	}()
 
 	for i := 0; i < 200; i++ {
-		_ = c.RequestGuildMembers("123", RequestGuildMembersParams{})
+		_ = c.RequestGuildMembers(123, RequestGuildMembersParams{})
 		_ = c.UpdatePresence(UpdatePresenceParams{Status: "online"})
 	}
 	<-done

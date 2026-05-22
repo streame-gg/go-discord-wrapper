@@ -40,18 +40,22 @@ func (m *threadManager) Fetch(ctx context.Context, threadID discord.Snowflake) (
 	return m.client.GetChannel(ctx, threadID)
 }
 
-func (m *threadManager) Resolve(input any) *discord.Channel {
+func (m *threadManager) Resolve(input any) (*discord.Channel, error) {
 	switch v := input.(type) {
 	case *discord.Channel:
-		return v
+		return v, nil
 	case discord.Snowflake:
 		ch, _ := m.Get(v)
-		return ch
+		return ch, nil
 	case string:
-		ch, _ := m.Get(discord.Snowflake(v))
-		return ch
+		snowflake, err := discord.ParseSnowflake(v)
+		if err != nil {
+			return nil, err
+		}
+		mem, _ := m.Get(*snowflake)
+		return mem, nil
 	}
-	return nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *threadManager) Size() int {

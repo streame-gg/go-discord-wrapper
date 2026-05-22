@@ -38,18 +38,22 @@ func (m *stageInstanceManager) Create(ctx context.Context, opts discord.StageCre
 	return m.client.CreateStageInstance(ctx, opts)
 }
 
-func (m *stageInstanceManager) Resolve(input any) *discord.StageInstance {
+func (m *stageInstanceManager) Resolve(input any) (*discord.StageInstance, error) {
 	switch v := input.(type) {
 	case *discord.StageInstance:
-		return v
+		return v, nil
 	case discord.Snowflake:
 		si, _ := m.Get(v)
-		return si
+		return si, nil
 	case string:
-		si, _ := m.Get(discord.Snowflake(v))
-		return si
+		snowflake, err := discord.ParseSnowflake(v)
+		if err != nil {
+			return nil, err
+		}
+		mem, _ := m.Get(*snowflake)
+		return mem, nil
 	}
-	return nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *stageInstanceManager) Size() int {

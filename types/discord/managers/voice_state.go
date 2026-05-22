@@ -28,18 +28,22 @@ func (m *voiceStateManager) Get(userID discord.Snowflake) (*discord.VoiceState, 
 	return nil, false
 }
 
-func (m *voiceStateManager) Resolve(input any) *discord.VoiceState {
+func (m *voiceStateManager) Resolve(input any) (*discord.VoiceState, error) {
 	switch v := input.(type) {
 	case *discord.VoiceState:
-		return v
+		return v, nil
 	case discord.Snowflake:
 		vs, _ := m.Get(v)
-		return vs
+		return vs, nil
 	case string:
-		vs, _ := m.Get(discord.Snowflake(v))
-		return vs
+		snowflake, err := discord.ParseSnowflake(v)
+		if err != nil {
+			return nil, err
+		}
+		mem, _ := m.Get(*snowflake)
+		return mem, nil
 	}
-	return nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *voiceStateManager) Size() int {

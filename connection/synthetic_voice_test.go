@@ -12,7 +12,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 )
 
-func snowflake(s string) discord.Snowflake { return discord.Snowflake(s) }
+func snowflake(s string) discord.Snowflake { return mustSnowflake(s) }
 func sf(s string) *discord.Snowflake       { v := snowflake(s); return &v }
 
 // newVSUEvent builds a VoiceStateUpdateEvent with the given guild/user/channel IDs
@@ -136,10 +136,10 @@ func TestVoiceSynthetic_StateCopyIsIndependent(t *testing.T) {
 
 func TestVoiceSynthetic_IntegrationJoin(t *testing.T) {
 	vsuPacket := dispatchPacket("VOICE_STATE_UPDATE", map[string]interface{}{
-		"guild_id":   "guild1",
-		"user_id":    "user1",
-		"channel_id": "chan1",
-		"session_id": "sess1",
+		"guild_id":   1,
+		"user_id":    2,
+		"channel_id": 3,
+		"session_id": "123",
 	})
 
 	wsURL, closeServer := mockGateway(t, vsuPacket)
@@ -166,16 +166,16 @@ func TestVoiceSynthetic_IntegrationJoin(t *testing.T) {
 func TestVoiceSynthetic_IntegrationLeave(t *testing.T) {
 	// First packet seeds OldState, second triggers Leave.
 	joinPacket := dispatchPacket("VOICE_STATE_UPDATE", map[string]interface{}{
-		"guild_id":   "guild1",
-		"user_id":    "user1",
-		"channel_id": "chan1",
-		"session_id": "sess1",
+		"guild_id":   1,
+		"user_id":    2,
+		"channel_id": 4,
+		"session_id": "123",
 	})
 	leavePacket := dispatchPacket("VOICE_STATE_UPDATE", map[string]interface{}{
-		"guild_id":   "guild1",
-		"user_id":    "user1",
+		"guild_id":   1,
+		"user_id":    2,
 		"channel_id": nil,
-		"session_id": "sess1",
+		"session_id": "123",
 	})
 
 	wsURL, closeServer := mockGateway(t, joinPacket, leavePacket)
@@ -202,10 +202,10 @@ func TestVoiceSynthetic_IntegrationLeave(t *testing.T) {
 func TestVoiceSynthetic_RawAndSyntheticBothFire(t *testing.T) {
 	// Both VOICE_STATE_UPDATE and VoiceMemberJoin must fire for the same event.
 	vsuPacket := dispatchPacket("VOICE_STATE_UPDATE", map[string]interface{}{
-		"guild_id":   "guild1",
-		"user_id":    "user1",
-		"channel_id": "chan1",
-		"session_id": "sess1",
+		"guild_id":   1,
+		"user_id":    2,
+		"channel_id": 4,
+		"session_id": "123",
 	})
 
 	wsURL, closeServer := mockGateway(t, vsuPacket)

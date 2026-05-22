@@ -44,18 +44,22 @@ func (m *soundboardManager) FetchAll(ctx context.Context) (*collection.Collectio
 	}), nil
 }
 
-func (m *soundboardManager) Resolve(input any) *discord.SoundboardSound {
+func (m *soundboardManager) Resolve(input any) (*discord.SoundboardSound, error) {
 	switch v := input.(type) {
 	case *discord.SoundboardSound:
-		return v
+		return v, nil
 	case discord.Snowflake:
 		s, _ := m.Get(v)
-		return s
+		return s, nil
 	case string:
-		s, _ := m.Get(discord.Snowflake(v))
-		return s
+		snowflake, err := discord.ParseSnowflake(v)
+		if err != nil {
+			return nil, err
+		}
+		mem, _ := m.Get(*snowflake)
+		return mem, nil
 	}
-	return nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *soundboardManager) Size() int {

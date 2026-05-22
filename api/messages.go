@@ -491,7 +491,7 @@ func (c *RestClient) AddReaction(ctx context.Context, channelID, messageID disco
 		return err
 	}
 
-	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s/@me", channelID, messageID, encodeEmoji(emoji))
+	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s/@me", channelID.String(), messageID.String(), encodeEmoji(emoji))
 	req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
@@ -510,7 +510,7 @@ func (c *RestClient) DeleteOwnReaction(ctx context.Context, channelID, messageID
 		return err
 	}
 
-	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s/@me", channelID, messageID, encodeEmoji(emoji))
+	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s/@me", channelID.String(), messageID.String(), encodeEmoji(emoji))
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
@@ -533,7 +533,7 @@ func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageI
 		return err
 	}
 
-	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s/%s", channelID, messageID, encodeEmoji(emoji), userID)
+	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s/%s", channelID.String(), messageID.String(), encodeEmoji(emoji), &userID)
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
@@ -552,7 +552,7 @@ func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID disc
 		return nil, err
 	}
 
-	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s%s", channelID, messageID, encodeEmoji(emoji), params.toQuery())
+	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s%s", channelID.String(), messageID.String(), encodeEmoji(emoji), params.toQuery())
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
@@ -573,7 +573,7 @@ func (c *RestClient) DeleteAllReactions(ctx context.Context, channelID, messageI
 		return err
 	}
 
-	path := fmt.Sprintf("/channels/%s/messages/%s/reactions", channelID, messageID)
+	path := fmt.Sprintf("/channels/%s/messages/%s/reactions", channelID.String(), messageID.String())
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err
@@ -592,7 +592,7 @@ func (c *RestClient) DeleteAllReactionsForEmoji(ctx context.Context, channelID, 
 		return err
 	}
 
-	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s", channelID, messageID, encodeEmoji(emoji))
+	path := fmt.Sprintf("/channels/%s/messages/%s/reactions/%s", channelID.String(), messageID.String(), encodeEmoji(emoji))
 	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return err

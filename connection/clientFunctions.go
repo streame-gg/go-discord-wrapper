@@ -15,11 +15,11 @@ import (
 
 // applicationID returns the bot's application ID, or an error if the bot has
 // not yet received the READY event and d.User is nil.
-func (d *Client) applicationID() (discord.Snowflake, error) {
+func (d *Client) applicationID() (*discord.Snowflake, error) {
 	if d.User == nil {
-		return "", errors.New("application ID unavailable: bot is not yet ready")
+		return nil, errors.New("application ID unavailable: bot is not yet ready")
 	}
-	return d.User.ID, nil
+	return &d.User.ID, nil
 }
 
 // ── Application commands ──────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ func (d *Client) RegisterCommand(ctx context.Context, cmd *commands.ApplicationC
 	if err != nil {
 		return nil, err
 	}
-	return d.RestClient.RegisterCommand(ctx, appID, cmd)
+	return d.RestClient.RegisterCommand(ctx, *appID, cmd)
 }
 
 // BulkRegisterCommands overwrites all application commands with the provided list.
@@ -42,7 +42,7 @@ func (d *Client) BulkRegisterCommands(ctx context.Context, cmds []*commands.Appl
 	if err != nil {
 		return nil, err
 	}
-	return d.RestClient.BulkRegisterCommands(ctx, appID, cmds)
+	return d.RestClient.BulkRegisterCommands(ctx, *appID, cmds)
 }
 
 // ── Interaction responses ─────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ func (d *Client) DeferReply(ctx context.Context, i *interactions.Interaction, ep
 }
 
 // DeferUpdateMessage acknowledges a component interaction without editing the original message.
-// Use EditReply afterwards to push the actual update.
+// Use EditReply afterward to push the actual update.
 func (d *Client) DeferUpdateMessage(ctx context.Context, i *interactions.Interaction) error {
 	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, responses.InteractionResponse{
 		Type: discord.InteractionCallbackTypeDeferredUpdateMessage,
@@ -120,7 +120,7 @@ func (d *Client) GetOriginalResponse(ctx context.Context, i *interactions.Intera
 	if err != nil {
 		return nil, err
 	}
-	msg, err := d.RestClient.GetOriginalInteractionResponse(ctx, appID, i.Token)
+	msg, err := d.RestClient.GetOriginalInteractionResponse(ctx, *appID, i.Token)
 	if err == nil {
 		msg.Hydrate(d)
 
@@ -135,7 +135,7 @@ func (d *Client) EditReply(ctx context.Context, i *interactions.Interaction, par
 	if err != nil {
 		return nil, err
 	}
-	msg, err := d.RestClient.EditOriginalInteractionResponse(ctx, appID, i.Token, params)
+	msg, err := d.RestClient.EditOriginalInteractionResponse(ctx, *appID, i.Token, params)
 	if err == nil {
 		d.cacheMessage(msg)
 	}
@@ -148,7 +148,7 @@ func (d *Client) DeleteReply(ctx context.Context, i *interactions.Interaction) e
 	if err != nil {
 		return err
 	}
-	return d.RestClient.DeleteOriginalInteractionResponse(ctx, appID, i.Token)
+	return d.RestClient.DeleteOriginalInteractionResponse(ctx, *appID, i.Token)
 }
 
 // CreateFollowup sends a follow-up message to an interaction (up to 15 minutes after the initial response).
@@ -157,7 +157,7 @@ func (d *Client) CreateFollowup(ctx context.Context, i *interactions.Interaction
 	if err != nil {
 		return nil, err
 	}
-	msg, err := d.RestClient.CreateFollowupMessage(ctx, appID, i.Token, params)
+	msg, err := d.RestClient.CreateFollowupMessage(ctx, *appID, i.Token, params)
 	if err == nil {
 		d.cacheMessage(msg)
 	}
@@ -170,7 +170,7 @@ func (d *Client) GetFollowup(ctx context.Context, i *interactions.Interaction, m
 	if err != nil {
 		return nil, err
 	}
-	msg, err := d.RestClient.GetFollowupMessage(ctx, appID, i.Token, messageID)
+	msg, err := d.RestClient.GetFollowupMessage(ctx, *appID, i.Token, messageID)
 	if err == nil {
 		msg.Hydrate(d)
 
@@ -185,7 +185,7 @@ func (d *Client) EditFollowup(ctx context.Context, i *interactions.Interaction, 
 	if err != nil {
 		return nil, err
 	}
-	msg, err := d.RestClient.EditFollowupMessage(ctx, appID, i.Token, messageID, params)
+	msg, err := d.RestClient.EditFollowupMessage(ctx, *appID, i.Token, messageID, params)
 	if err == nil {
 		d.cacheMessage(msg)
 	}
@@ -198,7 +198,7 @@ func (d *Client) DeleteFollowup(ctx context.Context, i *interactions.Interaction
 	if err != nil {
 		return err
 	}
-	return d.RestClient.DeleteFollowupMessage(ctx, appID, i.Token, messageID)
+	return d.RestClient.DeleteFollowupMessage(ctx, *appID, i.Token, messageID)
 }
 
 // ── Message methods ───────────────────────────────────────────────────────────
@@ -892,7 +892,7 @@ func (d *Client) GetGuildApplicationCommandPermissions(ctx context.Context, guil
 	if err != nil {
 		return nil, err
 	}
-	return d.RestClient.GetGuildApplicationCommandPermissions(ctx, appID, guildID)
+	return d.RestClient.GetGuildApplicationCommandPermissions(ctx, *appID, guildID)
 }
 
 // GetApplicationCommandPermissions returns the permission overrides for a specific command.
@@ -901,7 +901,7 @@ func (d *Client) GetApplicationCommandPermissions(ctx context.Context, guildID, 
 	if err != nil {
 		return nil, err
 	}
-	return d.RestClient.GetApplicationCommandPermissions(ctx, appID, guildID, cmdID)
+	return d.RestClient.GetApplicationCommandPermissions(ctx, *appID, guildID, cmdID)
 }
 
 // ── Application emojis ────────────────────────────────────────────────────────

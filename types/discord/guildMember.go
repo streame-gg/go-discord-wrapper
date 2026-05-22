@@ -6,20 +6,20 @@ import (
 
 type GuildMember struct {
 	hClient                    EntityClient
-	GuildID                    Snowflake  `json:"-"`
-	UserID                     Snowflake  `json:"-"`
-	AvatarHash                 *string    `json:"avatar,omitempty"`
-	BannerHash                 *string    `json:"banner,omitempty"`
-	CommunicationDisabledUntil *string    `json:"communication_disabled_until,omitempty"`
-	Deaf                       bool       `json:"deaf"`
-	Flags                      int        `json:"flags"`
-	JoinedAt                   time.Time  `json:"joined_at"`
-	Mute                       bool       `json:"mute"`
-	Nick                       *string    `json:"nick,omitempty"`
-	Pending                    bool       `json:"pending,omitempty"`
-	PremiumSince               *time.Time `json:"premium_since,omitempty"`
-	Roles                      []string   `json:"roles"`
-	User                       *User      `json:"user,omitempty"`
+	GuildID                    Snowflake   `json:"-"`
+	UserID                     Snowflake   `json:"-"`
+	AvatarHash                 *string     `json:"avatar,omitempty"`
+	BannerHash                 *string     `json:"banner,omitempty"`
+	CommunicationDisabledUntil *string     `json:"communication_disabled_until,omitempty"`
+	Deaf                       bool        `json:"deaf"`
+	Flags                      int         `json:"flags"`
+	JoinedAt                   time.Time   `json:"joined_at"`
+	Mute                       bool        `json:"mute"`
+	Nick                       *string     `json:"nick,omitempty"`
+	Pending                    bool        `json:"pending,omitempty"`
+	PremiumSince               *time.Time  `json:"premium_since,omitempty"`
+	Roles                      []Snowflake `json:"roles"`
+	User                       *User       `json:"user,omitempty"`
 }
 
 func (m *GuildMember) DisplayName() string {
