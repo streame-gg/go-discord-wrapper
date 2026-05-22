@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"strconv"
 )
 
@@ -65,10 +64,6 @@ func (s *Snowflake) IsValid() bool {
 func (s *Snowflake) Validate() error {
 	if s == nil {
 		return errors.New("nil snowflake")
-	}
-
-	if *s < 0 || *s > math.MaxUint64 {
-		return errors.New("snowflake value out of range")
 	}
 
 	str := s.String()

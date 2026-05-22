@@ -63,9 +63,7 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	e.NewMember.PremiumSince = w.PremiumSince
 	e.NewMember.CommunicationDisabledUntil = w.CommunicationDisabledUntil
 	e.NewMember.Roles = make([]discord.Snowflake, len(w.Roles))
-	for i, r := range w.Roles {
-		e.NewMember.Roles[i] = r
-	}
+	copy(e.NewMember.Roles, w.Roles)
 	if w.JoinedAt != nil {
 		e.NewMember.JoinedAt = *w.JoinedAt
 	}
@@ -87,9 +85,7 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 func (e GuildMemberUpdateEvent) MarshalJSON() ([]byte, error) {
 	m := e.NewMember
 	roles := make([]discord.Snowflake, len(m.Roles))
-	for i, r := range m.Roles {
-		roles[i] = r
-	}
+	copy(roles, m.Roles)
 	type wire struct {
 		GuildID                    discord.Snowflake    `json:"guild_id"`
 		Roles                      []discord.Snowflake  `json:"roles"`
