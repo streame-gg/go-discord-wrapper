@@ -17,8 +17,11 @@ func TestSnowflakeFromInt(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := SnowflakeFromInt(tc.in)
-			if got != tc.want {
+			got, err := SnowflakeFromInt(tc.in)
+			if err != nil {
+				t.Errorf("SnowflakeFromInt(%v): %v", tc.in, err)
+			}
+			if *got != tc.want {
 				t.Errorf("got %q, want %q", got, tc.want)
 			}
 		})
@@ -46,8 +49,8 @@ func TestSnowflakeFromUint(t *testing.T) {
 }
 
 func TestSnowflakeFromInt_NegativeFailsValidate(t *testing.T) {
-	sf := SnowflakeFromInt(-1)
-	if err := sf.Validate(); err == nil {
+	_, err := SnowflakeFromInt(-1)
+	if err == nil {
 		t.Error("expected Validate() to return an error for negative Snowflake, got nil")
 	}
 }

@@ -2,6 +2,7 @@ package discord
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/streame-gg/go-discord-wrapper/util"
@@ -26,6 +27,10 @@ func (s Snowflake) IsValid() bool {
 // Validate returns an error if s is not a valid Discord Snowflake (15–20 decimal digits).
 // Use this to sanitize user-supplied IDs before embedding them in API paths.
 func (s Snowflake) Validate() error {
+	if s < 0 || s > math.MaxUint64 {
+		return fmt.Errorf("snowflake value out of range: 0..%d", math.MaxUint64)
+	}
+
 	str := s.String()
 	if len(str) < 15 || len(str) > 20 {
 		return fmt.Errorf("snowflake %q: must be 15–20 decimal digits", str)
@@ -40,12 +45,17 @@ func (s Snowflake) Validate() error {
 
 // SnowflakeFromInt converts a signed 64-bit integer to a Snowflake.
 // Useful for Snowflakes stored as int64 in databases.
-//
-// Negative values are technically invalid Discord Snowflakes — the
-// helper accepts them silently and the resulting Snowflake will fail
-// Validate(). If you want validation, call .Validate() on the result.
-func SnowflakeFromInt(id int64) Snowflake {
-	return Snowflake(id)
+// Returns an error if out of range or otherwise invalid.
+func SnowflakeFromInt(id int64) (*Snowflake, error) {
+	if id < 0 {
+		return nil, fmt.Errorf("snowflake %q: id out of range", id)
+	}
+
+	if err := Snowflake(id).Validate(); err != nil {
+		return nil, err
+	}
+
+	return util.PointerOf(Snowflake(id)), nil
 }
 
 // SnowflakeFromUint converts an unsigned 64-bit integer to a Snowflake.
