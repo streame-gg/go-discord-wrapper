@@ -26,13 +26,19 @@ func (s *Snowflake) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	// numeric case: 123...
 	var v uint64
 	if err := json.Unmarshal(data, &v); err != nil {
 		return err
 	}
 	*s = Snowflake(v)
 	return nil
+}
+
+func (s *Snowflake) MarshalJSON() ([]byte, error) {
+	if s == nil {
+		return nil, errors.New("cannot marshal Snowflake as nil")
+	}
+	return json.Marshal(strconv.FormatUint(uint64(*s), 10))
 }
 
 func (s *Snowflake) String() string {
