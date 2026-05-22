@@ -505,8 +505,8 @@ func TestMemberManager_Fetch_CallsClient(t *testing.T) {
 }
 
 func TestMemberManager_Resolve(t *testing.T) {
-	const guildID discord.Snowflake = 1
-	const userID discord.Snowflake = 2
+	const guildID discord.Snowflake = 213456789012345
+	const userID discord.Snowflake = 123456789012345
 	mem := &discord.GuildMember{UserID: userID}
 	cache := newStubCache()
 	cache.members.members[guildID] = map[discord.Snowflake]*discord.GuildMember{userID: mem}

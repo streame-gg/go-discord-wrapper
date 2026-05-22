@@ -7,21 +7,25 @@ import (
 
 func TestSnowflakeFromInt(t *testing.T) {
 	cases := []struct {
-		name string
-		in   int64
-		want Snowflake
+		name      string
+		in        int64
+		want      Snowflake
+		wantError bool
 	}{
-		{"positive", 175928847299117063, Snowflake(175928847299117063)},
-		{"zero", 0, Snowflake(0)},
-		{"max int64", math.MaxInt64, Snowflake(9223372036854775807)},
+		{"invalid snowflake length", 123, Snowflake(0), true},
+		{"positive", 175928847299117063, Snowflake(175928847299117063), false},
+		{"negative", -1, Snowflake(0), true},
+		{"max int64", math.MaxInt64, Snowflake(9223372036854775807), false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := SnowflakeFromInt(tc.in)
-			if err != nil {
+			if err != nil && !tc.wantError {
 				t.Errorf("SnowflakeFromInt(%v): %v", tc.in, err)
+			} else if err == nil && tc.wantError {
+				t.Errorf("SnowflakeFromInt(%v): expected error", tc.in)
 			}
-			if *got != tc.want {
+			if !tc.wantError && *got != tc.want {
 				t.Errorf("got %d, want %d", got, tc.want)
 			}
 		})
