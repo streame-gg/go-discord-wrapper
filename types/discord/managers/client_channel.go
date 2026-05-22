@@ -48,7 +48,7 @@ func (m *clientChannelManager) Resolve(input any) (*discord.Channel, error) {
 		ch, _ := m.Get(*converted)
 		return ch, nil
 	}
-	return nil, nil
+	return nil, discord.ErrNotConvertable
 }
 
 func (m *clientChannelManager) Size() int {
