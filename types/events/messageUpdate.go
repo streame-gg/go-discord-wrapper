@@ -40,11 +40,17 @@ func (e MessageUpdateEvent) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	if e.GuildID != nil {
-		b, _ := json.Marshal(e.GuildID)
+		b, err := json.Marshal(e.GuildID)
+		if err != nil {
+			return nil, err
+		}
 		m["guild_id"] = b
 	}
 	if e.Member != nil {
-		b, _ := json.Marshal(e.Member)
+		b, err := json.Marshal(e.Member)
+		if err != nil {
+			return nil, err
+		}
 		m["member"] = b
 	}
 	if e.OldMessage != nil {
