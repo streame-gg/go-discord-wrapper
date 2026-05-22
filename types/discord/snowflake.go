@@ -72,5 +72,11 @@ func ParseSnowflake(s string) (*Snowflake, error) {
 	if err != nil {
 		return nil, err
 	}
-	return util.PointerOf(Snowflake(snowflake)), nil
+
+	createdSnowflake := Snowflake(snowflake)
+	if err := createdSnowflake.Validate(); err != nil {
+		return nil, err
+	}
+
+	return &createdSnowflake, nil
 }
