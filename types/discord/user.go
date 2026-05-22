@@ -1,7 +1,7 @@
 package discord
 
 import (
-	"strconv"
+	"math"
 	"time"
 )
 
@@ -45,8 +45,13 @@ func (u *User) DisplayName() string {
 }
 
 func (u *User) CreatedAt() time.Time {
-	id, _ := strconv.ParseInt(u.ID.String(), 10, 64)
-	return time.Unix((id>>22)+Epoch, 0)
+	timestamp := (uint64(u.ID) >> 22) + Epoch
+
+	if timestamp > math.MaxInt64 {
+		return time.Unix(0, 0)
+	}
+
+	return time.Unix(int64(timestamp), 0)
 }
 
 // UserConnection represents an external account linked to a Discord user.

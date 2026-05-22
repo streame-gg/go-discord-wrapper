@@ -7,7 +7,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/util"
 )
 
-const Epoch int64 = 1420070400000
+const Epoch uint64 = 1420070400000
 
 type Snowflake uint64
 
