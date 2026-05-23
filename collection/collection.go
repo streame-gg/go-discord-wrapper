@@ -235,6 +235,9 @@ func (c *Collection[K, V]) Every(fn func(V) bool) bool {
 //
 //	a.Equals(b, func(x, y MyStruct) bool { return reflect.DeepEqual(x, y) })
 func (c *Collection[K, V]) Equals(other *Collection[K, V], eq func(V, V) bool) bool {
+	if other == nil {
+		return len(c.items) == 0
+	}
 	if len(c.items) != len(other.items) {
 		return false
 	}
@@ -488,6 +491,9 @@ func (c *Collection[K, V]) Sweep(fn func(V) bool) int {
 func (c *Collection[K, V]) Concat(others ...*Collection[K, V]) *Collection[K, V] {
 	n := c.Clone()
 	for _, other := range others {
+		if other == nil {
+			continue
+		}
 		for _, k := range other.keys {
 			n.Set(k, other.items[k])
 		}
@@ -502,6 +508,9 @@ func (c *Collection[K, V]) Merge(others ...*Collection[K, V]) *Collection[K, V] 
 
 // Difference returns items in c whose keys are NOT in other.
 func (c *Collection[K, V]) Difference(other *Collection[K, V]) *Collection[K, V] {
+	if other == nil {
+		return c.Clone()
+	}
 	n := New[K, V]()
 	for _, k := range c.keys {
 		if !other.Has(k) {
@@ -514,6 +523,9 @@ func (c *Collection[K, V]) Difference(other *Collection[K, V]) *Collection[K, V]
 // Intersection returns items present in both c and other (by key, with
 // values from c).
 func (c *Collection[K, V]) Intersection(other *Collection[K, V]) *Collection[K, V] {
+	if other == nil {
+		return New[K, V]()
+	}
 	n := New[K, V]()
 	for _, k := range c.keys {
 		if other.Has(k) {
@@ -525,6 +537,9 @@ func (c *Collection[K, V]) Intersection(other *Collection[K, V]) *Collection[K, 
 
 // SymmetricDifference returns items present in c or other but not both.
 func (c *Collection[K, V]) SymmetricDifference(other *Collection[K, V]) *Collection[K, V] {
+	if other == nil {
+		return c.Clone()
+	}
 	n := New[K, V]()
 	for _, k := range c.keys {
 		if !other.Has(k) {
