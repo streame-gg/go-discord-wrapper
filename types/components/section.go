@@ -2,13 +2,14 @@ package components
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type Section struct {
-	Type       discord.ComponentType  `json:"type"`
-	ID         *int                   `json:"id,omitempty"`
-	Components *[]AnySectionComponent `json:"components"`
+	Type       discord.ComponentType `json:"type"`
+	ID         *int                  `json:"id,omitempty"`
+	Components []AnySectionComponent `json:"components"`
 	Accessory  AnySectionAccessory    `json:"accessory,omitempty"`
 }
 
@@ -45,7 +46,9 @@ func (s *Section) UnmarshalJSON(data []byte) error {
 			if err := json.Unmarshal(c, &t); err != nil {
 				return err
 			}
-			*s.Components = append(*s.Components, t)
+			s.Components = append(s.Components, t)
+		default:
+			return fmt.Errorf("unknown section component type: %d", probe.Type)
 		}
 	}
 
