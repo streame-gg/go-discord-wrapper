@@ -430,7 +430,7 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 			return &returnType, nil
 		}
 
-		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode) {
+		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode, req.Method) {
 			retryAfter := parseRetryAfter(resp)
 			delay := c.retryDelay(attempt, retryAfter)
 			if retryAfter > 0 {
@@ -454,12 +454,21 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 	return nil, errors.New("request failed after retries")
 }
 
-func (c *RestClient) shouldRetry(statusCode int) bool {
+func (c *RestClient) shouldRetry(statusCode int, method string) bool {
 	if statusCode == http.StatusTooManyRequests {
 		return c.retryOptions.RetryOnRateLimit
 	}
 
-	return c.retryOptions.RetryOnServerErrors && statusCode >= http.StatusInternalServerError
+	if statusCode >= http.StatusInternalServerError {
+		// POST and PATCH are non-idempotent: retrying on 5xx risks duplicate
+		// side-effects (creating duplicate resources, applying a patch twice).
+		if method == http.MethodPost || method == http.MethodPatch {
+			return false
+		}
+		return c.retryOptions.RetryOnServerErrors
+	}
+
+	return false
 }
 
 func (c *RestClient) retryDelay(attempt int, retryAfter time.Duration) time.Duration {
