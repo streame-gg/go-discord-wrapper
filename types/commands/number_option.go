@@ -12,9 +12,9 @@ type ApplicationCommandOptionNumber struct {
 	Description              string                                   `json:"description"`
 	DescriptionLocalizations map[discord.Locale]string                `json:"description_localizations,omitempty"`
 	Required                 *bool                                    `json:"required,omitempty"`
-	Choices                  []ApplicationCommandOptionChoice[string] `json:"choices,omitempty"`
-	MinValue                 *int64                                   `json:"min_value,omitempty"`
-	MaxValue                 *int64                                   `json:"max_value,omitempty"`
+	Choices                  []ApplicationCommandOptionChoice[float64] `json:"choices,omitempty"`
+	MinValue                 *float64                                  `json:"min_value,omitempty"`
+	MaxValue                 *float64                                  `json:"max_value,omitempty"`
 	Autocomplete             *bool                                    `json:"autocomplete,omitempty"`
 }
 
