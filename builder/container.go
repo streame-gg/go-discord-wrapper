@@ -15,8 +15,7 @@ type ContainerBuilder struct {
 }
 
 func NewContainer() *ContainerBuilder {
-	comps := []components.AnyContainerComponent{}
-	return &ContainerBuilder{c: components.Container{Components: &comps}}
+	return &ContainerBuilder{}
 }
 
 func (b *ContainerBuilder) SetAccentColor(color int) *ContainerBuilder {
@@ -30,7 +29,7 @@ func (b *ContainerBuilder) SetSpoiler(spoiler bool) *ContainerBuilder {
 }
 
 func (b *ContainerBuilder) AddComponents(c ...components.AnyContainerComponent) *ContainerBuilder {
-	*b.c.Components = append(*b.c.Components, c...)
+	b.c.Components = append(b.c.Components, c...)
 	return b
 }
 

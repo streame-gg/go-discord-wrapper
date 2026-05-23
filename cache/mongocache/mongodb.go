@@ -339,6 +339,9 @@ type mongoGuildStore struct{ c *MongoDBCache }
 func (s *mongoGuildStore) col() *mongo.Collection { return s.c.db.Collection("guilds") }
 
 func (s *mongoGuildStore) Set(guild *discord.Guild) {
+	if guild == nil {
+		return
+	}
 	b, err := json.Marshal(guild)
 	if err != nil {
 		return
@@ -403,6 +406,9 @@ type mongoChannelStore struct{ c *MongoDBCache }
 func (s *mongoChannelStore) col() *mongo.Collection { return s.c.db.Collection("channels") }
 
 func (s *mongoChannelStore) Set(ch *discord.Channel) {
+	if ch == nil {
+		return
+	}
 	b, err := json.Marshal(ch)
 	if err != nil {
 		return
@@ -467,6 +473,9 @@ type mongoUserStore struct{ c *MongoDBCache }
 func (s *mongoUserStore) col() *mongo.Collection { return s.c.db.Collection("users") }
 
 func (s *mongoUserStore) Set(user *discord.User) {
+	if user == nil {
+		return
+	}
 	b, err := json.Marshal(user)
 	if err != nil {
 		return
@@ -539,7 +548,7 @@ func guildUserID(guildID, userID discord.Snowflake) string {
 }
 
 func (s *mongoMemberStore) Set(guildID discord.Snowflake, member *discord.GuildMember) {
-	if member.User == nil {
+	if member == nil || member.User == nil {
 		return
 	}
 	b, err := json.Marshal(member)
@@ -615,6 +624,9 @@ type mongoRoleStore struct{ c *MongoDBCache }
 func (s *mongoRoleStore) col() *mongo.Collection { return s.c.db.Collection("roles") }
 
 func (s *mongoRoleStore) Set(guildID discord.Snowflake, role *discord.Role) {
+	if role == nil {
+		return
+	}
 	b, err := json.Marshal(role)
 	if err != nil {
 		return
@@ -708,6 +720,9 @@ type mongoVoiceStateStore struct{ c *MongoDBCache }
 func (s *mongoVoiceStateStore) col() *mongo.Collection { return s.c.db.Collection("voice_states") }
 
 func (s *mongoVoiceStateStore) Set(guildID discord.Snowflake, state *discord.VoiceState) {
+	if state == nil {
+		return
+	}
 	b, err := json.Marshal(state)
 	if err != nil {
 		return
@@ -781,6 +796,9 @@ type mongoSoundboardStore struct{ c *MongoDBCache }
 func (s *mongoSoundboardStore) col() *mongo.Collection { return s.c.db.Collection("soundboard_sounds") }
 
 func (s *mongoSoundboardStore) Set(guildID discord.Snowflake, sound *discord.SoundboardSound) {
+	if sound == nil {
+		return
+	}
 	b, err := json.Marshal(sound)
 	if err != nil {
 		return
@@ -876,6 +894,9 @@ func (s *mongoScheduledEventStore) col() *mongo.Collection {
 }
 
 func (s *mongoScheduledEventStore) Set(event *discord.GuildScheduledEvent) {
+	if event == nil {
+		return
+	}
 	b, err := json.Marshal(event)
 	if err != nil {
 		return
@@ -951,6 +972,9 @@ func (s *mongoStageInstanceStore) col() *mongo.Collection {
 }
 
 func (s *mongoStageInstanceStore) Set(instance *discord.StageInstance) {
+	if instance == nil {
+		return
+	}
 	b, err := json.Marshal(instance)
 	if err != nil {
 		return
@@ -1024,6 +1048,9 @@ type mongoEmojiStore struct{ c *MongoDBCache }
 func (s *mongoEmojiStore) col() *mongo.Collection { return s.c.db.Collection("emojis") }
 
 func (s *mongoEmojiStore) Set(guildID discord.Snowflake, emoji *discord.Emoji) {
+	if emoji == nil {
+		return
+	}
 	b, err := json.Marshal(emoji)
 	if err != nil {
 		return
@@ -1117,6 +1144,9 @@ type mongoStickerStore struct{ c *MongoDBCache }
 func (s *mongoStickerStore) col() *mongo.Collection { return s.c.db.Collection("stickers") }
 
 func (s *mongoStickerStore) Set(guildID discord.Snowflake, sticker *discord.Sticker) {
+	if sticker == nil {
+		return
+	}
 	b, err := json.Marshal(sticker)
 	if err != nil {
 		return
@@ -1210,6 +1240,9 @@ type mongoPresenceStore struct{ c *MongoDBCache }
 func (s *mongoPresenceStore) col() *mongo.Collection { return s.c.db.Collection("presences") }
 
 func (s *mongoPresenceStore) Set(presence *discord.Presence) {
+	if presence == nil {
+		return
+	}
 	b, err := json.Marshal(presence)
 	if err != nil {
 		return
@@ -1287,7 +1320,7 @@ func msgID(channelID, messageID discord.Snowflake) string {
 }
 
 func (s *mongoMessageStore) Add(msg *discord.Message) {
-	if s.c.opts.Messages.MaxPerChannel == 0 {
+	if msg == nil || s.c.opts.Messages.MaxPerChannel == 0 {
 		return
 	}
 
