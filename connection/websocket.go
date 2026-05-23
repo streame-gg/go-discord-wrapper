@@ -41,6 +41,11 @@ type Websocket struct {
 	missedHeartbeatAcks  int
 	closeOnce            sync.Once
 	readyOnce            sync.Once
+
+	// heartbeatRequest is signalled by the reader goroutine when Discord sends
+	// an Op-1 immediate-heartbeat request. Buffered 1 so the send is
+	// non-blocking; the heartbeat loop drains it.
+	heartbeatRequest chan struct{}
 }
 
 func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int, sessionID *string) (*Websocket, error) {
@@ -91,6 +96,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 		Closed:            make(chan struct{}),
 		Ready:             make(chan struct{}),
 		SessionID:         sessionID,
+		heartbeatRequest:  make(chan struct{}, 1),
 	}
 
 	bot.Logger.Info("Connected to Discord gateway", slog.Float64("heartbeatIntervalMs", hello.HeartbeatInterval))
@@ -190,9 +196,12 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 		}
 
 		// Discord Gateway spec §4.2: first heartbeat must fire after heartbeat_interval * jitter (0–1).
+		// Also handle an Op-1 request that may arrive during the jitter window.
 		jitter := time.Duration(rand.Float64() * float64(ws.HeartbeatInterval))
 		select {
 		case <-time.After(jitter):
+		case <-ws.heartbeatRequest:
+			bot.Logger.Debug("Heartbeat requested by gateway (Op-1) during initial jitter window")
 		case <-ws.Closed:
 			bot.Logger.Debug("Heartbeat stopped: websocket closed")
 			return
@@ -211,6 +220,11 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 				if !checkTimeout() {
 					return
 				}
+				if !sendHeartbeat() {
+					return
+				}
+			case <-ws.heartbeatRequest:
+				bot.Logger.Debug("Sending heartbeat: requested by gateway (Op-1)")
 				if !sendHeartbeat() {
 					return
 				}
@@ -418,6 +432,14 @@ func (d *Client) listenWebsocket() error {
 			}
 
 			return nil
+		}
+
+		if payload.Op == 1 {
+			d.Logger.Debug("Heartbeat requested by gateway (Op-1)")
+			select {
+			case ws.heartbeatRequest <- struct{}{}:
+			default: // already one pending; the loop will send it shortly
+			}
 		}
 
 		if payload.Op == 11 {
