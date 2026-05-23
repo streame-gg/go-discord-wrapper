@@ -1407,7 +1407,7 @@ func (s *redisStickerStore) Size() int {
 type redisPresenceStore struct{ c *RedisCache }
 
 func (s *redisPresenceStore) Set(presence *discord.Presence) {
-	if presence == nil {
+	if presence == nil || presence.User.ID.IsEmpty() {
 		return
 	}
 	key := s.c.k("presence", strconv.FormatUint(uint64(presence.GuildID), 10), strconv.FormatUint(uint64(presence.User.ID), 10))

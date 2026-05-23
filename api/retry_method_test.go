@@ -44,6 +44,11 @@ func TestShouldRetryMethodFilter(t *testing.T) {
 		{http.MethodPost, http.StatusBadGateway, false},
 		{http.MethodPatch, http.StatusInternalServerError, false},
 		{http.MethodPatch, http.StatusBadGateway, false},
+		// HEAD and OPTIONS are idempotent — must retry
+		{http.MethodHead, http.StatusInternalServerError, true},
+		{http.MethodOptions, http.StatusInternalServerError, true},
+		// Unknown/custom methods default to no-retry (allowlist, not denylist)
+		{"CUSTOM", http.StatusInternalServerError, false},
 		// Rate limit is controlled by RetryOnRateLimit, not method
 		{http.MethodPost, http.StatusTooManyRequests, false},
 		{http.MethodGet, http.StatusTooManyRequests, false},

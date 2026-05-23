@@ -460,12 +460,13 @@ func (c *RestClient) shouldRetry(statusCode int, method string) bool {
 	}
 
 	if statusCode >= http.StatusInternalServerError {
-		// POST and PATCH are non-idempotent: retrying on 5xx risks duplicate
-		// side-effects (creating duplicate resources, applying a patch twice).
-		if method == http.MethodPost || method == http.MethodPatch {
-			return false
+		// Only retry idempotent methods. Unknown/custom methods default to
+		// no-retry to avoid unintended side-effects.
+		switch method {
+		case http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodHead, http.MethodOptions:
+			return c.retryOptions.RetryOnServerErrors
 		}
-		return c.retryOptions.RetryOnServerErrors
+		return false
 	}
 
 	return false

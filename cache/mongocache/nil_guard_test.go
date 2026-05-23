@@ -38,5 +38,8 @@ func TestMongoNilGuards(t *testing.T) {
 	require.NotPanics(t, func() { (&mongoEmojiStore{c}).Set(guildID, nil) }, "Emojis.Set(guildID, nil)")
 	require.NotPanics(t, func() { (&mongoStickerStore{c}).Set(guildID, nil) }, "Stickers.Set(guildID, nil)")
 	require.NotPanics(t, func() { (&mongoPresenceStore{c}).Set(nil) }, "Presences.Set(nil)")
+	require.NotPanics(t, func() {
+		(&mongoPresenceStore{c}).Set(&discord.Presence{}) // User.ID == 0 → no-op
+	}, "Presences.Set(zeroUserID)")
 	require.NotPanics(t, func() { (&mongoMessageStore{c: c}).Add(nil) }, "Messages.Add(nil)")
 }

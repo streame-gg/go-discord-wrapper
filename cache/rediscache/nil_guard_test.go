@@ -37,5 +37,8 @@ func TestRedisNilGuards(t *testing.T) {
 	require.NotPanics(t, func() { c.Emojis().Set(guildID, nil) }, "Emojis.Set(guildID, nil)")
 	require.NotPanics(t, func() { c.Stickers().Set(guildID, nil) }, "Stickers.Set(guildID, nil)")
 	require.NotPanics(t, func() { c.Presences().Set(nil) }, "Presences.Set(nil)")
+	require.NotPanics(t, func() {
+		c.Presences().Set(&discord.Presence{}) // User.ID == 0 → no-op
+	}, "Presences.Set(zeroUserID)")
 	require.NotPanics(t, func() { c.Messages().Add(nil) }, "Messages.Add(nil)")
 }
