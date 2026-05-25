@@ -459,3 +459,65 @@ func (s *ratelimitTestSuite) TestRateLimiter_CloseIdempotent() {
 		rl.close() // must not panic
 	})
 }
+
+// J0-#07: 429 without any reset header must still mark the bucket exhausted.
+func (s *ratelimitTestSuite) TestRateLimiter_429NoResetHeader_BucketExhausted() {
+	rl := newRateLimiter(0)
+
+	// Prime the bucket with a normal response so the route mapping exists.
+	primeResp := makeResp(http.StatusOK, map[string]string{
+		"X-RateLimit-Bucket":      "bkt-j07",
+		"X-RateLimit-Limit":       "5",
+		"X-RateLimit-Remaining":   "3",
+		"X-RateLimit-Reset-After": "1.000",
+	})
+	rl.update("GET", "/channels/111/messages", primeResp)
+
+	// Now receive a 429 with NO reset-related headers at all.
+	resp429 := makeResp(http.StatusTooManyRequests, map[string]string{
+		"X-RateLimit-Bucket": "bkt-j07",
+	})
+	rl.update("GET", "/channels/111/messages", resp429)
+
+	// Bucket remaining must be 0 and a future wait must block (then release after ~1s).
+	bktVal, ok := rl.buckets.Load("bkt-j07")
+	s.Require().True(ok, "bucket must exist after 429")
+	bkt := bktVal.(*rateLimitBucket)
+	bkt.mu.Lock()
+	rem := bkt.remaining
+	resetAt := bkt.resetAt
+	bkt.mu.Unlock()
+
+	s.Equal(0, rem, "remaining must be 0 after 429")
+	s.False(resetAt.IsZero(), "resetAt must be non-zero after 429 without headers (fallback 1s)")
+	s.True(resetAt.After(time.Now()), "resetAt must be in the future")
+}
+
+// J0-#10: wait() must re-check global rate limit after bucket sleep.
+func (s *ratelimitTestSuite) TestRateLimiter_GlobalSetDuringBucketSleep() {
+	rl := newRateLimiter(0)
+
+	// Prime a bucket with ~200ms sleep.
+	bucketResp := makeResp(http.StatusOK, map[string]string{
+		"X-RateLimit-Bucket":      "bkt-j10",
+		"X-RateLimit-Limit":       "1",
+		"X-RateLimit-Remaining":   "0",
+		"X-RateLimit-Reset-After": "0.200",
+	})
+	rl.update("GET", "/channels/555/messages", bucketResp)
+
+	// While the bucket is sleeping, set a global rate limit that expires 300ms from now.
+	rl.globalMu.Lock()
+	rl.globalUntil = time.Now().Add(300 * time.Millisecond)
+	rl.globalMu.Unlock()
+
+	start := time.Now()
+	err := rl.wait(context.Background(), "GET", "/channels/555/messages")
+	elapsed := time.Since(start)
+
+	s.NoError(err)
+	// Must have waited for both the bucket (200ms) AND the global (300ms total),
+	// so elapsed must be at least ~300ms.
+	s.GreaterOrEqualf(elapsed, 250*time.Millisecond,
+		"wait() returned after only %v; expected to re-check global after bucket sleep", elapsed)
+}
