@@ -3,6 +3,7 @@ package components
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -104,22 +105,18 @@ func (l *LabelComponent) GetType() discord.ComponentType {
 	return discord.ComponentTypeLabel
 }
 
+// https://docs.discord.com/developers/components/reference#label-label-interaction-response-structure
 type LabelComponentInteractionResponse struct {
-	Type     discord.ComponentType `json:"type"`
-	Value    string                `json:"values"`
-	ID       *int                  `json:"id,omitempty"`
-	CustomID string                `json:"custom_id,omitempty"`
+	Type      discord.ComponentType            `json:"type"`
+	ID        *int                             `json:"id,omitempty"`
+	Component *AnyComponentInteractionResponse `json:"component,omitempty"`
 }
 
-func (l *LabelComponentInteractionResponse) IsInteractionResponseDataComponent() {
-
-}
+func (l *LabelComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (l *LabelComponentInteractionResponse) MarshalJSON() ([]byte, error) {
 	l.Type = discord.ComponentTypeLabel
-
 	type Alias LabelComponentInteractionResponse
-
 	return json.Marshal(&struct {
 		*Alias
 	}{
@@ -129,18 +126,60 @@ func (l *LabelComponentInteractionResponse) MarshalJSON() ([]byte, error) {
 
 func (l *LabelComponentInteractionResponse) UnmarshalJSON(data []byte) error {
 	type Alias LabelComponentInteractionResponse
-	var raw struct {
+	raw := &struct {
 		*Alias
+		Component *json.RawMessage `json:"component,omitempty"`
+	}{
+		Alias: (*Alias)(l),
 	}
 
-	if err := json.Unmarshal(data, &raw); err != nil {
+	if err := json.Unmarshal(data, raw); err != nil {
 		return err
 	}
 
-	if raw.Alias == nil {
+	if raw.Component == nil {
 		return nil
 	}
-	*l = LabelComponentInteractionResponse(*raw.Alias)
+
+	var probe struct {
+		Type discord.ComponentType `json:"type"`
+	}
+	if err := json.Unmarshal(*raw.Component, &probe); err != nil {
+		return err
+	}
+
+	var c AnyComponentInteractionResponse
+
+	switch probe.Type {
+	case discord.ComponentTypeTextInput:
+		c = &TextInputComponentInteractionResponse{}
+	case discord.ComponentTypeStringSelect:
+		c = &StringSelectComponentInteractionResponse{}
+	case discord.ComponentTypeUserSelect:
+		c = &UserSelectComponentInteractionResponse{}
+	case discord.ComponentTypeRoleSelect:
+		c = &RoleComponentInteractionResponse{}
+	case discord.ComponentTypeMentionableSelect:
+		c = &MentionableComponentInteractionResponse{}
+	case discord.ComponentTypeChannelSelect:
+		c = &ChannelComponentInteractionResponse{}
+	case discord.ComponentTypeFileUpload:
+		c = &FileUploadComponentInteractionResponse{}
+	case discord.ComponentTypeRadioGroup:
+		c = &RadioGroupComponentInteractionResponse{}
+	case discord.ComponentTypeCheckboxGroup:
+		c = &CheckboxGroupComponentInteractionResponse{}
+	case discord.ComponentTypeCheckbox:
+		c = &CheckboxComponentInteractionResponse{}
+	default:
+		return fmt.Errorf("unknown label child component type: %d", probe.Type)
+	}
+
+	if err := json.Unmarshal(*raw.Component, c); err != nil {
+		return err
+	}
+
+	l.Component = &c
 	return nil
 }
 
