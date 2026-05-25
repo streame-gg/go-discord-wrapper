@@ -596,8 +596,12 @@ func (d *Client) Login(ctx context.Context) error {
 
 	if ctx.Done() != nil {
 		go func() {
-			<-ctx.Done()
-			_ = d.Shutdown()
+			select {
+			case <-ctx.Done():
+				_ = d.Shutdown()
+			case <-d.shutdownCh:
+				// Manual Shutdown() already called; exit without a second call.
+			}
 		}()
 	}
 
