@@ -246,6 +246,11 @@ func (d *Client) connectWebsocket(url string, isReconnect bool, lastEventNum *in
 	}
 
 	d.wsMu.Lock()
+	// Close any existing connection before replacing it so the old
+	// heartbeat goroutine exits and the underlying socket is released.
+	if d.Websocket != nil {
+		_ = d.Websocket.close()
+	}
 	d.Websocket = ws
 	d.wsMu.Unlock()
 	return nil
