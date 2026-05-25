@@ -1034,8 +1034,7 @@ func (c *RestClient) BulkBanGuildMembers(ctx context.Context, guildID discord.Sn
 			return nil, err
 		}
 		return doRequest[BulkBanResult](c, req, map[int]bool{
-			http.StatusOK:        true,
-			http.StatusNoContent: false,
+			http.StatusOK: true,
 		})
 	}
 

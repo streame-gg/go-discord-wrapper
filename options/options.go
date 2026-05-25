@@ -114,6 +114,12 @@ func (c Config) Validate() error {
 	if c.Retry.MaxRetries < 0 {
 		return fmt.Errorf("options: Retry.MaxRetries must be >= 0, got %d", c.Retry.MaxRetries)
 	}
+	if c.Retry.BaseBackoff < 0 {
+		return fmt.Errorf("options: Retry.BaseBackoff must be >= 0, got %v", c.Retry.BaseBackoff)
+	}
+	if c.Retry.MaxBackoff < 0 {
+		return fmt.Errorf("options: Retry.MaxBackoff must be >= 0, got %v", c.Retry.MaxBackoff)
+	}
 	if c.MaxReconnectRetries < -1 {
 		return fmt.Errorf("options: MaxReconnectRetries must be >= -1 (use -1 for infinite), got %d", c.MaxReconnectRetries)
 	}
