@@ -358,7 +358,11 @@ func (s *MemMessageStore) Channel(channelID discord.Snowflake) *collection.Colle
 	s.mu.Unlock()
 	out := collection.NewWithCapacity[discord.Snowflake, *discord.Message](len(msgs))
 	for _, m := range msgs {
-		out.Set(m.ID, m)
+		// Shallow-copy so caller mutations don't corrupt the cached entry.
+		// Nested pointer fields (Embeds, Attachments, etc.) are still shared;
+		// callers must clone those slices before mutating.
+		cp := *m
+		out.Set(cp.ID, &cp)
 	}
 	return out
 }

@@ -563,7 +563,8 @@ func TestBaseStore_CloseIdempotent(t *testing.T) {
 }
 
 func TestMemMessageStore_CloseIdempotent(t *testing.T) {
-	s := NewMessageStore(Defaults())
+	s := NewMessageStore(MessageDefaults())
 	s.Close()
 	s.Close()
 }
+
