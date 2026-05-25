@@ -21,7 +21,7 @@ type Clan struct {
 type User struct {
 	hClient              EntityClient
 	AccentColor          *int                  `json:"accent_color,omitempty"`
-	AvatarHash           string                `json:"avatar"`
+	AvatarHash           *string               `json:"avatar"`
 	AvatarDecorationData *AvatarDecorationData `json:"avatar_decoration,omitempty"`
 	Bot                  bool                  `json:"bot,omitempty"`
 	Discriminator        string                `json:"discriminator"`
