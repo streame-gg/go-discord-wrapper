@@ -6,19 +6,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/api"
 	"github.com/streame-gg/go-discord-wrapper/connection"
 	"github.com/streame-gg/go-discord-wrapper/options"
 )
 
-// identifyInterval is the minimum time Discord requires between IDENTIFY payloads
-// on the same bot token. Violating this results in a 4008 (rate limited) close.
+// identifyInterval is the minimum time Discord requires between IDENTIFY buckets.
+// Violating this results in a 4008 (rate limited) close.
 const identifyInterval = 5 * time.Second
 
 // ShardManager orchestrates multiple Discord gateway connections in a single process.
-// It creates one Client per shard using a factory function, enforces Discord's
-// 5-second IDENTIFY rate limit during startup, and provides convenience accessors.
+// It creates one Client per shard using a factory function, respects Discord's
+// max_concurrency IDENTIFY bucket rule during startup, and provides convenience accessors.
 //
 // For multi-machine deployments you do not need a ShardManager — run one Client
 // per machine with options.WithCoordinator pointing at your external broker.
@@ -26,7 +28,14 @@ type ShardManager struct {
 	total       int
 	coordinator options.ShardCoordinator
 	factory     func(shardID, totalShards int) (*connection.Client, error)
+	rest        *api.RestClient
 	clients     []*connection.Client
+}
+
+// shardErr pairs a shard ID with the error returned during startup.
+type shardErr struct {
+	id  int
+	err error
 }
 
 // NewShardManager creates a manager that will start total shards using coord.
@@ -43,67 +52,141 @@ type ShardManager struct {
 //	        options.WithCoordinator(coord),
 //	    )
 //	})
+//
+// This constructor defaults to max_concurrency=1 (sequential start). For faster
+// startup on larger bots, use NewShardManagerWithRest and pass a RestClient so
+// that Start can fetch the actual max_concurrency from Discord's /gateway/bot.
 func NewShardManager(
 	coord options.ShardCoordinator,
 	factory func(shardID, totalShards int) (*connection.Client, error),
+) *ShardManager {
+	return NewShardManagerWithRest(coord, factory, nil)
+}
+
+// NewShardManagerWithRest creates a manager that fetches Discord's max_concurrency
+// from /gateway/bot before starting shards.
+//
+// When rest is non-nil, Start calls rest.GetBotGateway to determine how many shards
+// may be started in parallel per IDENTIFY bucket (e.g. 16 for large bots). If the
+// fetch fails, Start falls back to max_concurrency=1. When rest is nil, Start always
+// uses max_concurrency=1, which is identical to NewShardManager behaviour.
+//
+// Migration note: to unlock parallel bucket start on large bots, replace:
+//
+//	sharding.NewShardManager(coord, factory)
+//
+// with:
+//
+//	rest, _ := api.NewRestClient(token)
+//	sharding.NewShardManagerWithRest(coord, factory, rest)
+func NewShardManagerWithRest(
+	coord options.ShardCoordinator,
+	factory func(shardID, totalShards int) (*connection.Client, error),
+	rest *api.RestClient,
 ) *ShardManager {
 	total := coord.TotalShards()
 	return &ShardManager{
 		total:       total,
 		coordinator: coord,
 		factory:     factory,
+		rest:        rest,
 		clients:     make([]*connection.Client, total),
 	}
 }
 
-// Start connects all shards to the Discord gateway sequentially.
+// Start connects all shards to the Discord gateway using Discord's bucket-based
+// IDENTIFY rate limit.
 //
-// Discord mandates at least 5 seconds between IDENTIFY payloads for the same
-// bot token (across all shards). Start enforces this automatically, so the
-// full startup time for N shards is at least (N-1)*5 seconds.
+// Shards within the same max_concurrency bucket are started concurrently; a
+// 5-second gap is enforced between buckets per the Discord spec. When
+// NewShardManagerWithRest was used with a non-nil RestClient, Start fetches
+// max_concurrency from Discord's /gateway/bot endpoint before the loop begins.
+// Without a RestClient it defaults to max_concurrency=1 (sequential, one shard
+// per bucket), which is identical to the previous behaviour.
 //
 // Start blocks until all shards have sent their IDENTIFY and received READY.
-// If any shard fails to connect, Start shuts down all already-started shards
+// If any shard in a bucket fails, Start shuts down all already-started shards
 // before returning the error so no shards are left orphaned.
 func (m *ShardManager) Start() error {
-	for id := 0; id < m.total; id++ {
-		client, err := m.factory(id, m.total)
-		if err != nil {
-			for _, c := range m.clients[:id] {
+	maxConcurrency := m.fetchMaxConcurrency()
+
+	for bucketStart := 0; bucketStart < m.total; bucketStart += maxConcurrency {
+		bucketEnd := bucketStart + maxConcurrency
+		if bucketEnd > m.total {
+			bucketEnd = m.total
+		}
+
+		errCh := make(chan shardErr, bucketEnd-bucketStart)
+		var wg sync.WaitGroup
+		for id := bucketStart; id < bucketEnd; id++ {
+			wg.Add(1)
+			go func(id int) {
+				defer wg.Done()
+				if err := m.startOneShard(id); err != nil {
+					errCh <- shardErr{id: id, err: err}
+				}
+			}(id)
+		}
+		wg.Wait()
+		close(errCh)
+
+		var bucketErrs []error
+		for se := range errCh {
+			bucketErrs = append(bucketErrs, fmt.Errorf("shard %d: %w", se.id, se.err))
+		}
+		if len(bucketErrs) > 0 {
+			for _, c := range m.clients {
 				if c != nil {
 					_ = c.Shutdown()
 				}
 			}
-			return fmt.Errorf("sharding: shard %d factory failed: %w", id, err)
+			return fmt.Errorf("sharding: bucket starting at shard %d failed: %w",
+				bucketStart, errors.Join(bucketErrs...))
 		}
 
-		if client == nil {
-			for _, c := range m.clients[:id] {
-				if c != nil {
-					_ = c.Shutdown()
-				}
-			}
-			return fmt.Errorf("sharding: shard %d factory returned nil client", id)
-		}
-
-		if err := client.Login(context.Background()); err != nil {
-			// Shut down all shards that started successfully before this failure.
-			for _, c := range m.clients[:id] {
-				if c != nil {
-					_ = c.Shutdown()
-				}
-			}
-			return fmt.Errorf("sharding: shard %d failed to connect: %w", id, err)
-		}
-
-		m.clients[id] = client
-
-		// Respect Discord's rate limit between IDENTIFYs.
-		if id < m.total-1 {
+		if bucketEnd < m.total {
 			time.Sleep(identifyInterval)
 		}
 	}
 	return nil
+}
+
+// startOneShard runs factory + Login for a single shard and stores the result.
+// Safe to call concurrently for different shard IDs (each goroutine writes to a
+// distinct slice index, so no mutex is needed for m.clients).
+func (m *ShardManager) startOneShard(id int) error {
+	client, err := m.factory(id, m.total)
+	if err != nil {
+		return fmt.Errorf("factory: %w", err)
+	}
+	if client == nil {
+		return errors.New("factory returned nil client")
+	}
+	if err := client.Login(context.Background()); err != nil {
+		return fmt.Errorf("login: %w", err)
+	}
+	m.clients[id] = client
+	return nil
+}
+
+// fetchMaxConcurrency asks Discord what IDENTIFY bucket size to use.
+// Falls back to 1 (safe — slower start but never violates spec) if rest is nil
+// or the request fails.
+func (m *ShardManager) fetchMaxConcurrency() int {
+	if m.rest == nil {
+		return 1
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	resp, err := m.rest.GetBotGateway(ctx)
+	if err != nil {
+		return 1
+	}
+	mc := resp.SessionStartLimit.MaxConcurrency
+	if mc < 1 {
+		mc = 1
+	}
+	return mc
 }
 
 // Shard returns the Client for the given shard ID.
