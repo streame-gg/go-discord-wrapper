@@ -237,8 +237,9 @@ type MemMessageStore struct {
 	maxTotal int // resolved from StoreOptions; 0 = unlimited
 	total    atomic.Int64
 
-	stopCh chan struct{}
-	wg     sync.WaitGroup
+	stopCh    chan struct{}
+	closeOnce sync.Once
+	wg        sync.WaitGroup
 }
 
 // NewMessageStore creates a MemMessageStore and starts any configured sweepers.
@@ -408,9 +409,9 @@ func (s *MemMessageStore) SweepExpired(unusedWindow time.Duration) {
 	}
 }
 
-// Close stops all sweeper goroutines. The store must not be used after Close returns.
+// Close stops all sweeper goroutines. Safe to call more than once.
 func (s *MemMessageStore) Close() {
-	close(s.stopCh)
+	s.closeOnce.Do(func() { close(s.stopCh) })
 	s.wg.Wait()
 }
 

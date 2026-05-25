@@ -553,3 +553,17 @@ func TestBaseStore_ConcurrentSafe(t *testing.T) {
 
 	wg.Wait()
 }
+
+// J0-#12: Close must be idempotent; a second call must not panic.
+func TestBaseStore_CloseIdempotent(t *testing.T) {
+	s := NewBaseStore[string, int](Defaults())
+	// Must not panic even when called twice.
+	s.Close()
+	s.Close()
+}
+
+func TestMemMessageStore_CloseIdempotent(t *testing.T) {
+	s := NewMessageStore(Defaults())
+	s.Close()
+	s.Close()
+}
