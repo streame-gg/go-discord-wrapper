@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -836,16 +835,9 @@ func (c *RestClient) GetGuildWidgetImage(ctx context.Context, guildID discord.Sn
 		return nil, err
 	}
 
-	// Widget image is PNG, not JSON — bypass the normal doRequest() JSON decoder.
-	resp, reqErr := c.httpClient.Do(req)
-	if reqErr != nil {
-		return nil, reqErr
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, decodeGatewayError(resp)
-	}
-	return io.ReadAll(resp.Body)
+	// Widget image is PNG — use doRawBytes so the request goes through the
+	// full rate-limit / retry pipeline instead of bypassing it.
+	return doRawBytes(c, req)
 }
 
 // GetGuildWidget returns the public JSON widget for a guild (no authentication required).
