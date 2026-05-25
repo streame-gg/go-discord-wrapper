@@ -1032,6 +1032,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				// Temporary outage — guild is still ours, just unreachable right now.
 				// Keep the member count in the cache so GuildCount stays accurate.
 				if d.IsGuildUnavailable(guildDeleteEvent.ID) {
+					// Already tracked as unavailable — deduplicate; no new event.
 					return false
 				}
 
@@ -1039,7 +1040,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 
 				d.Logger.Debug("Guild became unavailable", slog.Any("guildId", guildDeleteEvent.ID))
 
-				return false
+				// return true so the event is dispatched to user handlers;
+				// bots need to know when a guild goes offline (asymmetric with
+				// GUILD_CREATE which always dispatches the available-again event).
+				return true
 			}
 
 			// Bot was kicked or the guild was deleted.
