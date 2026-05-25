@@ -350,11 +350,14 @@ func (d *Client) reconnect(freshConnect bool) error {
 		}
 
 		if !freshConnect && sessionID != nil {
-			d.wsMu.RLock()
-			if d.Websocket != nil {
+			// Write lock required: SessionID is a pointer field mutation,
+			// not a read-only access.
+			d.wsMu.Lock()
+			if d.Websocket != nil && d.Websocket.SessionID == nil {
+				// Only set if READY handler hasn't already written it.
 				d.Websocket.SessionID = sessionID
 			}
-			d.wsMu.RUnlock()
+			d.wsMu.Unlock()
 		}
 
 		d.Logger.Info("Successfully reconnected to gateway")
