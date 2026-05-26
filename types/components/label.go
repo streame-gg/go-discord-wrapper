@@ -190,17 +190,22 @@ type ComponentLabelComponent struct {
 }
 
 func (l *ComponentLabelComponent) UnmarshalJSON(data []byte) error {
-	type Alias ComponentLabelComponent
-	raw := &struct {
-		*Alias
-		Component *json.RawMessage `json:"component,omitempty"`
-	}{
-		Alias: (*Alias)(l),
+	var raw struct {
+		Type        discord.ComponentType `json:"type"`
+		ID          *int                  `json:"id,omitempty"`
+		Label       *string               `json:"label"`
+		Description *string               `json:"description,omitempty"`
+		Component   *json.RawMessage      `json:"component,omitempty"`
 	}
 
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
+
+	l.Type = raw.Type
+	l.ID = raw.ID
+	l.Label = raw.Label
+	l.Description = raw.Description
 
 	if raw.Component == nil {
 		return nil
@@ -214,7 +219,6 @@ func (l *ComponentLabelComponent) UnmarshalJSON(data []byte) error {
 	}
 
 	var c AnyComponentInteractionResponse
-
 	switch probe.Type {
 	case discord.ComponentTypeUserSelect:
 		c = &UserSelectComponentInteractionResponse{}
@@ -240,7 +244,6 @@ func (l *ComponentLabelComponent) UnmarshalJSON(data []byte) error {
 		c = &CheckboxGroupComponentInteractionResponse{}
 	case discord.ComponentTypeCheckbox:
 		c = &CheckboxComponentInteractionResponse{}
-
 	default:
 		return fmt.Errorf("unknown interaction component type: %d", probe.Type)
 	}
@@ -250,6 +253,5 @@ func (l *ComponentLabelComponent) UnmarshalJSON(data []byte) error {
 	}
 
 	l.Component = c
-
 	return nil
 }
