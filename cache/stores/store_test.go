@@ -567,4 +567,3 @@ func TestMemMessageStore_CloseIdempotent(t *testing.T) {
 	s.Close()
 	s.Close()
 }
-
