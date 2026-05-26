@@ -24,7 +24,7 @@ func NewPresenceStore(opts StoreOptions) *MemPresenceStore {
 
 // Set stores the presence. GuildID and UserID are extracted from the presence.
 func (s *MemPresenceStore) Set(presence *discord.Presence) {
-	if presence == nil {
+	if presence == nil || presence.User.ID.IsEmpty() {
 		return
 	}
 	key := PresenceKey{GuildID: presence.GuildID, UserID: presence.User.ID}

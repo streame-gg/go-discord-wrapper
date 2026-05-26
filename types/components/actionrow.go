@@ -2,6 +2,7 @@ package components
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -59,6 +60,44 @@ func (a *ActionRow) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			a.Components = append(a.Components, b)
+		case discord.ComponentTypeStringSelect:
+			var s *StringSelectMenuComponent
+			if err := json.Unmarshal(c, &s); err != nil {
+				return err
+			}
+			a.Components = append(a.Components, s)
+		case discord.ComponentTypeUserSelect:
+			var u *UserSelectMenuComponent
+			if err := json.Unmarshal(c, &u); err != nil {
+				return err
+			}
+			a.Components = append(a.Components, u)
+		case discord.ComponentTypeRoleSelect:
+			var r *RoleSelectMenuComponent
+			if err := json.Unmarshal(c, &r); err != nil {
+				return err
+			}
+			a.Components = append(a.Components, r)
+		case discord.ComponentTypeMentionableSelect:
+			var m *MentionableSelectMenuComponent
+			if err := json.Unmarshal(c, &m); err != nil {
+				return err
+			}
+			a.Components = append(a.Components, m)
+		case discord.ComponentTypeChannelSelect:
+			var ch *ChannelSelectMenuComponent
+			if err := json.Unmarshal(c, &ch); err != nil {
+				return err
+			}
+			a.Components = append(a.Components, ch)
+		case discord.ComponentTypeTextInput:
+			var t *TextInputComponent
+			if err := json.Unmarshal(c, &t); err != nil {
+				return err
+			}
+			a.Components = append(a.Components, t)
+		default:
+			return fmt.Errorf("unknown action row component type: %d", probe.Type)
 		}
 	}
 

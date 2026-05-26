@@ -2,7 +2,6 @@ package components
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -84,7 +83,7 @@ func (l *LabelComponent) UnmarshalJSON(data []byte) error {
 			}
 			l.Component = c
 		default:
-			return errors.New("unknown component type" + string(rune(probe.Type)))
+			return fmt.Errorf("unknown component type: %d", probe.Type)
 		}
 	}
 

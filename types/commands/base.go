@@ -16,7 +16,7 @@ const (
 	CommandHandlerTypeDiscordLaunchActivity CommandHandlerType = 2
 )
 
-type ApplicationCommandOptionChoice[T string | int] struct {
+type ApplicationCommandOptionChoice[T string | int64 | float64] struct {
 	Name              string                    `json:"name"`
 	NameLocalizations map[discord.Locale]string `json:"name_localizations,omitempty"`
 	Value             T                         `json:"value"`

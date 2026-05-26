@@ -186,6 +186,9 @@ func (c *RedisCache) Close() error {
 type redisGuildStore struct{ c *RedisCache }
 
 func (s *redisGuildStore) Set(guild *discord.Guild) {
+	if guild == nil {
+		return
+	}
 	key := s.c.k("guild", strconv.FormatUint(uint64(guild.ID), 10))
 	idx := s.c.k("guild", "index")
 	_ = s.c.setJSON(key, guild, s.c.opts.TTL)
@@ -253,6 +256,9 @@ func (s *redisGuildStore) Size() int {
 type redisChannelStore struct{ c *RedisCache }
 
 func (s *redisChannelStore) Set(ch *discord.Channel) {
+	if ch == nil {
+		return
+	}
 	key := s.c.k("channel", strconv.FormatUint(uint64(ch.ID), 10))
 	idx := s.c.k("channel", "index")
 	_ = s.c.setJSON(key, ch, s.c.opts.TTL)
@@ -319,6 +325,9 @@ func (s *redisChannelStore) Size() int {
 type redisUserStore struct{ c *RedisCache }
 
 func (s *redisUserStore) Set(user *discord.User) {
+	if user == nil {
+		return
+	}
 	key := s.c.k("user", strconv.FormatUint(uint64(user.ID), 10))
 	idx := s.c.k("user", "index")
 	_ = s.c.setJSON(key, user, s.c.opts.TTL)
@@ -385,7 +394,7 @@ func (s *redisUserStore) Size() int {
 type redisMemberStore struct{ c *RedisCache }
 
 func (s *redisMemberStore) Set(guildID discord.Snowflake, member *discord.GuildMember) {
-	if member.User == nil {
+	if member == nil || member.User == nil {
 		return
 	}
 	key := s.c.k("member", strconv.FormatUint(uint64(guildID), 10), strconv.FormatUint(uint64(member.User.ID), 10))
@@ -485,6 +494,9 @@ func (s *redisMemberStore) Size() int {
 type redisRoleStore struct{ c *RedisCache }
 
 func (s *redisRoleStore) Set(guildID discord.Snowflake, role *discord.Role) {
+	if role == nil {
+		return
+	}
 	key := s.c.k("role", strconv.FormatUint(uint64(role.ID), 10))
 	idx := s.c.k("role", "guild", strconv.FormatUint(uint64(guildID), 10))
 	mapKey := s.c.k("role", "map", strconv.FormatUint(uint64(role.ID), 10))
@@ -634,6 +646,9 @@ func (s *redisRoleStore) Size() int {
 type redisVoiceStateStore struct{ c *RedisCache }
 
 func (s *redisVoiceStateStore) Set(guildID discord.Snowflake, state *discord.VoiceState) {
+	if state == nil {
+		return
+	}
 	key := s.c.k("voice_state", strconv.FormatUint(uint64(guildID), 10), strconv.FormatUint(uint64(state.UserID), 10))
 	idx := s.c.k("voice_state", "guild", strconv.FormatUint(uint64(guildID), 10))
 	_ = s.c.setJSON(key, state, s.c.opts.TTL)
@@ -775,6 +790,9 @@ return 1
 type redisSoundboardStore struct{ c *RedisCache }
 
 func (s *redisSoundboardStore) Set(guildID discord.Snowflake, sound *discord.SoundboardSound) {
+	if sound == nil {
+		return
+	}
 	key := s.c.k("soundboard", strconv.FormatUint(uint64(sound.SoundID), 10))
 	idx := s.c.k("soundboard", "guild", strconv.FormatUint(uint64(guildID), 10))
 	mapKey := s.c.k("soundboard", "map", strconv.FormatUint(uint64(sound.SoundID), 10))
@@ -903,6 +921,9 @@ func (s *redisSoundboardStore) Size() int {
 type redisScheduledEventStore struct{ c *RedisCache }
 
 func (s *redisScheduledEventStore) Set(event *discord.GuildScheduledEvent) {
+	if event == nil {
+		return
+	}
 	key := s.c.k("scheduled_event", strconv.FormatUint(uint64(event.ID), 10))
 	idx := s.c.k("scheduled_event", "guild", strconv.FormatUint(uint64(event.GuildID), 10))
 	mapKey := s.c.k("scheduled_event", "map", strconv.FormatUint(uint64(event.ID), 10))
@@ -1012,6 +1033,9 @@ func (s *redisScheduledEventStore) Size() int {
 type redisStageInstanceStore struct{ c *RedisCache }
 
 func (s *redisStageInstanceStore) Set(instance *discord.StageInstance) {
+	if instance == nil {
+		return
+	}
 	key := s.c.k("stage_instance", strconv.FormatUint(uint64(instance.ID), 10))
 	idx := s.c.k("stage_instance", "guild", strconv.FormatUint(uint64(instance.GuildID), 10))
 	mapKey := s.c.k("stage_instance", "map", strconv.FormatUint(uint64(instance.ID), 10))
@@ -1121,6 +1145,9 @@ func (s *redisStageInstanceStore) Size() int {
 type redisEmojiStore struct{ c *RedisCache }
 
 func (s *redisEmojiStore) Set(guildID discord.Snowflake, emoji *discord.Emoji) {
+	if emoji == nil {
+		return
+	}
 	key := s.c.k("emoji", strconv.FormatUint(uint64(emoji.ID), 10))
 	idx := s.c.k("emoji", "guild", strconv.FormatUint(uint64(guildID), 10))
 	mapKey := s.c.k("emoji", "map", strconv.FormatUint(uint64(emoji.ID), 10))
@@ -1249,6 +1276,9 @@ func (s *redisEmojiStore) Size() int {
 type redisStickerStore struct{ c *RedisCache }
 
 func (s *redisStickerStore) Set(guildID discord.Snowflake, sticker *discord.Sticker) {
+	if sticker == nil {
+		return
+	}
 	key := s.c.k("sticker", strconv.FormatUint(uint64(sticker.ID), 10))
 	idx := s.c.k("sticker", "guild", strconv.FormatUint(uint64(guildID), 10))
 	mapKey := s.c.k("sticker", "map", strconv.FormatUint(uint64(sticker.ID), 10))
@@ -1377,6 +1407,9 @@ func (s *redisStickerStore) Size() int {
 type redisPresenceStore struct{ c *RedisCache }
 
 func (s *redisPresenceStore) Set(presence *discord.Presence) {
+	if presence == nil || presence.User.ID.IsEmpty() {
+		return
+	}
 	key := s.c.k("presence", strconv.FormatUint(uint64(presence.GuildID), 10), strconv.FormatUint(uint64(presence.User.ID), 10))
 	idx := s.c.k("presence", "guild", strconv.FormatUint(uint64(presence.GuildID), 10))
 	_ = s.c.setJSON(key, presence, s.c.opts.TTL)
@@ -1500,7 +1533,7 @@ return 1
 type redisMessageStore struct{ c *RedisCache }
 
 func (s *redisMessageStore) Add(msg *discord.Message) {
-	if s.c.opts.Messages.MaxPerChannel == 0 {
+	if msg == nil || s.c.opts.Messages.MaxPerChannel == 0 {
 		return
 	}
 	b, err := json.Marshal(msg)

@@ -430,7 +430,7 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 			return &returnType, nil
 		}
 
-		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode) {
+		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode, req.Method) {
 			retryAfter := parseRetryAfter(resp)
 			delay := c.retryDelay(attempt, retryAfter)
 			if retryAfter > 0 {
@@ -454,12 +454,22 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 	return nil, errors.New("request failed after retries")
 }
 
-func (c *RestClient) shouldRetry(statusCode int) bool {
+func (c *RestClient) shouldRetry(statusCode int, method string) bool {
 	if statusCode == http.StatusTooManyRequests {
 		return c.retryOptions.RetryOnRateLimit
 	}
 
-	return c.retryOptions.RetryOnServerErrors && statusCode >= http.StatusInternalServerError
+	if statusCode >= http.StatusInternalServerError {
+		// Only retry idempotent methods. Unknown/custom methods default to
+		// no-retry to avoid unintended side-effects.
+		switch method {
+		case http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodHead, http.MethodOptions:
+			return c.retryOptions.RetryOnServerErrors
+		}
+		return false
+	}
+
+	return false
 }
 
 func (c *RestClient) retryDelay(attempt int, retryAfter time.Duration) time.Duration {

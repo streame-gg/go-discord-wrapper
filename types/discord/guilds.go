@@ -130,11 +130,11 @@ func (ug UnavailableGuild) GetID() Snowflake {
 type GuildVerificationLevel int
 
 const (
-	GuildVerificationLevelNone                           GuildVerificationLevel = 0
-	GuildVerificationLevelLow                            GuildVerificationLevel = 1
-	GuildVerificationLevelMedium                         GuildVerificationLevel = 2
-	GuildVerificationLevelHigh                           GuildVerificationLevel = 3
-	GuildVerificationLevelVeryHighGuildVerificationLevel                        = 4
+	GuildVerificationLevelNone     GuildVerificationLevel = 0
+	GuildVerificationLevelLow      GuildVerificationLevel = 1
+	GuildVerificationLevelMedium   GuildVerificationLevel = 2
+	GuildVerificationLevelHigh     GuildVerificationLevel = 3
+	GuildVerificationLevelVeryHigh GuildVerificationLevel = 4
 )
 
 type DefaultMessageNotificationLevel int
