@@ -14,7 +14,7 @@ import (
 )
 
 // applicationID returns the bot's application ID, or an error if the bot has
-// not yet received the READY event and d.User is nil.
+// not yet received the READY event and the bot user is nil.
 func (d *Client) applicationID() (*discord.Snowflake, error) {
 	u := d.BotUser()
 	if u == nil {

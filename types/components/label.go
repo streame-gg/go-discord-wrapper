@@ -107,9 +107,9 @@ func (l *LabelComponent) GetType() discord.ComponentType {
 
 // LabelComponentInteractionResponse https://docs.discord.com/developers/components/reference#label-label-interaction-response-structure
 type LabelComponentInteractionResponse struct {
-	Type      discord.ComponentType            `json:"type"`
-	ID        *int                             `json:"id,omitempty"`
-	Component *AnyComponentInteractionResponse `json:"component,omitempty"`
+	Type      discord.ComponentType           `json:"type"`
+	ID        *int                            `json:"id,omitempty"`
+	Component AnyComponentInteractionResponse `json:"component,omitempty"`
 }
 
 func (l *LabelComponentInteractionResponse) IsInteractionResponseDataComponent() {}
@@ -125,17 +125,17 @@ func (l *LabelComponentInteractionResponse) MarshalJSON() ([]byte, error) {
 }
 
 func (l *LabelComponentInteractionResponse) UnmarshalJSON(data []byte) error {
-	type Alias LabelComponentInteractionResponse
-	raw := &struct {
-		*Alias
-		Component *json.RawMessage `json:"component,omitempty"`
-	}{
-		Alias: (*Alias)(l),
+	var raw struct {
+		Type      discord.ComponentType `json:"type"`
+		ID        *int                  `json:"id,omitempty"`
+		Component *json.RawMessage      `json:"component,omitempty"`
 	}
-
-	if err := json.Unmarshal(data, raw); err != nil {
+	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
+
+	l.Type = raw.Type
+	l.ID = raw.ID
 
 	if raw.Component == nil {
 		return nil
@@ -149,7 +149,6 @@ func (l *LabelComponentInteractionResponse) UnmarshalJSON(data []byte) error {
 	}
 
 	var c AnyComponentInteractionResponse
-
 	switch probe.Type {
 	case discord.ComponentTypeTextInput:
 		c = &TextInputComponentInteractionResponse{}
@@ -178,17 +177,16 @@ func (l *LabelComponentInteractionResponse) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(*raw.Component, c); err != nil {
 		return err
 	}
-
-	l.Component = &c
+	l.Component = c
 	return nil
 }
 
 type ComponentLabelComponent struct {
-	Type        discord.ComponentType            `json:"type"`
-	ID          *int                             `json:"id,omitempty"`
-	Label       *string                          `json:"label"`
-	Description *string                          `json:"description,omitempty"`
-	Component   *AnyComponentInteractionResponse `json:"component,omitempty"`
+	Type        discord.ComponentType           `json:"type"`
+	ID          *int                            `json:"id,omitempty"`
+	Label       *string                         `json:"label"`
+	Description *string                         `json:"description,omitempty"`
+	Component   AnyComponentInteractionResponse `json:"component,omitempty"`
 }
 
 func (l *ComponentLabelComponent) UnmarshalJSON(data []byte) error {
@@ -251,7 +249,7 @@ func (l *ComponentLabelComponent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	l.Component = &c
+	l.Component = c
 
 	return nil
 }
