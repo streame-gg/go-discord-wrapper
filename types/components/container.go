@@ -7,9 +7,9 @@ import (
 )
 
 type Container struct {
-	Type        discord.ComponentType   `json:"type"`
-	ID          *int                    `json:"id,omitempty"`
-	Components  []AnyContainerComponent `json:"components"`
+	Type        discord.ComponentType    `json:"type"`
+	ID          *int                     `json:"id,omitempty"`
+	Components  *[]AnyContainerComponent `json:"components"`
 	AccentColor int                      `json:"accent_color,omitempty"`
 	Spoiler     bool                     `json:"spoiler,omitempty"`
 }

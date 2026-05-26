@@ -1240,7 +1240,7 @@ type mongoPresenceStore struct{ c *MongoDBCache }
 func (s *mongoPresenceStore) col() *mongo.Collection { return s.c.db.Collection("presences") }
 
 func (s *mongoPresenceStore) Set(presence *discord.Presence) {
-	if presence == nil {
+	if presence == nil || presence.User.ID.IsEmpty() {
 		return
 	}
 	b, err := json.Marshal(presence)
