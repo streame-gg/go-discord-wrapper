@@ -27,14 +27,14 @@ func TestContainerDecodeRoundTrip(t *testing.T) {
 	if len(c.Components) != 3 {
 		t.Fatalf("want 3 components, got %d", len(c.Components))
 	}
-	if c.Components[0].GetType() != discord.ComponentTypeTextDisplay {
-		t.Errorf("component[0] want TextDisplay, got %d", c.Components[0].GetType())
+	if (c.Components)[0].GetType() != discord.ComponentTypeTextDisplay {
+		t.Errorf("component[0] want TextDisplay, got %d", (c.Components)[0].GetType())
 	}
-	if c.Components[1].GetType() != discord.ComponentTypeSeparator {
-		t.Errorf("component[1] want Separator, got %d", c.Components[1].GetType())
+	if (c.Components)[1].GetType() != discord.ComponentTypeSeparator {
+		t.Errorf("component[1] want Separator, got %d", (c.Components)[1].GetType())
 	}
-	if c.Components[2].GetType() != discord.ComponentTypeActionRow {
-		t.Errorf("component[2] want ActionRow, got %d", c.Components[2].GetType())
+	if (c.Components)[2].GetType() != discord.ComponentTypeActionRow {
+		t.Errorf("component[2] want ActionRow, got %d", (c.Components)[2].GetType())
 	}
 }
 

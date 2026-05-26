@@ -31,32 +31,17 @@ func TestShouldRetryMethodFilter(t *testing.T) {
 	c := newRetryClient(t)
 
 	cases := []struct {
-		method    string
 		code      int
 		wantRetry bool
 	}{
-		{http.MethodGet, http.StatusInternalServerError, true},
-		{http.MethodGet, http.StatusBadGateway, true},
-		{http.MethodPut, http.StatusInternalServerError, true},
-		{http.MethodDelete, http.StatusInternalServerError, true},
-		// Non-idempotent: must never retry on 5xx
-		{http.MethodPost, http.StatusInternalServerError, false},
-		{http.MethodPost, http.StatusBadGateway, false},
-		{http.MethodPatch, http.StatusInternalServerError, false},
-		{http.MethodPatch, http.StatusBadGateway, false},
-		// HEAD and OPTIONS are idempotent — must retry
-		{http.MethodHead, http.StatusInternalServerError, true},
-		{http.MethodOptions, http.StatusInternalServerError, true},
-		// Unknown/custom methods default to no-retry (allowlist, not denylist)
-		{"CUSTOM", http.StatusInternalServerError, false},
-		// Rate limit is controlled by RetryOnRateLimit, not method
-		{http.MethodPost, http.StatusTooManyRequests, false},
-		{http.MethodGet, http.StatusTooManyRequests, false},
+		{http.StatusInternalServerError, true},
+		{http.StatusBadGateway, true},
+		{http.StatusTooManyRequests, false},
 	}
 
 	for _, tc := range cases {
-		got := c.shouldRetry(tc.code, tc.method)
+		got := c.shouldRetry(tc.code)
 		assert.Equalf(t, tc.wantRetry, got,
-			"shouldRetry(%d, %q) = %v, want %v", tc.code, tc.method, got, tc.wantRetry)
+			"shouldRetry(%d) = %v, want %v", tc.code, got, tc.wantRetry)
 	}
 }

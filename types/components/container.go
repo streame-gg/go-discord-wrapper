@@ -3,15 +3,16 @@ package components
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type Container struct {
-	Type        discord.ComponentType    `json:"type"`
-	ID          *int                     `json:"id,omitempty"`
-	Components  *[]AnyContainerComponent `json:"components"`
-	AccentColor int                      `json:"accent_color,omitempty"`
-	Spoiler     bool                     `json:"spoiler,omitempty"`
+	Type        discord.ComponentType   `json:"type"`
+	ID          *int                    `json:"id,omitempty"`
+	Components  []AnyContainerComponent `json:"components"`
+	AccentColor int                     `json:"accent_color,omitempty"`
+	Spoiler     bool                    `json:"spoiler,omitempty"`
 }
 
 func (c *Container) UnmarshalJSON(data []byte) error {

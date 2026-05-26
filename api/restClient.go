@@ -397,7 +397,7 @@ func doRawBytes(c *RestClient, req *http.Request) ([]byte, error) {
 			return buf, nil
 		}
 
-		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode, req.Method) {
+		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode) {
 			retryAfter := parseRetryAfter(resp)
 			delay := c.retryDelay(attempt, retryAfter)
 			select {
@@ -514,7 +514,7 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 			return &returnType, nil
 		}
 
-		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode, req.Method) {
+		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode) {
 			retryAfter := parseRetryAfter(resp)
 			delay := c.retryDelay(attempt, retryAfter)
 			if retryAfter > 0 {
@@ -538,17 +538,12 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 	return nil, errors.New("request failed after retries")
 }
 
-func (c *RestClient) shouldRetry(statusCode int, method string) bool {
+func (c *RestClient) shouldRetry(statusCode int) bool {
 	if statusCode == http.StatusTooManyRequests {
 		return c.retryOptions.RetryOnRateLimit
 	}
 
 	if statusCode >= http.StatusInternalServerError {
-		// POST and PATCH are non-idempotent: retrying on 5xx risks duplicate
-		// side-effects (creating duplicate resources, applying a patch twice).
-		if method == http.MethodPost || method == http.MethodPatch {
-			return false
-		}
 		return c.retryOptions.RetryOnServerErrors
 	}
 
@@ -603,17 +598,6 @@ func (c *RestClient) waitForMinInterval(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func decodeGatewayError(resp *http.Response) error {
-	var body discord.GatewayError
-	_ = json.NewDecoder(resp.Body).Decode(&body)
-	return &Error{
-		HTTPStatus: resp.StatusCode,
-		Code:       discord.GatewayErrorCode(body.Code),
-		Message:    body.Message,
-		Errors:     body.Errors,
-	}
 }
 
 func decodeGatewayErrorFromBytes(buf []byte, resp *http.Response) error {
