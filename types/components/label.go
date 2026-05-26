@@ -105,7 +105,7 @@ func (l *LabelComponent) GetType() discord.ComponentType {
 	return discord.ComponentTypeLabel
 }
 
-// https://docs.discord.com/developers/components/reference#label-label-interaction-response-structure
+// LabelComponentInteractionResponse https://docs.discord.com/developers/components/reference#label-label-interaction-response-structure
 type LabelComponentInteractionResponse struct {
 	Type      discord.ComponentType            `json:"type"`
 	ID        *int                             `json:"id,omitempty"`
