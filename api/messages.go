@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -46,15 +47,6 @@ func (p GetMessagesParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
-// mimeEscapeFilename escapes a filename for use in a MIME Content-Disposition
-// header value. It replaces " and \ with \" and \\ respectively, which is the
-// correct RFC 2183 quoting — unlike %q which uses Go string escaping (\n, \t…).
-func mimeEscapeFilename(name string) string {
-	name = strings.ReplaceAll(name, `\`, `\\`)
-	name = strings.ReplaceAll(name, `"`, `\"`)
-	return name
-}
-
 // basenameFilename returns the basename of a filename, stripping any path
 // components. Used to ensure local filesystem paths don't leak into Discord
 // uploads via the Content-Disposition header.
@@ -92,8 +84,13 @@ func buildMultipartMessage(payload []byte, files []discord.MessageFile) (*bytes.
 			ct = "application/octet-stream"
 		}
 		h := textproto.MIMEHeader{
-			"Content-Disposition": []string{fmt.Sprintf(`form-data; name="files[%d]"; filename="%s"`, i, mimeEscapeFilename(basenameFilename(f.Name)))},
-			"Content-Type":        []string{ct},
+			"Content-Disposition": []string{
+				mime.FormatMediaType("form-data", map[string]string{
+					"name":     fmt.Sprintf("files[%d]", i),
+					"filename": basenameFilename(f.Name),
+				}),
+			},
+			"Content-Type": []string{ct},
 		}
 		part, err := w.CreatePart(h)
 		if err != nil {
