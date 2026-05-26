@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/api"
 	"github.com/streame-gg/go-discord-wrapper/connection"
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/sharding"
@@ -465,6 +468,120 @@ func (s *shardingTestSuite) TestRequestAll_IsolatesCorrelationIDs() {
 	for _, v := range resB {
 		s.Equalf("b", v, "resB contains %q, want 'b'", v)
 	}
+}
+
+// ── ShardManager max_concurrency (Bug 26) ────────────────────────────────────
+
+// mockGatewayBotHandler returns an HTTP handler that serves /gateway/bot with
+// the given max_concurrency value.
+func mockGatewayBotHandler(maxConcurrency int) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"url":    "wss://gateway.discord.gg",
+			"shards": 4,
+			"session_start_limit": map[string]interface{}{
+				"max_concurrency": maxConcurrency,
+				"total":           1000,
+				"remaining":       1000,
+				"reset_after":     14400000,
+			},
+		})
+	}
+}
+
+// TestBug26StartOneShard_FactoryError verifies that a factory error is wrapped
+// and returned by Start as a bucket error (Bug 26).
+func (s *shardingTestSuite) TestBug26StartOneShard_FactoryError() {
+	coord := sharding.NewLocalCoordinator(1)
+	factoryErr := errors.New("no token")
+	mgr := sharding.NewShardManager(coord, func(id, total int) (*connection.Client, error) {
+		return nil, factoryErr
+	})
+
+	err := mgr.Start()
+	s.Require().Error(err, "Start must return error when factory fails")
+	s.ErrorIs(err, factoryErr, "factory error must be wrapped in the returned error")
+}
+
+// TestBug26StartOneShard_NilClient verifies that a factory that returns (nil, nil)
+// causes Start to return an error rather than panicking (Bug 26).
+func (s *shardingTestSuite) TestBug26StartOneShard_NilClient() {
+	coord := sharding.NewLocalCoordinator(1)
+	mgr := sharding.NewShardManager(coord, func(id, total int) (*connection.Client, error) {
+		return nil, nil
+	})
+
+	err := mgr.Start()
+	s.Require().Error(err, "Start must return error when factory returns nil client")
+	s.Contains(err.Error(), "nil client")
+}
+
+// TestBug26BucketStart_ConcurrentFactory verifies that when max_concurrency=2,
+// shards 0 and 1 have their factory called concurrently (within a short window),
+// and that bucket 1 (shards 2+3) is never attempted when bucket 0 fails (Bug 26).
+func (s *shardingTestSuite) TestBug26BucketStart_ConcurrentFactory() {
+	ts := httptest.NewServer(mockGatewayBotHandler(2))
+	defer ts.Close()
+
+	rest, err := api.NewRestClient("Bot fake-token", options.WithBaseURL(ts.URL))
+	s.Require().NoError(err)
+
+	const total = 4
+	coord := sharding.NewLocalCoordinator(total)
+
+	var mu sync.Mutex
+	callTimes := make([]time.Time, total)
+
+	mgr := sharding.NewShardManagerWithRest(coord, func(id, _ int) (*connection.Client, error) {
+		mu.Lock()
+		callTimes[id] = time.Now()
+		mu.Unlock()
+		return nil, errors.New("no gateway in test")
+	}, rest)
+
+	startErr := mgr.Start()
+	s.Require().Error(startErr, "Start must fail (factory always errors)")
+
+	// Both shards in bucket 0 must have been attempted.
+	s.False(callTimes[0].IsZero(), "shard 0 factory must be called")
+	s.False(callTimes[1].IsZero(), "shard 1 factory must be called")
+
+	// Factory calls for the same bucket must overlap (concurrent, not sequential).
+	diff := callTimes[1].Sub(callTimes[0])
+	if diff < 0 {
+		diff = -diff
+	}
+	s.Less(diff, 100*time.Millisecond,
+		"shards 0 and 1 must start concurrently (diff=%v, want <100ms)", diff)
+
+	// Bucket 1 must not start because bucket 0 failed.
+	s.True(callTimes[2].IsZero(), "shard 2 must not be called after bucket 0 fails")
+	s.True(callTimes[3].IsZero(), "shard 3 must not be called after bucket 0 fails")
+}
+
+// TestBug26BackwardsCompat_NilRest verifies that NewShardManager (nil rest) defaults
+// to max_concurrency=1, matching pre-fix sequential behaviour (Bug 26).
+func (s *shardingTestSuite) TestBug26BackwardsCompat_NilRest() {
+	const total = 2
+	coord := sharding.NewLocalCoordinator(total)
+
+	var mu sync.Mutex
+	called := make([]bool, total)
+
+	mgr := sharding.NewShardManager(coord, func(id, _ int) (*connection.Client, error) {
+		mu.Lock()
+		called[id] = true
+		mu.Unlock()
+		return nil, errors.New("no gateway in test")
+	})
+
+	err := mgr.Start()
+	s.Require().Error(err, "Start must fail since factory errors")
+
+	// With max_concurrency=1, bucket 0 = {shard 0}. It fails → bucket 1 never runs.
+	s.True(called[0], "shard 0 factory must be called")
+	s.False(called[1], "shard 1 must not be called when shard 0's bucket fails (max_concurrency=1)")
 }
 
 // TestBug29RequestAllMalformedResponseDoesNotConsumeSlot verifies that when one

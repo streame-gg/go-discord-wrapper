@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -83,8 +84,13 @@ func buildMultipartMessage(payload []byte, files []discord.MessageFile) (*bytes.
 			ct = "application/octet-stream"
 		}
 		h := textproto.MIMEHeader{
-			"Content-Disposition": []string{fmt.Sprintf(`form-data; name="files[%d]"; filename=%q`, i, basenameFilename(f.Name))},
-			"Content-Type":        []string{ct},
+			"Content-Disposition": []string{
+				mime.FormatMediaType("form-data", map[string]string{
+					"name":     fmt.Sprintf("files[%d]", i),
+					"filename": basenameFilename(f.Name),
+				}),
+			},
+			"Content-Type": []string{ct},
 		}
 		part, err := w.CreatePart(h)
 		if err != nil {

@@ -169,8 +169,9 @@ type BaseStore[K comparable, V any] struct {
 	options    StoreOptions
 	totalBytes atomic.Int64 // non-zero only when options.TrackBytes is true
 
-	stopCh chan struct{}
-	wg     sync.WaitGroup
+	stopCh    chan struct{}
+	closeOnce sync.Once
+	wg        sync.WaitGroup
 }
 
 // NewBaseStore creates a store with the given options and starts any configured
@@ -400,9 +401,9 @@ func (s *BaseStore[K, V]) SweepExpired(unusedWindow time.Duration) {
 }
 
 // Close stops all sweeper goroutines and waits for them to exit.
-// The store must not be used after Close returns.
+// Safe to call more than once; subsequent calls are no-ops.
 func (s *BaseStore[K, V]) Close() {
-	close(s.stopCh)
+	s.closeOnce.Do(func() { close(s.stopCh) })
 	s.wg.Wait()
 }
 

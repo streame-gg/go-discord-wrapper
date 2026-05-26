@@ -330,6 +330,90 @@ func doRequestWithoutResponse(c *RestClient, req *http.Request, enforceStatusCod
 	return err
 }
 
+// doRawBytes runs a request through the full rate-limit/retry pipeline and
+// returns the raw response body on success (HTTP 200). It is intended for
+// endpoints that return non-JSON bodies (e.g. PNG images).
+func doRawBytes(c *RestClient, req *http.Request) ([]byte, error) {
+	if req == nil {
+		return nil, errors.New("request must not be nil")
+	}
+
+	routePath, _ := req.Context().Value(routePathKey{}).(string)
+
+	bodyBytes, err := captureRequestBody(req)
+	if err != nil {
+		return nil, err
+	}
+
+	maxAttempts := c.retryOptions.MaxRetries + 1
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		if err := c.waitForMinInterval(req.Context()); err != nil {
+			return nil, err
+		}
+		if c.rateLimiter != nil && routePath != "" {
+			if err := c.rateLimiter.wait(req.Context(), req.Method, routePath); err != nil {
+				return nil, err
+			}
+		}
+
+		attemptReq, err := cloneRequest(req, bodyBytes)
+		if err != nil {
+			return nil, err
+		}
+
+		safeReq := redactRequestSecrets(attemptReq)
+		c.emitEvent(RestEvent{Type: RestEventRequest, Request: safeReq, Attempt: attempt})
+
+		resp, reqErr := c.httpClient.Do(attemptReq)
+		if reqErr != nil {
+			c.emitEvent(RestEvent{Type: RestEventError, Request: safeReq, Attempt: attempt, Err: reqErr})
+			if attempt == maxAttempts {
+				return nil, reqErr
+			}
+			delay := c.retryDelay(attempt, 0)
+			select {
+			case <-time.After(delay):
+			case <-req.Context().Done():
+				return nil, req.Context().Err()
+			}
+			continue
+		}
+
+		buf, readErr := io.ReadAll(io.LimitReader(resp.Body, 50<<20))
+		_ = resp.Body.Close()
+		if readErr != nil {
+			return nil, fmt.Errorf("read response body: %w", readErr)
+		}
+		resp.Body = io.NopCloser(bytes.NewReader(buf))
+
+		if c.rateLimiter != nil && routePath != "" {
+			c.rateLimiter.update(req.Method, routePath, resp)
+		}
+
+		c.emitEvent(RestEvent{Type: RestEventResponse, Request: safeReq, Response: snapshotResponse(resp, buf), Attempt: attempt})
+
+		if resp.StatusCode == http.StatusOK {
+			return buf, nil
+		}
+
+		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode) {
+			retryAfter := parseRetryAfter(resp)
+			delay := c.retryDelay(attempt, retryAfter)
+			select {
+			case <-time.After(delay):
+			case <-req.Context().Done():
+				return nil, req.Context().Err()
+			}
+			continue
+		}
+
+		return nil, decodeGatewayErrorFromBytes(buf, resp)
+	}
+
+	return nil, errors.New("request failed after retries")
+}
+
 // doRequestSlice is like doRequest but dereferences the pointer so callers
 // receive a plain slice instead of a pointer-to-slice.
 func doRequestSlice[T any](c *RestClient, req *http.Request, codes map[int]bool) ([]*T, error) {
@@ -430,7 +514,7 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 			return &returnType, nil
 		}
 
-		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode, req.Method) {
+		if attempt < maxAttempts && c.shouldRetry(resp.StatusCode) {
 			retryAfter := parseRetryAfter(resp)
 			delay := c.retryDelay(attempt, retryAfter)
 			if retryAfter > 0 {
@@ -454,19 +538,13 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 	return nil, errors.New("request failed after retries")
 }
 
-func (c *RestClient) shouldRetry(statusCode int, method string) bool {
+func (c *RestClient) shouldRetry(statusCode int) bool {
 	if statusCode == http.StatusTooManyRequests {
 		return c.retryOptions.RetryOnRateLimit
 	}
 
 	if statusCode >= http.StatusInternalServerError {
-		// Only retry idempotent methods. Unknown/custom methods default to
-		// no-retry to avoid unintended side-effects.
-		switch method {
-		case http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodHead, http.MethodOptions:
-			return c.retryOptions.RetryOnServerErrors
-		}
-		return false
+		return c.retryOptions.RetryOnServerErrors
 	}
 
 	return false
@@ -520,17 +598,6 @@ func (c *RestClient) waitForMinInterval(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func decodeGatewayError(resp *http.Response) error {
-	var body discord.GatewayError
-	_ = json.NewDecoder(resp.Body).Decode(&body)
-	return &Error{
-		HTTPStatus: resp.StatusCode,
-		Code:       discord.GatewayErrorCode(body.Code),
-		Message:    body.Message,
-		Errors:     body.Errors,
-	}
 }
 
 func decodeGatewayErrorFromBytes(buf []byte, resp *http.Response) error {

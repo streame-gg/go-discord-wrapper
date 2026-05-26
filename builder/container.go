@@ -15,7 +15,11 @@ type ContainerBuilder struct {
 }
 
 func NewContainer() *ContainerBuilder {
-	return &ContainerBuilder{}
+	return &ContainerBuilder{
+		c: components.Container{
+			Components: make([]components.AnyContainerComponent, 0),
+		},
+	}
 }
 
 func (b *ContainerBuilder) SetAccentColor(color int) *ContainerBuilder {

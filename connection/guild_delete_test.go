@@ -153,3 +153,25 @@ func TestGuildDelete_UnavailableIsNoop(t *testing.T) {
 	_, ok := c.Cache.Guilds().Get(guildID)
 	assert.True(t, ok, "guild should remain in cache for a temporary outage (unavailable=true)")
 }
+
+// TestGuildDelete_UnavailableDispatches verifies that the first GUILD_DELETE
+// with unavailable=true returns true (dispatch to user handlers) so bots can
+// react to a guild going offline.  A second identical event should return false
+// (deduplicated).
+func TestGuildDelete_UnavailableDispatches(t *testing.T) {
+	c := newClientWithCache(t)
+
+	guildID := discord.Snowflake(131313131313131)
+	unavailable := true
+	payload := map[string]any{"id": guildID.String(), "unavailable": unavailable}
+	raw, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	var ev events.GuildDeleteEvent
+	canDispatch := c.internalEventHandler(json.RawMessage(raw), events.EventGuildDelete, &ev)
+	assert.True(t, canDispatch, "first GUILD_DELETE unavailable=true must be dispatched to user handlers")
+
+	// Second event for same guild — already tracked as unavailable, deduplicate.
+	canDispatch2 := c.internalEventHandler(json.RawMessage(raw), events.EventGuildDelete, &ev)
+	assert.False(t, canDispatch2, "duplicate GUILD_DELETE unavailable=true must not be dispatched again")
+}

@@ -246,6 +246,11 @@ func (d *Client) connectWebsocket(url string, isReconnect bool, lastEventNum *in
 	}
 
 	d.wsMu.Lock()
+	// Close any existing connection before replacing it so the old
+	// heartbeat goroutine exits and the underlying socket is released.
+	if d.Websocket != nil {
+		_ = d.Websocket.close()
+	}
 	d.Websocket = ws
 	d.wsMu.Unlock()
 	return nil
@@ -350,11 +355,14 @@ func (d *Client) reconnect(freshConnect bool) error {
 		}
 
 		if !freshConnect && sessionID != nil {
-			d.wsMu.RLock()
-			if d.Websocket != nil {
+			// Write lock required: SessionID is a pointer field mutation,
+			// not a read-only access.
+			d.wsMu.Lock()
+			if d.Websocket != nil && d.Websocket.SessionID == nil {
+				// Only set if READY handler hasn't already written it.
 				d.Websocket.SessionID = sessionID
 			}
-			d.wsMu.RUnlock()
+			d.wsMu.Unlock()
 		}
 
 		d.Logger.Info("Successfully reconnected to gateway")

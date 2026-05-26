@@ -27,14 +27,14 @@ func TestContainerDecodeRoundTrip(t *testing.T) {
 	if len(c.Components) != 3 {
 		t.Fatalf("want 3 components, got %d", len(c.Components))
 	}
-	if c.Components[0].GetType() != discord.ComponentTypeTextDisplay {
-		t.Errorf("component[0] want TextDisplay, got %d", c.Components[0].GetType())
+	if (c.Components)[0].GetType() != discord.ComponentTypeTextDisplay {
+		t.Errorf("component[0] want TextDisplay, got %d", (c.Components)[0].GetType())
 	}
-	if c.Components[1].GetType() != discord.ComponentTypeSeparator {
-		t.Errorf("component[1] want Separator, got %d", c.Components[1].GetType())
+	if (c.Components)[1].GetType() != discord.ComponentTypeSeparator {
+		t.Errorf("component[1] want Separator, got %d", (c.Components)[1].GetType())
 	}
-	if c.Components[2].GetType() != discord.ComponentTypeActionRow {
-		t.Errorf("component[2] want ActionRow, got %d", c.Components[2].GetType())
+	if (c.Components)[2].GetType() != discord.ComponentTypeActionRow {
+		t.Errorf("component[2] want ActionRow, got %d", (c.Components)[2].GetType())
 	}
 }
 
@@ -144,5 +144,30 @@ func TestLabelUnknownTypeError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "999") {
 		t.Errorf("error message should contain '999', got: %s", err.Error())
+	}
+}
+
+// J0-#24: LabelComponent marshal should produce "label" field;
+// LabelComponent unmarshal from {"label":"foo"} must set Label correctly.
+func TestLabelComponentRoundtrip(t *testing.T) {
+	orig := LabelComponent{Label: "my label", Description: "desc"}
+	b, err := json.Marshal(&orig)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	bs := string(b)
+	if !strings.Contains(bs, `"label":"my label"`) {
+		t.Errorf("marshalled JSON missing label field: %s", bs)
+	}
+
+	var got LabelComponent
+	if err := json.Unmarshal([]byte(`{"type":18,"label":"foo","description":"bar"}`), &got); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got.Label != "foo" {
+		t.Errorf("Label: want %q, got %q", "foo", got.Label)
+	}
+	if got.Description != "bar" {
+		t.Errorf("Description: want %q, got %q", "bar", got.Description)
 	}
 }

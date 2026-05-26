@@ -92,7 +92,10 @@ type Client struct {
 
 	UnavailableGuilds map[discord.Snowflake]struct{}
 
-	User *discord.User
+	// user is the bot's own user object received in the READY payload.
+	// Access via BotUser() / setBotUser(); direct field access races.
+	user   *discord.User
+	userMu sync.RWMutex
 
 	Sharding *options.Sharding
 
@@ -246,6 +249,20 @@ func NewClient(token string, intents discord.Intent, opts ...options.Option) (*C
 // reconnects.
 func (d *Client) Ready() <-chan struct{} {
 	return d.readyCh
+}
+
+// BotUser returns the bot's own User object as received in the READY event.
+// Returns nil before the first READY. Safe for concurrent use.
+func (d *Client) BotUser() *discord.User {
+	d.userMu.RLock()
+	defer d.userMu.RUnlock()
+	return d.user
+}
+
+func (d *Client) setBotUser(u *discord.User) {
+	d.userMu.Lock()
+	d.user = u
+	d.userMu.Unlock()
 }
 
 // dispatchJob carries a single gateway event through the worker pool.
@@ -579,8 +596,12 @@ func (d *Client) Login(ctx context.Context) error {
 
 	if ctx.Done() != nil {
 		go func() {
-			<-ctx.Done()
-			_ = d.Shutdown()
+			select {
+			case <-ctx.Done():
+				_ = d.Shutdown()
+			case <-d.shutdownCh:
+				// Manual Shutdown() already called; exit without a second call.
+			}
 		}()
 	}
 
@@ -735,7 +756,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			d.Websocket.SessionID = &readyEvent.SessionID
 			d.Websocket.ReconnectURL = &readyEvent.ResumeGatewayURL
 			d.wsMu.Unlock()
-			d.User = &readyEvent.User
+			d.setBotUser(&readyEvent.User)
 
 			if len(readyEvent.Shard) >= 2 {
 				d.Logger.Debug("Connected to shard", slog.Int("shard", readyEvent.Shard[0]+1), slog.Int("total", readyEvent.Shard[1]))
@@ -1011,6 +1032,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				// Temporary outage — guild is still ours, just unreachable right now.
 				// Keep the member count in the cache so GuildCount stays accurate.
 				if d.IsGuildUnavailable(guildDeleteEvent.ID) {
+					// Already tracked as unavailable — deduplicate; no new event.
 					return false
 				}
 
@@ -1018,7 +1040,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 
 				d.Logger.Debug("Guild became unavailable", slog.Any("guildId", guildDeleteEvent.ID))
 
-				return false
+				// return true so the event is dispatched to user handlers;
+				// bots need to know when a guild goes offline (asymmetric with
+				// GUILD_CREATE which always dispatches the available-again event).
+				return true
 			}
 
 			// Bot was kicked or the guild was deleted.

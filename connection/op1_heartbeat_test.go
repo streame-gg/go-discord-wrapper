@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -87,8 +88,14 @@ func TestOp1HeartbeatRequest(t *testing.T) {
 	wsURL, closeServer := mockGatewayWithOp1(t, 200, &heartbeatCount)
 	defer closeServer()
 
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
+	require.NoError(t, err)
+	defer c.Shutdown()
+
 	client, stop := launchClient(t, wsURL, discord.IntentGuilds)
 	defer stop()
+	_ = c
+	_ = client
 
 	// Allow the server's 1-second read window to close.
 	time.Sleep(600 * time.Millisecond)

@@ -106,84 +106,104 @@ func (r *rateLimiter) purgeStaleBuckets(maxAge time.Duration) {
 // the request to proceed, then proactively decrements the remaining counter.
 // It returns ctx.Err() immediately if the context is cancelled while waiting.
 func (r *rateLimiter) wait(ctx context.Context, method, path string) error {
-	// 1. Global rate limit — loop in case it is extended while we sleep.
-	for {
-		r.globalMu.RLock()
-		until := r.globalUntil
-		r.globalMu.RUnlock()
+	const maxIterations = 5 // safety cap against pathological tight loops
+	for iter := 0; iter < maxIterations; iter++ {
+		// 1. Global rate limit — loop until it clears.
+		for {
+			r.globalMu.RLock()
+			until := r.globalUntil
+			r.globalMu.RUnlock()
 
-		wait := time.Until(until)
-		if wait <= 0 {
-			break
+			w := time.Until(until)
+			if w <= 0 {
+				break
+			}
+			select {
+			case <-time.After(w):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 		}
-		select {
-		case <-time.After(wait):
-		case <-ctx.Done():
-			return ctx.Err()
+
+		// 2. Per-route bucket.
+		key := routeKey(method, path)
+
+		bucketIDVal, ok := r.routeToBucket.Load(key)
+		if !ok {
+			return nil // No bucket known yet; let the request through.
 		}
-	}
 
-	// 2. Per-route bucket.
-	key := routeKey(method, path)
+		bucketVal, ok := r.buckets.Load(bucketIDVal.(string))
+		if !ok {
+			return nil
+		}
 
-	bucketIDVal, ok := r.routeToBucket.Load(key)
-	if !ok {
-		return nil // No bucket known yet; let the request through.
-	}
+		b := bucketVal.(*rateLimitBucket)
+		b.mu.Lock()
+		b.lastUsed = time.Now()
 
-	bucketVal, ok := r.buckets.Load(bucketIDVal.(string))
-	if !ok {
-		return nil
-	}
+		bucketSlept := false
 
-	b := bucketVal.(*rateLimitBucket)
-	b.mu.Lock()
-	b.lastUsed = time.Now()
-
-	// Loop so that if the bucket is still exhausted after sleeping (e.g. the
-	// window didn't actually reset yet) we sleep again rather than over-sending.
-	for b.remaining <= r.safetyMargin && !b.resetAt.IsZero() {
-		wait := time.Until(b.resetAt)
-		if wait <= 0 {
-			// Window has elapsed; restore remaining exactly once per window.
-			// windowRestoredAt tracks when we last restored so that multiple
-			// goroutines that all slept for the same window do not each
-			// independently set remaining = limit (TOCTOU race).
-			if b.windowRestoredAt.Before(b.resetAt) {
+		// Loop so that if the bucket is still exhausted after sleeping (e.g. the
+		// window didn't actually reset yet) we sleep again rather than over-sending.
+		for b.remaining <= r.safetyMargin && !b.resetAt.IsZero() {
+			w := time.Until(b.resetAt)
+			if w <= 0 {
+				// Window has elapsed; restore remaining exactly once per window.
+				// windowRestoredAt tracks when we last restored so that multiple
+				// goroutines that all slept for the same window do not each
+				// independently set remaining = limit (TOCTOU race).
+				if b.windowRestoredAt.Before(b.resetAt) {
+					if b.limit > 0 {
+						b.remaining = b.limit
+					} else {
+						// Unknown limit (e.g. 429 without X-RateLimit-Limit header).
+						// Let one request through to re-learn the bucket.
+						b.remaining = 1
+					}
+					b.windowRestoredAt = time.Now()
+				}
+				break
+			}
+			b.mu.Unlock()
+			select {
+			case <-time.After(w):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+			b.mu.Lock()
+			bucketSlept = true
+			if !time.Now().Before(b.resetAt) && b.windowRestoredAt.Before(b.resetAt) {
 				if b.limit > 0 {
 					b.remaining = b.limit
 				} else {
-					// Unknown limit (e.g. 429 without X-RateLimit-Limit header).
-					// Let one request through to re-learn the bucket.
 					b.remaining = 1
 				}
 				b.windowRestoredAt = time.Now()
 			}
-			break
+		}
+
+		if b.remaining > 0 {
+			b.remaining--
 		}
 		b.mu.Unlock()
-		select {
-		case <-time.After(wait):
-		case <-ctx.Done():
-			return ctx.Err()
+
+		// If the bucket forced a sleep, a concurrent 429 response may have set a
+		// global rate limit while we were sleeping.  Loop back to re-check global
+		// before firing the request.
+		if !bucketSlept {
+			return nil
 		}
-		b.mu.Lock()
-		if !time.Now().Before(b.resetAt) && b.windowRestoredAt.Before(b.resetAt) {
-			if b.limit > 0 {
-				b.remaining = b.limit
-			} else {
-				// Unknown limit (e.g. 429 without X-RateLimit-Limit header).
-				// Let one request through to re-learn the bucket.
-				b.remaining = 1
-			}
-			b.windowRestoredAt = time.Now()
+
+		r.globalMu.RLock()
+		globalActive := time.Now().Before(r.globalUntil)
+		r.globalMu.RUnlock()
+		if !globalActive {
+			return nil
 		}
+		// Global is now active — loop back to wait for it.
 	}
 
-	if b.remaining > 0 {
-		b.remaining--
-	}
-	b.mu.Unlock()
 	return nil
 }
 
@@ -236,6 +256,12 @@ func (r *rateLimiter) update(method, path string, resp *http.Response) {
 		wait := parseRetryAfter(resp)
 		if wait > 0 && resetAt.IsZero() {
 			resetAt = time.Now().Add(wait)
+		}
+		// If still no reset time (neither X-RateLimit-Reset-After nor Retry-After
+		// was present), apply a conservative 1 s default so the bucket update block
+		// below actually runs and persists remaining=0 to the bucket.
+		if resetAt.IsZero() {
+			resetAt = time.Now().Add(time.Second)
 		}
 		remaining = 0
 	}

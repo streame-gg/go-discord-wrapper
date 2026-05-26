@@ -13,7 +13,11 @@ type SectionBuilder struct {
 }
 
 func NewSection() *SectionBuilder {
-	return &SectionBuilder{}
+	return &SectionBuilder{
+		s: components.Section{
+			Components: make([]components.AnySectionComponent, 0),
+		},
+	}
 }
 
 func (b *SectionBuilder) AddComponents(c ...components.AnySectionComponent) *SectionBuilder {

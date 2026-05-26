@@ -237,8 +237,9 @@ type MemMessageStore struct {
 	maxTotal int // resolved from StoreOptions; 0 = unlimited
 	total    atomic.Int64
 
-	stopCh chan struct{}
-	wg     sync.WaitGroup
+	stopCh    chan struct{}
+	closeOnce sync.Once
+	wg        sync.WaitGroup
 }
 
 // NewMessageStore creates a MemMessageStore and starts any configured sweepers.
@@ -357,7 +358,11 @@ func (s *MemMessageStore) Channel(channelID discord.Snowflake) *collection.Colle
 	s.mu.Unlock()
 	out := collection.NewWithCapacity[discord.Snowflake, *discord.Message](len(msgs))
 	for _, m := range msgs {
-		out.Set(m.ID, m)
+		// Shallow-copy so caller mutations don't corrupt the cached entry.
+		// Nested pointer fields (Embeds, Attachments, etc.) are still shared;
+		// callers must clone those slices before mutating.
+		cp := *m
+		out.Set(cp.ID, &cp)
 	}
 	return out
 }
@@ -408,9 +413,9 @@ func (s *MemMessageStore) SweepExpired(unusedWindow time.Duration) {
 	}
 }
 
-// Close stops all sweeper goroutines. The store must not be used after Close returns.
+// Close stops all sweeper goroutines. Safe to call more than once.
 func (s *MemMessageStore) Close() {
-	close(s.stopCh)
+	s.closeOnce.Do(func() { close(s.stopCh) })
 	s.wg.Wait()
 }
 
