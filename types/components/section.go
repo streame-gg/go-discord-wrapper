@@ -10,7 +10,7 @@ type Section struct {
 	Type       discord.ComponentType `json:"type"`
 	ID         *int                  `json:"id,omitempty"`
 	Components []AnySectionComponent `json:"components"`
-	Accessory  AnySectionAccessory    `json:"accessory,omitempty"`
+	Accessory  AnySectionAccessory   `json:"accessory,omitempty"`
 }
 
 func (s *Section) IsAnyContainerComponent() {
