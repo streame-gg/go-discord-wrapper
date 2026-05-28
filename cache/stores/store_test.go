@@ -26,7 +26,7 @@ func TestBaseStore_GetSet(t *testing.T) {
 	}
 }
 
-func TestBaseStore_GetLazyRemoval(t *testing.T) {
+func TestBaseStoreBug60_GetLazyRemoval(t *testing.T) {
 	s := NewBaseStore[string, int](StoreOptions{
 		TTL:        20 * time.Millisecond,
 		TrackBytes: true,
