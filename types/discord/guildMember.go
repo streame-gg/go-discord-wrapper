@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// GuildMember.User is nil on MESSAGE_CREATE and MESSAGE_UPDATE gateway events.
 type GuildMember struct {
 	hClient                    EntityClient
 	GuildID                    Snowflake   `json:"-"`

@@ -704,7 +704,6 @@ func (d *Client) dispatch(event events.Event) {
 		// MaxConcurrentEvents is the number of workers, so it is the true upper
 		// bound on concurrent handler execution.
 		for _, h := range handlers {
-			h := h
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -720,7 +719,6 @@ func (d *Client) dispatch(event events.Event) {
 	// Unlimited mode: each handler gets its own goroutine.
 	// dispatchWg tracks in-flight handlers so Shutdown can drain them.
 	for _, h := range handlers {
-		h := h
 		d.dispatchWg.Add(1)
 		go func() {
 			defer d.dispatchWg.Done()

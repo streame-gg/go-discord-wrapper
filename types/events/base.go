@@ -19,6 +19,7 @@ func GetEventFactory(t EventType) (func() Event, bool) {
 	return f, ok
 }
 
+// Event values are shared across concurrent handlers and must not be mutated.
 type Event interface {
 	Event() EventType
 	DesiredEventType() Event
