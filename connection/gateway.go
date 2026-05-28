@@ -1104,10 +1104,11 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryPresences) {
+				presence := ev.NewPresence
 				if old, exists := d.Cache.Presences().Get(ev.NewPresence.GuildID, ev.NewPresence.User.ID); exists {
 					ev.OldPresence = old
+					presence = util.MergePartial(*old, presence)
 				}
-				presence := ev.NewPresence
 				d.Cache.Presences().Set(&presence)
 			}
 		}
@@ -1209,16 +1210,18 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryMembers) {
+				member := ev.NewMember
 				if existing, exists := d.Cache.Members().Get(ev.GuildID, ev.NewMember.UserID); exists {
 					ev.OldMember = existing
+					member = util.MergePartial(*existing, member)
 				}
-				m := ev.NewMember
-				m.GuildID = ev.GuildID
-				if m.User != nil {
-					m.UserID = m.User.ID
+				member.GuildID = ev.GuildID
+				if member.User != nil {
+					member.UserID = member.User.ID
 				}
-				m.Hydrate(d)
-				d.Cache.Members().Set(ev.GuildID, &m)
+
+				member.Hydrate(d)
+				d.Cache.Members().Set(ev.GuildID, &member)
 			}
 		}
 	case events.EventGuildRoleCreate:
@@ -1599,10 +1602,12 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryMessages) {
+				msg := ev.NewMessage
 				if old, exists := d.Cache.Messages().Get(ev.NewMessage.ChannelID, ev.NewMessage.ID); exists {
 					ev.OldMessage = old
+					msg = util.MergePartial(*ev.OldMessage, ev.NewMessage)
 				}
-				msg := ev.NewMessage
+
 				msg.Hydrate(d)
 				d.Cache.Messages().Update(&msg)
 			}

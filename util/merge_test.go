@@ -1,0 +1,241 @@
+package util_test
+
+import (
+	"testing"
+	"time"
+
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+	"github.com/streame-gg/go-discord-wrapper/util"
+)
+
+// --- helpers -----------------------------------------------------------------
+
+type inner struct {
+	X int
+	Y *string
+}
+
+type flat struct {
+	Name    string
+	Count   int
+	Flag    bool
+	Ptr     *string
+	Nested  inner
+	Slice   []int
+	created time.Time // unexported — must never be touched
+}
+
+func strPtr(s string) *string { return &s }
+
+// --- scalar fields -----------------------------------------------------------
+
+func TestMergePartial_EmptyPartialKeepsOld(t *testing.T) {
+	old := flat{Name: "hello", Count: 5, Flag: true, Ptr: strPtr("x")}
+	result := util.MergePartial(old, flat{})
+
+	if result.Name != "hello" {
+		t.Errorf("Name: got %q, want %q", result.Name, "hello")
+	}
+	if result.Count != 5 {
+		t.Errorf("Count: got %d, want %d", result.Count, 5)
+	}
+	if !result.Flag {
+		t.Error("Flag: got false, want true")
+	}
+	if result.Ptr == nil || *result.Ptr != "x" {
+		t.Errorf("Ptr: got %v, want \"x\"", result.Ptr)
+	}
+}
+
+func TestMergePartial_NonZeroScalarApplied(t *testing.T) {
+	old := flat{Name: "old", Count: 1}
+	result := util.MergePartial(old, flat{Name: "new", Count: 99})
+
+	if result.Name != "new" {
+		t.Errorf("Name: got %q, want %q", result.Name, "new")
+	}
+	if result.Count != 99 {
+		t.Errorf("Count: got %d, want %d", result.Count, 99)
+	}
+}
+
+func TestMergePartial_ZeroScalarKeepsOld(t *testing.T) {
+	old := flat{Count: 42}
+	result := util.MergePartial(old, flat{Name: "only-name"})
+
+	if result.Count != 42 {
+		t.Errorf("Count: got %d, want %d", result.Count, 42)
+	}
+}
+
+// --- pointer fields ----------------------------------------------------------
+
+func TestMergePartial_NonNilPtrApplied(t *testing.T) {
+	old := flat{Ptr: strPtr("old")}
+	result := util.MergePartial(old, flat{Ptr: strPtr("new")})
+
+	if result.Ptr == nil || *result.Ptr != "new" {
+		t.Errorf("Ptr: got %v, want \"new\"", result.Ptr)
+	}
+}
+
+func TestMergePartial_NilPtrKeepsOld(t *testing.T) {
+	old := flat{Ptr: strPtr("keep")}
+	result := util.MergePartial(old, flat{})
+
+	if result.Ptr == nil || *result.Ptr != "keep" {
+		t.Errorf("Ptr: got %v, want \"keep\"", result.Ptr)
+	}
+}
+
+// --- slice fields ------------------------------------------------------------
+
+func TestMergePartial_NonNilSliceApplied(t *testing.T) {
+	old := flat{Slice: []int{1, 2, 3}}
+	result := util.MergePartial(old, flat{Slice: []int{9}})
+
+	if len(result.Slice) != 1 || result.Slice[0] != 9 {
+		t.Errorf("Slice: got %v, want [9]", result.Slice)
+	}
+}
+
+func TestMergePartial_NilSliceKeepsOld(t *testing.T) {
+	old := flat{Slice: []int{1, 2, 3}}
+	result := util.MergePartial(old, flat{})
+
+	if len(result.Slice) != 3 {
+		t.Errorf("Slice: got %v, want [1 2 3]", result.Slice)
+	}
+}
+
+func TestMergePartial_EmptySliceApplied(t *testing.T) {
+	// An explicit empty (non-nil) slice overwrites the old slice.
+	old := flat{Slice: []int{1, 2, 3}}
+	result := util.MergePartial(old, flat{Slice: []int{}})
+
+	if result.Slice == nil || len(result.Slice) != 0 {
+		t.Errorf("Slice: got %v, want []", result.Slice)
+	}
+}
+
+// --- nested struct -----------------------------------------------------------
+
+func TestMergePartial_NestedStructMergedRecursively(t *testing.T) {
+	old := flat{Nested: inner{X: 10, Y: strPtr("deep")}}
+	result := util.MergePartial(old, flat{Nested: inner{X: 20}})
+
+	if result.Nested.X != 20 {
+		t.Errorf("Nested.X: got %d, want 20", result.Nested.X)
+	}
+	if result.Nested.Y == nil || *result.Nested.Y != "deep" {
+		t.Errorf("Nested.Y: got %v, want \"deep\"", result.Nested.Y)
+	}
+}
+
+// --- does not mutate inputs --------------------------------------------------
+
+func TestMergePartial_DoesNotMutateOld(t *testing.T) {
+	old := flat{Name: "original"}
+	_ = util.MergePartial(old, flat{Name: "changed"})
+
+	if old.Name != "original" {
+		t.Errorf("old was mutated: got %q, want \"original\"", old.Name)
+	}
+}
+
+// --- discord.Message ---------------------------------------------------------
+
+func TestMergePartial_EmptyMessageKeepsOld(t *testing.T) {
+	ts := time.Now()
+	old := discord.Message{
+		ID:        123,
+		ChannelID: 456,
+		Content:   "hello world",
+		Timestamp: &ts,
+		Author:    &discord.User{ID: 789},
+		Embeds:    []discord.Embed{{Title: strPtr("embed")}},
+	}
+
+	result := util.MergePartial(old, discord.Message{})
+
+	if result.ID != 123 {
+		t.Errorf("ID: got %d, want 123", result.ID)
+	}
+	if result.ChannelID != 456 {
+		t.Errorf("ChannelID: got %d, want 456", result.ChannelID)
+	}
+	if result.Content != "hello world" {
+		t.Errorf("Content: got %q, want %q", result.Content, "hello world")
+	}
+	if result.Timestamp == nil {
+		t.Error("Timestamp: got nil, want non-nil")
+	}
+	if result.Author == nil || result.Author.ID != 789 {
+		t.Errorf("Author: got %v, want ID=789", result.Author)
+	}
+	if len(result.Embeds) != 1 {
+		t.Errorf("Embeds: got %v, want 1 embed", result.Embeds)
+	}
+}
+
+func TestMergePartial_OldMessageIsEmpty(t *testing.T) {
+	ts := time.Now()
+	newMsg := discord.Message{
+		ID:        123,
+		ChannelID: 456,
+		Content:   "hello world",
+		Timestamp: &ts,
+		Author:    &discord.User{ID: 789},
+		Embeds:    []discord.Embed{{Title: strPtr("embed")}},
+	}
+
+	result := util.MergePartial(discord.Message{}, newMsg)
+
+	if result.ID != 123 {
+		t.Errorf("ID: got %d, want 123", result.ID)
+	}
+	if result.ChannelID != 456 {
+		t.Errorf("ChannelID: got %d, want 456", result.ChannelID)
+	}
+	if result.Content != "hello world" {
+		t.Errorf("Content: got %q, want %q", result.Content, "hello world")
+	}
+	if result.Timestamp == nil {
+		t.Error("Timestamp: got nil, want non-nil")
+	}
+	if result.Author == nil || result.Author.ID != 789 {
+		t.Errorf("Author: got %v, want ID=789", result.Author)
+	}
+	if len(result.Embeds) != 1 {
+		t.Errorf("Embeds: got %v, want 1 embed", result.Embeds)
+	}
+}
+
+func TestMergePartial_PartialMessageUpdatesContent(t *testing.T) {
+	ts := time.Now()
+	old := discord.Message{
+		ID:        123,
+		ChannelID: 456,
+		Content:   "original",
+		Timestamp: &ts,
+		Author:    &discord.User{ID: 789},
+	}
+	// Discord partial: only ID, ChannelID, and Content are present.
+	partial := discord.Message{
+		ID:        123,
+		ChannelID: 456,
+		Content:   "edited",
+	}
+
+	result := util.MergePartial(old, partial)
+
+	if result.Content != "edited" {
+		t.Errorf("Content: got %q, want %q", result.Content, "edited")
+	}
+	if result.Author == nil || result.Author.ID != 789 {
+		t.Errorf("Author: got %v, want ID=789 (preserved from old)", result.Author)
+	}
+	if result.Timestamp == nil {
+		t.Error("Timestamp: got nil, want preserved from old")
+	}
+}
