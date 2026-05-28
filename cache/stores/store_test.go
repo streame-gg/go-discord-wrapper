@@ -27,12 +27,47 @@ func TestBaseStore_GetSet(t *testing.T) {
 }
 
 func TestBaseStore_GetLazyRemoval(t *testing.T) {
-	s := NewBaseStore[string, int](Defaults())
+	s := NewBaseStore[string, int](StoreOptions{
+		TTL:        20 * time.Millisecond,
+		TrackBytes: true,
+	})
 	defer s.Close()
 
 	s.Set("a", 1)
 	s.Set("b", 2)
 
+	bytesAfterSet := s.totalBytes.Load()
+	if bytesAfterSet <= 0 {
+		t.Fatalf("expected totalBytes > 0 after two Set calls, got %d", bytesAfterSet)
+	}
+
+	time.Sleep(40 * time.Millisecond)
+
+	// Get on "a": entry is expired → lazy delete, totalBytes must shrink.
+	sizeA := estimateSize(1)
+	if _, ok := s.Get("a"); ok {
+		t.Fatal("entry a should have expired")
+	}
+
+	wantAfterA := bytesAfterSet - sizeA
+	if got := s.totalBytes.Load(); got != wantAfterA {
+		t.Fatalf("after lazy removal of a: totalBytes = %d, want %d", got, wantAfterA)
+	}
+
+	// Get on "b": same check.
+	sizeB := estimateSize(2)
+	if _, ok := s.Get("b"); ok {
+		t.Fatal("entry b should have expired")
+	}
+
+	wantAfterB := wantAfterA - sizeB
+	if got := s.totalBytes.Load(); got != wantAfterB {
+		t.Fatalf("after lazy removal of b: totalBytes = %d, want %d", got, wantAfterB)
+	}
+
+	if s.Len() != 0 {
+		t.Fatalf("expected Len=0 after both lazy removals, got %d", s.Len())
+	}
 }
 
 // ── TestBaseStore_Delete ──────────────────────────────────────────────────────
