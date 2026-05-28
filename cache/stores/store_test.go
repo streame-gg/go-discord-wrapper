@@ -26,6 +26,15 @@ func TestBaseStore_GetSet(t *testing.T) {
 	}
 }
 
+func TestBaseStore_GetLazyRemoval(t *testing.T) {
+	s := NewBaseStore[string, int](Defaults())
+	defer s.Close()
+
+	s.Set("a", 1)
+	s.Set("b", 2)
+
+}
+
 // ── TestBaseStore_Delete ──────────────────────────────────────────────────────
 
 func TestBaseStore_Delete(t *testing.T) {

@@ -1,6 +1,8 @@
 package connection
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
@@ -287,6 +289,131 @@ func TestBug26ConcurrentCloseIsIdempotent(t *testing.T) {
 	default:
 		t.Error("ws.Closed was not closed after concurrent close() calls (Bug 26)")
 	}
+}
+
+// TestBug59Close4007ResumesWithNullSeq verifies that receiving close code 4007
+// (Invalid Seq) causes the client to send a RESUME (op=6) with seq=null on the
+// next connection, rather than a fresh IDENTIFY (op=2) that would discard the
+// session state (Bug 59).
+//
+// Login() is used so the real goroutine in gateway.go (which contains the 4007
+// handler) is exercised rather than the bare listenWebsocket loop.
+func TestBug59Close4007ResumesWithNullSeq(t *testing.T) {
+	resumePayload := make(chan map[string]interface{}, 1)
+
+	// Second server (resume_gateway_url): captures the RESUME/IDENTIFY payload.
+	second := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := wsUpgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+
+		_ = conn.WriteJSON(map[string]interface{}{
+			"op": 10,
+			"d":  map[string]interface{}{"heartbeat_interval": 60000},
+		})
+
+		var payload map[string]interface{}
+		if err := conn.ReadJSON(&payload); err != nil {
+			return
+		}
+		resumePayload <- payload
+
+		time.Sleep(500 * time.Millisecond)
+	}))
+	defer second.Close()
+	secondURL := "ws" + second.URL[len("http"):]
+
+	// First server: HELLO → read IDENTIFY → READY (seq=42, resume_url=secondURL) → 4007.
+	first := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := wsUpgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+
+		_ = conn.WriteJSON(map[string]interface{}{
+			"op": 10,
+			"d":  map[string]interface{}{"heartbeat_interval": 60000},
+		})
+
+		var ignore interface{}
+		_ = conn.ReadJSON(&ignore)
+
+		_ = conn.WriteJSON(map[string]interface{}{
+			"op": 0, "t": "READY", "s": 42,
+			"d": map[string]interface{}{
+				"v":                  10,
+				"user":               map[string]interface{}{"id": "1", "username": "bot", "discriminator": "0000"},
+				"guilds":             []interface{}{},
+				"session_id":         "test-session",
+				"resume_gateway_url": secondURL,
+			},
+		})
+
+		// Hold long enough for Login() to unblock on READY, then close with 4007.
+		time.Sleep(150 * time.Millisecond)
+		_ = conn.WriteMessage(websocket.CloseMessage,
+			websocket.FormatCloseMessage(4007, ""))
+		time.Sleep(200 * time.Millisecond)
+	}))
+	defer first.Close()
+	firstURL := "ws" + first.URL[len("http"):]
+
+	// Gateway stub: returns firstURL from /gateway/bot so Login() can proceed.
+	gatewayStub := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]interface{}{
+			"url":    firstURL,
+			"shards": 1,
+			"session_start_limit": map[string]interface{}{
+				"total": 1000, "remaining": 999,
+				"reset_after": 14400000, "max_concurrency": 1,
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer gatewayStub.Close()
+
+	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
+	require.NoError(t, err)
+	c.httpClient = &http.Client{
+		Transport: &gatewayStubTransport{real: gatewayStub},
+	}
+
+	loginDone := make(chan error, 1)
+	go func() { loginDone <- c.Login(context.Background()) }()
+
+	select {
+	case err := <-loginDone:
+		require.NoError(t, err, "Login must succeed (Bug 24)")
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for Login to return after READY (Bug 24)")
+	}
+
+	// Login returned — the background goroutine is running listenWebsocket().
+	// The first server is about to send 4007; wait for the resume attempt on secondURL.
+	select {
+	case payload := <-resumePayload:
+		op, _ := payload["op"].(float64)
+		assert.Equal(t, float64(6), op,
+			"after 4007, client must send RESUME (op=6), not IDENTIFY (op=2) (Bug 24)")
+
+		d, _ := payload["d"].(map[string]interface{})
+		require.NotNil(t, d, "RESUME payload must have a 'd' field (Bug 24)")
+
+		assert.Nil(t, d["seq"],
+			"RESUME after 4007 must send seq=null to reset invalid sequence (Bug 24)")
+
+		assert.Equal(t, "test-session", d["session_id"],
+			"RESUME after 4007 must preserve the original session ID (Bug 24)")
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout: client never connected to resume_gateway_url after 4007 close (Bug 24)")
+	}
+
+	_ = c.Shutdown()
 }
 
 // TestBug47ReconnectBackoffNoOverflow verifies that the reconnect back-off never

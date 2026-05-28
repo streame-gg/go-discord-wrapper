@@ -216,6 +216,7 @@ func (s *BaseStore[K, V]) Get(key K) (V, bool) {
 	now := time.Now()
 	if !e.expiresAt.IsZero() && now.After(e.expiresAt) {
 		s.items.Delete(key)
+		s.totalBytes.Add(-e.sizeBytes)
 		var zero V
 		return zero, false
 	}
