@@ -213,6 +213,17 @@ type Options struct {
 
 	// Messages configures message-specific caching behaviour.
 	Messages MessageOptions
+
+	// WriteTimeout is the per-call timeout applied to every write operation
+	// (Set, Delete, SetAll, Add, etc.) in remote cache backends (MongoDB, Redis).
+	// Zero means no per-call timeout; the lifetime context is used directly.
+	// Recommended value for production deployments: 2–5 seconds.
+	WriteTimeout time.Duration
+
+	// WriteQueueSize is the capacity of the async write queue used by remote
+	// cache backends (MongoDB, Redis). Writes that arrive when the queue is full
+	// are silently dropped. Zero or negative values use the default of 512.
+	WriteQueueSize int
 }
 
 // ── Entity store interfaces ───────────────────────────────────────────────────

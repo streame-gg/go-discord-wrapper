@@ -136,6 +136,14 @@ type MongoDBCache struct {
 	// msgChannelMu serializes insert+evict per channel to prevent TOCTOU races
 	// when enforcing MaxPerChannel.
 	msgChannelMu sync.Map // map[string]*sync.Mutex
+
+	// write worker: all Set/Delete calls are dispatched here so the reader
+	// goroutine never blocks on MongoDB I/O.
+	writeCh      chan func()
+	writeMu      sync.Mutex
+	writerClosed bool
+	writerDone   chan struct{}
+	syncWrites   bool // true → execute writes inline (testing only)
 }
 
 // NewMongoDBCache creates a MongoDBCache backed by db and creates the required
@@ -153,13 +161,20 @@ func NewMongoDBCache(db *mongo.Database, opts cache.Options) *MongoDBCache {
 	if opts.Messages.TTL == 0 {
 		opts.Messages.TTL = opts.TTL
 	}
+	queueSize := opts.WriteQueueSize
+	if queueSize <= 0 {
+		queueSize = 512
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &MongoDBCache{
-		db:     db,
-		opts:   opts,
-		ctx:    ctx,
-		cancel: cancel,
+		db:         db,
+		opts:       opts,
+		ctx:        ctx,
+		cancel:     cancel,
+		writeCh:    make(chan func(), queueSize),
+		writerDone: make(chan struct{}),
 	}
+	go c.runWriteWorker()
 	c.ensureIndexes()
 	return c
 }
@@ -263,12 +278,67 @@ func (c *MongoDBCache) Presences() cache.PresenceStore {
 	return &mongoPresenceStore{c}
 }
 
-// Close cancels the internal context used for all MongoDB operations.
+// Close drains the write queue, then cancels the internal context.
 // The underlying [*mongo.Database] and its client are not closed.
 // Safe to call multiple times.
 func (c *MongoDBCache) Close() error {
-	c.stopOnce.Do(c.cancel)
+	c.stopOnce.Do(func() {
+		c.cancel()
+		c.writeMu.Lock()
+		c.writerClosed = true
+		close(c.writeCh)
+		c.writeMu.Unlock()
+		<-c.writerDone
+	})
 	return nil
+}
+
+// EnableSyncWrites makes all write operations execute synchronously instead of
+// going through the async write queue. Intended for testing only.
+func (c *MongoDBCache) EnableSyncWrites() {
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
+	c.syncWrites = true
+}
+
+// callCtx returns a per-call context for a write operation. When WriteTimeout
+// is configured it carries a deadline that prevents a slow backend from
+// blocking the write worker indefinitely.
+func (c *MongoDBCache) callCtx() (context.Context, context.CancelFunc) {
+	if c.opts.WriteTimeout > 0 {
+		return context.WithTimeout(c.ctx, c.opts.WriteTimeout)
+	}
+	return c.ctx, func() {}
+}
+
+// enqueueWrite submits fn to the async write worker.
+// In sync-writes mode (tests) fn is executed directly on the caller goroutine.
+// If the buffer is full or the cache is closed the write is silently dropped.
+func (c *MongoDBCache) enqueueWrite(fn func()) {
+	c.writeMu.Lock()
+	if c.syncWrites || c.writeCh == nil {
+		c.writeMu.Unlock()
+		fn()
+		return
+	}
+	if c.writerClosed {
+		c.writeMu.Unlock()
+		return
+	}
+	select {
+	case c.writeCh <- fn:
+	default:
+		// write queue full — drop write; a cache miss is preferable to blocking the reader
+	}
+	c.writeMu.Unlock()
+}
+
+// runWriteWorker drains c.writeCh until the channel is closed by Close.
+func (c *MongoDBCache) runWriteWorker() {
+	defer close(c.writerDone)
+	for fn := range c.writeCh {
+		fn()
+	}
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -351,7 +421,11 @@ func (s *mongoGuildStore) Set(guild *discord.Guild) {
 		JSON:      string(b),
 		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 	}
-	_ = upsertByID(s.c.ctx, s.col(), doc)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_ = upsertByID(ctx, s.col(), doc)
+	})
 }
 
 func (s *mongoGuildStore) Get(id discord.Snowflake) (*discord.Guild, bool) {
@@ -371,7 +445,12 @@ func (s *mongoGuildStore) Get(id discord.Snowflake) (*discord.Guild, bool) {
 }
 
 func (s *mongoGuildStore) Delete(id discord.Snowflake) {
-	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": strconv.FormatUint(uint64(id), 10)})
+	idStr := strconv.FormatUint(uint64(id), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteOne(ctx, bson.M{"_id": idStr})
+	})
 }
 
 func (s *mongoGuildStore) All() *collection.Collection[discord.Snowflake, *discord.Guild] {
@@ -418,7 +497,11 @@ func (s *mongoChannelStore) Set(ch *discord.Channel) {
 		JSON:      string(b),
 		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 	}
-	_ = upsertByID(s.c.ctx, s.col(), doc)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_ = upsertByID(ctx, s.col(), doc)
+	})
 }
 
 func (s *mongoChannelStore) Get(id discord.Snowflake) (*discord.Channel, bool) {
@@ -438,7 +521,12 @@ func (s *mongoChannelStore) Get(id discord.Snowflake) (*discord.Channel, bool) {
 }
 
 func (s *mongoChannelStore) Delete(id discord.Snowflake) {
-	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": strconv.FormatUint(uint64(id), 10)})
+	idStr := strconv.FormatUint(uint64(id), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteOne(ctx, bson.M{"_id": idStr})
+	})
 }
 
 func (s *mongoChannelStore) All() *collection.Collection[discord.Snowflake, *discord.Channel] {
@@ -485,7 +573,11 @@ func (s *mongoUserStore) Set(user *discord.User) {
 		JSON:      string(b),
 		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 	}
-	_ = upsertByID(s.c.ctx, s.col(), doc)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_ = upsertByID(ctx, s.col(), doc)
+	})
 }
 
 func (s *mongoUserStore) Get(id discord.Snowflake) (*discord.User, bool) {
@@ -505,7 +597,12 @@ func (s *mongoUserStore) Get(id discord.Snowflake) (*discord.User, bool) {
 }
 
 func (s *mongoUserStore) Delete(id discord.Snowflake) {
-	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": strconv.FormatUint(uint64(id), 10)})
+	idStr := strconv.FormatUint(uint64(id), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteOne(ctx, bson.M{"_id": idStr})
+	})
 }
 
 func (s *mongoUserStore) All() *collection.Collection[discord.Snowflake, *discord.User] {
@@ -561,7 +658,11 @@ func (s *mongoMemberStore) Set(guildID discord.Snowflake, member *discord.GuildM
 		JSON:      string(b),
 		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 	}
-	_ = upsertByID(s.c.ctx, s.col(), doc)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_ = upsertByID(ctx, s.col(), doc)
+	})
 }
 
 func (s *mongoMemberStore) Get(guildID, userID discord.Snowflake) (*discord.GuildMember, bool) {
@@ -581,11 +682,21 @@ func (s *mongoMemberStore) Get(guildID, userID discord.Snowflake) (*discord.Guil
 }
 
 func (s *mongoMemberStore) Delete(guildID, userID discord.Snowflake) {
-	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": memberID(guildID, userID)})
+	id := memberID(guildID, userID)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteOne(ctx, bson.M{"_id": id})
+	})
 }
 
 func (s *mongoMemberStore) DeleteGuild(guildID discord.Snowflake) {
-	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)})
+	gID := strconv.FormatUint(uint64(guildID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteMany(ctx, bson.M{"guild_id": gID})
+	})
 }
 
 func (s *mongoMemberStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.GuildMember] {
@@ -637,7 +748,11 @@ func (s *mongoRoleStore) Set(guildID discord.Snowflake, role *discord.Role) {
 		JSON:      string(b),
 		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 	}
-	_ = upsertByID(s.c.ctx, s.col(), doc)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_ = upsertByID(ctx, s.col(), doc)
+	})
 }
 
 func (s *mongoRoleStore) Get(roleID discord.Snowflake) (*discord.Role, bool) {
@@ -681,11 +796,21 @@ func (s *mongoRoleStore) GetByGuild(guildID discord.Snowflake) *collection.Colle
 }
 
 func (s *mongoRoleStore) Delete(roleID discord.Snowflake) {
-	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": strconv.FormatUint(uint64(roleID), 10)})
+	idStr := strconv.FormatUint(uint64(roleID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteOne(ctx, bson.M{"_id": idStr})
+	})
 }
 
 func (s *mongoRoleStore) DeleteGuild(guildID discord.Snowflake) {
-	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)})
+	gID := strconv.FormatUint(uint64(guildID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteMany(ctx, bson.M{"guild_id": gID})
+	})
 }
 
 func (s *mongoRoleStore) All() *collection.Collection[discord.Snowflake, *discord.Role] {
@@ -733,7 +858,11 @@ func (s *mongoVoiceStateStore) Set(guildID discord.Snowflake, state *discord.Voi
 		JSON:      string(b),
 		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 	}
-	_ = upsertByID(s.c.ctx, s.col(), doc)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_ = upsertByID(ctx, s.col(), doc)
+	})
 }
 
 func (s *mongoVoiceStateStore) Get(guildID, userID discord.Snowflake) (*discord.VoiceState, bool) {
@@ -753,11 +882,21 @@ func (s *mongoVoiceStateStore) Get(guildID, userID discord.Snowflake) (*discord.
 }
 
 func (s *mongoVoiceStateStore) Delete(guildID, userID discord.Snowflake) {
-	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": guildUserID(guildID, userID)})
+	id := guildUserID(guildID, userID)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteOne(ctx, bson.M{"_id": id})
+	})
 }
 
 func (s *mongoVoiceStateStore) DeleteGuild(guildID discord.Snowflake) {
-	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)})
+	gID := strconv.FormatUint(uint64(guildID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteMany(ctx, bson.M{"guild_id": gID})
+	})
 }
 
 func (s *mongoVoiceStateStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.VoiceState] {
@@ -809,7 +948,11 @@ func (s *mongoSoundboardStore) Set(guildID discord.Snowflake, sound *discord.Sou
 		JSON:      string(b),
 		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 	}
-	_ = upsertByID(s.c.ctx, s.col(), doc)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_ = upsertByID(ctx, s.col(), doc)
+	})
 }
 
 func (s *mongoSoundboardStore) Get(soundID discord.Snowflake) (*discord.SoundboardSound, bool) {
@@ -869,15 +1012,30 @@ func (s *mongoSoundboardStore) SetAll(guildID discord.Snowflake, sounds []*disco
 			ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 		})
 	}
-	setAllTx(s.c.ctx, s.col(), strconv.FormatUint(uint64(guildID), 10), docs)
+	gID := strconv.FormatUint(uint64(guildID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		setAllTx(ctx, s.col(), gID, docs)
+	})
 }
 
 func (s *mongoSoundboardStore) Delete(soundID discord.Snowflake) {
-	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": strconv.FormatUint(uint64(soundID), 10)})
+	idStr := strconv.FormatUint(uint64(soundID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteOne(ctx, bson.M{"_id": idStr})
+	})
 }
 
 func (s *mongoSoundboardStore) DeleteGuild(guildID discord.Snowflake) {
-	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)})
+	gID := strconv.FormatUint(uint64(guildID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteMany(ctx, bson.M{"guild_id": gID})
+	})
 }
 
 func (s *mongoSoundboardStore) Size() int {
@@ -907,7 +1065,11 @@ func (s *mongoScheduledEventStore) Set(event *discord.GuildScheduledEvent) {
 		JSON:      string(b),
 		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 	}
-	_ = upsertByID(s.c.ctx, s.col(), doc)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_ = upsertByID(ctx, s.col(), doc)
+	})
 }
 
 func (s *mongoScheduledEventStore) Get(eventID discord.Snowflake) (*discord.GuildScheduledEvent, bool) {
@@ -951,11 +1113,21 @@ func (s *mongoScheduledEventStore) GetByGuild(guildID discord.Snowflake) *collec
 }
 
 func (s *mongoScheduledEventStore) Delete(eventID discord.Snowflake) {
-	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": strconv.FormatUint(uint64(eventID), 10)})
+	idStr := strconv.FormatUint(uint64(eventID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteOne(ctx, bson.M{"_id": idStr})
+	})
 }
 
 func (s *mongoScheduledEventStore) DeleteGuild(guildID discord.Snowflake) {
-	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)})
+	gID := strconv.FormatUint(uint64(guildID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteMany(ctx, bson.M{"guild_id": gID})
+	})
 }
 
 func (s *mongoScheduledEventStore) Size() int {
@@ -985,7 +1157,11 @@ func (s *mongoStageInstanceStore) Set(instance *discord.StageInstance) {
 		JSON:      string(b),
 		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 	}
-	_ = upsertByID(s.c.ctx, s.col(), doc)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_ = upsertByID(ctx, s.col(), doc)
+	})
 }
 
 func (s *mongoStageInstanceStore) Get(instanceID discord.Snowflake) (*discord.StageInstance, bool) {
@@ -1029,11 +1205,21 @@ func (s *mongoStageInstanceStore) GetByGuild(guildID discord.Snowflake) *collect
 }
 
 func (s *mongoStageInstanceStore) Delete(instanceID discord.Snowflake) {
-	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": strconv.FormatUint(uint64(instanceID), 10)})
+	idStr := strconv.FormatUint(uint64(instanceID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteOne(ctx, bson.M{"_id": idStr})
+	})
 }
 
 func (s *mongoStageInstanceStore) DeleteGuild(guildID discord.Snowflake) {
-	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)})
+	gID := strconv.FormatUint(uint64(guildID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteMany(ctx, bson.M{"guild_id": gID})
+	})
 }
 
 func (s *mongoStageInstanceStore) Size() int {
@@ -1061,7 +1247,11 @@ func (s *mongoEmojiStore) Set(guildID discord.Snowflake, emoji *discord.Emoji) {
 		JSON:      string(b),
 		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 	}
-	_ = upsertByID(s.c.ctx, s.col(), doc)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_ = upsertByID(ctx, s.col(), doc)
+	})
 }
 
 func (s *mongoEmojiStore) Get(emojiID discord.Snowflake) (*discord.Emoji, bool) {
@@ -1121,15 +1311,30 @@ func (s *mongoEmojiStore) SetAll(guildID discord.Snowflake, emojis []*discord.Em
 			ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 		})
 	}
-	setAllTx(s.c.ctx, s.col(), strconv.FormatUint(uint64(guildID), 10), docs)
+	gID := strconv.FormatUint(uint64(guildID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		setAllTx(ctx, s.col(), gID, docs)
+	})
 }
 
 func (s *mongoEmojiStore) Delete(emojiID discord.Snowflake) {
-	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": strconv.FormatUint(uint64(emojiID), 10)})
+	idStr := strconv.FormatUint(uint64(emojiID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteOne(ctx, bson.M{"_id": idStr})
+	})
 }
 
 func (s *mongoEmojiStore) DeleteGuild(guildID discord.Snowflake) {
-	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)})
+	gID := strconv.FormatUint(uint64(guildID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteMany(ctx, bson.M{"guild_id": gID})
+	})
 }
 
 func (s *mongoEmojiStore) Size() int {
@@ -1157,7 +1362,11 @@ func (s *mongoStickerStore) Set(guildID discord.Snowflake, sticker *discord.Stic
 		JSON:      string(b),
 		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 	}
-	_ = upsertByID(s.c.ctx, s.col(), doc)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_ = upsertByID(ctx, s.col(), doc)
+	})
 }
 
 func (s *mongoStickerStore) Get(stickerID discord.Snowflake) (*discord.Sticker, bool) {
@@ -1217,15 +1426,30 @@ func (s *mongoStickerStore) SetAll(guildID discord.Snowflake, stickers []*discor
 			ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 		})
 	}
-	setAllTx(s.c.ctx, s.col(), strconv.FormatUint(uint64(guildID), 10), docs)
+	gID := strconv.FormatUint(uint64(guildID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		setAllTx(ctx, s.col(), gID, docs)
+	})
 }
 
 func (s *mongoStickerStore) Delete(stickerID discord.Snowflake) {
-	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": strconv.FormatUint(uint64(stickerID), 10)})
+	idStr := strconv.FormatUint(uint64(stickerID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteOne(ctx, bson.M{"_id": idStr})
+	})
 }
 
 func (s *mongoStickerStore) DeleteGuild(guildID discord.Snowflake) {
-	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)})
+	gID := strconv.FormatUint(uint64(guildID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteMany(ctx, bson.M{"guild_id": gID})
+	})
 }
 
 func (s *mongoStickerStore) Size() int {
@@ -1253,7 +1477,11 @@ func (s *mongoPresenceStore) Set(presence *discord.Presence) {
 		JSON:      string(b),
 		ExpiresAt: s.c.expiresAt(s.c.opts.TTL),
 	}
-	_ = upsertByID(s.c.ctx, s.col(), doc)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_ = upsertByID(ctx, s.col(), doc)
+	})
 }
 
 func (s *mongoPresenceStore) Get(guildID, userID discord.Snowflake) (*discord.Presence, bool) {
@@ -1297,11 +1525,21 @@ func (s *mongoPresenceStore) GetByGuild(guildID discord.Snowflake) *collection.C
 }
 
 func (s *mongoPresenceStore) Delete(guildID, userID discord.Snowflake) {
-	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": guildUserID(guildID, userID)})
+	id := guildUserID(guildID, userID)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteOne(ctx, bson.M{"_id": id})
+	})
 }
 
 func (s *mongoPresenceStore) DeleteGuild(guildID discord.Snowflake) {
-	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)})
+	gID := strconv.FormatUint(uint64(guildID), 10)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteMany(ctx, bson.M{"guild_id": gID})
+	})
 }
 
 func (s *mongoPresenceStore) Size() int {
@@ -1323,63 +1561,67 @@ func (s *mongoMessageStore) Add(msg *discord.Message) {
 	if msg == nil || s.c.opts.Messages.MaxPerChannel == 0 {
 		return
 	}
-
-	// Serialize insert+count+evict per channel to prevent TOCTOU races.
-	mu, _ := s.c.msgChannelMu.LoadOrStore(strconv.FormatUint(uint64(msg.ChannelID), 10), &sync.Mutex{})
-	mu.(*sync.Mutex).Lock()
-	defer mu.(*sync.Mutex).Unlock()
-
 	b, err := json.Marshal(msg)
 	if err != nil {
 		return
 	}
-	now := time.Now()
+	channelIDStr := strconv.FormatUint(uint64(msg.ChannelID), 10)
+	max := int64(s.c.opts.Messages.MaxPerChannel)
 	doc := msgDoc{
 		ID:         msgID(msg.ChannelID, msg.ID),
-		ChannelID:  strconv.FormatUint(uint64(msg.ChannelID), 10),
+		ChannelID:  channelIDStr,
 		JSON:       string(b),
-		InsertedAt: now,
+		InsertedAt: time.Now(),
 		ExpiresAt:  s.c.expiresAt(s.c.opts.Messages.TTL),
 	}
-	_ = upsertByID(s.c.ctx, s.col(), doc)
+	s.c.enqueueWrite(func() {
+		// Serialize insert+count+evict per channel to prevent TOCTOU races.
+		mu, _ := s.c.msgChannelMu.LoadOrStore(channelIDStr, &sync.Mutex{})
+		mu.(*sync.Mutex).Lock()
+		defer mu.(*sync.Mutex).Unlock()
 
-	// Enforce MaxPerChannel: delete the oldest messages for this channel
-	// if the count exceeds the cap.
-	max := int64(s.c.opts.Messages.MaxPerChannel)
-	// Bug 32 fix: exclude expired documents from the count so TTL-expired entries
-	// do not inflate the count and trigger unnecessary eviction of live messages.
-	countFilter := bson.M{"channel_id": strconv.FormatUint(uint64(msg.ChannelID), 10)}
-	if s.c.opts.Messages.TTL > 0 {
-		countFilter["expires_at"] = bson.M{"$gt": time.Now()}
-	}
-	count, err := s.col().CountDocuments(s.c.ctx, countFilter)
-	if err != nil || count <= max {
-		return
-	}
-	excess := count - max
-	// Find excess oldest messages (ascending by inserted_at) and delete them.
-	cursor, err := s.col().Find(
-		s.c.ctx,
-		countFilter,
-		options.Find().
-			SetSort(bson.D{{Key: "inserted_at", Value: 1}}).
-			SetLimit(excess).
-			SetProjection(bson.D{{Key: "_id", Value: 1}}),
-	)
-	if err != nil {
-		return
-	}
-	var idDocs []struct {
-		ID string `bson:"_id"`
-	}
-	if err := cursor.All(s.c.ctx, &idDocs); err != nil {
-		return
-	}
-	ids := make([]string, len(idDocs))
-	for i, d := range idDocs {
-		ids[i] = d.ID
-	}
-	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"_id": bson.M{"$in": ids}})
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+
+		_ = upsertByID(ctx, s.col(), doc)
+
+		// Enforce MaxPerChannel: delete the oldest messages for this channel
+		// if the count exceeds the cap.
+		// Bug 32 fix: exclude expired documents from the count so TTL-expired entries
+		// do not inflate the count and trigger unnecessary eviction of live messages.
+		countFilter := bson.M{"channel_id": channelIDStr}
+		if s.c.opts.Messages.TTL > 0 {
+			countFilter["expires_at"] = bson.M{"$gt": time.Now()}
+		}
+		count, err := s.col().CountDocuments(ctx, countFilter)
+		if err != nil || count <= max {
+			return
+		}
+		excess := count - max
+		// Find excess oldest messages (ascending by inserted_at) and delete them.
+		cursor, err := s.col().Find(
+			ctx,
+			countFilter,
+			options.Find().
+				SetSort(bson.D{{Key: "inserted_at", Value: 1}}).
+				SetLimit(excess).
+				SetProjection(bson.D{{Key: "_id", Value: 1}}),
+		)
+		if err != nil {
+			return
+		}
+		var idDocs []struct {
+			ID string `bson:"_id"`
+		}
+		if err := cursor.All(ctx, &idDocs); err != nil {
+			return
+		}
+		ids := make([]string, len(idDocs))
+		for i, d := range idDocs {
+			ids[i] = d.ID
+		}
+		_, _ = s.col().DeleteMany(ctx, bson.M{"_id": bson.M{"$in": ids}})
+	})
 }
 
 func (s *mongoMessageStore) Get(channelID, messageID discord.Snowflake) (*discord.Message, bool) {
@@ -1403,20 +1645,30 @@ func (s *mongoMessageStore) Update(msg *discord.Message) {
 	if err != nil {
 		return
 	}
-	filter := bson.M{"_id": msgID(msg.ChannelID, msg.ID)}
+	id := msgID(msg.ChannelID, msg.ID)
+	expiresAt := s.c.expiresAt(s.c.opts.Messages.TTL)
 	// UpdateOne with $set preserves InsertedAt and only updates the JSON payload.
-	_, _ = s.col().UpdateOne(
-		s.c.ctx,
-		filter,
-		bson.M{"$set": bson.M{
-			"json":       string(b),
-			"expires_at": s.c.expiresAt(s.c.opts.Messages.TTL),
-		}},
-	)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().UpdateOne(
+			ctx,
+			bson.M{"_id": id},
+			bson.M{"$set": bson.M{
+				"json":       string(b),
+				"expires_at": expiresAt,
+			}},
+		)
+	})
 }
 
 func (s *mongoMessageStore) Delete(channelID, messageID discord.Snowflake) {
-	_, _ = s.col().DeleteOne(s.c.ctx, bson.M{"_id": msgID(channelID, messageID)})
+	id := msgID(channelID, messageID)
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteOne(ctx, bson.M{"_id": id})
+	})
 }
 
 func (s *mongoMessageStore) DeleteBulk(channelID discord.Snowflake, ids []discord.Snowflake) {
@@ -1427,7 +1679,11 @@ func (s *mongoMessageStore) DeleteBulk(channelID discord.Snowflake, ids []discor
 	for i, id := range ids {
 		docIDs[i] = msgID(channelID, id)
 	}
-	_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"_id": bson.M{"$in": docIDs}})
+	s.c.enqueueWrite(func() {
+		ctx, cancel := s.c.callCtx()
+		defer cancel()
+		_, _ = s.col().DeleteMany(ctx, bson.M{"_id": bson.M{"$in": docIDs}})
+	})
 }
 
 // Channel returns messages for channelID newest-first, excluding expired entries.
@@ -1465,12 +1721,17 @@ func (s *mongoMessageStore) Channel(channelID discord.Snowflake) *collection.Col
 }
 
 func (s *mongoMessageStore) DeleteChannel(channelID discord.Snowflake) {
-	if s.c.db != nil {
-		_, _ = s.col().DeleteMany(s.c.ctx, bson.M{"channel_id": strconv.FormatUint(uint64(channelID), 10)})
-	}
-	// Remove the per-channel mutex so short-lived channels (DMs, threads) do not
-	// accumulate entries in msgChannelMu indefinitely (Bug 21).
-	s.c.msgChannelMu.Delete(strconv.FormatUint(uint64(channelID), 10))
+	chIDStr := strconv.FormatUint(uint64(channelID), 10)
+	s.c.enqueueWrite(func() {
+		if s.c.db != nil {
+			ctx, cancel := s.c.callCtx()
+			defer cancel()
+			_, _ = s.col().DeleteMany(ctx, bson.M{"channel_id": chIDStr})
+		}
+		// Remove the per-channel mutex so short-lived channels (DMs, threads) do not
+		// accumulate entries in msgChannelMu indefinitely (Bug 21).
+		s.c.msgChannelMu.Delete(chIDStr)
+	})
 }
 
 func (s *mongoMessageStore) Size() int {

@@ -73,6 +73,7 @@ func (s *RedisCacheTestSuite) newCache(opts cache.Options) *rediscache.RedisCach
 	client := redis.NewClient(&redis.Options{Addr: s.redisAddr})
 	s.T().Cleanup(func() { _ = client.Close() })
 	c := rediscache.NewRedisCache(client, opts).WithKeyPrefix("test:" + s.T().Name())
+	c.EnableSyncWrites()
 	s.T().Cleanup(func() { _ = c.Close() })
 	return c
 }
@@ -554,6 +555,7 @@ func (s *RedisCacheTestSuite) TestBug6NetworkErrorDoesNotPruneIndex() {
 	defer client.Close()
 
 	c := rediscache.NewRedisCache(client, cache.Options{})
+	c.EnableSyncWrites()
 	defer c.Close()
 
 	// Seed a guild into the cache.
@@ -635,6 +637,7 @@ func (s *RedisCacheTestSuite) TestBug8AddIsAtomicParallelAddsRespectMaxPerChanne
 	c := rediscache.NewRedisCache(client, cache.Options{
 		Messages: cache.MessageOptions{MaxPerChannel: maxAmount},
 	})
+	c.EnableSyncWrites()
 	defer c.Close()
 
 	chAtomic := mustSnowflake("ch-atomic")
@@ -739,6 +742,7 @@ func (s *RedisCacheTestSuite) TestWithKeyPrefix_IndependentLifecycle() {
 	s.T().Cleanup(func() { _ = client.Close() })
 
 	base := rediscache.NewRedisCache(client, cache.Options{})
+	base.EnableSyncWrites()
 	s.T().Cleanup(func() { _ = base.Close() })
 
 	prefixed := base.WithKeyPrefix("p2-31-test")

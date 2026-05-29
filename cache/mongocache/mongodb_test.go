@@ -85,6 +85,7 @@ func newCache(t *testing.T, opts cache.Options) *mongocache.MongoDBCache {
 		_ = db.Drop(context.Background())
 	})
 	c := mongocache.NewMongoDBCache(db, opts)
+	c.EnableSyncWrites()
 	t.Cleanup(func() { c.Close() })
 	return c
 }
