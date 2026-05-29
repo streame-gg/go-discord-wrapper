@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/streame-gg/go-discord-wrapper/api"
+	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/components"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -633,7 +634,17 @@ func (d *Client) AddGuildMemberRole(ctx context.Context, guildID, userID, roleID
 	if reason != nil {
 		opts = &api.AddGuildMemberRoleOptions{Reason: *reason}
 	}
-	return d.RestClient.AddGuildMemberRole(ctx, guildID, userID, roleID, opts)
+	if err := d.RestClient.AddGuildMemberRole(ctx, guildID, userID, roleID, opts); err != nil {
+		return err
+	}
+	if d.cacheStoreEnabled(cache.CategoryMembers) {
+		if m, ok := d.Cache.Members().Get(guildID, userID); ok {
+			updated := *m
+			updated.Roles = append(append([]discord.Snowflake{}, m.Roles...), roleID)
+			d.Cache.Members().Set(guildID, &updated)
+		}
+	}
+	return nil
 }
 
 func (d *Client) RemoveGuildMemberRole(ctx context.Context, guildID, userID, roleID discord.Snowflake, reason *string) error {
@@ -641,7 +652,23 @@ func (d *Client) RemoveGuildMemberRole(ctx context.Context, guildID, userID, rol
 	if reason != nil {
 		opts = &api.RemoveGuildMemberRoleOptions{Reason: *reason}
 	}
-	return d.RestClient.RemoveGuildMemberRole(ctx, guildID, userID, roleID, opts)
+	if err := d.RestClient.RemoveGuildMemberRole(ctx, guildID, userID, roleID, opts); err != nil {
+		return err
+	}
+	if d.cacheStoreEnabled(cache.CategoryMembers) {
+		if m, ok := d.Cache.Members().Get(guildID, userID); ok {
+			updated := *m
+			roles := make([]discord.Snowflake, 0, len(m.Roles))
+			for _, r := range m.Roles {
+				if r != roleID {
+					roles = append(roles, r)
+				}
+			}
+			updated.Roles = roles
+			d.Cache.Members().Set(guildID, &updated)
+		}
+	}
+	return nil
 }
 
 // RemoveGuildMember removes a member from a guild. Requires KICK_MEMBERS.
