@@ -635,27 +635,7 @@ func (d *Client) Login(ctx context.Context) error {
 					return
 				}
 
-				// 4007 = Invalid Seq: session is still valid, but Discord rejected
-				// the sequence number. Resume with seq=null so Discord replays
-				// missed events from the start of the session.
-				if websocket.IsCloseError(err, 4007) {
-					d.Logger.Debug("Gateway closed with invalid seq, resuming with seq=null")
-					d.wsMu.Lock()
-					if d.Websocket != nil {
-						d.Websocket.LastEventNum.Store(nil)
-					}
-					d.wsMu.Unlock()
-					if err := d.reconnect(false); err != nil {
-						d.Logger.Warn("Resume after invalid seq failed, attempting fresh reconnect")
-						if err := d.reconnect(true); err != nil {
-							d.Logger.Error("Failed to reconnect after invalid seq", slog.Any("err", err))
-							return
-						}
-					}
-					continue
-				}
-
-				if websocket.IsCloseError(err, 4000, 4001, 4002, 4003, 4005, 4008, 4009) {
+				if websocket.IsCloseError(err, 4000, 4001, 4002, 4003, 4005, 4007, 4008, 4009) {
 					d.Logger.Debug("Gateway connection closed by Discord, trying to reconnect")
 					if err := d.reconnect(true); err != nil {
 						d.Logger.Error("Failed to reconnect", slog.Any("err", err))

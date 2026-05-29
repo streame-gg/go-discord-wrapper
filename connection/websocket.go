@@ -101,18 +101,13 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 
 	bot.Logger.Info("Connected to Discord gateway", slog.Float64("heartbeatIntervalMs", hello.HeartbeatInterval))
 
-	if isReconnect && sessionID != nil {
-		// seq is null when lastEventNum is nil (e.g. after a 4007 Invalid Seq close).
-		var seq interface{}
-		if lastEventNum != nil {
-			seq = *lastEventNum
-		}
+	if isReconnect && lastEventNum != nil && sessionID != nil {
 		if err := ws.writeJSON(map[string]interface{}{
 			"op": 6,
 			"d": map[string]interface{}{
 				"token":      *bot.token,
 				"session_id": *sessionID,
-				"seq":        seq,
+				"seq":        *lastEventNum,
 			},
 		}); err != nil {
 			return nil, err
