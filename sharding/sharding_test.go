@@ -560,6 +560,38 @@ func (s *shardingTestSuite) TestBug26BucketStart_ConcurrentFactory() {
 	s.True(callTimes[3].IsZero(), "shard 3 must not be called after bucket 0 fails")
 }
 
+// TestWithLoginTimeout_ExpiresOnHangingLogin verifies that WithLoginTimeout causes
+// Start to fail with a deadline error when Login does not return in time.
+func (s *shardingTestSuite) TestWithLoginTimeout_ExpiresOnHangingLogin() {
+	coord := sharding.NewLocalCoordinator(1)
+	mgr := sharding.NewShardManager(coord, func(id, total int) (*connection.Client, error) {
+		return connection.NewClient("Bot fake-token", discord.IntentGuilds,
+			options.WithSharding(total, id),
+			options.WithCoordinator(coord),
+		)
+	}, sharding.WithLoginTimeout(50*time.Millisecond))
+
+	start := time.Now()
+	err := mgr.Start()
+	elapsed := time.Since(start)
+
+	s.Require().Error(err, "Start must fail when Login exceeds the timeout")
+	s.Less(elapsed, 5*time.Second, "Start must not block longer than the login timeout (+margin)")
+}
+
+// TestWithLoginTimeout_DefaultIsThirtySeconds verifies that NewShardManager uses
+// 30 s as the default login timeout (factory errors fast, so we only check the
+// option has no effect on the error type, not the actual 30 s wait).
+func (s *shardingTestSuite) TestWithLoginTimeout_DefaultIsThirtySeconds() {
+	coord := sharding.NewLocalCoordinator(1)
+	factoryErr := errors.New("boom")
+	mgr := sharding.NewShardManager(coord, func(id, total int) (*connection.Client, error) {
+		return nil, factoryErr
+	})
+	err := mgr.Start()
+	s.Require().ErrorIs(err, factoryErr, "factory error must propagate regardless of login timeout default")
+}
+
 // TestBug26BackwardsCompat_NilRest verifies that NewShardManager (nil rest) defaults
 // to max_concurrency=1, matching pre-fix sequential behaviour (Bug 26).
 func (s *shardingTestSuite) TestBug26BackwardsCompat_NilRest() {

@@ -18,6 +18,17 @@ import (
 // Violating this results in a 4008 (rate limited) close.
 const identifyInterval = 5 * time.Second
 
+const defaultLoginTimeout = 30 * time.Second
+
+// ShardManagerOption configures a ShardManager.
+type ShardManagerOption func(*ShardManager)
+
+// WithLoginTimeout sets how long startOneShard waits for a single shard's Login
+// call before giving up. Defaults to 30 seconds.
+func WithLoginTimeout(d time.Duration) ShardManagerOption {
+	return func(m *ShardManager) { m.loginTimeout = d }
+}
+
 // ShardManager orchestrates multiple Discord gateway connections in a single process.
 // It creates one Client per shard using a factory function, respects Discord's
 // max_concurrency IDENTIFY bucket rule during startup, and provides convenience accessors.
@@ -25,11 +36,12 @@ const identifyInterval = 5 * time.Second
 // For multi-machine deployments you do not need a ShardManager — run one Client
 // per machine with options.WithCoordinator pointing at your external broker.
 type ShardManager struct {
-	total       int
-	coordinator options.ShardCoordinator
-	factory     func(shardID, totalShards int) (*connection.Client, error)
-	rest        *api.RestClient
-	clients     []*connection.Client
+	total        int
+	coordinator  options.ShardCoordinator
+	factory      func(shardID, totalShards int) (*connection.Client, error)
+	rest         *api.RestClient
+	clients      []*connection.Client
+	loginTimeout time.Duration
 }
 
 // shardErr pairs a shard ID with the error returned during startup.
@@ -59,8 +71,9 @@ type shardErr struct {
 func NewShardManager(
 	coord options.ShardCoordinator,
 	factory func(shardID, totalShards int) (*connection.Client, error),
+	opts ...ShardManagerOption,
 ) *ShardManager {
-	return NewShardManagerWithRest(coord, factory, nil)
+	return NewShardManagerWithRest(coord, factory, nil, opts...)
 }
 
 // NewShardManagerWithRest creates a manager that fetches Discord's max_concurrency
@@ -83,15 +96,21 @@ func NewShardManagerWithRest(
 	coord options.ShardCoordinator,
 	factory func(shardID, totalShards int) (*connection.Client, error),
 	rest *api.RestClient,
+	opts ...ShardManagerOption,
 ) *ShardManager {
 	total := coord.TotalShards()
-	return &ShardManager{
-		total:       total,
-		coordinator: coord,
-		factory:     factory,
-		rest:        rest,
-		clients:     make([]*connection.Client, total),
+	m := &ShardManager{
+		total:        total,
+		coordinator:  coord,
+		factory:      factory,
+		rest:         rest,
+		clients:      make([]*connection.Client, total),
+		loginTimeout: defaultLoginTimeout,
 	}
+	for _, o := range opts {
+		o(m)
+	}
+	return m
 }
 
 // Start connects all shards to the Discord gateway using Discord's bucket-based
@@ -162,7 +181,9 @@ func (m *ShardManager) startOneShard(id int) error {
 	if client == nil {
 		return errors.New("factory returned nil client")
 	}
-	if err := client.Login(context.Background()); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), m.loginTimeout)
+	defer cancel()
+	if err := client.Login(ctx); err != nil {
 		return fmt.Errorf("login: %w", err)
 	}
 	m.clients[id] = client
