@@ -1,9 +1,6 @@
 package discord
 
-import (
-	"math"
-	"time"
-)
+import "time"
 
 type AvatarDecorationData struct {
 	Asset     string `json:"asset"`
@@ -45,13 +42,7 @@ func (u *User) DisplayName() string {
 }
 
 func (u *User) CreatedAt() time.Time {
-	timestamp := (uint64(u.ID) >> 22) + Epoch
-
-	if timestamp > math.MaxInt64 {
-		return time.Unix(0, 0)
-	}
-
-	return time.Unix(int64(timestamp), 0)
+	return u.ID.Time()
 }
 
 // UserConnection represents an external account linked to a Discord user.

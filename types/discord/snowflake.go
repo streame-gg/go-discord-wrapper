@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 const Epoch uint64 = 1420070400000
@@ -31,6 +32,11 @@ func (s *Snowflake) UnmarshalJSON(data []byte) error {
 	}
 	*s = Snowflake(v)
 	return nil
+}
+
+func (s *Snowflake) Time() time.Time {
+	ms := (uint64(*s) >> 22) + Epoch
+	return time.UnixMilli(int64(ms)).UTC()
 }
 
 func (s *Snowflake) MarshalJSON() ([]byte, error) {
