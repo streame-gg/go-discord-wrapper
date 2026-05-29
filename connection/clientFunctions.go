@@ -513,7 +513,7 @@ func (d *Client) DeleteGuildRole(ctx context.Context, guildID, roleID discord.Sn
 	if err := d.RestClient.DeleteGuildRole(ctx, guildID, roleID, opts); err != nil {
 		return err
 	}
-	d.removeRoleFromCache(roleID)
+	d.removeRoleFromCache(guildID, roleID)
 	return nil
 }
 

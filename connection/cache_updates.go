@@ -178,12 +178,37 @@ func (d *Client) removeMessagesFromCache(channelID discord.Snowflake, messageIDs
 	d.Cache.Messages().DeleteBulk(channelID, messageIDs)
 }
 
-func (d *Client) removeRoleFromCache(roleID discord.Snowflake) {
+func (d *Client) removeRoleFromCache(guildID, roleID discord.Snowflake) {
 	if d.Cache == nil {
 		return
 	}
 
 	d.Cache.Roles().Delete(roleID)
+
+	if d.cacheStoreEnabled(cache.CategoryMembers) {
+		roleStr := roleID.String()
+		for _, m := range d.Cache.Members().AllInGuild(guildID).Values() {
+			found := false
+			for _, r := range m.Roles {
+				if r.String() == roleStr {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+			updated := *m
+			filtered := make([]discord.Snowflake, 0, len(m.Roles)-1)
+			for _, r := range m.Roles {
+				if r.String() != roleStr {
+					filtered = append(filtered, r)
+				}
+			}
+			updated.Roles = filtered
+			d.Cache.Members().Set(guildID, &updated)
+		}
+	}
 }
 
 // trackChannel records the channel→guild association in the bidirectional

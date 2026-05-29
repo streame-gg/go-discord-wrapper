@@ -1269,37 +1269,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal GUILD_ROLE_DELETE event", slog.Any("err", err))
 					return false
 				}
-				d.removeRoleFromCache(ev.RoleID)
-
-				// Purge the deleted role from every cached member's Roles slice.
-				// Discord may send GUILD_MEMBER_UPDATEs for affected members, but
-				// delivery is not guaranteed — removing here keeps the cache
-				// consistent immediately so permission checks cannot see stale roles.
-				if d.cacheStoreEnabled(cache.CategoryMembers) {
-					roleStr := ev.RoleID.String()
-					for _, m := range d.Cache.Members().AllInGuild(ev.GuildID).Values() {
-						found := false
-						for _, r := range m.Roles {
-							if r.String() == roleStr {
-								found = true
-								break
-							}
-						}
-						if !found {
-							continue
-						}
-						// Copy and filter — never mutate the cached pointer directly.
-						updated := *m
-						filtered := make([]discord.Snowflake, 0, len(m.Roles)-1)
-						for _, r := range m.Roles {
-							if r.String() != roleStr {
-								filtered = append(filtered, r)
-							}
-						}
-						updated.Roles = filtered
-						d.Cache.Members().Set(ev.GuildID, &updated)
-					}
-				}
+				d.removeRoleFromCache(ev.GuildID, ev.RoleID)
 			}
 		}
 	case events.EventGuildScheduledEventCreate:
