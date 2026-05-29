@@ -1916,6 +1916,11 @@ func (d *Client) emitConnect() {
 		d.dispatchWg.Add(1)
 		go func() {
 			defer d.dispatchWg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					d.Logger.Error("panic in connect handler", slog.Any("recover", r))
+				}
+			}()
 			h(d)
 		}()
 	}
@@ -1930,6 +1935,11 @@ func (d *Client) emitDisconnect(err error) {
 		d.dispatchWg.Add(1)
 		go func() {
 			defer d.dispatchWg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					d.Logger.Error("panic in disconnect handler", slog.Any("recover", r))
+				}
+			}()
 			h(d, err)
 		}()
 	}
@@ -1944,6 +1954,11 @@ func (d *Client) emitReconnect() {
 		d.dispatchWg.Add(1)
 		go func() {
 			defer d.dispatchWg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					d.Logger.Error("panic in reconnect handler", slog.Any("recover", r))
+				}
+			}()
 			h(d)
 		}()
 	}
@@ -1958,6 +1973,11 @@ func (d *Client) emitPacketError(err error) {
 		d.dispatchWg.Add(1)
 		go func() {
 			defer d.dispatchWg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					d.Logger.Error("panic in packet-error handler", slog.Any("recover", r))
+				}
+			}()
 			h(d, err)
 		}()
 	}
