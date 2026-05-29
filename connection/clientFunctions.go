@@ -532,11 +532,20 @@ func (d *Client) GetGuildBans(ctx context.Context, guildID discord.Snowflake, op
 }
 
 func (d *Client) GetGuildBan(ctx context.Context, guildID, userID discord.Snowflake) (*discord.Ban, error) {
-	return d.RestClient.GetGuildBan(ctx, guildID, userID)
+	ban, err := d.RestClient.GetGuildBan(ctx, guildID, userID)
+	if err == nil {
+		ban.User.Hydrate(d)
+	}
+	return ban, err
 }
 
 func (d *Client) CreateGuildBanRaw(ctx context.Context, guildID, userID discord.Snowflake, params api.CreateGuildBanParams) error {
-	return d.RestClient.CreateGuildBan(ctx, guildID, userID, params, nil)
+	if err := d.RestClient.CreateGuildBan(ctx, guildID, userID, params, nil); err != nil {
+		return err
+	}
+
+	d.removeGuildMemberFromCache(guildID, userID)
+	return nil
 }
 
 func (d *Client) RemoveGuildBan(ctx context.Context, guildID, userID discord.Snowflake, reason *string) error {
@@ -1059,7 +1068,13 @@ func (d *Client) AddGuildMember(ctx context.Context, guildID, userID discord.Sno
 }
 
 func (d *Client) BulkBanGuildMembers(ctx context.Context, guildID discord.Snowflake, params api.BulkBanParams) (*api.BulkBanResult, error) {
-	return d.RestClient.BulkBanGuildMembers(ctx, guildID, params, nil)
+	res, err := d.RestClient.BulkBanGuildMembers(ctx, guildID, params, nil)
+	if err == nil {
+		for _, userID := range res.BannedUsers {
+			d.removeGuildMemberFromCache(guildID, userID)
+		}
+	}
+	return res, err
 }
 
 func (d *Client) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) ([]*discord.Integration, error) {
