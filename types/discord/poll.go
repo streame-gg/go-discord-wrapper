@@ -41,7 +41,7 @@ type Poll struct {
 type PollRequest struct {
 	Question         *PollQuestion  `json:"question"`
 	Answers          []PollAnswer   `json:"answers"`
-	Duration         *time.Time     `json:"duration,omitempty"`
+	Duration         *int           `json:"duration,omitempty"`
 	AllowMultiselect bool           `json:"allow_multiselect,omitempty"`
 	LayoutType       PollLayoutType `json:"layout_type,omitempty"`
 }
