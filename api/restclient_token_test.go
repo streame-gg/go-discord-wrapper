@@ -19,7 +19,9 @@ func TestNewRestClient_TokenNormalization(t *testing.T) {
 	}{
 		{"bare token", "xyz", false, "xyz"},
 		{"Bot prefix", "Bot xyz", false, "xyz"},
-		{"Bearer prefix", "Bearer xyz", false, "xyz"},
+		{"bot prefix lowercase", "bot xyz", false, "xyz"},
+		{"BOT prefix uppercase", "BOT xyz", false, "xyz"},
+		{"Bearer prefix stored as-is", "Bearer xyz", false, "Bearer xyz"},
 		{"leading/trailing spaces", "  xyz  ", false, "xyz"},
 		{"empty string", "", true, ""},
 		{"only spaces", "   ", true, ""},
