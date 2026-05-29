@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -79,8 +80,19 @@ type RestClient struct {
 //	)
 func NewRestClient(token string, opts ...options.Option) (*RestClient, error) {
 	token = strings.TrimSpace(token)
-	token = strings.TrimPrefix(token, "Bot ")
-	token = strings.TrimPrefix(token, "Bearer ")
+	if len(token) == 0 {
+		return nil, errors.New("token required")
+	}
+
+	if parts := strings.SplitN(token, " ", 2); strings.ToLower(parts[0]) == "bot" {
+		slog.Info("NewRestClient: token appears to be a bot token with 'Bot' prefix; the library will add this prefix automatically, so you should pass the raw token without 'Bot '")
+		if len(parts) == 2 {
+			token = strings.TrimSpace(parts[1])
+		} else {
+			token = ""
+		}
+	}
+
 	if token == "" {
 		return nil, errors.New("go-discord-wrapper: token must not be empty")
 	}

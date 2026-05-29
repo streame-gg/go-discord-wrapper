@@ -185,6 +185,15 @@ func NewClient(token string, intents discord.Intent, opts ...options.Option) (*C
 		cacheStores = 0
 	}
 
+	if parts := strings.SplitN(token, " ", 2); strings.ToLower(parts[0]) == "bot" {
+		slog.Info("NewClient: token appears to be a bot token with 'Bot' prefix; the library will add this prefix automatically, so you should pass the raw token without 'Bot '")
+		if len(parts) == 2 {
+			token = strings.TrimSpace(parts[1])
+		} else {
+			token = ""
+		}
+	}
+
 	c := &Client{
 		token:               &token,
 		APIVersion:          util.PointerOf(cfg.APIVersion),
