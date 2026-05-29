@@ -47,13 +47,13 @@ func (p SearchGuildMembersParams) toQuery() string {
 }
 
 type ModifyGuildMemberParams struct {
-	Nick                       *string             `json:"nick,omitempty"`
-	Roles                      []discord.Snowflake `json:"roles,omitempty"`
-	Mute                       *bool               `json:"mute,omitempty"`
-	Deaf                       *bool               `json:"deaf,omitempty"`
-	ChannelID                  *discord.Snowflake  `json:"channel_id,omitempty"`
-	CommunicationDisabledUntil *string             `json:"communication_disabled_until,omitempty"`
-	Flags                      *int                `json:"flags,omitempty"`
+	Nick                       *string              `json:"nick,omitempty"`
+	Roles                      *[]discord.Snowflake `json:"roles,omitempty"`
+	Mute                       *bool                `json:"mute,omitempty"`
+	Deaf                       *bool                `json:"deaf,omitempty"`
+	ChannelID                  *discord.Snowflake   `json:"channel_id,omitempty"`
+	CommunicationDisabledUntil *string              `json:"communication_disabled_until,omitempty"`
+	Flags                      *int                 `json:"flags,omitempty"`
 }
 
 type ModifyGuildMemberOptions struct {

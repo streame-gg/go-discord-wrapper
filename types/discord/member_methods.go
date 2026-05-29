@@ -17,7 +17,7 @@ var errMemberNoUserID = errors.New("discord: GuildMember.UserID is not set — e
 // MemberEditOptions configures GuildMember.Edit.
 type MemberEditOptions struct {
 	Nick                       *string
-	Roles                      []Snowflake
+	Roles                      *[]Snowflake
 	Mute                       *bool
 	Deaf                       *bool
 	ChannelID                  *Snowflake

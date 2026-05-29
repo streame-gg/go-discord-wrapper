@@ -3,6 +3,7 @@ package discord
 import (
 	"math"
 	"testing"
+	"time"
 )
 
 func TestSnowflakeFromInt(t *testing.T) {
@@ -56,5 +57,44 @@ func TestSnowflakeFromInt_NegativeFailsValidate(t *testing.T) {
 	_, err := SnowflakeFromInt(-1)
 	if err == nil {
 		t.Error("expected Validate() to return an error for negative Snowflake, got nil")
+	}
+}
+
+func TestSnowflakeTime(t *testing.T) {
+	cases := []struct {
+		name string
+		id   Snowflake
+		want time.Time
+	}{
+		{
+			// Discord epoch itself: timestamp bits = 0 → 2015-01-01 00:00:00 UTC
+			name: "discord epoch",
+			id:   Snowflake(0),
+			want: time.Date(2015, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			// Real snowflake: (754246997266923571 >> 22) + 1420070400000 = 1599896897380 ms → 2020-09-12 06:08:17.380 UTC
+			name: "real snowflake",
+			id:   Snowflake(754246997266923571),
+			want: time.UnixMilli(1599896897380).UTC(),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.id.Time()
+			if !got.Equal(tc.want) {
+				t.Errorf("Snowflake(%d).Time() = %v, want %v", tc.id, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestUserCreatedAt(t *testing.T) {
+	u := &User{ID: Snowflake(175928847299117063)}
+	id := Snowflake(175928847299117063)
+	want := id.Time()
+	got := u.CreatedAt()
+	if !got.Equal(want) {
+		t.Errorf("User.CreatedAt() = %v, want %v", got, want)
 	}
 }
