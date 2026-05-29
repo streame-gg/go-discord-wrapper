@@ -67,8 +67,8 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 		}
 	}()
 
-	_ = c.SetWriteDeadline(time.Time{})
-	c.SetReadLimit(4 * 1024 * 1024) // 4 MiB — protects against rogue/compromised endpoint flooding RAM
+	_ = c.SetReadDeadline(time.Now().Add(30 * time.Second)) // don't block forever waiting for the initial HELLO
+	c.SetReadLimit(4 * 1024 * 1024)                         // 4 MiB — protects against rogue/compromised endpoint flooding RAM
 
 	c.SetPongHandler(func(string) error {
 		bot.Logger.Debug("Received pong from Discord")
@@ -76,6 +76,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 	})
 
 	_, message, err := c.ReadMessage()
+	_ = c.SetReadDeadline(time.Time{}) // clear deadline; listenWebsocket manages it per-message from here
 	if err != nil {
 		return nil, err
 	}
@@ -102,14 +103,14 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 	bot.Logger.Info("Connected to Discord gateway", slog.Float64("heartbeatIntervalMs", hello.HeartbeatInterval))
 
 	if isReconnect && lastEventNum != nil && sessionID != nil {
-		if err := ws.writeJSON(map[string]interface{}{
+		if err := ws.writeJSONDeadline(map[string]interface{}{
 			"op": 6,
 			"d": map[string]interface{}{
 				"token":      *bot.token,
 				"session_id": *sessionID,
 				"seq":        *lastEventNum,
 			},
-		}); err != nil {
+		}, 30*time.Second); err != nil {
 			return nil, err
 		}
 	} else {
@@ -130,7 +131,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 			data["d"].(map[string]interface{})["shard"] = []int{bot.Sharding.ShardID, bot.Sharding.TotalShards}
 		}
 
-		if err := ws.writeJSON(data); err != nil {
+		if err := ws.writeJSONDeadline(data, 30*time.Second); err != nil {
 			return nil, err
 		}
 	}
