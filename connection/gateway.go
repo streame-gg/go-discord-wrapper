@@ -1913,7 +1913,11 @@ func (d *Client) emitConnect() {
 	copy(handlers, d.onConnect)
 	d.clientEventsMu.RUnlock()
 	for _, h := range handlers {
-		go h(d)
+		d.dispatchWg.Add(1)
+		go func() {
+			defer d.dispatchWg.Done()
+			h(d)
+		}()
 	}
 }
 
@@ -1923,7 +1927,11 @@ func (d *Client) emitDisconnect(err error) {
 	copy(handlers, d.onDisconnect)
 	d.clientEventsMu.RUnlock()
 	for _, h := range handlers {
-		go h(d, err)
+		d.dispatchWg.Add(1)
+		go func() {
+			defer d.dispatchWg.Done()
+			h(d, err)
+		}()
 	}
 }
 
@@ -1933,7 +1941,11 @@ func (d *Client) emitReconnect() {
 	copy(handlers, d.onReconnect)
 	d.clientEventsMu.RUnlock()
 	for _, h := range handlers {
-		go h(d)
+		d.dispatchWg.Add(1)
+		go func() {
+			defer d.dispatchWg.Done()
+			h(d)
+		}()
 	}
 }
 
@@ -1943,6 +1955,10 @@ func (d *Client) emitPacketError(err error) {
 	copy(handlers, d.onPacketError)
 	d.clientEventsMu.RUnlock()
 	for _, h := range handlers {
-		go h(d, err)
+		d.dispatchWg.Add(1)
+		go func() {
+			defer d.dispatchWg.Done()
+			h(d, err)
+		}()
 	}
 }
