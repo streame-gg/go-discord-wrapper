@@ -85,6 +85,9 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 	if err := json.Unmarshal(message, &payload); err != nil {
 		return nil, err
 	}
+	if payload.Op != discord.PayloadOpCodeHello {
+		return nil, fmt.Errorf("expected HELLO payload after connecting to gateway, got %d", payload.Op)
+	}
 
 	var hello discord.HelloPayloadData
 	if err := json.Unmarshal(payload.D, &hello); err != nil {
