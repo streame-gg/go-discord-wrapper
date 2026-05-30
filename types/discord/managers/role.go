@@ -25,7 +25,7 @@ func (m *roleManager) Cache() *collection.Collection[discord.Snowflake, *discord
 
 func (m *roleManager) Get(roleID discord.Snowflake) (*discord.Role, bool) {
 	if c := m.client.ClientCache(); c != nil {
-		return c.Roles().Get(roleID)
+		return c.Roles().GetByGuild(m.guildID).Get(roleID)
 	}
 	return nil, false
 }
