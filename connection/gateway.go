@@ -433,12 +433,23 @@ func (d *Client) ReplyToShard(original options.ShardMessage, responseType string
 // This is a low-level building block used by sharding.RequestAll. Prefer that
 // helper unless you need custom aggregation logic.
 func (d *Client) SubscribeShardResponse(responseType, corrID string) (<-chan options.ShardMessage, func()) {
-	ch := make(chan options.ShardMessage, d.Coordinator.TotalShards())
+	bufSize := 1
+	if d.Coordinator != nil {
+		bufSize = d.Coordinator.TotalShards()
+	}
+	ch := make(chan options.ShardMessage, bufSize)
 	key := responseType + ":" + corrID
 
 	d.pendingShardReqsMu.Lock()
 	if d.pendingShardReqs == nil {
 		d.pendingShardReqs = make(map[string]chan options.ShardMessage)
+	}
+	if _, exists := d.pendingShardReqs[key]; exists {
+		// A subscription for this key is already active; don't overwrite it.
+		// The returned channel will never receive messages — the caller used a
+		// duplicate corrID, which is a programming error.
+		d.pendingShardReqsMu.Unlock()
+		return ch, func() {}
 	}
 	d.pendingShardReqs[key] = ch
 	d.pendingShardReqsMu.Unlock()
