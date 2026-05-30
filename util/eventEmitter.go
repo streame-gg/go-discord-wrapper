@@ -59,14 +59,34 @@ func (e *EventEmitter[K, H]) Off(event K, id int) bool {
 // Handlers returns all handlers registered for event. One-shot handlers (registered
 // via Once) are removed from the emitter atomically so they fire exactly once.
 func (e *EventEmitter[K, H]) Handlers(event K) []H {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
+	// Fast path: read lock suffices when there are no once-handlers to remove.
+	e.mu.RLock()
 	entries := e.handlers[event]
 	if len(entries) == 0 {
+		e.mu.RUnlock()
 		return nil
 	}
+	hasOnce := false
+	for _, entry := range entries {
+		if entry.once {
+			hasOnce = true
+			break
+		}
+	}
+	if !hasOnce {
+		out := make([]H, len(entries))
+		for i, entry := range entries {
+			out[i] = entry.handler
+		}
+		e.mu.RUnlock()
+		return out
+	}
+	e.mu.RUnlock()
 
+	// Slow path: need a write lock to remove once-handlers.
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	entries = e.handlers[event]
 	out := make([]H, len(entries))
 	keep := entries[:0]
 	for i, entry := range entries {

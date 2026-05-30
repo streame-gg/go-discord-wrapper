@@ -20,7 +20,7 @@ type Message struct {
 	hClient              EntityClient
 	Activity             *Activity                   `json:"activity,omitempty"`
 	Application          *Application                `json:"application,omitempty"`
-	ApplicationID        *string                     `json:"application_id,omitempty"`
+	ApplicationID        *Snowflake                  `json:"application_id,omitempty"`
 	Attachments          []Attachment                `json:"attachments,omitempty"`
 	Author               *User                       `json:"author,omitempty"`
 	Call                 *Call                       `json:"call,omitempty"`
@@ -52,7 +52,7 @@ type Message struct {
 	Timestamp            *time.Time                  `json:"timestamp,omitempty"`
 	TTS                  bool                        `json:"tts"`
 	Type                 MessageType                 `json:"type"`
-	WebhookID            *string                     `json:"webhook_id,omitempty"`
+	WebhookID            *Snowflake                  `json:"webhook_id,omitempty"`
 }
 
 func (m *Message) UnmarshalJSON(data []byte) error {
