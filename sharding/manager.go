@@ -42,6 +42,8 @@ type ShardManager struct {
 	rest         *api.RestClient
 	clients      []*connection.Client
 	loginTimeout time.Duration
+
+	clientMu sync.Mutex
 }
 
 // shardErr pairs a shard ID with the error returned during startup.
@@ -187,7 +189,9 @@ func (m *ShardManager) startOneShard(id int) error {
 	if err := client.Login(ctx); err != nil {
 		return fmt.Errorf("login: %w", err)
 	}
+	m.clientMu.Lock()
 	m.clients[id] = client
+	m.clientMu.Unlock()
 	return nil
 }
 
@@ -217,20 +221,26 @@ func (m *ShardManager) Shard(shardID int) *connection.Client {
 	if shardID < 0 || shardID >= m.total {
 		return nil
 	}
+	m.clientMu.Lock()
+	defer m.clientMu.Unlock()
 	return m.clients[shardID]
 }
 
 // Shards returns a snapshot of all shard clients in ascending shard-ID order.
 // Entries are nil for shards that have not yet been started.
 func (m *ShardManager) Shards() []*connection.Client {
+	m.clientMu.Lock()
 	out := make([]*connection.Client, m.total)
 	copy(out, m.clients)
+	m.clientMu.Unlock()
 	return out
 }
 
 // Shutdown disconnects every shard and closes the coordinator.
 // All shards are shut down even if one returns an error; all errors are joined.
 func (m *ShardManager) Shutdown() error {
+	m.clientMu.Lock()
+	defer m.clientMu.Unlock()
 	var errs []error
 	for _, c := range m.clients {
 		if c != nil {
