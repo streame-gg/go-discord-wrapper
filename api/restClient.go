@@ -161,21 +161,18 @@ func (c *RestClient) OnEvent(eventType RestEventType, handler RestEventHandler) 
 	c.eventEmitter.On(eventType, handler)
 }
 
-// redactRequestSecrets returns a clone of req with the webhook token replaced by
-// "[REDACTED]" so that lifecycle hook payloads never expose credentials.
-// Paths of the form /webhooks/{id}/{token}/... are detected by structure.
+// redactRequestSecrets returns a clone of req with credentials removed so that
+// lifecycle hook payloads never expose secrets. It redacts:
+//   - The Authorization header (contains the bot token)
+//   - Webhook/interaction tokens embedded in URL paths
 func redactRequestSecrets(req *http.Request) *http.Request {
 	if req == nil || req.URL == nil {
 		return req
 	}
 
 	parts := strings.Split(strings.Trim(req.URL.Path, "/"), "/")
-	if len(parts) == 0 {
-		return req
-	}
 
 	tokenIndex := -1
-
 	for i, part := range parts {
 		switch part {
 		case "webhooks":
@@ -189,25 +186,30 @@ func redactRequestSecrets(req *http.Request) *http.Request {
 				tokenIndex = i + 2
 			}
 		}
-
 		if tokenIndex != -1 {
 			break
 		}
 	}
 
-	if tokenIndex == -1 {
+	hasAuth := req.Header.Get("Authorization") != ""
+	if tokenIndex == -1 && !hasAuth {
 		return req
 	}
 
 	clone := req.Clone(req.Context())
-	urlCopy := *req.URL
 
-	redacted := make([]string, len(parts))
-	copy(redacted, parts)
-	redacted[tokenIndex] = "[REDACTED]"
+	if hasAuth {
+		clone.Header.Set("Authorization", "[REDACTED]")
+	}
 
-	urlCopy.Path = "/" + strings.Join(redacted, "/")
-	clone.URL = &urlCopy
+	if tokenIndex != -1 {
+		urlCopy := *req.URL
+		redacted := make([]string, len(parts))
+		copy(redacted, parts)
+		redacted[tokenIndex] = "[REDACTED]"
+		urlCopy.Path = "/" + strings.Join(redacted, "/")
+		clone.URL = &urlCopy
+	}
 
 	return clone
 }

@@ -100,7 +100,9 @@ func buildMultipartMessage(payload []byte, files []discord.MessageFile) (*bytes.
 			return nil, "", err
 		}
 	}
-	w.Close()
+	if err := w.Close(); err != nil {
+		return nil, "", err
+	}
 	return &buf, w.FormDataContentType(), nil
 }
 

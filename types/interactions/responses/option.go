@@ -2,6 +2,7 @@ package responses
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -55,8 +56,10 @@ func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) 
 				t.Value = &v
 			}
 		default:
-			var v T
-			v = raw.Value.(T)
+			v, ok := raw.Value.(T)
+			if !ok {
+				return fmt.Errorf("unexpected value type %T for option type %v", raw.Value, t.Type)
+			}
 			t.Value = &v
 		}
 	}
