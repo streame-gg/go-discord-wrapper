@@ -159,6 +159,7 @@ func (m *ShardManager) Start() error {
 					_ = c.Shutdown()
 				}
 			}
+			_ = m.coordinator.Close()
 			return fmt.Errorf("sharding: bucket starting at shard %d failed: %w",
 				bucketStart, errors.Join(bucketErrs...))
 		}
