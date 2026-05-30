@@ -287,11 +287,10 @@ func (d *Client) removeRoleFromCache(guildID, roleID discord.Snowflake) {
 	d.Cache.Roles().Delete(roleID)
 
 	if d.cacheStoreEnabled(cache.CategoryMembers) {
-		roleStr := roleID.String()
 		for _, m := range d.Cache.Members().AllInGuild(guildID).Values() {
 			found := false
 			for _, r := range m.Roles {
-				if r.String() == roleStr {
+				if r == roleID {
 					found = true
 					break
 				}
@@ -302,7 +301,7 @@ func (d *Client) removeRoleFromCache(guildID, roleID discord.Snowflake) {
 			updated := *m
 			filtered := make([]discord.Snowflake, 0, len(m.Roles)-1)
 			for _, r := range m.Roles {
-				if r.String() != roleStr {
+				if r != roleID {
 					filtered = append(filtered, r)
 				}
 			}

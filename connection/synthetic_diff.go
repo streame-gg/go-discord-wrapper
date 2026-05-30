@@ -219,13 +219,16 @@ func deriveGuildMemberSyntheticEvents(ev *events.GuildMemberUpdateEvent) []event
 }
 
 func nickDiffers(a, b *string) bool {
-	if a == nil && b == nil {
-		return false
+	// nil and "" both represent "no nickname"; treat them as equal.
+	aStr := ""
+	if a != nil {
+		aStr = *a
 	}
-	if a == nil || b == nil {
-		return true
+	bStr := ""
+	if b != nil {
+		bStr = *b
 	}
-	return *a != *b
+	return aStr != bStr
 }
 
 // derivePresenceSyntheticEvents derives 0–4 synthetic events from a
