@@ -125,6 +125,12 @@ type ThreadMetadata struct {
 	Invitable           *bool      `json:"invitable,omitempty"`
 }
 
+func (c *Channel) IsThread() bool {
+	return c.Type == ChannelTypeAnnouncementThread ||
+		c.Type == ChannelTypePublicThread ||
+		c.Type == ChannelTypePrivateThread
+}
+
 // FollowedChannel is returned when following an announcement channel.
 type FollowedChannel struct {
 	ChannelID Snowflake `json:"channel_id"`

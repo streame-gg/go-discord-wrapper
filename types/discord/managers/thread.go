@@ -63,7 +63,5 @@ func (m *threadManager) Size() int {
 }
 
 func isThread(ch *discord.Channel) bool {
-	return ch.Type == discord.ChannelTypeAnnouncementThread ||
-		ch.Type == discord.ChannelTypePublicThread ||
-		ch.Type == discord.ChannelTypePrivateThread
+	return ch.IsThread()
 }

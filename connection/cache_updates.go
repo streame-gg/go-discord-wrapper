@@ -336,7 +336,7 @@ func (d *Client) trackChannel(channel *discord.Channel) {
 		}
 	}
 
-	if channel.GuildID == nil {
+	if channel.GuildID == nil || channel.IsThread() {
 		return
 	}
 
