@@ -150,22 +150,36 @@ func (c *RedisCache) k(parts ...string) string {
 	return s
 }
 
-// setJSON JSON-encodes v and stores it under key with an optional TTL.
-func (c *RedisCache) setJSON(key string, v any, ttl time.Duration) error {
+// setJSONAndIndex atomically stores key → JSON and adds id to the Redis SET at idx
+// via MULTI/EXEC, eliminating the window where the value exists but the index does
+// not (or vice versa) when either command fails.
+func (c *RedisCache) setJSONAndIndex(ctx context.Context, key string, v any, ttl time.Duration, idx, id string) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
 	}
-	return c.client.Set(c.ctx, key, b, ttl).Err()
+	_, err = c.client.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+		pipe.Set(ctx, key, b, ttl)
+		pipe.SAdd(ctx, idx, id)
+		return nil
+	})
+	return err
 }
 
-// setJSONCtx is like setJSON but uses the provided context.
-func (c *RedisCache) setJSONCtx(ctx context.Context, key string, v any, ttl time.Duration) error {
+// setJSONAndIndexMap atomically stores key → JSON, adds id to the Redis SET at idx,
+// and writes mapKey → guildIDStr for reverse lookup, all via MULTI/EXEC.
+func (c *RedisCache) setJSONAndIndexMap(ctx context.Context, key string, v any, ttl time.Duration, idx, id, mapKey, guildIDStr string) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
 	}
-	return c.client.Set(ctx, key, b, ttl).Err()
+	_, err = c.client.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+		pipe.Set(ctx, key, b, ttl)
+		pipe.SAdd(ctx, idx, id)
+		pipe.Set(ctx, mapKey, guildIDStr, ttl)
+		return nil
+	})
+	return err
 }
 
 // getJSON fetches key and JSON-decodes the result into v.
@@ -284,8 +298,7 @@ func (s *redisGuildStore) Set(guild *discord.Guild) {
 	s.c.enqueueWrite(func() {
 		ctx, cancel := s.c.callCtx()
 		defer cancel()
-		_ = s.c.setJSONCtx(ctx, key, guild, ttl)
-		_ = s.c.client.SAdd(ctx, idx, idStr).Err()
+		_ = s.c.setJSONAndIndex(ctx, key, guild, ttl, idx, idStr)
 	})
 }
 
@@ -367,8 +380,7 @@ func (s *redisChannelStore) Set(ch *discord.Channel) {
 	s.c.enqueueWrite(func() {
 		ctx, cancel := s.c.callCtx()
 		defer cancel()
-		_ = s.c.setJSONCtx(ctx, key, ch, ttl)
-		_ = s.c.client.SAdd(ctx, idx, idStr).Err()
+		_ = s.c.setJSONAndIndex(ctx, key, ch, ttl, idx, idStr)
 	})
 }
 
@@ -449,8 +461,7 @@ func (s *redisUserStore) Set(user *discord.User) {
 	s.c.enqueueWrite(func() {
 		ctx, cancel := s.c.callCtx()
 		defer cancel()
-		_ = s.c.setJSONCtx(ctx, key, user, ttl)
-		_ = s.c.client.SAdd(ctx, idx, idStr).Err()
+		_ = s.c.setJSONAndIndex(ctx, key, user, ttl, idx, idStr)
 	})
 }
 
@@ -531,8 +542,7 @@ func (s *redisMemberStore) Set(guildID discord.Snowflake, member *discord.GuildM
 	s.c.enqueueWrite(func() {
 		ctx, cancel := s.c.callCtx()
 		defer cancel()
-		_ = s.c.setJSONCtx(ctx, key, member, ttl)
-		_ = s.c.client.SAdd(ctx, gIdx, uidStr).Err()
+		_ = s.c.setJSONAndIndex(ctx, key, member, ttl, gIdx, uidStr)
 	})
 }
 
@@ -651,9 +661,7 @@ func (s *redisRoleStore) Set(guildID discord.Snowflake, role *discord.Role) {
 	s.c.enqueueWrite(func() {
 		ctx, cancel := s.c.callCtx()
 		defer cancel()
-		_ = s.c.setJSONCtx(ctx, key, role, ttl)
-		_ = s.c.client.SAdd(ctx, idx, roleIDStr).Err()
-		_ = s.c.client.Set(ctx, mapKey, gIDStr, ttl).Err()
+		_ = s.c.setJSONAndIndexMap(ctx, key, role, ttl, idx, roleIDStr, mapKey, gIDStr)
 	})
 }
 
@@ -818,8 +826,7 @@ func (s *redisVoiceStateStore) Set(guildID discord.Snowflake, state *discord.Voi
 	s.c.enqueueWrite(func() {
 		ctx, cancel := s.c.callCtx()
 		defer cancel()
-		_ = s.c.setJSONCtx(ctx, key, state, ttl)
-		_ = s.c.client.SAdd(ctx, idx, uidStr).Err()
+		_ = s.c.setJSONAndIndex(ctx, key, state, ttl, idx, uidStr)
 	})
 }
 
@@ -982,9 +989,7 @@ func (s *redisSoundboardStore) Set(guildID discord.Snowflake, sound *discord.Sou
 	s.c.enqueueWrite(func() {
 		ctx, cancel := s.c.callCtx()
 		defer cancel()
-		_ = s.c.setJSONCtx(ctx, key, sound, ttl)
-		_ = s.c.client.SAdd(ctx, idx, soundIDStr).Err()
-		_ = s.c.client.Set(ctx, mapKey, gIDStr, ttl).Err()
+		_ = s.c.setJSONAndIndexMap(ctx, key, sound, ttl, idx, soundIDStr, mapKey, gIDStr)
 	})
 }
 
@@ -1134,9 +1139,7 @@ func (s *redisScheduledEventStore) Set(event *discord.GuildScheduledEvent) {
 	s.c.enqueueWrite(func() {
 		ctx, cancel := s.c.callCtx()
 		defer cancel()
-		_ = s.c.setJSONCtx(ctx, key, event, ttl)
-		_ = s.c.client.SAdd(ctx, idx, eventIDStr).Err()
-		_ = s.c.client.Set(ctx, mapKey, gIDStr, ttl).Err()
+		_ = s.c.setJSONAndIndexMap(ctx, key, event, ttl, idx, eventIDStr, mapKey, gIDStr)
 	})
 }
 
@@ -1263,9 +1266,7 @@ func (s *redisStageInstanceStore) Set(instance *discord.StageInstance) {
 	s.c.enqueueWrite(func() {
 		ctx, cancel := s.c.callCtx()
 		defer cancel()
-		_ = s.c.setJSONCtx(ctx, key, instance, ttl)
-		_ = s.c.client.SAdd(ctx, idx, instanceIDStr).Err()
-		_ = s.c.client.Set(ctx, mapKey, gIDStr, ttl).Err()
+		_ = s.c.setJSONAndIndexMap(ctx, key, instance, ttl, idx, instanceIDStr, mapKey, gIDStr)
 	})
 }
 
@@ -1392,9 +1393,7 @@ func (s *redisEmojiStore) Set(guildID discord.Snowflake, emoji *discord.Emoji) {
 	s.c.enqueueWrite(func() {
 		ctx, cancel := s.c.callCtx()
 		defer cancel()
-		_ = s.c.setJSONCtx(ctx, key, emoji, ttl)
-		_ = s.c.client.SAdd(ctx, idx, emojiIDStr).Err()
-		_ = s.c.client.Set(ctx, mapKey, gIDStr, ttl).Err()
+		_ = s.c.setJSONAndIndexMap(ctx, key, emoji, ttl, idx, emojiIDStr, mapKey, gIDStr)
 	})
 }
 
@@ -1544,9 +1543,7 @@ func (s *redisStickerStore) Set(guildID discord.Snowflake, sticker *discord.Stic
 	s.c.enqueueWrite(func() {
 		ctx, cancel := s.c.callCtx()
 		defer cancel()
-		_ = s.c.setJSONCtx(ctx, key, sticker, ttl)
-		_ = s.c.client.SAdd(ctx, idx, stickerIDStr).Err()
-		_ = s.c.client.Set(ctx, mapKey, gIDStr, ttl).Err()
+		_ = s.c.setJSONAndIndexMap(ctx, key, sticker, ttl, idx, stickerIDStr, mapKey, gIDStr)
 	})
 }
 
@@ -1694,8 +1691,7 @@ func (s *redisPresenceStore) Set(presence *discord.Presence) {
 	s.c.enqueueWrite(func() {
 		ctx, cancel := s.c.callCtx()
 		defer cancel()
-		_ = s.c.setJSONCtx(ctx, key, presence, ttl)
-		_ = s.c.client.SAdd(ctx, idx, uidStr).Err()
+		_ = s.c.setJSONAndIndex(ctx, key, presence, ttl, idx, uidStr)
 	})
 }
 
