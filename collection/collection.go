@@ -486,6 +486,25 @@ func (c *Collection[K, V]) Sweep(fn func(V) bool) int {
 	return removed
 }
 
+// SweepKeys removes items where fn returns true. Returns the keys of removed
+// items. Use instead of Sweep when the caller needs to know which keys were
+// deleted (e.g. to update an external index).
+func (c *Collection[K, V]) SweepKeys(fn func(V) bool) []K {
+	var removed []K
+	newKeys := make([]K, 0, len(c.keys))
+	for _, k := range c.keys {
+		v := c.items[k]
+		if fn(v) {
+			delete(c.items, k)
+			removed = append(removed, k)
+		} else {
+			newKeys = append(newKeys, k)
+		}
+	}
+	c.keys = newKeys
+	return removed
+}
+
 // Concat returns a new Collection containing all items from c and others.
 // On duplicate keys, later collections override earlier.
 func (c *Collection[K, V]) Concat(others ...*Collection[K, V]) *Collection[K, V] {

@@ -15,10 +15,12 @@ type MemMemberStore struct {
 
 // NewMemberStore creates a MemMemberStore with the given options.
 func NewMemberStore(opts StoreOptions) *MemMemberStore {
-	return &MemMemberStore{
+	s := &MemMemberStore{
 		base:  NewBaseStore[MemberKey, *discord.GuildMember](opts),
 		index: newCompositeGuildIndex(),
 	}
+	s.base.onEvict = func(k MemberKey) { s.index.remove(k.GuildID, k.UserID) }
+	return s
 }
 
 func (s *MemMemberStore) Set(guildID discord.Snowflake, member *discord.GuildMember) {

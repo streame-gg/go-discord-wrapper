@@ -16,10 +16,12 @@ type MemPresenceStore struct {
 
 // NewPresenceStore creates a MemPresenceStore with the given options.
 func NewPresenceStore(opts StoreOptions) *MemPresenceStore {
-	return &MemPresenceStore{
+	s := &MemPresenceStore{
 		base:  NewBaseStore[PresenceKey, *discord.Presence](opts),
 		index: newCompositeGuildIndex(),
 	}
+	s.base.onEvict = func(k PresenceKey) { s.index.remove(k.GuildID, k.UserID) }
+	return s
 }
 
 // Set stores the presence. GuildID and UserID are extracted from the presence.
