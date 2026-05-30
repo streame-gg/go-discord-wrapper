@@ -8,6 +8,14 @@ import (
 
 // ── Guild sub-manager interfaces ──────────────────────────────────────────────
 
+// Resolve contract (applies to all manager Resolve methods):
+// Accepted input types: the entity pointer (*T), a Snowflake, or a string
+// snowflake. Returns (nil, ErrNotConvertable) for any other type.
+// On a cache miss the return is (nil, nil) — not an error — which is
+// intentional: the caller must check the pointer before use. This is
+// intentionally distinct from ErrNotConvertable, which indicates an
+// unsupported input type. Use Get+Fetch when you need a guaranteed result.
+
 // MemberManager manages guild members for a single guild.
 type MemberManager interface {
 	Cache() *collection.Collection[Snowflake, *GuildMember]

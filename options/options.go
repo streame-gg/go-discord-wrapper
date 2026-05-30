@@ -236,7 +236,13 @@ func WithLogLevel(level slog.Level) Option {
 }
 
 // WithDisableCacheAutoPopulation disables automatic cache population from gateway
-// events. Use this when you want full control over what goes into the cache.
+// events entirely (sets CacheStores to 0). Use this when you want full control
+// over what goes into the cache.
+//
+// Order matters: this option resets CacheStores to 0, so it must not be
+// followed by WithCacheStores, and any preceding WithCacheStores call will be
+// overwritten. If you need to disable only specific stores, use
+// WithDisableCacheStore instead.
 func WithDisableCacheAutoPopulation() Option {
 	return func(c *Config) {
 		c.DisableCacheAutoPopulation = true
@@ -244,10 +250,15 @@ func WithDisableCacheAutoPopulation() Option {
 	}
 }
 
-// WithCacheStores sets the cache stores that are auto-populated from gateway events.
-// Pass a bitmask of cache.Category* values, for example:
+// WithCacheStores sets the exact set of stores that are auto-populated from
+// gateway events. Pass a bitmask of cache.Category* values:
 //
 //	options.WithCacheStores(cache.CategoryGuilds | cache.CategoryChannels)
+//
+// Order matters: this option re-enables auto-population (sets
+// DisableCacheAutoPopulation to false), so it overrides a preceding
+// WithDisableCacheAutoPopulation. Place WithCacheStores after any
+// WithDisableCacheAutoPopulation call if both are used.
 func WithCacheStores(stores cache.OverflowCategory) Option {
 	return func(c *Config) {
 		c.CacheStores = stores

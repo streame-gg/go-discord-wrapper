@@ -2,10 +2,16 @@ package events
 
 // eventFactories maps each EventType to a factory that returns a new zero-value
 // instance of the corresponding event struct. Populated via RegisterEvent.
+//
+// The map is written only during package init (via init() functions) and is
+// read-only after program startup. It is not protected by a mutex — calling
+// RegisterEvent after init() completes is a data race.
 var eventFactories = map[EventType]func() Event{}
 
 // RegisterEvent registers an event type so the gateway knows how to unmarshal
-// it. Call this from an init() function in your event file:
+// it. Must only be called from package init() functions, before any goroutine
+// reads eventFactories (i.e. before the gateway connects). Calling it after
+// startup is a data race.
 //
 //	func init() { events.RegisterEvent(MyEvent{}) }
 func RegisterEvent(e Event) {

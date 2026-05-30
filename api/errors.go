@@ -59,7 +59,7 @@ var (
 // Use errors.Is with the sentinel vars (ErrNotFound, ErrForbidden, etc.) for status checks,
 // or errors.As to access the full error detail:
 //
-//	var apiErr *api.APIError
+//	var apiErr *api.Error
 //	if errors.As(err, &apiErr) {
 //	    log.Printf("discord code %d: %s", apiErr.Code, apiErr.Message)
 //	}

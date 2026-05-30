@@ -17,21 +17,40 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Websocket wraps a single Discord gateway connection.
+// The exported fields below are read-only for external consumers; they are
+// written by the library under internal locks and must not be mutated directly.
+// Use the typed accessors on Client (e.g. Client.BotUser, Client.IsGuildUnavailable)
+// for safe concurrent access to gateway state.
 type Websocket struct {
+	// Connection is the underlying gorilla/websocket connection. Read-only;
+	// mutated by the library under wsMu.
 	Connection *websocket.Conn
 
+	// HeartbeatInterval is set from the Hello payload. Read-only after init.
 	HeartbeatInterval time.Duration
 
+	// LastHeartBeat is updated under heartbeatMu on every ACK. Do not read
+	// without holding heartbeatMu if exact accuracy is required.
 	LastHeartBeat *time.Time
 
+	// SessionID is the Discord session ID received in the READY payload.
+	// Updated under the Client's mu lock; treated as read-only externally.
 	SessionID *string
 
+	// LastEventNum is the sequence number of the most recent gateway event.
+	// Safe for concurrent use (atomic).
 	LastEventNum atomic.Pointer[int]
 
+	// ReconnectURL is the resume gateway URL from READY/RESUMED. Updated
+	// under the Client's mu lock; treated as read-only externally.
 	ReconnectURL *string
 
+	// Closed is closed when this Websocket instance's reader goroutine exits.
 	Closed chan struct{}
 
+	// Ready is closed when the first READY payload is processed on this
+	// connection. For cross-reconnect readiness use Client.Ready() instead.
 	Ready chan struct{}
 
 	writeMu              sync.Mutex

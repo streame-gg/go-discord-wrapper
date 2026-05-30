@@ -1,3 +1,12 @@
+// Package connection — cache update helpers.
+//
+// Note: cacheMember is the only helper that calls cacheStoreEnabled before
+// writing to the cache. All other helpers (cacheChannel, cacheGuild,
+// cacheUser, …) write unconditionally and rely on the caller having already
+// checked the relevant category flag before invoking them. This is
+// intentional: callers in gateway.go gate the entire block on
+// cacheStoreEnabled, so the individual helpers do not need to repeat the
+// check. Keep this invariant in mind when adding new helpers.
 package connection
 
 import (

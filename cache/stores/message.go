@@ -306,6 +306,8 @@ func (s *MemMessageStore) Get(channelID, messageID discord.Snowflake) (*discord.
 	return &cp, true
 }
 
+// Update replaces a cached message in place. Silent no-op if the channel ring
+// does not exist or the message ID is not in the ring (the message is not added).
 func (s *MemMessageStore) Update(msg *discord.Message) {
 	if !s.IsEnabled() || msg == nil {
 		return

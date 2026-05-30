@@ -78,6 +78,10 @@ func (d *Client) OnPacketError(handler func(*Client, error)) {
 
 // ── Typed Discord event helpers ───────────────────────────────────────────────
 
+// The helpers below wrap OnEvent with a statically-typed function signature,
+// so toEventHandler's reflection-based validation always succeeds.  The error
+// return from OnEvent is therefore safely discarded with `_ =`.
+
 func (d *Client) OnReady(h func(*Client, *events.ReadyEvent)) {
 	_ = d.OnEvent(events.EventReady, h)
 }
@@ -419,9 +423,15 @@ func toEventHandler(handler interface{}, eventName events.EventType) (EventHandl
 	return func(session *Client, event events.Event) {
 		eventValue := reflect.ValueOf(event)
 		if !eventValue.IsValid() || !eventValue.Type().AssignableTo(eventType) {
+			// The handler's second argument type does not match the dispatched
+			// event. This can only happen if the handler was registered via the
+			// raw OnEvent API with a mismatched type. The handler is silently
+			// skipped; a warning is logged so the caller can diagnose the issue.
 			session.Logger.Warn(
-				"Failed to cast event to expected type for event",
+				"handler skipped: event type mismatch",
 				slog.Any("event", event), slog.Any("eventName", eventName),
+				slog.String("want", eventType.String()),
+				slog.String("got", reflect.TypeOf(event).String()),
 			)
 			return
 		}

@@ -297,6 +297,10 @@ type RoleStore interface {
 type MessageStore interface {
 	Add(msg *discord.Message)
 	Get(channelID, messageID discord.Snowflake) (*discord.Message, bool)
+	// Update replaces the stored copy of msg in its channel ring. If the
+	// channel ring does not exist or msg.ID is absent from it, Update is a
+	// silent no-op — the message is not inserted. Use Add to populate the
+	// cache for the first time.
 	Update(msg *discord.Message)
 	Delete(channelID, messageID discord.Snowflake)
 	DeleteBulk(channelID discord.Snowflake, ids []discord.Snowflake)

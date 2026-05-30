@@ -90,6 +90,10 @@ type Client struct {
 	// cacheAutoPopulate mirrors options.Config.CacheStores, zero disables auto-population.
 	cacheAutoPopulate cache.OverflowCategory
 
+	// UnavailableGuilds tracks guild IDs that arrived as unavailable in READY
+	// or via GUILD_DELETE with unavailable=true. All internal accesses are
+	// protected by the Client's mu lock. Direct external reads race with
+	// gateway events — use IsGuildUnavailable instead.
 	UnavailableGuilds map[discord.Snowflake]struct{}
 
 	// user is the bot's own user object received in the READY payload.
@@ -97,16 +101,25 @@ type Client struct {
 	user   *discord.User
 	userMu sync.RWMutex
 
+	// Sharding holds the shard identity (ShardID / TotalShards) when the
+	// client was started with sharding enabled. Read-only after NewClient;
+	// do not mutate at runtime.
 	Sharding *options.Sharding
 
+	// RestClient is the underlying REST client. It is set once during
+	// NewClient and is read-only after that point. Setting it to nil at
+	// runtime will cause nil-pointer panics in any code path that calls
+	// REST methods.
 	RestClient *api.RestClient
 
 	// Coordinator handles inter-shard message routing.
 	// Nil when sharding is not configured or no coordinator was provided.
+	// Setting it to nil after Login races with concurrent shard traffic.
 	Coordinator options.ShardCoordinator
 
 	// Cache stores Discord entities populated automatically from gateway events.
 	// Nil when no cache was configured via options.WithCache.
+	// Setting it to nil after Login races with concurrent cache writes.
 	Cache cache.Cache
 
 	// channelIndexMu protects channelsByGuild and guildByChannel.
@@ -262,6 +275,10 @@ func (d *Client) Ready() <-chan struct{} {
 
 // BotUser returns the bot's own User object as received in the READY event.
 // Returns nil before the first READY. Safe for concurrent use.
+//
+// The returned pointer is the library's internal copy; do not mutate the
+// struct it points to, as changes would be visible to any concurrent caller.
+// Copy the value (*user = *client.BotUser()) if you need a mutable snapshot.
 func (d *Client) BotUser() *discord.User {
 	d.userMu.RLock()
 	defer d.userMu.RUnlock()

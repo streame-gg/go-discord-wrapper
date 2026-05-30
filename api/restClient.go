@@ -50,6 +50,10 @@ type RestEvent struct {
 type RestEventHandler func(*RestClient, RestEvent)
 
 type RestClient struct {
+	// BaseURL is the root of the Discord REST API (default: "https://discord.com/api").
+	// It is read by buildURL on every request without a lock. If you need to
+	// override it, do so before the client is used for the first time; mutating
+	// it concurrently with in-flight requests is a data race.
 	BaseURL string
 	token   string
 	Version discord.APIVersion
