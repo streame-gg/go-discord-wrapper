@@ -19,6 +19,56 @@ func nilRedisCache() *rediscache.RedisCache {
 	return rediscache.NewRedisCache(client, cache.Options{})
 }
 
+// TestBug161_StoreAccessorsReturnSingletons verifies that each Xxx() accessor
+// returns the same pointer on every call.
+//
+// Root cause: every call to Guilds(), Channels(), etc. allocated a new
+// &redisXxxStore{c} on the heap, causing measurable GC pressure on high-traffic
+// bots. The fix stores pre-allocated singletons and returns them directly.
+func TestBug161_StoreAccessorsReturnSingletons(t *testing.T) {
+	c := nilRedisCache()
+
+	if c.Guilds() != c.Guilds() {
+		t.Error("Bug161: Guilds() returns a different pointer on each call")
+	}
+	if c.Channels() != c.Channels() {
+		t.Error("Bug161: Channels() returns a different pointer on each call")
+	}
+	if c.Users() != c.Users() {
+		t.Error("Bug161: Users() returns a different pointer on each call")
+	}
+	if c.Members() != c.Members() {
+		t.Error("Bug161: Members() returns a different pointer on each call")
+	}
+	if c.Roles() != c.Roles() {
+		t.Error("Bug161: Roles() returns a different pointer on each call")
+	}
+	if c.Messages() != c.Messages() {
+		t.Error("Bug161: Messages() returns a different pointer on each call")
+	}
+	if c.VoiceStates() != c.VoiceStates() {
+		t.Error("Bug161: VoiceStates() returns a different pointer on each call")
+	}
+	if c.Soundboard() != c.Soundboard() {
+		t.Error("Bug161: Soundboard() returns a different pointer on each call")
+	}
+	if c.ScheduledEvents() != c.ScheduledEvents() {
+		t.Error("Bug161: ScheduledEvents() returns a different pointer on each call")
+	}
+	if c.StageInstances() != c.StageInstances() {
+		t.Error("Bug161: StageInstances() returns a different pointer on each call")
+	}
+	if c.Emojis() != c.Emojis() {
+		t.Error("Bug161: Emojis() returns a different pointer on each call")
+	}
+	if c.Stickers() != c.Stickers() {
+		t.Error("Bug161: Stickers() returns a different pointer on each call")
+	}
+	if c.Presences() != c.Presences() {
+		t.Error("Bug161: Presences() returns a different pointer on each call")
+	}
+}
+
 // TestRedisNilGuards verifies that all Set/Add methods on the Redis stores
 // return without panicking when called with a nil entity argument (Issue 9).
 func TestRedisNilGuards(t *testing.T) {

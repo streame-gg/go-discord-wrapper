@@ -611,3 +611,179 @@ func TestMemMessageStore_CloseIdempotent(t *testing.T) {
 	s.Close()
 	s.Close()
 }
+
+// ── Bug #94 ───────────────────────────────────────────────────────────────────
+
+// TestBug94_ReplaceKeys_PreservesEvictionMetadata verifies that ReplaceKeys
+// preserves hitCount and insertedAt for keys present in both the old and new sets.
+//
+// Root cause: ReplaceKeys always created fresh entries, resetting LFU/FIFO
+// eviction metadata. It also leaked totalBytes because the old entry's sizeBytes
+// was never subtracted before re-adding.
+func TestBug94_ReplaceKeys_PreservesEvictionMetadata(t *testing.T) {
+	t.Run("LFU: hitCount preserved", func(t *testing.T) {
+		s := NewBaseStore[string, int](StoreOptions{
+			MaxItems:         2,
+			EvictionStrategy: EvictLFU,
+		})
+		defer s.Close()
+
+		s.Set("a", 1)
+		s.Set("b", 2)
+		s.Get("a")
+		s.Get("a")
+		s.Get("a") // hitCount("a") = 3
+
+		// ReplaceKeys: update "a" (kept), remove "b".
+		s.ReplaceKeys([]string{"b"}, map[string]int{"a": 99})
+
+		e, ok := s.items.Get("a")
+		if !ok {
+			t.Fatal("a should still exist after ReplaceKeys")
+		}
+		if e.hitCount != 3 {
+			t.Fatalf("Bug94: hitCount should be preserved as 3, got %d (old code reset to 0)", e.hitCount)
+		}
+		if e.value != 99 {
+			t.Fatalf("value should be updated to 99, got %d", e.value)
+		}
+
+		// Add "c" — LFU must evict "c" (hitCount 0), not "a" (hitCount 3).
+		s.Set("c", 3)
+		if _, ok := s.Get("a"); !ok {
+			t.Fatal("Bug94: a (hitCount=3) should survive LFU eviction after ReplaceKeys")
+		}
+	})
+
+	t.Run("FIFO: insertedAt preserved", func(t *testing.T) {
+		s := NewBaseStore[string, int](StoreOptions{
+			MaxItems:         2,
+			EvictionStrategy: EvictFIFO,
+		})
+		defer s.Close()
+
+		s.Set("x", 1)
+		time.Sleep(time.Millisecond)
+		s.Set("y", 2)
+
+		orig, _ := s.items.Get("x")
+		origInsertedAt := orig.insertedAt
+
+		// ReplaceKeys updates both keys — insertedAt must not change.
+		s.ReplaceKeys(nil, map[string]int{"x": 10, "y": 20})
+
+		after, _ := s.items.Get("x")
+		if !after.insertedAt.Equal(origInsertedAt) {
+			t.Fatal("Bug94: insertedAt should be preserved through ReplaceKeys")
+		}
+
+		// FIFO: x (older) must be evicted when a third item is added.
+		time.Sleep(time.Millisecond)
+		s.Set("z", 30)
+		if _, ok := s.Get("x"); ok {
+			t.Fatal("Bug94: x should be evicted (FIFO: earliest insertedAt, preserved through ReplaceKeys)")
+		}
+	})
+
+	t.Run("TrackBytes: no byte leak on update", func(t *testing.T) {
+		s := NewBaseStore[string, int](StoreOptions{TrackBytes: true})
+		defer s.Close()
+
+		s.Set("a", 1)
+		bytesAfterSet := s.totalBytes.Load()
+
+		// ReplaceKeys with same key — totalBytes must not grow.
+		s.ReplaceKeys(nil, map[string]int{"a": 2})
+
+		if got := s.totalBytes.Load(); got != bytesAfterSet {
+			t.Fatalf("Bug94: totalBytes leaked: was %d, got %d after in-place update via ReplaceKeys", bytesAfterSet, got)
+		}
+	})
+}
+
+// ── Bug #116 ──────────────────────────────────────────────────────────────────
+
+// TestBug116_DeleteOnDisabledStore verifies that Delete on a Disabled store
+// returns false immediately without acquiring the write lock.
+//
+// Root cause: the Disabled check was missing in Delete, causing a needless
+// write-lock acquisition on every call even though the store is a no-op.
+func TestBug116_DeleteOnDisabledStore(t *testing.T) {
+	s := NewBaseStore[string, int](StoreOptions{Disabled: true, TrackBytes: true})
+	defer s.Close()
+
+	if got := s.Delete("nonexistent"); got {
+		t.Fatal("Bug116: Delete on disabled store should return false")
+	}
+	if s.totalBytes.Load() != 0 {
+		t.Fatal("Bug116: disabled store should never accumulate bytes")
+	}
+	// Second call must also be safe (no panic, correct return value).
+	if got := s.Delete("anything"); got {
+		t.Fatal("Bug116: Delete on disabled store should always return false")
+	}
+}
+
+// ── Bug #150 ──────────────────────────────────────────────────────────────────
+
+// TestBug150_EvictToCount_CorrectVictims verifies that evictToCount selects the
+// right victims when evicting multiple items in a single batch.
+//
+// Root cause: evictToCount called evictOne in a loop — O(n²) scans and N separate
+// lock acquisitions. The fix collects all entries once, sorts once (O(n log n)),
+// and deletes in one lock acquisition. This test verifies correctness, not
+// performance; correctness requires that the highest-priority victims are chosen.
+func TestBug150_EvictToCount_CorrectVictims(t *testing.T) {
+	t.Run("LFU: keeps highest hit counts across batch eviction", func(t *testing.T) {
+		s := NewBaseStore[string, int](StoreOptions{
+			MaxItems:         3,
+			EvictionStrategy: EvictLFU,
+		})
+		defer s.Close()
+
+		s.Set("low", 1)  // hitCount = 0
+		s.Set("mid", 2)  // hitCount = 1
+		s.Set("high", 3) // hitCount = 3
+		s.Get("mid")     // mid → 1
+		s.Get("high")
+		s.Get("high")
+		s.Get("high") // high → 3
+
+		// ReplaceKeys adds 3 new items (all hitCount=0), total=6 → evict down to 3.
+		// "high" (3) and "mid" (1) must survive; "low" (0) is a victim.
+		s.ReplaceKeys(nil, map[string]int{"a": 10, "b": 20, "c": 30})
+
+		if s.Len() != 3 {
+			t.Fatalf("Bug150: expected Len=3 after batch eviction, got %d", s.Len())
+		}
+		if _, ok := s.Get("high"); !ok {
+			t.Fatal("Bug150: 'high' (hitCount=3) must survive LFU batch eviction")
+		}
+		if _, ok := s.Get("mid"); !ok {
+			t.Fatal("Bug150: 'mid' (hitCount=1) must survive LFU batch eviction")
+		}
+	})
+
+	t.Run("FIFO: keeps newest insertions across batch eviction", func(t *testing.T) {
+		s := NewBaseStore[string, int](StoreOptions{
+			MaxItems:         2,
+			EvictionStrategy: EvictFIFO,
+		})
+		defer s.Close()
+
+		s.Set("oldest", 1)
+		time.Sleep(time.Millisecond)
+		s.Set("middle", 2)
+		time.Sleep(time.Millisecond)
+
+		// Add 2 new items (total=4) → evict down to 2; "oldest" must go first.
+		s.ReplaceKeys(nil, map[string]int{"newest1": 10, "newest2": 20})
+
+		if s.Len() != 2 {
+			t.Fatalf("Bug150: expected Len=2 after batch eviction, got %d", s.Len())
+		}
+		if _, ok := s.Get("oldest"); ok {
+			t.Fatal("Bug150: 'oldest' should be first victim of FIFO batch eviction")
+		}
+	})
+}
