@@ -1646,7 +1646,10 @@ func (s *mongoMessageStore) Update(msg *discord.Message) {
 		return
 	}
 	id := msgID(msg.ChannelID, msg.ID)
-	expiresAt := s.c.expiresAt(s.c.opts.Messages.TTL)
+	setFields := bson.M{"json": string(b)}
+	if expiresAt := s.c.expiresAt(s.c.opts.Messages.TTL); !expiresAt.IsZero() {
+		setFields["expires_at"] = expiresAt
+	}
 	// UpdateOne with $set preserves InsertedAt and only updates the JSON payload.
 	s.c.enqueueWrite(func() {
 		ctx, cancel := s.c.callCtx()
@@ -1654,10 +1657,7 @@ func (s *mongoMessageStore) Update(msg *discord.Message) {
 		_, _ = s.col().UpdateOne(
 			ctx,
 			bson.M{"_id": id},
-			bson.M{"$set": bson.M{
-				"json":       string(b),
-				"expires_at": expiresAt,
-			}},
+			bson.M{"$set": setFields},
 		)
 	})
 }
