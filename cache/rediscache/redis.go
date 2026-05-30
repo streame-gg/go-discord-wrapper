@@ -611,9 +611,21 @@ func (s *redisMemberStore) AllInGuild(guildID discord.Snowflake) *collection.Col
 			continue
 		}
 		var m discord.GuildMember
-		if json.Unmarshal([]byte(v.(string)), &m) == nil {
-			coll.Set(m.User.ID, &m)
+		if json.Unmarshal([]byte(v.(string)), &m) != nil {
+			continue
 		}
+		if n, err := strconv.ParseUint(userIDs[i], 10, 64); err == nil {
+			m.UserID = discord.Snowflake(n)
+		}
+		uid := m.UserID
+		if m.User != nil && m.User.ID.IsValid() {
+			uid = m.User.ID
+		}
+		if uid.IsEmpty() {
+			stale = append(stale, userIDs[i])
+			continue
+		}
+		coll.Set(uid, &m)
 	}
 	if len(stale) > 0 {
 		_ = s.c.client.SRem(s.c.ctx, gIdx, stale...).Err()
