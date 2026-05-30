@@ -13,12 +13,13 @@ type CheckboxComponent struct {
 }
 
 func (c *CheckboxComponent) MarshalJSON() ([]byte, error) {
-	c.Type = discord.ComponentTypeCheckbox
 	type Alias CheckboxComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(c),
+		Alias: Alias(*c),
+		Type:  discord.ComponentTypeCheckbox,
 	})
 }
 
@@ -57,12 +58,13 @@ type CheckboxComponentInteractionResponse struct {
 func (c *CheckboxComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (c *CheckboxComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	c.Type = discord.ComponentTypeCheckbox
 	type Alias CheckboxComponentInteractionResponse
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(c),
+		Alias: Alias(*c),
+		Type:  discord.ComponentTypeCheckbox,
 	})
 }
 

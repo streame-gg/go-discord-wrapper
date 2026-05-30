@@ -17,12 +17,13 @@ func (a *ActionRow) GetType() discord.ComponentType {
 }
 
 func (a *ActionRow) MarshalJSON() ([]byte, error) {
-	a.Type = discord.ComponentTypeActionRow
 	type Alias ActionRow
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(a),
+		Alias: Alias(*a),
+		Type:  discord.ComponentTypeActionRow,
 	})
 }
 

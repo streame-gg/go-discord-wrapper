@@ -35,12 +35,13 @@ func (t *TextDisplayComponent) GetType() discord.ComponentType {
 }
 
 func (t *TextDisplayComponent) MarshalJSON() ([]byte, error) {
-	t.Type = discord.ComponentTypeTextDisplay
 	type Alias TextDisplayComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(t),
+		Alias: Alias(*t),
+		Type:  discord.ComponentTypeTextDisplay,
 	})
 }
 
@@ -54,14 +55,13 @@ type TextDisplayComponentInteractionResponse struct {
 func (t *TextDisplayComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (t *TextDisplayComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	t.Type = discord.ComponentTypeTextDisplay
-
 	type Alias TextDisplayComponentInteractionResponse
-
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(t),
+		Alias: Alias(*t),
+		Type:  discord.ComponentTypeTextDisplay,
 	})
 }
 

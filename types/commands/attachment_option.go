@@ -19,12 +19,13 @@ func (o *ApplicationCommandOptionAttachment) ApplicationCommandOptionType() disc
 }
 
 func (o *ApplicationCommandOptionAttachment) MarshalJSON() ([]byte, error) {
-	o.Type = o.ApplicationCommandOptionType()
 	type Alias ApplicationCommandOptionAttachment
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ApplicationCommandOptionType `json:"type"`
 	}{
-		Alias: (*Alias)(o),
+		Alias: Alias(*o),
+		Type:  o.ApplicationCommandOptionType(),
 	})
 }
 

@@ -22,12 +22,13 @@ type RadioGroupComponentOption struct {
 }
 
 func (r *RadioGroupComponent) MarshalJSON() ([]byte, error) {
-	r.Type = discord.ComponentTypeRadioGroup
 	type Alias RadioGroupComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(r),
+		Alias: Alias(*r),
+		Type:  discord.ComponentTypeRadioGroup,
 	})
 }
 
@@ -66,13 +67,13 @@ type RadioGroupComponentInteractionResponse struct {
 func (r *RadioGroupComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (r *RadioGroupComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	r.Type = discord.ComponentTypeRadioGroup
-
 	type Alias RadioGroupComponentInteractionResponse
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(r),
+		Alias: Alias(*r),
+		Type:  discord.ComponentTypeRadioGroup,
 	})
 }
 

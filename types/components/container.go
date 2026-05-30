@@ -97,11 +97,12 @@ func (c *Container) GetType() discord.ComponentType {
 }
 
 func (c *Container) MarshalJSON() ([]byte, error) {
-	c.Type = discord.ComponentTypeContainer
 	type Alias Container
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(c),
+		Alias: Alias(*c),
+		Type:  discord.ComponentTypeContainer,
 	})
 }

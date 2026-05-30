@@ -23,12 +23,13 @@ func (u *UserSelectMenuComponent) IsAnyContainerAccessory() bool {
 }
 
 func (u *UserSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	u.Type = discord.ComponentTypeUserSelect
 	type Alias UserSelectMenuComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(u),
+		Alias: Alias(*u),
+		Type:  discord.ComponentTypeUserSelect,
 	})
 }
 
@@ -70,15 +71,15 @@ func (u *UserSelectComponentInteractionResponse) IsInteractionResponseDataCompon
 }
 
 func (u *UserSelectComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	u.ComponentType = discord.ComponentTypeUserSelect
-	u.Type = discord.ComponentTypeUserSelect
-
 	type Alias UserSelectComponentInteractionResponse
-
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type          discord.ComponentType `json:"type"`
+		ComponentType discord.ComponentType `json:"component_type"`
 	}{
-		Alias: (*Alias)(u),
+		Alias:         Alias(*u),
+		Type:          discord.ComponentTypeUserSelect,
+		ComponentType: discord.ComponentTypeUserSelect,
 	})
 }
 

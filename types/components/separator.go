@@ -37,12 +37,13 @@ func (s *SeparatorComponent) UnmarshalJSON(data []byte) error {
 }
 
 func (s *SeparatorComponent) MarshalJSON() ([]byte, error) {
-	s.Type = discord.ComponentTypeSeparator
 	type Alias SeparatorComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(s),
+		Alias: Alias(*s),
+		Type:  discord.ComponentTypeSeparator,
 	})
 }
 

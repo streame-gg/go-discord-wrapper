@@ -29,12 +29,13 @@ func (m *MediaGalleryComponent) UnmarshalJSON(data []byte) error {
 }
 
 func (m *MediaGalleryComponent) MarshalJSON() ([]byte, error) {
-	m.Type = discord.ComponentTypeMediaGallery
 	type Alias MediaGalleryComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(m),
+		Alias: Alias(*m),
+		Type:  discord.ComponentTypeMediaGallery,
 	})
 }
 

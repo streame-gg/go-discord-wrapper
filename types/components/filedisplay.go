@@ -32,12 +32,13 @@ func (f *FileComponent) UnmarshalJSON(data []byte) error {
 }
 
 func (f *FileComponent) MarshalJSON() ([]byte, error) {
-	f.Type = discord.ComponentTypeFileDisplay
 	type Alias FileComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(f),
+		Alias: Alias(*f),
+		Type:  discord.ComponentTypeFileDisplay,
 	})
 }
 

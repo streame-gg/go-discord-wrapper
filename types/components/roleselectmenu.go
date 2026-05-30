@@ -23,12 +23,13 @@ func (r *RoleSelectMenuComponent) IsAnyContainerAccessory() bool {
 }
 
 func (r *RoleSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	r.Type = discord.ComponentTypeRoleSelect
 	type Alias RoleSelectMenuComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(r),
+		Alias: Alias(*r),
+		Type:  discord.ComponentTypeRoleSelect,
 	})
 }
 
@@ -69,15 +70,15 @@ type RoleComponentInteractionResponse struct {
 func (r *RoleComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (r *RoleComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	r.ComponentType = discord.ComponentTypeRoleSelect
-	r.Type = discord.ComponentTypeRoleSelect
-
 	type Alias RoleComponentInteractionResponse
-
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type          discord.ComponentType `json:"type"`
+		ComponentType discord.ComponentType `json:"component_type"`
 	}{
-		Alias: (*Alias)(r),
+		Alias:         Alias(*r),
+		Type:          discord.ComponentTypeRoleSelect,
+		ComponentType: discord.ComponentTypeRoleSelect,
 	})
 }
 

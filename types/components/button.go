@@ -47,12 +47,13 @@ func (b *ButtonComponent) UnmarshalJSON(data []byte) error {
 }
 
 func (b *ButtonComponent) MarshalJSON() ([]byte, error) {
-	b.Type = discord.ComponentTypeButton
 	type Alias ButtonComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(b),
+		Alias: Alias(*b),
+		Type:  discord.ComponentTypeButton,
 	})
 }
 

@@ -92,12 +92,13 @@ func (l *LabelComponent) UnmarshalJSON(data []byte) error {
 }
 
 func (l *LabelComponent) MarshalJSON() ([]byte, error) {
-	l.Type = discord.ComponentTypeLabel
 	type Alias LabelComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(l),
+		Alias: Alias(*l),
+		Type:  discord.ComponentTypeLabel,
 	})
 }
 
@@ -115,12 +116,13 @@ type LabelComponentInteractionResponse struct {
 func (l *LabelComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (l *LabelComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	l.Type = discord.ComponentTypeLabel
 	type Alias LabelComponentInteractionResponse
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(l),
+		Alias: Alias(*l),
+		Type:  discord.ComponentTypeLabel,
 	})
 }
 

@@ -16,12 +16,13 @@ type FileUploadComponent struct {
 }
 
 func (f *FileUploadComponent) MarshalJSON() ([]byte, error) {
-	f.Type = discord.ComponentTypeFileUpload
 	type Alias FileUploadComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(f),
+		Alias: Alias(*f),
+		Type:  discord.ComponentTypeFileUpload,
 	})
 }
 
@@ -62,14 +63,13 @@ func (f *FileUploadComponentInteractionResponse) IsInteractionResponseDataCompon
 }
 
 func (f *FileUploadComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	f.Type = discord.ComponentTypeFileUpload
-
 	type Alias FileUploadComponentInteractionResponse
-
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(f),
+		Alias: Alias(*f),
+		Type:  discord.ComponentTypeFileUpload,
 	})
 }
 

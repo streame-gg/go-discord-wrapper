@@ -25,12 +25,13 @@ type TextInputComponent struct {
 }
 
 func (t *TextInputComponent) MarshalJSON() ([]byte, error) {
-	t.Type = discord.ComponentTypeTextInput
 	type Alias TextInputComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(t),
+		Alias: Alias(*t),
+		Type:  discord.ComponentTypeTextInput,
 	})
 }
 
@@ -75,14 +76,13 @@ func (t *TextInputComponentInteractionResponse) IsInteractionResponseDataCompone
 }
 
 func (t *TextInputComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	t.Type = discord.ComponentTypeTextInput
-
 	type Alias TextInputComponentInteractionResponse
-
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(t),
+		Alias: Alias(*t),
+		Type:  discord.ComponentTypeTextInput,
 	})
 }
 

@@ -56,12 +56,13 @@ func (s *Section) UnmarshalJSON(data []byte) error {
 }
 
 func (s *Section) MarshalJSON() ([]byte, error) {
-	s.Type = discord.ComponentTypeSection
 	type Alias Section
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(s),
+		Alias: Alias(*s),
+		Type:  discord.ComponentTypeSection,
 	})
 }
 
