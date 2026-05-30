@@ -674,3 +674,47 @@ func TestBug29RequestAllMalformedResponseDoesNotConsumeSlot(t *testing.T) {
 	assert.ErrorIs(t, err, context.DeadlineExceeded)
 	assert.Len(t, results, 1, "expected exactly 1 valid result (from shard 0)")
 }
+
+// TestBug99RequestAllDeduplicatesDuplicateReplies verifies that when a shard
+// sends more than one valid reply for the same request, only the first reply
+// is counted. Previously the loop advanced the counter for every valid message
+// regardless of msg.From, so two replies from shard 0 would satisfy the total
+// of 2 while shard 1 was never heard from (Bug 99).
+func TestBug99RequestAllDeduplicatesDuplicateReplies(t *testing.T) {
+	const total = 2
+	coord := sharding.NewLocalCoordinator(total)
+
+	c0, err := connection.NewClient("Bot fake-token", discord.IntentGuilds,
+		options.WithSharding(total, 0),
+		options.WithCoordinator(coord),
+	)
+	require.NoError(t, err)
+	defer c0.Shutdown()
+
+	c1, err := connection.NewClient("Bot fake-token", discord.IntentGuilds,
+		options.WithSharding(total, 1),
+		options.WithCoordinator(coord),
+	)
+	require.NoError(t, err)
+	defer c1.Shutdown()
+
+	// Shard 0 sends two valid replies.
+	c0.OnShardMessage(func(msg options.ShardMessage) {
+		if msg.Type == "REQ" {
+			_ = c0.ReplyToShard(msg, "RESP", 10)
+			_ = c0.ReplyToShard(msg, "RESP", 10)
+		}
+	})
+
+	// Shard 1 never replies, so RequestAll must block until the context expires.
+	_ = c1
+
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
+	results, err := sharding.RequestAll[int](ctx, c0, "REQ", nil, "RESP")
+
+	assert.Error(t, err, "expected context error: duplicate reply from shard 0 must not satisfy shard 1's slot (Bug 99)")
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Len(t, results, 1, "expected exactly 1 result (one unique shard replied)")
+}
