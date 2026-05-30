@@ -25,8 +25,8 @@ func (s *MemRoleStore) Set(guildID discord.Snowflake, role *discord.Role) {
 	if role == nil {
 		return
 	}
-	s.index.add(guildID, role.ID)
 	s.base.Set(role.ID, role)
+	s.index.add(guildID, role.ID)
 }
 
 func (s *MemRoleStore) Get(roleID discord.Snowflake) (*discord.Role, bool) {

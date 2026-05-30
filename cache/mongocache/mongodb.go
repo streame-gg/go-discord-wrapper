@@ -398,8 +398,9 @@ func extractID(doc any) string {
 		return d.ID
 	case msgDoc:
 		return d.ID
+	default:
+		panic("mongocache: upsertByID called with unknown document type")
 	}
-	return ""
 }
 
 // ── Guild store ───────────────────────────────────────────────────────────────

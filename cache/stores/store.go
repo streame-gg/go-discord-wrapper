@@ -7,6 +7,7 @@ package stores
 
 import (
 	"encoding/json"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -276,6 +277,9 @@ func (s *BaseStore[K, V]) Set(key K, value V) {
 
 // Delete removes the entry for key. Returns true if the entry was present.
 func (s *BaseStore[K, V]) Delete(key K) bool {
+	if s.options.Disabled {
+		return false
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if e, ok := s.items.Get(key); ok && s.options.TrackBytes {
@@ -360,13 +364,22 @@ func (s *BaseStore[K, V]) ReplaceKeys(del []K, add map[K]V) {
 		var sz int64
 		if s.options.TrackBytes {
 			sz = estimateSize(v)
-			s.totalBytes.Add(sz)
 		}
 		e := &entry[V]{
 			value:      v,
 			insertedAt: now,
 			accessedAt: now,
 			sizeBytes:  sz,
+		}
+		if old, ok := s.items.Get(k); ok {
+			e.insertedAt = old.insertedAt
+			e.hitCount = old.hitCount
+			if s.options.TrackBytes {
+				s.totalBytes.Add(-old.sizeBytes)
+			}
+		}
+		if s.options.TrackBytes {
+			s.totalBytes.Add(sz)
 		}
 		if s.options.TTL > 0 {
 			e.expiresAt = now.Add(s.options.TTL)
@@ -439,16 +452,37 @@ func (s *BaseStore[K, V]) evictOne() {
 	}
 }
 
-// evictToCount calls evictOne until Len() <= target.
+// evictToCount removes entries until Len() <= target in a single lock
+// acquisition (O(n log n)), avoiding the O(n²) cost of repeated evictOne calls.
+// Must NOT be called while s.mu is held.
 func (s *BaseStore[K, V]) evictToCount(target int) {
-	for {
-		s.mu.RLock()
-		n := s.items.Len()
-		s.mu.RUnlock()
-		if n <= target {
-			return
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	n := s.items.Len()
+	if n <= target {
+		return
+	}
+	toEvict := n - target
+
+	type kv struct {
+		key K
+		e   *entry[V]
+	}
+	all := make([]kv, 0, n)
+	s.items.Each(func(k K, e *entry[V]) {
+		all = append(all, kv{k, e})
+	})
+
+	sort.Slice(all, func(i, j int) bool {
+		return s.isBetterVictim(all[i].e, all[j].e)
+	})
+
+	for i := 0; i < toEvict && i < len(all); i++ {
+		if s.options.TrackBytes {
+			s.totalBytes.Add(-all[i].e.sizeBytes)
 		}
-		s.evictOne()
+		s.items.Delete(all[i].key)
 	}
 }
 

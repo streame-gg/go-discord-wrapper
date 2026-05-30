@@ -81,6 +81,21 @@ type RedisCache struct {
 	writerClosed bool
 	writerDone   chan struct{}
 	syncWrites   bool // true → execute writes inline (testing only)
+
+	// store singletons — allocated once to avoid per-call heap allocations.
+	guildStore          *redisGuildStore
+	channelStore        *redisChannelStore
+	userStore           *redisUserStore
+	memberStore         *redisMemberStore
+	roleStore           *redisRoleStore
+	messageStore        *redisMessageStore
+	voiceStateStore     *redisVoiceStateStore
+	soundboardStore     *redisSoundboardStore
+	scheduledEventStore *redisScheduledEventStore
+	stageInstanceStore  *redisStageInstanceStore
+	emojiStore          *redisEmojiStore
+	stickerStore        *redisStickerStore
+	presenceStore       *redisPresenceStore
 }
 
 // NewRedisCache creates a RedisCache backed by client.
@@ -110,6 +125,7 @@ func NewRedisCache(client *redis.Client, opts cache.Options) *RedisCache {
 		writeCh:    make(chan func(), queueSize),
 		writerDone: make(chan struct{}),
 	}
+	c.initStores()
 	go c.runWriteWorker()
 	return c
 }
@@ -137,6 +153,7 @@ func (c *RedisCache) WithKeyPrefix(prefix string) *RedisCache {
 		writerDone: make(chan struct{}),
 		// stopOnce is zero-value — ready for independent Close() calls.
 	}
+	nc.initStores()
 	go nc.runWriteWorker()
 	return nc
 }
@@ -148,6 +165,23 @@ func (c *RedisCache) k(parts ...string) string {
 		s += ":" + p
 	}
 	return s
+}
+
+// initStores allocates all store singleton wrappers. Called once during construction.
+func (c *RedisCache) initStores() {
+	c.guildStore = &redisGuildStore{c}
+	c.channelStore = &redisChannelStore{c}
+	c.userStore = &redisUserStore{c}
+	c.memberStore = &redisMemberStore{c}
+	c.roleStore = &redisRoleStore{c}
+	c.messageStore = &redisMessageStore{c}
+	c.voiceStateStore = &redisVoiceStateStore{c}
+	c.soundboardStore = &redisSoundboardStore{c}
+	c.scheduledEventStore = &redisScheduledEventStore{c}
+	c.stageInstanceStore = &redisStageInstanceStore{c}
+	c.emojiStore = &redisEmojiStore{c}
+	c.stickerStore = &redisStickerStore{c}
+	c.presenceStore = &redisPresenceStore{c}
 }
 
 // setJSONAndIndex atomically stores key → JSON and adds id to the Redis SET at idx
@@ -243,31 +277,21 @@ func (c *RedisCache) runWriteWorker() {
 	}
 }
 
-func (c *RedisCache) Guilds() cache.GuildStore     { return &redisGuildStore{c} }
-func (c *RedisCache) Channels() cache.ChannelStore { return &redisChannelStore{c} }
-func (c *RedisCache) Users() cache.UserStore       { return &redisUserStore{c} }
-func (c *RedisCache) Members() cache.MemberStore   { return &redisMemberStore{c} }
-func (c *RedisCache) Roles() cache.RoleStore       { return &redisRoleStore{c} }
-func (c *RedisCache) Messages() cache.MessageStore { return &redisMessageStore{c} }
-func (c *RedisCache) VoiceStates() cache.VoiceStateStore {
-	return &redisVoiceStateStore{c}
-}
-func (c *RedisCache) Soundboard() cache.SoundboardStore {
-	return &redisSoundboardStore{c}
-}
+func (c *RedisCache) Guilds() cache.GuildStore           { return c.guildStore }
+func (c *RedisCache) Channels() cache.ChannelStore       { return c.channelStore }
+func (c *RedisCache) Users() cache.UserStore             { return c.userStore }
+func (c *RedisCache) Members() cache.MemberStore         { return c.memberStore }
+func (c *RedisCache) Roles() cache.RoleStore             { return c.roleStore }
+func (c *RedisCache) Messages() cache.MessageStore       { return c.messageStore }
+func (c *RedisCache) VoiceStates() cache.VoiceStateStore { return c.voiceStateStore }
+func (c *RedisCache) Soundboard() cache.SoundboardStore  { return c.soundboardStore }
 func (c *RedisCache) ScheduledEvents() cache.ScheduledEventStore {
-	return &redisScheduledEventStore{c}
+	return c.scheduledEventStore
 }
-func (c *RedisCache) StageInstances() cache.StageInstanceStore {
-	return &redisStageInstanceStore{c}
-}
-func (c *RedisCache) Emojis() cache.EmojiStore { return &redisEmojiStore{c} }
-func (c *RedisCache) Stickers() cache.StickerStore {
-	return &redisStickerStore{c}
-}
-func (c *RedisCache) Presences() cache.PresenceStore {
-	return &redisPresenceStore{c}
-}
+func (c *RedisCache) StageInstances() cache.StageInstanceStore { return c.stageInstanceStore }
+func (c *RedisCache) Emojis() cache.EmojiStore                 { return c.emojiStore }
+func (c *RedisCache) Stickers() cache.StickerStore             { return c.stickerStore }
+func (c *RedisCache) Presences() cache.PresenceStore           { return c.presenceStore }
 
 // Close drains the write queue, then cancels the internal context.
 // The underlying [*redis.Client] is not closed. Safe to call multiple times.
@@ -1469,7 +1493,7 @@ func (s *redisEmojiStore) SetAll(guildID discord.Snowflake, emojis []*discord.Em
 	ttl := s.c.opts.TTL.Milliseconds()
 	args := []interface{}{iPfx, mPfx, ttl, strconv.FormatUint(uint64(guildID), 10)}
 	for _, emoji := range emojis {
-		if emoji == nil || emoji.ID.IsValid() {
+		if emoji == nil || emoji.ID.IsEmpty() {
 			continue
 		}
 		b, err := json.Marshal(emoji)

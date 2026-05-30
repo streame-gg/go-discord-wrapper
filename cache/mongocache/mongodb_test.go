@@ -39,6 +39,9 @@ func TestMain(m *testing.M) {
 		Started: true,
 	})
 	if err != nil {
+		if isDockerUnavailable(err) {
+			log.Fatalf("Docker is not available — enable Docker Desktop WSL2 integration: %v", err)
+		}
 		log.Fatalf("failed to start MongoDB container: %v", err)
 	}
 	defer container.Terminate(ctx) //nolint:errcheck
@@ -60,6 +63,11 @@ func TestMain(m *testing.M) {
 	defer mongoClient.Disconnect(ctx) //nolint:errcheck
 
 	os.Exit(m.Run())
+}
+
+func isDockerUnavailable(err error) bool {
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "provider") || strings.Contains(s, "docker host")
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────

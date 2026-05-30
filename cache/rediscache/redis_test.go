@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"log"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -44,7 +45,10 @@ func (s *RedisCacheTestSuite) SetupSuite() {
 		Started: true,
 	})
 	if err != nil {
-		log.Fatalf("failed to start MongoDB container: %v", err)
+		if isDockerUnavailable(err) {
+			log.Fatalf("Docker is not available — enable Docker Desktop WSL2 integration: %v", err)
+		}
+		log.Fatalf("failed to start Redis container: %v", err)
 	}
 
 	host, err := container.Host(ctx)
@@ -76,6 +80,11 @@ func (s *RedisCacheTestSuite) newCache(opts cache.Options) *rediscache.RedisCach
 	c.EnableSyncWrites()
 	s.T().Cleanup(func() { _ = c.Close() })
 	return c
+}
+
+func isDockerUnavailable(err error) bool {
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "provider") || strings.Contains(s, "docker host")
 }
 
 func mustSnowflake(s string) discord.Snowflake {
@@ -677,6 +686,34 @@ func (s *RedisCacheTestSuite) TestBug36MaxPerChannelZeroDisables() {
 
 	s.Require().Equal(0, c.Messages().Channel(mustSnowflake("ch1")).Len(), "MaxPerChannel=0 should disable caching (Bug 36)")
 	s.Require().Equal(0, c.Messages().Size(), "Size should be 0 when disabled (Bug 36)")
+}
+
+// TestEmojiSetAll_StoresValidEmojis verifies that SetAll actually persists emojis
+// whose IDs are valid (non-zero) Snowflakes.
+//
+// Root cause: the skip guard used emoji.ID.IsValid() — which returns true for a
+// valid non-zero ID — so every real emoji was skipped and only zero-ID emojis
+// (which don't exist in practice) were processed. Fix: use emoji.ID.IsEmpty().
+func (s *RedisCacheTestSuite) TestEmojiSetAll_StoresValidEmojis() {
+	c := s.newCache(cache.Options{})
+	guildID := mustSnowflake("g1")
+
+	emojis := []*discord.Emoji{
+		{ID: mustSnowflake("e1"), Name: "wave"},
+		{ID: mustSnowflake("e2"), Name: "fire"},
+		{ID: mustSnowflake("e3"), Name: "heart"},
+	}
+	c.Emojis().SetAll(guildID, emojis)
+
+	got := c.Emojis().GetByGuild(guildID)
+	s.Require().Equal(3, got.Len(),
+		"EmojiSetAll_StoresValidEmojis: SetAll should store all emojis with valid IDs (was skipping them due to IsValid→IsEmpty bug)")
+
+	for _, e := range emojis {
+		stored, ok := c.Emojis().Get(e.ID)
+		s.Require().True(ok, "emoji %v should be retrievable after SetAll", e.ID)
+		s.Require().Equal(e.Name, stored.Name)
+	}
 }
 
 // TestBug50SetAllIsAtomic verifies that readers always see either the complete
