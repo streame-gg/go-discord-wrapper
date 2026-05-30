@@ -1959,7 +1959,16 @@ func (d *Client) IsGuildUnavailable(id discord.Snowflake) bool {
 // Close gracefully closes the gateway connection and the entity cache.
 // It implements io.Closer.
 func (d *Client) Close() error {
-	return d.Shutdown()
+	var errs []error
+	if d.Coordinator != nil {
+		if err := d.Coordinator.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if err := d.Shutdown(); err != nil {
+		errs = append(errs, err)
+	}
+	return errors.Join(errs...)
 }
 
 // Shutdown gracefully closes the gateway connection and the entity cache.
