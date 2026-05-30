@@ -187,6 +187,9 @@ type stubEntityClient struct {
 }
 
 func (s *stubEntityClient) ClientCache() discord.Cache { return s.cache }
+func (s *stubEntityClient) ThreadsForParent(parentID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Channel] {
+	return collection.New[discord.Snowflake, *discord.Channel]()
+}
 func (s *stubEntityClient) GetGuildMember(ctx context.Context, guildID, userID discord.Snowflake) (*discord.GuildMember, error) {
 	if s.fetchMember != nil {
 		return s.fetchMember(ctx, guildID, userID)

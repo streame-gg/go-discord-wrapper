@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -296,6 +297,9 @@ func (s *stubClient) GetGuild(ctx context.Context, guildID discord.Snowflake) (*
 }
 func (s *stubClient) ClientCache() discord.Cache {
 	return nil
+}
+func (s *stubClient) ThreadsForParent(parentID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Channel] {
+	return collection.New[discord.Snowflake, *discord.Channel]()
 }
 
 var _ discord.EntityClient = (*stubClient)(nil)

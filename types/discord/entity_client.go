@@ -1,6 +1,10 @@
 package discord
 
-import "context"
+import (
+	"context"
+
+	"github.com/streame-gg/go-discord-wrapper/collection"
+)
 
 // EntityClient is the subset of *connection.Client required by the entity
 // convenience methods (e.g. msg.Edit, member.Ban, guild.CreateRole).
@@ -125,4 +129,10 @@ type EntityClient interface {
 	// ClientCache returns the read-only cache view for use by sub-managers.
 	// Returns nil when no cache is configured.
 	ClientCache() Cache
+
+	// ThreadsForParent returns a snapshot of all cached threads whose parent
+	// channel is parentID. It uses the client's internal parent→threads index
+	// and is O(threads_in_parent) rather than O(total_channels). Returns an
+	// empty collection when no cache is configured.
+	ThreadsForParent(parentID Snowflake) *collection.Collection[Snowflake, *Channel]
 }

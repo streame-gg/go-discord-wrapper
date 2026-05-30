@@ -401,6 +401,12 @@ func (c *Collection[K, V]) RandomN(n int) []V {
 	if n > total {
 		n = total
 	}
+	if n == 1 {
+		if v, ok := c.Random(); ok {
+			return []V{v}
+		}
+		return nil
+	}
 	shuffled := make([]K, total)
 	copy(shuffled, c.keys)
 	rand.Shuffle(len(shuffled), func(i, j int) { shuffled[i], shuffled[j] = shuffled[j], shuffled[i] })

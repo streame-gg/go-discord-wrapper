@@ -402,20 +402,52 @@ func (s *BaseStore[K, V]) ReplaceKeys(del []K, add map[K]V) {
 // SweepExpired removes entries whose TTL has elapsed. When unusedWindow > 0,
 // entries not accessed within that window are also removed.
 // Called by MemoryCache's background cleaner; safe for concurrent use.
+//
+// Uses a two-phase approach: scan under a read lock to collect candidates,
+// then delete under a write lock. This keeps the write-lock hold time
+// proportional to the number of expired entries rather than the total store
+// size, so concurrent reads are blocked only during actual deletions.
 func (s *BaseStore[K, V]) SweepExpired(unusedWindow time.Duration) {
 	if s.options.Disabled {
 		return
 	}
 	now := time.Now()
-	s.mu.Lock()
-	evicted := s.items.SweepKeys(func(e *entry[V]) bool {
+
+	// Phase 1: identify expired keys under a read lock.
+	s.mu.RLock()
+	var candidates []K
+	s.items.Each(func(k K, e *entry[V]) {
 		expired := !e.expiresAt.IsZero() && now.After(e.expiresAt)
 		idle := unusedWindow > 0 && now.Sub(e.accessedAt) > unusedWindow
-		if (expired || idle) && s.options.TrackBytes {
-			s.totalBytes.Add(-e.sizeBytes)
+		if expired || idle {
+			candidates = append(candidates, k)
 		}
-		return expired || idle
 	})
+	s.mu.RUnlock()
+
+	if len(candidates) == 0 {
+		return
+	}
+
+	// Phase 2: delete confirmed-expired entries under a write lock.
+	// Re-verify each entry: it may have been refreshed between the two phases.
+	s.mu.Lock()
+	evicted := make([]K, 0, len(candidates))
+	for _, k := range candidates {
+		e, ok := s.items.Get(k)
+		if !ok {
+			continue
+		}
+		expired := !e.expiresAt.IsZero() && now.After(e.expiresAt)
+		idle := unusedWindow > 0 && now.Sub(e.accessedAt) > unusedWindow
+		if expired || idle {
+			if s.options.TrackBytes {
+				s.totalBytes.Add(-e.sizeBytes)
+			}
+			s.items.Delete(k)
+			evicted = append(evicted, k)
+		}
+	}
 	s.mu.Unlock()
 
 	if s.onEvict != nil {
