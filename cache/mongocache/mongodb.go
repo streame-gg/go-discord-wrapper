@@ -1577,9 +1577,21 @@ func (s *mongoMessageStore) Add(msg *discord.Message) {
 	}
 	s.c.enqueueWrite(func() {
 		// Serialize insert+count+evict per channel to prevent TOCTOU races.
-		mu, _ := s.c.msgChannelMu.LoadOrStore(channelIDStr, &sync.Mutex{})
-		mu.(*sync.Mutex).Lock()
-		defer mu.(*sync.Mutex).Unlock()
+		// Loop because DeleteChannel may remove the mutex from the map between
+		// our LoadOrStore and Lock (only reachable in sync-writes / test mode;
+		// in async mode the single write worker serialises everything).
+		var mu *sync.Mutex
+		for {
+			v, _ := s.c.msgChannelMu.LoadOrStore(channelIDStr, &sync.Mutex{})
+			mu = v.(*sync.Mutex)
+			mu.Lock()
+			// Confirm this mutex is still the one registered for the channel.
+			if cur, ok := s.c.msgChannelMu.Load(channelIDStr); ok && cur == v {
+				break
+			}
+			mu.Unlock() // stale: DeleteChannel removed it, retry
+		}
+		defer mu.Unlock()
 
 		ctx, cancel := s.c.callCtx()
 		defer cancel()
@@ -1724,14 +1736,21 @@ func (s *mongoMessageStore) Channel(channelID discord.Snowflake) *collection.Col
 func (s *mongoMessageStore) DeleteChannel(channelID discord.Snowflake) {
 	chIDStr := strconv.FormatUint(uint64(channelID), 10)
 	s.c.enqueueWrite(func() {
+		// Lock the per-channel mutex before removing it from the map so that any
+		// concurrent Add (in sync-writes mode) that already loaded this mutex
+		// completes its insert+evict cycle before the entry disappears. After we
+		// unlock, Add's retry loop detects the missing entry and creates a new mutex.
+		if v, ok := s.c.msgChannelMu.Load(chIDStr); ok {
+			mu := v.(*sync.Mutex)
+			mu.Lock()
+			s.c.msgChannelMu.Delete(chIDStr)
+			mu.Unlock()
+		}
 		if s.c.db != nil {
 			ctx, cancel := s.c.callCtx()
 			defer cancel()
 			_, _ = s.col().DeleteMany(ctx, bson.M{"channel_id": chIDStr})
 		}
-		// Remove the per-channel mutex so short-lived channels (DMs, threads) do not
-		// accumulate entries in msgChannelMu indefinitely (Bug 21).
-		s.c.msgChannelMu.Delete(chIDStr)
 	})
 }
 
