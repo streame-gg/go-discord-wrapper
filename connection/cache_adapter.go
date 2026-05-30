@@ -12,17 +12,20 @@ import (
 // needed).
 type cacheAdapter struct{ inner cache.Cache }
 
-func (a cacheAdapter) Guilds() discord.GuildStore                   { return a.inner.Guilds() }
-func (a cacheAdapter) Channels() discord.ChannelStore               { return a.inner.Channels() }
-func (a cacheAdapter) Users() discord.UserStore                     { return a.inner.Users() }
-func (a cacheAdapter) Members() discord.MemberStore                 { return a.inner.Members() }
-func (a cacheAdapter) Messages() discord.MessageStore               { return a.inner.Messages() }
-func (a cacheAdapter) Roles() discord.RoleStore                     { return a.inner.Roles() }
-func (a cacheAdapter) VoiceStates() discord.VoiceStateStore         { return a.inner.VoiceStates() }
-func (a cacheAdapter) Soundboard() discord.SoundboardStore          { return a.inner.Soundboard() }
-func (a cacheAdapter) ScheduledEvents() discord.ScheduledEventStore { return a.inner.ScheduledEvents() }
-func (a cacheAdapter) StageInstances() discord.StageInstanceStore   { return a.inner.StageInstances() }
-func (a cacheAdapter) Emojis() discord.EmojiStore                   { return a.inner.Emojis() }
-func (a cacheAdapter) Stickers() discord.StickerStore               { return a.inner.Stickers() }
+func (a cacheAdapter) Guilds() discord.GuildStore                    { return a.inner.Guilds() }
+func (a cacheAdapter) Channels() discord.ChannelStore                { return a.inner.Channels() }
+func (a cacheAdapter) Users() discord.UserStore                      { return a.inner.Users() }
+func (a cacheAdapter) Members() discord.MemberStore                  { return a.inner.Members() }
+func (a cacheAdapter) Messages() discord.MessageStore                { return a.inner.Messages() }
+func (a cacheAdapter) Roles() discord.RoleStore                      { return a.inner.Roles() }
+func (a cacheAdapter) VoiceStates() discord.VoiceStateStore          { return a.inner.VoiceStates() }
+func (a cacheAdapter) Soundboard() discord.SoundboardStore           { return a.inner.Soundboard() }
+func (a cacheAdapter) ScheduledEvents() discord.ScheduledEventStore  { return a.inner.ScheduledEvents() }
+func (a cacheAdapter) StageInstances() discord.StageInstanceStore    { return a.inner.StageInstances() }
+func (a cacheAdapter) Emojis() discord.EmojiStore                    { return a.inner.Emojis() }
+func (a cacheAdapter) Stickers() discord.StickerStore                { return a.inner.Stickers() }
+func (a cacheAdapter) Bans() discord.BanStore                        { return a.inner.Bans() }
+func (a cacheAdapter) AutoModRules() discord.AutoModerationRuleStore { return a.inner.AutoModRules() }
+func (a cacheAdapter) Invites() discord.InviteStore                  { return a.inner.Invites() }
 
 var _ discord.Cache = cacheAdapter{}

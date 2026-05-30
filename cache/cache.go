@@ -118,9 +118,12 @@ const (
 	CategoryEmojis          OverflowCategory = 1 << 10
 	CategoryStickers        OverflowCategory = 1 << 11
 	CategoryPresences       OverflowCategory = 1 << 12
+	CategoryBans            OverflowCategory = 1 << 13
+	CategoryAutoModRules    OverflowCategory = 1 << 14
+	CategoryInvites         OverflowCategory = 1 << 15
 
 	// CategoryAll targets every entity store. This is the default.
-	CategoryAll OverflowCategory = (1 << 13) - 1
+	CategoryAll OverflowCategory = (1 << 16) - 1
 )
 
 // OverflowPolicy configures what happens when a [Limits] value is exceeded.
@@ -401,10 +404,52 @@ type PresenceStore interface {
 	Size() int
 }
 
+// BanStore is a thread-safe cache for [discord.Ban] objects,
+// keyed by the composite (guildID, userID) pair.
+type BanStore interface {
+	Set(guildID discord.Snowflake, ban *discord.Ban)
+	Get(guildID, userID discord.Snowflake) (*discord.Ban, bool)
+	Delete(guildID, userID discord.Snowflake)
+	// DeleteGuild removes every ban entry for guildID. Call on GUILD_DELETE.
+	DeleteGuild(guildID discord.Snowflake)
+	// AllInGuild returns a snapshot Collection of all bans for guildID,
+	// keyed by user ID. The returned Collection is a copy.
+	AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Ban]
+	Size() int
+}
+
+// AutoModerationRuleStore is a thread-safe cache for [discord.AutoModerationRule] objects.
+type AutoModerationRuleStore interface {
+	Set(guildID discord.Snowflake, rule *discord.AutoModerationRule)
+	Get(ruleID discord.Snowflake) (*discord.AutoModerationRule, bool)
+	// GetByGuild returns a snapshot Collection of all automod rules for guildID,
+	// keyed by rule ID. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.AutoModerationRule]
+	Delete(ruleID discord.Snowflake)
+	// DeleteGuild removes every automod rule for guildID. Call on GUILD_DELETE.
+	DeleteGuild(guildID discord.Snowflake)
+	Size() int
+}
+
+// InviteStore is a thread-safe cache for [discord.Invite] objects, keyed by invite code.
+type InviteStore interface {
+	Set(invite *discord.Invite)
+	// SetWithGuild stores an invite and associates it with the given guild ID,
+	// for cases where the invite's Guild field is not populated (e.g. gateway events).
+	SetWithGuild(guildID discord.Snowflake, invite *discord.Invite)
+	Get(code string) (*discord.Invite, bool)
+	// GetByGuild returns a snapshot Collection of all invites for guildID,
+	// keyed by code. The returned Collection is a copy.
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[string, *discord.Invite]
+	Delete(code string)
+	// DeleteGuild removes every invite for guildID. Call on GUILD_DELETE.
+	DeleteGuild(guildID discord.Snowflake)
+	Size() int
+}
+
 // Cache is the top-level caching interface for Discord entities.
 // All methods and the stores they return are safe for concurrent use.
 // Close stops background goroutines; the cache must not be used after it returns.
-// TODO: Automod Rule Cache
 type Cache interface {
 	Guilds() GuildStore
 	Channels() ChannelStore
@@ -419,5 +464,8 @@ type Cache interface {
 	Emojis() EmojiStore
 	Stickers() StickerStore
 	Presences() PresenceStore
+	Bans() BanStore
+	AutoModRules() AutoModerationRuleStore
+	Invites() InviteStore
 	Close() error
 }

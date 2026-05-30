@@ -157,18 +157,21 @@ func newStubCache() *stubCache {
 	}
 }
 
-func (c *stubCache) Guilds() discord.GuildStore                   { return c.guilds }
-func (c *stubCache) Channels() discord.ChannelStore               { return c.channels }
-func (c *stubCache) Users() discord.UserStore                     { return c.users }
-func (c *stubCache) Members() discord.MemberStore                 { return c.members }
-func (c *stubCache) Messages() discord.MessageStore               { return c.messages }
-func (c *stubCache) Roles() discord.RoleStore                     { return c.roles }
-func (c *stubCache) VoiceStates() discord.VoiceStateStore         { return nil }
-func (c *stubCache) Soundboard() discord.SoundboardStore          { return nil }
-func (c *stubCache) ScheduledEvents() discord.ScheduledEventStore { return nil }
-func (c *stubCache) StageInstances() discord.StageInstanceStore   { return nil }
-func (c *stubCache) Emojis() discord.EmojiStore                   { return nil }
-func (c *stubCache) Stickers() discord.StickerStore               { return nil }
+func (c *stubCache) Guilds() discord.GuildStore                    { return c.guilds }
+func (c *stubCache) Channels() discord.ChannelStore                { return c.channels }
+func (c *stubCache) Users() discord.UserStore                      { return c.users }
+func (c *stubCache) Members() discord.MemberStore                  { return c.members }
+func (c *stubCache) Messages() discord.MessageStore                { return c.messages }
+func (c *stubCache) Roles() discord.RoleStore                      { return c.roles }
+func (c *stubCache) VoiceStates() discord.VoiceStateStore          { return nil }
+func (c *stubCache) Soundboard() discord.SoundboardStore           { return nil }
+func (c *stubCache) ScheduledEvents() discord.ScheduledEventStore  { return nil }
+func (c *stubCache) StageInstances() discord.StageInstanceStore    { return nil }
+func (c *stubCache) Emojis() discord.EmojiStore                    { return nil }
+func (c *stubCache) Stickers() discord.StickerStore                { return nil }
+func (c *stubCache) Bans() discord.BanStore                        { return nil }
+func (c *stubCache) AutoModRules() discord.AutoModerationRuleStore { return nil }
+func (c *stubCache) Invites() discord.InviteStore                  { return nil }
 
 var _ discord.Cache = (*stubCache)(nil)
 

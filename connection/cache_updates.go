@@ -102,6 +102,41 @@ func (d *Client) cacheRoles(guildID discord.Snowflake, roles []*discord.Role) {
 	}
 }
 
+func (d *Client) cacheBan(guildID discord.Snowflake, ban *discord.Ban) {
+	if ban == nil {
+		return
+	}
+	ban.User.Hydrate(d)
+	if d.cacheStoreEnabled(cache.CategoryBans) {
+		d.Cache.Bans().Set(guildID, ban)
+	}
+	if d.cacheStoreEnabled(cache.CategoryUsers) {
+		d.cacheUser(&ban.User)
+	}
+}
+
+func (d *Client) cacheInviteForGuild(guildID discord.Snowflake, invite *discord.Invite) {
+	if invite == nil || !d.cacheStoreEnabled(cache.CategoryInvites) {
+		return
+	}
+	d.Cache.Invites().SetWithGuild(guildID, invite)
+}
+
+func (d *Client) cacheInvite(invite *discord.Invite) {
+	if invite == nil || !d.cacheStoreEnabled(cache.CategoryInvites) {
+		return
+	}
+	d.Cache.Invites().Set(invite)
+}
+
+func (d *Client) cacheAutoModRule(guildID discord.Snowflake, rule *discord.AutoModerationRule) {
+	if rule == nil || !d.cacheStoreEnabled(cache.CategoryAutoModRules) {
+		return
+	}
+	rule.Hydrate(d)
+	d.Cache.AutoModRules().Set(guildID, rule)
+}
+
 func (d *Client) cacheUser(user *discord.User) {
 	if d.Cache == nil || user == nil {
 		return
@@ -147,10 +182,15 @@ func (d *Client) removeGuildFromCache(guildID discord.Snowflake) {
 	d.Cache.StageInstances().DeleteGuild(guildID)
 	d.Cache.Emojis().DeleteGuild(guildID)
 	d.Cache.Stickers().DeleteGuild(guildID)
+	d.Cache.Bans().DeleteGuild(guildID)
+	d.Cache.AutoModRules().DeleteGuild(guildID)
+	d.Cache.Invites().DeleteGuild(guildID)
 
 	for _, channelID := range d.drainGuildChannelIDs(guildID) {
 		d.Cache.Channels().Delete(channelID)
 		d.Cache.Messages().DeleteChannel(channelID)
+		// Bug 83: evict threadsByParent entries for any channel that was a parent.
+		d.drainParentThreadIDs(channelID)
 	}
 }
 
@@ -176,6 +216,67 @@ func (d *Client) removeMessagesFromCache(channelID discord.Snowflake, messageIDs
 	}
 
 	d.Cache.Messages().DeleteBulk(channelID, messageIDs)
+}
+
+// reactionEmojiMatches returns true when a and b refer to the same emoji.
+// Custom emojis are matched by ID; unicode emojis are matched by Name.
+func reactionEmojiMatches(a, b discord.Emoji) bool {
+	if a.ID != 0 && b.ID != 0 {
+		return a.ID == b.ID
+	}
+	return a.Name != "" && a.Name == b.Name
+}
+
+// appendOrIncrementReaction returns a new slice with count for emoji incremented
+// by one, or a new Reaction appended if the emoji is not yet present.
+func appendOrIncrementReaction(existing *[]discord.Reaction, emoji discord.Emoji) []discord.Reaction {
+	var reactions []discord.Reaction
+	if existing != nil {
+		reactions = make([]discord.Reaction, len(*existing))
+		copy(reactions, *existing)
+	}
+	for i := range reactions {
+		if reactionEmojiMatches(reactions[i].Emoji, emoji) {
+			reactions[i].Count++
+			return reactions
+		}
+	}
+	return append(reactions, discord.Reaction{Count: 1, Emoji: emoji})
+}
+
+// decrementOrRemoveReaction returns a new slice with the count for emoji
+// decremented by one; the entry is dropped when the count reaches zero.
+func decrementOrRemoveReaction(existing *[]discord.Reaction, emoji discord.Emoji) []discord.Reaction {
+	if existing == nil {
+		return nil
+	}
+	reactions := make([]discord.Reaction, 0, len(*existing))
+	for _, r := range *existing {
+		if !reactionEmojiMatches(r.Emoji, emoji) {
+			reactions = append(reactions, r)
+			continue
+		}
+		if r.Count > 1 {
+			r.Count--
+			reactions = append(reactions, r)
+		}
+	}
+	return reactions
+}
+
+// removeEmojiReaction returns a new slice with all reactions for the given
+// emoji removed, regardless of count.
+func removeEmojiReaction(existing *[]discord.Reaction, emoji discord.Emoji) []discord.Reaction {
+	if existing == nil {
+		return nil
+	}
+	reactions := make([]discord.Reaction, 0, len(*existing))
+	for _, r := range *existing {
+		if !reactionEmojiMatches(r.Emoji, emoji) {
+			reactions = append(reactions, r)
+		}
+	}
+	return reactions
 }
 
 func (d *Client) removeRoleFromCache(guildID, roleID discord.Snowflake) {

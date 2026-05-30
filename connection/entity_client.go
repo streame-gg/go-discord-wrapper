@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/streame-gg/go-discord-wrapper/api"
+	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -111,7 +112,12 @@ func (d *Client) CreateChannelInvite(ctx context.Context, channelID discord.Snow
 	if opts.AuditLogReason != nil {
 		apiOpts = &api.CreateChannelInviteOptions{Reason: *opts.AuditLogReason}
 	}
-	return d.RestClient.CreateChannelInvite(ctx, channelID, params, apiOpts)
+	invite, err := d.RestClient.CreateChannelInvite(ctx, channelID, params, apiOpts)
+	if err == nil {
+		invite.Hydrate(d)
+		d.cacheInvite(invite)
+	}
+	return invite, err
 }
 
 // ── Guild ──────────────────────────────────────────────────────────────────────
@@ -244,7 +250,15 @@ func (d *Client) CreateGuildSticker(ctx context.Context, guildID discord.Snowfla
 	if opts.AuditLogReason != nil {
 		apiOpts = &api.CreateGuildStickerOptions{Reason: *opts.AuditLogReason}
 	}
-	return d.RestClient.CreateGuildSticker(ctx, guildID, params, apiOpts)
+	sticker, err := d.RestClient.CreateGuildSticker(ctx, guildID, params, apiOpts)
+	if err == nil {
+		sticker.GuildID = &guildID
+		sticker.Hydrate(d)
+		if d.Cache != nil {
+			d.Cache.Stickers().Set(guildID, sticker)
+		}
+	}
+	return sticker, err
 }
 
 func (d *Client) GetGuildAuditLog(ctx context.Context, guildID discord.Snowflake, opts discord.AuditLogOptions) (*discord.AuditLog, error) {
@@ -519,7 +533,15 @@ func (d *Client) ModifyGuildSticker(ctx context.Context, guildID, stickerID disc
 	if opts.AuditLogReason != nil {
 		apiOpts = &api.ModifyGuildStickerOptions{Reason: *opts.AuditLogReason}
 	}
-	return d.RestClient.ModifyGuildSticker(ctx, guildID, stickerID, params, apiOpts)
+	sticker, err := d.RestClient.ModifyGuildSticker(ctx, guildID, stickerID, params, apiOpts)
+	if err == nil {
+		sticker.GuildID = &guildID
+		sticker.Hydrate(d)
+		if d.Cache != nil {
+			d.Cache.Stickers().Set(guildID, sticker)
+		}
+	}
+	return sticker, err
 }
 
 func (d *Client) DeleteGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake, reason *string) error {
@@ -527,7 +549,13 @@ func (d *Client) DeleteGuildSticker(ctx context.Context, guildID, stickerID disc
 	if reason != nil {
 		opts = &api.DeleteGuildStickerOptions{Reason: *reason}
 	}
-	return d.RestClient.DeleteGuildSticker(ctx, guildID, stickerID, opts)
+	if err := d.RestClient.DeleteGuildSticker(ctx, guildID, stickerID, opts); err != nil {
+		return err
+	}
+	if d.Cache != nil {
+		d.Cache.Stickers().Delete(stickerID)
+	}
+	return nil
 }
 
 // ── AutoModerationRule ─────────────────────────────────────────────────────────
@@ -546,11 +574,21 @@ func (d *Client) ModifyAutoModerationRule(ctx context.Context, guildID, ruleID d
 	if opts.AuditLogReason != nil {
 		apiOpts = &api.ModifyAutoModerationRuleOptions{Reason: *opts.AuditLogReason}
 	}
-	return d.RestClient.ModifyAutoModerationRule(ctx, guildID, ruleID, params, apiOpts)
+	rule, err := d.RestClient.ModifyAutoModerationRule(ctx, guildID, ruleID, params, apiOpts)
+	if err == nil {
+		d.cacheAutoModRule(guildID, rule)
+	}
+	return rule, err
 }
 
 func (d *Client) DeleteAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake) error {
-	return d.RestClient.DeleteAutoModerationRule(ctx, guildID, ruleID, nil)
+	if err := d.RestClient.DeleteAutoModerationRule(ctx, guildID, ruleID, nil); err != nil {
+		return err
+	}
+	if d.cacheStoreEnabled(cache.CategoryAutoModRules) {
+		d.Cache.AutoModRules().Delete(ruleID)
+	}
+	return nil
 }
 
 // ── SoundboardSound ────────────────────────────────────────────────────────────
@@ -566,7 +604,15 @@ func (d *Client) ModifyGuildSoundboardSound(ctx context.Context, guildID, soundI
 	if opts.AuditLogReason != nil {
 		apiOpts = &api.ModifyGuildSoundboardSoundOptions{Reason: *opts.AuditLogReason}
 	}
-	return d.RestClient.ModifyGuildSoundboardSound(ctx, guildID, soundID, params, apiOpts)
+	sound, err := d.RestClient.ModifyGuildSoundboardSound(ctx, guildID, soundID, params, apiOpts)
+	if err == nil {
+		sound.GuildID = &guildID
+		sound.Hydrate(d)
+		if d.Cache != nil {
+			d.Cache.Soundboard().Set(guildID, sound)
+		}
+	}
+	return sound, err
 }
 
 // ── Cache access ───────────────────────────────────────────────────────────────
@@ -700,20 +746,18 @@ func (d *Client) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake
 }
 
 func (d *Client) GetAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake) (*discord.AutoModerationRule, error) {
-	automoderationRule, err := d.RestClient.GetAutoModerationRule(ctx, guildID, ruleID)
-
+	rule, err := d.RestClient.GetAutoModerationRule(ctx, guildID, ruleID)
 	if err == nil {
-		automoderationRule.Hydrate(d)
+		d.cacheAutoModRule(guildID, rule)
 	}
-
-	return automoderationRule, err
+	return rule, err
 }
 
 func (d *Client) ListAutoModerationRules(ctx context.Context, guildID discord.Snowflake) ([]*discord.AutoModerationRule, error) {
 	rules, err := d.RestClient.ListAutoModerationRules(ctx, guildID)
 	if err == nil {
 		for _, r := range rules {
-			r.Hydrate(d)
+			d.cacheAutoModRule(guildID, r)
 		}
 	}
 	return rules, err
@@ -734,5 +778,9 @@ func (d *Client) CreateAutoModerationRule(ctx context.Context, guildID discord.S
 	if opts.AuditLogReason != nil {
 		apiOpts = &api.CreateAutoModerationRuleOptions{Reason: *opts.AuditLogReason}
 	}
-	return d.RestClient.CreateAutoModerationRule(ctx, guildID, params, apiOpts)
+	rule, err := d.RestClient.CreateAutoModerationRule(ctx, guildID, params, apiOpts)
+	if err == nil {
+		d.cacheAutoModRule(guildID, rule)
+	}
+	return rule, err
 }

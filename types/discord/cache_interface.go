@@ -95,6 +95,27 @@ type StickerStore interface {
 	Size() int
 }
 
+// BanStore is the read-only view of cached guild bans exposed to entity managers.
+type BanStore interface {
+	Get(guildID, userID Snowflake) (*Ban, bool)
+	AllInGuild(guildID Snowflake) *collection.Collection[Snowflake, *Ban]
+	Size() int
+}
+
+// AutoModerationRuleStore is the read-only view of cached automod rules exposed to entity managers.
+type AutoModerationRuleStore interface {
+	Get(ruleID Snowflake) (*AutoModerationRule, bool)
+	GetByGuild(guildID Snowflake) *collection.Collection[Snowflake, *AutoModerationRule]
+	Size() int
+}
+
+// InviteStore is the read-only view of cached invites exposed to entity managers.
+type InviteStore interface {
+	Get(code string) (*Invite, bool)
+	GetByGuild(guildID Snowflake) *collection.Collection[string, *Invite]
+	Size() int
+}
+
 // ── Top-level cache interface ─────────────────────────────────────────────────
 
 // Cache is the read-only cache interface accessible to entity managers via
@@ -114,4 +135,7 @@ type Cache interface {
 	StageInstances() StageInstanceStore
 	Emojis() EmojiStore
 	Stickers() StickerStore
+	Bans() BanStore
+	AutoModRules() AutoModerationRuleStore
+	Invites() InviteStore
 }

@@ -1182,6 +1182,109 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				d.Cache.Stickers().SetAll(ev.GuildID, ev.NewStickers)
 			}
 		}
+	case events.EventAutoModerationRuleCreate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryAutoModRules) {
+				var ev events.AutoModerationRuleCreateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal AUTO_MODERATION_RULE_CREATE event", slog.Any("err", err))
+					return false
+				}
+				rule := ev.AutoModerationRule
+				d.cacheAutoModRule(rule.GuildID, &rule)
+			}
+		}
+	case events.EventAutoModerationRuleUpdate:
+		{
+			ev, ok := event.(*events.AutoModerationRuleUpdateEvent)
+			if !ok {
+				return false
+			}
+			if d.cacheStoreEnabled(cache.CategoryAutoModRules) {
+				if old, exists := d.Cache.AutoModRules().Get(ev.NewRule.ID); exists {
+					ev.OldRule = old
+				}
+				rule := ev.NewRule
+				d.cacheAutoModRule(rule.GuildID, &rule)
+			}
+		}
+	case events.EventAutoModerationRuleDelete:
+		{
+			if d.cacheStoreEnabled(cache.CategoryAutoModRules) {
+				var ev events.AutoModerationRuleDeleteEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal AUTO_MODERATION_RULE_DELETE event", slog.Any("err", err))
+					return false
+				}
+				d.Cache.AutoModRules().Delete(ev.AutoModerationRule.ID)
+			}
+		}
+	case events.EventInviteCreate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryInvites) {
+				var ev events.InviteCreateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal INVITE_CREATE event", slog.Any("err", err))
+					return false
+				}
+				invite := discord.Invite{
+					Code:      ev.Code,
+					Inviter:   ev.Inviter,
+					MaxAge:    ev.MaxAge,
+					MaxUses:   ev.MaxUses,
+					Temporary: &ev.Temporary,
+					CreatedAt: &ev.CreatedAt,
+					ExpiresAt: ev.ExpiresAt,
+				}
+				if ev.GuildID != nil {
+					d.Cache.Invites().SetWithGuild(*ev.GuildID, &invite)
+				} else {
+					d.Cache.Invites().Set(&invite)
+				}
+			}
+		}
+	case events.EventInviteDelete:
+		{
+			if d.cacheStoreEnabled(cache.CategoryInvites) {
+				var ev events.InviteDeleteEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal INVITE_DELETE event", slog.Any("err", err))
+					return false
+				}
+				d.Cache.Invites().Delete(ev.Code)
+			}
+		}
+	case events.EventGuildBanAdd:
+		{
+			needMembers := d.cacheStoreEnabled(cache.CategoryMembers)
+			needBans := d.cacheStoreEnabled(cache.CategoryBans)
+			needUsers := d.cacheStoreEnabled(cache.CategoryUsers)
+			if needMembers || needBans || needUsers {
+				var ev events.GuildBanAddEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_BAN_ADD event", slog.Any("err", err))
+					return false
+				}
+				if needMembers {
+					d.Cache.Members().Delete(ev.GuildID, ev.User.ID)
+				}
+				if needBans || needUsers {
+					ban := discord.Ban{User: ev.User}
+					d.cacheBan(ev.GuildID, &ban)
+				}
+			}
+		}
+	case events.EventGuildBanRemove:
+		{
+			if d.cacheStoreEnabled(cache.CategoryBans) {
+				var ev events.GuildBanRemoveEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_BAN_REMOVE event", slog.Any("err", err))
+					return false
+				}
+				d.Cache.Bans().Delete(ev.GuildID, ev.User.ID)
+			}
+		}
 	case events.EventGuildMemberAdd:
 		{
 			var ev events.GuildMemberAddEvent
@@ -1311,6 +1414,42 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				d.Cache.ScheduledEvents().Delete(ev.ID)
 			}
 		}
+	case events.EventGuildScheduledEventUserAdd:
+		{
+			// Bug 78: increment UserCount on the cached scheduled event.
+			if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
+				var ev events.GuildScheduledEventUserAddEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_SCHEDULED_EVENT_USER_ADD event", slog.Any("err", err))
+					return false
+				}
+				if se, ok := d.Cache.ScheduledEvents().Get(ev.GuildScheduledEventID); ok {
+					updated := *se
+					if updated.UserCount != nil {
+						count := *updated.UserCount + 1
+						updated.UserCount = &count
+					}
+					d.Cache.ScheduledEvents().Set(&updated)
+				}
+			}
+		}
+	case events.EventGuildScheduledEventUserRemove:
+		{
+			// Bug 78: decrement UserCount on the cached scheduled event.
+			if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
+				var ev events.GuildScheduledEventUserRemoveEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_SCHEDULED_EVENT_USER_REMOVE event", slog.Any("err", err))
+					return false
+				}
+				if se, ok := d.Cache.ScheduledEvents().Get(ev.GuildScheduledEventID); ok && se.UserCount != nil && *se.UserCount > 0 {
+					updated := *se
+					count := *updated.UserCount - 1
+					updated.UserCount = &count
+					d.Cache.ScheduledEvents().Set(&updated)
+				}
+			}
+		}
 	case events.EventStageInstanceCreate:
 		{
 			if d.cacheStoreEnabled(cache.CategoryStageInstances) {
@@ -1424,6 +1563,21 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				d.Cache.Soundboard().SetAll(ev.GuildID, sounds)
 			}
 		}
+	case events.EventChannelPinsUpdate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryChannels) {
+				var ev events.ChannelPinsUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal CHANNEL_PINS_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				if ch, ok := d.Cache.Channels().Get(ev.ChannelID); ok {
+					updated := *ch
+					updated.LastPinTimestamp = ev.LastPinTimestamp
+					d.Cache.Channels().Set(&updated)
+				}
+			}
+		}
 	case events.EventChannelCreate:
 		{
 			if d.cacheStoreEnabled(cache.CategoryChannels) {
@@ -1477,18 +1631,26 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 	case events.EventThreadUpdate:
 		{
 			if d.cacheStoreEnabled(cache.CategoryChannels) {
-				var ch discord.Channel
-				if ev, ok := event.(*events.ThreadUpdateEvent); ok {
-					if old, exists := d.Cache.Channels().Get(ev.NewThread.ID); exists {
-						ev.OldThread = old
-					}
-					ch = ev.NewThread
-				} else {
-					var fallback events.ThreadUpdateEvent
-					if err := json.Unmarshal(msg, &fallback); err != nil {
+				// Bug 82: always populate OldThread from cache regardless of which
+				// path provides the parsed event.
+				ev, ok := event.(*events.ThreadUpdateEvent)
+				if !ok {
+					// Fallback for callers (e.g. tests) that pass nil as event.
+					var parsed events.ThreadUpdateEvent
+					if err := json.Unmarshal(msg, &parsed); err != nil {
 						return false
 					}
-					ch = fallback.NewThread
+					ev = &parsed
+				}
+				if old, exists := d.Cache.Channels().Get(ev.NewThread.ID); exists {
+					ev.OldThread = old
+				}
+				ch := ev.NewThread
+				// Bug 84: if the thread was reparented, remove from old parent's index.
+				if ev.OldThread != nil && ev.OldThread.ParentID != nil {
+					if ch.ParentID == nil || *ch.ParentID != *ev.OldThread.ParentID {
+						d.untrackThread(ch.ID, *ev.OldThread.ParentID)
+					}
 				}
 				d.cacheChannel(&ch)
 				d.trackThread(&ch)
@@ -1609,6 +1771,72 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				d.Cache.Messages().DeleteBulk(ev.ChannelID, ev.IDs)
+			}
+		}
+	case events.EventMessageReactionAdd:
+		{
+			var ev events.MessageReactionAddEvent
+			if err := json.Unmarshal(msg, &ev); err != nil {
+				d.Logger.Error("Failed to unmarshal MESSAGE_REACTION_ADD event", slog.Any("err", err))
+				return false
+			}
+			if d.cacheStoreEnabled(cache.CategoryMessages) {
+				if m, ok := d.Cache.Messages().Get(ev.ChannelID, ev.MessageID); ok {
+					updated := *m
+					reactions := appendOrIncrementReaction(updated.Reactions, ev.Emoji)
+					updated.Reactions = &reactions
+					d.Cache.Messages().Update(&updated)
+				}
+			}
+			if d.cacheStoreEnabled(cache.CategoryMembers) && ev.Member != nil && ev.GuildID != nil {
+				d.cacheMember(*ev.GuildID, ev.Member)
+			}
+		}
+	case events.EventMessageReactionRemove:
+		{
+			if d.cacheStoreEnabled(cache.CategoryMessages) {
+				var ev events.MessageReactionRemoveEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal MESSAGE_REACTION_REMOVE event", slog.Any("err", err))
+					return false
+				}
+				if m, ok := d.Cache.Messages().Get(ev.ChannelID, ev.MessageID); ok {
+					updated := *m
+					reactions := decrementOrRemoveReaction(updated.Reactions, ev.Emoji)
+					updated.Reactions = &reactions
+					d.Cache.Messages().Update(&updated)
+				}
+			}
+		}
+	case events.EventMessageReactionRemoveAll:
+		{
+			if d.cacheStoreEnabled(cache.CategoryMessages) {
+				var ev events.MessageReactionRemoveAllEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal MESSAGE_REACTION_REMOVE_ALL event", slog.Any("err", err))
+					return false
+				}
+				if m, ok := d.Cache.Messages().Get(ev.ChannelID, ev.MessageID); ok {
+					updated := *m
+					updated.Reactions = nil
+					d.Cache.Messages().Update(&updated)
+				}
+			}
+		}
+	case events.EventMessageReactionRemoveEmoji:
+		{
+			if d.cacheStoreEnabled(cache.CategoryMessages) {
+				var ev events.MessageReactionRemoveEmojiEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal MESSAGE_REACTION_REMOVE_EMOJI event", slog.Any("err", err))
+					return false
+				}
+				if m, ok := d.Cache.Messages().Get(ev.ChannelID, ev.MessageID); ok {
+					updated := *m
+					reactions := removeEmojiReaction(updated.Reactions, ev.Emoji)
+					updated.Reactions = &reactions
+					d.Cache.Messages().Update(&updated)
+				}
 			}
 		}
 	case events.EventGuildMembersChunk:
