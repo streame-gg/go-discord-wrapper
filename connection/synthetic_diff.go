@@ -1,6 +1,8 @@
 package connection
 
 import (
+	"time"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 )
@@ -51,7 +53,7 @@ func deriveGuildEmojiSyntheticEvents(ev *events.GuildEmojisUpdateEvent) []events
 				GuildID: ev.GuildID,
 				Emoji:   newEmoji,
 			})
-		} else if old.Name != newEmoji.Name {
+		} else if emojiChanged(old, newEmoji) {
 			result = append(result, &events.GuildEmojiUpdateEvent{
 				GuildID:  ev.GuildID,
 				OldEmoji: old,
@@ -96,7 +98,7 @@ func deriveGuildStickerSyntheticEvents(ev *events.GuildStickersUpdateEvent) []ev
 				GuildID: ev.GuildID,
 				Sticker: newSticker,
 			})
-		} else if old.Name != newSticker.Name {
+		} else if stickerChanged(old, newSticker) {
 			result = append(result, &events.GuildStickerUpdateEvent{
 				GuildID:    ev.GuildID,
 				OldSticker: old,
@@ -188,7 +190,7 @@ func deriveGuildMemberSyntheticEvents(ev *events.GuildMemberUpdateEvent) []event
 	// Timeout applied or extended.
 	if ev.NewMember.CommunicationDisabledUntil != nil &&
 		(ev.OldMember.CommunicationDisabledUntil == nil ||
-			*ev.OldMember.CommunicationDisabledUntil != *ev.NewMember.CommunicationDisabledUntil) {
+			!timeStringEqual(*ev.OldMember.CommunicationDisabledUntil, *ev.NewMember.CommunicationDisabledUntil)) {
 		result = append(result, &events.GuildMemberTimeoutEvent{
 			GuildID: ev.GuildID, UserID: ev.NewMember.UserID,
 			CommunicationDisabledUntil: *ev.NewMember.CommunicationDisabledUntil,
@@ -307,6 +309,70 @@ func activitiesChanged(old, new_ []discord.FullActivity) bool {
 	return false
 }
 
+func emojiChanged(old, new_ *discord.Emoji) bool {
+	return old.Name != new_.Name ||
+		!boolPtrEqual(old.Available, new_.Available) ||
+		!boolPtrEqual(old.RequireColons, new_.RequireColons) ||
+		!stringSliceSetEqual(old.Roles, new_.Roles)
+}
+
+func stickerChanged(old, new_ *discord.Sticker) bool {
+	return old.Name != new_.Name ||
+		old.Tags != new_.Tags ||
+		!stringPtrEqual(old.Description, new_.Description) ||
+		!boolPtrEqual(old.Available, new_.Available)
+}
+
+func boolPtrEqual(a, b *bool) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+
+func stringPtrEqual(a, b *string) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
+}
+
+// stringSliceSetEqual reports whether two string slices contain the same
+// elements regardless of order.
+func stringSliceSetEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	counts := make(map[string]int, len(a))
+	for _, s := range a {
+		counts[s]++
+	}
+	for _, s := range b {
+		if counts[s] <= 0 {
+			return false
+		}
+		counts[s]--
+	}
+	return true
+}
+
+// timeStringEqual parses two ISO 8601 / RFC3339 timestamps and compares them
+// with time.Equal (UTC-normalised). Falls back to string equality on parse failure.
+func timeStringEqual(a, b string) bool {
+	ta, errA := time.Parse(time.RFC3339, a)
+	tb, errB := time.Parse(time.RFC3339, b)
+	if errA != nil || errB != nil {
+		return a == b
+	}
+	return ta.Equal(tb)
+}
+
 // hasProfileFields reports whether the partial presence user carries any
 // field beyond the mandatory ID, indicating a profile change.
 func hasProfileFields(u discord.PartialPresenceUser) bool {
@@ -346,7 +412,14 @@ func deriveVoiceSyntheticEvents(ev *events.VoiceStateUpdateEvent) []events.Event
 
 	case ev.OldState != nil && ev.ChannelID != nil:
 		if ev.OldState.ChannelID == nil {
-			return nil
+			// Stale OldState (e.g. after reconnect): user wasn't in a channel, treat as join.
+			stateCopy := ev.VoiceState
+			return []events.Event{&events.VoiceMemberJoinEvent{
+				GuildID:   guildID,
+				UserID:    ev.UserID,
+				ChannelID: *ev.ChannelID,
+				State:     &stateCopy,
+			}}
 		}
 		stateCopy := ev.VoiceState
 		if *ev.OldState.ChannelID != *ev.ChannelID {

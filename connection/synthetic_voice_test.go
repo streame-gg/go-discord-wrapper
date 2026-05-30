@@ -87,11 +87,17 @@ func TestVoiceSynthetic_MoveFires(t *testing.T) {
 	assert.NotNil(t, move.NewState)
 }
 
-func TestVoiceSynthetic_MoveNotFired_OldStateNoChannel(t *testing.T) {
-	// OldState exists but its ChannelID is nil — can't determine origin channel
+func TestVoiceSynthetic_JoinFired_OldStateNoChannel(t *testing.T) {
+	// Stale OldState with nil ChannelID + new ChannelID — treat as join, not move.
 	ev := newVSUEvent("guild1", "user1", sf("chan2"), &discord.VoiceState{ChannelID: nil})
 	result := deriveVoiceSyntheticEvents(ev)
-	assert.Nil(t, result)
+	require.Len(t, result, 1)
+	join, ok := result[0].(*events.VoiceMemberJoinEvent)
+	require.True(t, ok, "expected VoiceMemberJoinEvent")
+	assert.Equal(t, snowflake("guild1"), join.GuildID)
+	assert.Equal(t, snowflake("user1"), join.UserID)
+	assert.Equal(t, snowflake("chan2"), join.ChannelID)
+	assert.NotNil(t, join.State)
 }
 
 func TestVoiceSynthetic_UpdateFires(t *testing.T) {

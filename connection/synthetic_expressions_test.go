@@ -112,6 +112,60 @@ func TestEmojiSynthetic_UpdateNotFired_NameUnchanged(t *testing.T) {
 	assert.Empty(t, deriveGuildEmojiSyntheticEvents(ev))
 }
 
+func TestEmojiSynthetic_UpdateFires_AvailableChanged(t *testing.T) {
+	old := makeEmoji("e1", "wave")
+	old.Available = boolPtr(true)
+	new_ := makeEmoji("e1", "wave")
+	new_.Available = boolPtr(false)
+	ev := &events.GuildEmojisUpdateEvent{
+		GuildID: snowflake("g1"), NewEmojis: []*discord.Emoji{&new_}, OldEmojis: []*discord.Emoji{&old},
+	}
+	result := deriveGuildEmojiSyntheticEvents(ev)
+	require.Len(t, result, 1)
+	_, ok := result[0].(*events.GuildEmojiUpdateEvent)
+	assert.True(t, ok)
+}
+
+func TestEmojiSynthetic_UpdateFires_RequireColonsChanged(t *testing.T) {
+	old := makeEmoji("e1", "wave")
+	old.RequireColons = boolPtr(true)
+	new_ := makeEmoji("e1", "wave")
+	new_.RequireColons = boolPtr(false)
+	ev := &events.GuildEmojisUpdateEvent{
+		GuildID: snowflake("g1"), NewEmojis: []*discord.Emoji{&new_}, OldEmojis: []*discord.Emoji{&old},
+	}
+	result := deriveGuildEmojiSyntheticEvents(ev)
+	require.Len(t, result, 1)
+	_, ok := result[0].(*events.GuildEmojiUpdateEvent)
+	assert.True(t, ok)
+}
+
+func TestEmojiSynthetic_UpdateFires_RolesChanged(t *testing.T) {
+	old := makeEmoji("e1", "wave")
+	old.Roles = []string{"r1"}
+	new_ := makeEmoji("e1", "wave")
+	new_.Roles = []string{"r1", "r2"}
+	ev := &events.GuildEmojisUpdateEvent{
+		GuildID: snowflake("g1"), NewEmojis: []*discord.Emoji{&new_}, OldEmojis: []*discord.Emoji{&old},
+	}
+	result := deriveGuildEmojiSyntheticEvents(ev)
+	require.Len(t, result, 1)
+	_, ok := result[0].(*events.GuildEmojiUpdateEvent)
+	assert.True(t, ok)
+}
+
+func TestEmojiSynthetic_UpdateNotFired_RolesReordered(t *testing.T) {
+	// Same role set in different order must not trigger an update event.
+	old := makeEmoji("e1", "wave")
+	old.Roles = []string{"r1", "r2"}
+	new_ := makeEmoji("e1", "wave")
+	new_.Roles = []string{"r2", "r1"}
+	ev := &events.GuildEmojisUpdateEvent{
+		GuildID: snowflake("g1"), NewEmojis: []*discord.Emoji{&new_}, OldEmojis: []*discord.Emoji{&old},
+	}
+	assert.Empty(t, deriveGuildEmojiSyntheticEvents(ev))
+}
+
 func TestEmojiSynthetic_MultipleChanges(t *testing.T) {
 	// e1 renamed, e2 removed, e3 added
 	ev := newEmojiUpdateEvent("g1",
@@ -184,6 +238,48 @@ func TestStickerSynthetic_UpdateNotFired_Unchanged(t *testing.T) {
 	stickers := []discord.Sticker{makeSticker("s1", "doge")}
 	ev := newStickerUpdateEvent("g1", stickers, stickerPtrs(stickers))
 	assert.Empty(t, deriveGuildStickerSyntheticEvents(ev))
+}
+
+func TestStickerSynthetic_UpdateFires_TagsChanged(t *testing.T) {
+	old := makeSticker("s1", "doge")
+	old.Tags = "dog,cute"
+	new_ := makeSticker("s1", "doge")
+	new_.Tags = "dog,cute,wow"
+	ev := &events.GuildStickersUpdateEvent{
+		GuildID: snowflake("g1"), NewStickers: []*discord.Sticker{&new_}, OldStickers: []*discord.Sticker{&old},
+	}
+	result := deriveGuildStickerSyntheticEvents(ev)
+	require.Len(t, result, 1)
+	_, ok := result[0].(*events.GuildStickerUpdateEvent)
+	assert.True(t, ok)
+}
+
+func TestStickerSynthetic_UpdateFires_DescriptionChanged(t *testing.T) {
+	old := makeSticker("s1", "doge")
+	old.Description = strPtr("cute dog")
+	new_ := makeSticker("s1", "doge")
+	new_.Description = strPtr("very cute dog")
+	ev := &events.GuildStickersUpdateEvent{
+		GuildID: snowflake("g1"), NewStickers: []*discord.Sticker{&new_}, OldStickers: []*discord.Sticker{&old},
+	}
+	result := deriveGuildStickerSyntheticEvents(ev)
+	require.Len(t, result, 1)
+	_, ok := result[0].(*events.GuildStickerUpdateEvent)
+	assert.True(t, ok)
+}
+
+func TestStickerSynthetic_UpdateFires_AvailableChanged(t *testing.T) {
+	old := makeSticker("s1", "doge")
+	old.Available = boolPtr(true)
+	new_ := makeSticker("s1", "doge")
+	new_.Available = boolPtr(false)
+	ev := &events.GuildStickersUpdateEvent{
+		GuildID: snowflake("g1"), NewStickers: []*discord.Sticker{&new_}, OldStickers: []*discord.Sticker{&old},
+	}
+	result := deriveGuildStickerSyntheticEvents(ev)
+	require.Len(t, result, 1)
+	_, ok := result[0].(*events.GuildStickerUpdateEvent)
+	assert.True(t, ok)
 }
 
 // ── Role permissions unit tests ──────────────────────────────────────────────
