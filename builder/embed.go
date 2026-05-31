@@ -128,13 +128,15 @@ func (b *EmbedBuilder) Validate() error {
 	}
 
 	for i, f := range e.Fields {
-		if n := utf8.RuneCountInString(f.Name); n > 256 {
-			return fmt.Errorf("embed field %d name exceeds 256 characters (%d)", i, n)
+		nameLen := utf8.RuneCountInString(f.Name)
+		valueLen := utf8.RuneCountInString(f.Value)
+		if nameLen > 256 {
+			return fmt.Errorf("embed field %d name exceeds 256 characters (%d)", i, nameLen)
 		}
-		if n := utf8.RuneCountInString(f.Value); n > 1024 {
-			return fmt.Errorf("embed field %d value exceeds 1024 characters (%d)", i, n)
+		if valueLen > 1024 {
+			return fmt.Errorf("embed field %d value exceeds 1024 characters (%d)", i, valueLen)
 		}
-		total += utf8.RuneCountInString(f.Name) + utf8.RuneCountInString(f.Value)
+		total += nameLen + valueLen
 	}
 
 	if e.Footer != nil {
