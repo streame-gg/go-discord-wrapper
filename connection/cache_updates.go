@@ -198,8 +198,10 @@ func (d *Client) removeGuildFromCache(guildID discord.Snowflake) {
 	for _, channelID := range d.drainGuildChannelIDs(guildID) {
 		d.Cache.Channels().Delete(channelID)
 		d.Cache.Messages().DeleteChannel(channelID)
-		// Bug 83: evict threadsByParent entries for any channel that was a parent.
-		d.drainParentThreadIDs(channelID)
+		for _, threadID := range d.drainParentThreadIDs(channelID) {
+			d.Cache.Channels().Delete(threadID)
+			d.Cache.Messages().DeleteChannel(threadID)
+		}
 	}
 }
 

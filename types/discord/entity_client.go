@@ -135,4 +135,11 @@ type EntityClient interface {
 	// and is O(threads_in_parent) rather than O(total_channels). Returns an
 	// empty collection when no cache is configured.
 	ThreadsForParent(parentID Snowflake) *collection.Collection[Snowflake, *Channel]
+
+	// ChannelsForGuild returns a snapshot of all cached non-thread channels for
+	// guildID. It uses the client's internal guild→channels index and is
+	// O(channels_in_guild) rather than O(total_channels). Threads are excluded
+	// to match the Discord API (GET /guilds/{id}/channels). Returns an empty
+	// collection when no cache is configured.
+	ChannelsForGuild(guildID Snowflake) *collection.Collection[Snowflake, *Channel]
 }

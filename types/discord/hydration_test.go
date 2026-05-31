@@ -302,6 +302,10 @@ func (s *stubClient) ThreadsForParent(parentID discord.Snowflake) *collection.Co
 	return collection.New[discord.Snowflake, *discord.Channel]()
 }
 
+func (s *stubClient) ChannelsForGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Channel] {
+	return collection.New[discord.Snowflake, *discord.Channel]()
+}
+
 var _ discord.EntityClient = (*stubClient)(nil)
 
 // ── Infrastructure tests ──────────────────────────────────────────────────────

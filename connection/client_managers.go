@@ -47,3 +47,28 @@ func (d *Client) ThreadsForParent(parentID discord.Snowflake) *collection.Collec
 	}
 	return result
 }
+
+// ChannelsForGuild returns a snapshot of all cached non-thread channels for
+// guildID. Uses the internal channelsByGuild index — O(channels_in_guild)
+// rather than O(total_channels). Threads are excluded to match the Discord API.
+// Returns an empty collection when no cache is configured.
+// Satisfies the discord.EntityClient interface.
+func (d *Client) ChannelsForGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Channel] {
+	result := collection.New[discord.Snowflake, *discord.Channel]()
+	if d.Cache == nil {
+		return result
+	}
+	d.channelIndexMu.RLock()
+	ids := make([]discord.Snowflake, 0, len(d.channelsByGuild[guildID]))
+	for id := range d.channelsByGuild[guildID] {
+		ids = append(ids, id)
+	}
+	d.channelIndexMu.RUnlock()
+
+	for _, id := range ids {
+		if ch, ok := d.Cache.Channels().Get(id); ok {
+			result.Set(id, ch)
+		}
+	}
+	return result
+}
