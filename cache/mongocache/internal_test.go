@@ -9,21 +9,15 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-// TestBug114_ExtractID_UnknownTypePanics verifies that extractID panics for any
-// document type it does not recognise.
-//
-// Root cause: the missing default branch caused extractID to silently return ""
-// for unknown types, so all such documents shared _id:"" in MongoDB and
-// overwrote each other. The fix adds a panic so programmer errors surface
-// immediately rather than corrupting the database.
-func TestBug114_ExtractID_UnknownTypePanics(t *testing.T) {
+// TestBug114_ExtractID_UnknownTypeReturnsError verifies that extractID returns
+// ok=false for any document type it does not recognise, so upsertByID can
+// return an error rather than panicking or silently writing an empty _id.
+func TestBug114_ExtractID_UnknownTypeReturnsError(t *testing.T) {
 	type unknownDoc struct{ X string }
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("Bug114: extractID with unknown type should panic, but did not")
-		}
-	}()
-	extractID(unknownDoc{"hello"})
+	_, ok := extractID(unknownDoc{"hello"})
+	if ok {
+		t.Error("Bug114: extractID with unknown type should return ok=false")
+	}
 }
 
 // TestBug21MsgChannelMuCleanedOnDeleteChannel verifies that per-channel mutexes

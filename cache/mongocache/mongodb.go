@@ -53,6 +53,7 @@ package mongocache
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -373,7 +374,10 @@ func setAllTx(ctx context.Context, col *mongo.Collection, guildID string, docs [
 }
 
 func upsertByID(ctx context.Context, col *mongo.Collection, doc any) error {
-	id := extractID(doc)
+	id, ok := extractID(doc)
+	if !ok {
+		return fmt.Errorf("mongocache: unknown document type %T", doc)
+	}
 	_, err := col.ReplaceOne(
 		ctx,
 		bson.M{"_id": id},
@@ -384,22 +388,22 @@ func upsertByID(ctx context.Context, col *mongo.Collection, doc any) error {
 }
 
 // extractID reads the _id field from an entityDoc, memberDoc, roleDoc, or msgDoc.
-func extractID(doc any) string {
+func extractID(doc any) (string, bool) {
 	switch d := doc.(type) {
 	case entityDoc:
-		return d.ID
+		return d.ID, true
 	case memberDoc:
-		return d.ID
+		return d.ID, true
 	case roleDoc:
-		return d.ID
+		return d.ID, true
 	case guildEntityDoc:
-		return d.ID
+		return d.ID, true
 	case guildUserDoc:
-		return d.ID
+		return d.ID, true
 	case msgDoc:
-		return d.ID
+		return d.ID, true
 	default:
-		panic("mongocache: upsertByID called with unknown document type")
+		return "", false
 	}
 }
 

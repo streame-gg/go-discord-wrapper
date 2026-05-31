@@ -2,8 +2,6 @@
 
 A Go library for the Discord gateway and REST API.
 
-> **Status:** Alpha — actively developed, APIs may change before the first tagged release.
-
 ## Features
 
 - Gateway (WebSocket) client with automatic reconnection and resume
@@ -11,7 +9,7 @@ A Go library for the Discord gateway and REST API.
 - Proactive rate limiter — respects per-route and global Discord rate limits before sending
 - In-process memory cache (guild, channel, member, message, role, voice state, emoji, sticker, …) with TTL and LRU eviction
 - Pluggable cache backends (Redis and MongoDB drivers included)
-- **21 high-level synthetic events** derived from raw gateway events (voice transitions, role diffs, nick changes, boost detection, emoji/sticker diffs, …)
+- Synthetic emoji and sticker events derived from raw gateway payloads
 - Slash command and interaction support (reply, defer, modal, component)
 - Horizontal sharding with a built-in shard coordinator
 - Middleware support for event handlers
@@ -231,63 +229,23 @@ Synthetic events are high-level events derived by the wrapper from raw Discord g
 They are never sent by Discord directly — the library computes them by diffing state across
 consecutive gateway payloads.
 
-Most synthetic events require the **cache to be enabled** (via `options.WithCache`).
-When the cache is cold (no prior state), the event is silently skipped rather than firing
-with incomplete data.
+Synthetic events require the **cache to be enabled** (via `options.WithCache`). When the cache
+is cold (no prior state), the event is silently skipped rather than firing with incomplete data.
 
 ```go
 mc := cache.NewMemoryCache(cache.Options{})
 bot, err := connection.NewClient(token, intents, options.WithCache(mc))
 
-// Fires once per role added — never need to diff role slices yourself.
-bot.OnGuildMemberRoleAdd(func(c *connection.Client, ev *events.GuildMemberRoleAddEvent) {
-    fmt.Printf("user %s gained role %s\n", ev.UserID, ev.RoleID)
+// Fires once per emoji added to a guild.
+bot.OnGuildEmojiAdd(func(c *connection.Client, ev *events.GuildEmojiAddEvent) {
+    fmt.Printf("emoji %s added to guild %s\n", ev.Emoji.Name, ev.GuildID)
 })
 
-// Fires when a user joins a voice channel for the first time.
-bot.OnVoiceMemberJoin(func(c *connection.Client, ev *events.VoiceMemberJoinEvent) {
-    fmt.Printf("user %s joined channel %s\n", ev.UserID, ev.ChannelID)
+// Fires once per sticker removed from a guild.
+bot.OnGuildStickerRemove(func(c *connection.Client, ev *events.GuildStickerRemoveEvent) {
+    fmt.Printf("sticker %s removed from guild %s\n", ev.Sticker.Name, ev.GuildID)
 })
 ```
-
-Raw events are dispatched/enqueued before any derived synthetic events. If dispatch is
-configured to run serially (single-threaded), handlers observe that same order; in
-concurrent modes, synthetic handlers may run before the corresponding raw handler has
-finished.
-
-### Voice events (source: `VOICE_STATE_UPDATE`)
-
-No cache required — voice state is tracked internally.
-
-| Helper | Struct | Fires when |
-|--------|--------|------------|
-| `OnVoiceMemberJoin` | `VoiceMemberJoinEvent` | User enters a voice channel (was not in any channel before) |
-| `OnVoiceMemberLeave` | `VoiceMemberLeaveEvent` | User leaves all voice channels |
-| `OnVoiceMemberMove` | `VoiceMemberMoveEvent` | User switches from one channel to another |
-| `OnVoiceMemberUpdate` | `VoiceMemberUpdateEvent` | User's state changes while staying in the same channel (mute, deafen, …) |
-
-### Member events (source: `GUILD_MEMBER_UPDATE`, cache required)
-
-| Helper | Struct | Fires when |
-|--------|--------|------------|
-| `OnGuildMemberRoleAdd` | `GuildMemberRoleAddEvent` | A role is added to a member (one event per role) |
-| `OnGuildMemberRoleRemove` | `GuildMemberRoleRemoveEvent` | A role is removed from a member (one event per role) |
-| `OnGuildMemberNickChange` | `GuildMemberNickChangeEvent` | A member's nickname is set, changed, or cleared |
-| `OnGuildMemberTimeout` | `GuildMemberTimeoutEvent` | A timeout is applied or extended |
-| `OnGuildMemberBoostStart` | `GuildMemberBoostStartEvent` | A member starts boosting the server |
-| `OnGuildMemberBoostEnd` | `GuildMemberBoostEndEvent` | A member stops boosting the server |
-
-### Presence events (source: `PRESENCE_UPDATE`)
-
-Status transitions require cache. `OnUserProfileUpdate` fires on any non-ID field in the
-partial user payload (no cache needed).
-
-| Helper | Struct | Fires when |
-|--------|--------|------------|
-| `OnUserOnline` | `UserOnlineEvent` | User transitions from offline to any active status |
-| `OnUserOffline` | `UserOfflineEvent` | User transitions to offline |
-| `OnUserActivityChange` | `UserActivityChangeEvent` | User's activity set changes |
-| `OnUserProfileUpdate` | `UserProfileUpdateEvent` | User's profile fields change (username, avatar, …) |
 
 ### Emoji events (source: `GUILD_EMOJIS_UPDATE`, cache required)
 
@@ -295,7 +253,7 @@ partial user payload (no cache needed).
 |--------|--------|------------|
 | `OnGuildEmojiAdd` | `GuildEmojiAddEvent` | An emoji is created in a guild |
 | `OnGuildEmojiRemove` | `GuildEmojiRemoveEvent` | An emoji is deleted from a guild |
-| `OnGuildEmojiUpdate` | `GuildEmojiUpdateEvent` | An emoji's name changes |
+| `OnGuildEmojiUpdate` | `GuildEmojiUpdateEvent` | An emoji's name, roles, or availability changes |
 
 ### Sticker events (source: `GUILD_STICKERS_UPDATE`, cache required)
 
@@ -303,13 +261,7 @@ partial user payload (no cache needed).
 |--------|--------|------------|
 | `OnGuildStickerAdd` | `GuildStickerAddEvent` | A sticker is created in a guild |
 | `OnGuildStickerRemove` | `GuildStickerRemoveEvent` | A sticker is deleted from a guild |
-| `OnGuildStickerUpdate` | `GuildStickerUpdateEvent` | A sticker's name changes |
-
-### Role events (source: `GUILD_ROLE_UPDATE`, cache required)
-
-| Helper | Struct | Fires when |
-|--------|--------|------------|
-| `OnGuildRolePermissionsChange` | `GuildRolePermissionsChangeEvent` | A role's permission bitfield changes |
+| `OnGuildStickerUpdate` | `GuildStickerUpdateEvent` | A sticker's name, tags, or availability changes |
 
 ## Supported gateway events
 
@@ -343,7 +295,6 @@ partial user payload (no cache needed).
 | Guild Ban Remove | `events.EventGuildBanRemove` |
 | Guild Emojis Update | `events.EventGuildEmojisUpdate` |
 | Guild Stickers Update | `events.EventGuildStickersUpdate` |
-| Guild Integrations Update | `events.EventIntegrationUpdate` |
 | Guild Member Add | `events.EventGuildMemberAdd` |
 | Guild Member Update | `events.EventGuildMemberUpdate` |
 | Guild Member Remove | `events.EventGuildMemberRemove` |

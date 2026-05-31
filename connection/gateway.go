@@ -577,7 +577,7 @@ func (d *Client) dispatchShardMessage(msg options.ShardMessage) {
 // ── Gateway connection ───────────────────────────────────────────────────────
 
 func (d *Client) initializeGatewayConnection(ctx context.Context) (*discord.BotRegisterResponse, error) {
-	const userAgent = "DiscordBot (https://github.com/streame-gg/go-discord-wrapper, alpha)"
+	const userAgent = "DiscordBot (" + discord.RepositoryURL + ", " + discord.RepositoryVersion + ")"
 
 	for {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://discord.com"+discord.APIBaseString(*d.APIVersion)+"gateway/bot", nil)

@@ -143,8 +143,8 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 				"intents": *bot.Intents,
 				"properties": map[string]string{
 					"os":      runtime.GOOS,
-					"browser": "https://github.com/streame-gg/go-discord-wrapper@alpha",
-					"device":  "https://github.com/streame-gg/go-discord-wrapper@alpha",
+					"browser": discord.RepositoryURL + "@" + discord.RepositoryVersion,
+					"device":  discord.RepositoryURL + "@" + discord.RepositoryVersion,
 				},
 			},
 		}
