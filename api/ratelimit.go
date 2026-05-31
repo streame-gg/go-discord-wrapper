@@ -283,15 +283,15 @@ func (r *rateLimiter) update(method, path string, resp *http.Response) {
 			// Clearly a newer rate-limit window — accept all values from the response.
 			b.remaining = remaining
 			b.resetAt = resetAt
-		} else if remaining < b.remaining {
+		} else if remaining < b.remaining && resetAt.After(time.Now()) {
 			// Same window or slightly out-of-order: conservatively take the lower
 			// remaining. Out-of-order responses can arrive with a resetAt that is
 			// slightly older than b.resetAt due to network jitter; discarding them
 			// entirely would leave b.remaining inflated (Bug 110).
-			// Only skip truly stale responses (reset time more than 30 s in the past).
-			if time.Since(resetAt) < 30*time.Second {
-				b.remaining = remaining
-			}
+			// Guard: only apply when the response's window is still active.
+			// If resetAt is already in the past the response is stale — leave b.remaining
+			// alone so a current-window count is not clobbered by an old-window zero.
+			b.remaining = remaining
 		}
 	}
 	b.mu.Unlock()
