@@ -73,6 +73,8 @@ type RestClient struct {
 	rateLimiter *rateLimiter
 
 	eventEmitter *util.EventEmitter[RestEventType, RestEventHandler]
+
+	maxResponseBodySize int64
 }
 
 // NewRestClient creates a REST client for the Discord API.
@@ -132,15 +134,21 @@ func NewRestClient(token string, opts ...options.Option) (*RestClient, error) {
 		rl = newRateLimiter(safetyMargin)
 	}
 
+	maxBody := cfg.MaxResponseBodySize
+	if maxBody == 0 {
+		maxBody = 50 << 20
+	}
+
 	return &RestClient{
-		BaseURL:            cfg.BaseURL,
-		token:              token,
-		Version:            cfg.APIVersion,
-		httpClient:         httpClient,
-		retryOptions:       cfg.Retry,
-		minRequestInterval: cfg.MinRequestInterval,
-		rateLimiter:        rl,
-		eventEmitter:       util.NewEventEmitter[RestEventType, RestEventHandler](),
+		BaseURL:             cfg.BaseURL,
+		token:               token,
+		Version:             cfg.APIVersion,
+		httpClient:          httpClient,
+		retryOptions:        cfg.Retry,
+		minRequestInterval:  cfg.MinRequestInterval,
+		rateLimiter:         rl,
+		eventEmitter:        util.NewEventEmitter[RestEventType, RestEventHandler](),
+		maxResponseBodySize: maxBody,
 	}, nil
 }
 
@@ -398,7 +406,7 @@ func doRawBytes(c *RestClient, req *http.Request) ([]byte, error) {
 			continue
 		}
 
-		buf, readErr := io.ReadAll(io.LimitReader(resp.Body, 50<<20))
+		buf, readErr := io.ReadAll(io.LimitReader(resp.Body, c.maxResponseBodySize))
 		_ = resp.Body.Close()
 		if readErr != nil {
 			return nil, fmt.Errorf("read response body: %w", readErr)
@@ -501,7 +509,7 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 
 		// Buffer the response body so that event handlers and the decoder both see
 		// the full body without competing for the live network reader.
-		bodyBuf, readErr := io.ReadAll(io.LimitReader(resp.Body, 50<<20))
+		bodyBuf, readErr := io.ReadAll(io.LimitReader(resp.Body, c.maxResponseBodySize))
 		_ = resp.Body.Close()
 		if readErr != nil {
 			return nil, fmt.Errorf("read response body: %w", readErr)

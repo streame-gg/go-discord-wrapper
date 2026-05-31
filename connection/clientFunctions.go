@@ -14,14 +14,16 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
 
-// applicationID returns the bot's application ID, or an error if the bot has
-// not yet received the READY event and the bot user is nil.
+// applicationID returns the application ID received in the READY payload.
+// Returns an error if READY has not yet been received.
 func (d *Client) applicationID() (*discord.Snowflake, error) {
-	u := d.BotUser()
-	if u == nil {
+	d.appIDMu.RLock()
+	id := d.appID
+	d.appIDMu.RUnlock()
+	if id == nil {
 		return nil, errors.New("application ID unavailable: bot is not yet ready")
 	}
-	return &u.ID, nil
+	return id, nil
 }
 
 // ── Application commands ──────────────────────────────────────────────────────

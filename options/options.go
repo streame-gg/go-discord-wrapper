@@ -56,6 +56,10 @@ type Config struct {
 	Retry              RetryOptions
 	MinRequestInterval time.Duration
 	RateLimiter        *RateLimiterOptions
+
+	// MaxResponseBodySize caps how many bytes are read from a response body.
+	// 0 means use the default (50 MiB). Set to -1 for no limit (not recommended).
+	MaxResponseBodySize int64
 }
 
 // RateLimiterOptions configures proactive rate limit throttling.
@@ -186,6 +190,13 @@ func WithMinRequestInterval(d time.Duration) Option {
 // Defaults to "https://discord.com/api". Useful for testing or API proxies.
 func WithBaseURL(url string) Option {
 	return func(c *Config) { c.BaseURL = url }
+}
+
+// WithMaxResponseBodySize sets the maximum number of bytes read from a REST
+// response body. The default is 50 MiB. Pass -1 to disable the limit (not
+// recommended — Discord responses are never larger than a few MB in practice).
+func WithMaxResponseBodySize(n int64) Option {
+	return func(c *Config) { c.MaxResponseBodySize = n }
 }
 
 // WithCoordinator attaches a ShardCoordinator to the client.

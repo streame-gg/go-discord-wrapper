@@ -26,8 +26,15 @@ func (s *ReadyShard) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// ReadyApplication carries the application identity from the READY payload.
+type ReadyApplication struct {
+	ID    discord.Snowflake `json:"id"`
+	Flags int               `json:"flags"`
+}
+
 type ReadyEvent struct {
 	User             discord.User              `json:"user"`
+	Application      ReadyApplication          `json:"application"`
 	SessionID        string                    `json:"session_id"`
 	ResumeGatewayURL string                    `json:"resume_gateway_url"`
 	// Shard is present only when the client was started with sharding.

@@ -101,6 +101,12 @@ type Client struct {
 	user   *discord.User
 	userMu sync.RWMutex
 
+	// appID is the application ID from the READY payload. For bot tokens this
+	// equals the bot user's ID, but it is stored separately so that applicationID()
+	// returns the authoritative value rather than approximating via the user ID.
+	appID   *discord.Snowflake
+	appIDMu sync.RWMutex
+
 	// Sharding holds the shard identity (ShardID / TotalShards) when the
 	// client was started with sharding enabled. Read-only after NewClient;
 	// do not mutate at runtime.
@@ -350,19 +356,17 @@ func (d *Client) enqueueOrDispatch(event events.Event) bool {
 		}
 		return false
 	}
+	// Add before checking shutdown to eliminate the race window where Shutdown()
+	// could call eventWg.Wait() after the check but before Add(1).
+	d.eventWg.Add(1)
 	select {
 	case <-d.shutdownCh:
+		d.eventWg.Done()
 		return true
 	default:
 	}
-	d.eventWg.Add(1)
 	go func() {
 		defer d.eventWg.Done()
-		select {
-		case <-d.shutdownCh:
-			return
-		default:
-		}
 		d.processEvent(job)
 	}()
 	return false
@@ -792,6 +796,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			d.Websocket.ReconnectURL = &readyEvent.ResumeGatewayURL
 			d.wsMu.Unlock()
 			d.setBotUser(&readyEvent.User)
+			d.appIDMu.Lock()
+			appID := readyEvent.Application.ID
+			d.appID = &appID
+			d.appIDMu.Unlock()
 
 			if readyEvent.Shard != nil {
 				d.Logger.Debug("Connected to shard", slog.Int("shard", readyEvent.Shard.ShardID+1), slog.Int("total", readyEvent.Shard.NumShards))
