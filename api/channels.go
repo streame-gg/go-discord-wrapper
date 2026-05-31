@@ -295,7 +295,11 @@ func (c *RestClient) SetVoiceChannelStatus(ctx context.Context, channelID discor
 		return err
 	}
 
-	body, err := json.Marshal(map[string]interface{}{"status": status})
+	statusVal := ""
+	if status != nil {
+		statusVal = *status
+	}
+	body, err := json.Marshal(map[string]string{"status": statusVal})
 	if err != nil {
 		return err
 	}

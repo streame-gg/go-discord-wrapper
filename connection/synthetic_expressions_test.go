@@ -22,7 +22,7 @@ func makeSticker(id, name string) discord.Sticker {
 	return discord.Sticker{ID: snowflake(id), Name: name}
 }
 
-func makeRole(id, perms string) discord.Role {
+func makeRole(id string, perms discord.Permission) discord.Role {
 	return discord.Role{ID: snowflake(id), Permissions: perms}
 }
 
@@ -142,9 +142,9 @@ func TestEmojiSynthetic_UpdateFires_RequireColonsChanged(t *testing.T) {
 
 func TestEmojiSynthetic_UpdateFires_RolesChanged(t *testing.T) {
 	old := makeEmoji("e1", "wave")
-	old.Roles = []string{"r1"}
+	old.Roles = []discord.Snowflake{snowflake("r1")}
 	new_ := makeEmoji("e1", "wave")
-	new_.Roles = []string{"r1", "r2"}
+	new_.Roles = []discord.Snowflake{snowflake("r1"), snowflake("r2")}
 	ev := &events.GuildEmojisUpdateEvent{
 		GuildID: snowflake("g1"), NewEmojis: []*discord.Emoji{&new_}, OldEmojis: []*discord.Emoji{&old},
 	}
@@ -157,9 +157,9 @@ func TestEmojiSynthetic_UpdateFires_RolesChanged(t *testing.T) {
 func TestEmojiSynthetic_UpdateNotFired_RolesReordered(t *testing.T) {
 	// Same role set in different order must not trigger an update event.
 	old := makeEmoji("e1", "wave")
-	old.Roles = []string{"r1", "r2"}
+	old.Roles = []discord.Snowflake{snowflake("r1"), snowflake("r2")}
 	new_ := makeEmoji("e1", "wave")
-	new_.Roles = []string{"r2", "r1"}
+	new_.Roles = []discord.Snowflake{snowflake("r2"), snowflake("r1")}
 	ev := &events.GuildEmojisUpdateEvent{
 		GuildID: snowflake("g1"), NewEmojis: []*discord.Emoji{&new_}, OldEmojis: []*discord.Emoji{&old},
 	}
@@ -285,7 +285,7 @@ func TestStickerSynthetic_UpdateFires_AvailableChanged(t *testing.T) {
 // ── Role permissions unit tests ──────────────────────────────────────────────
 
 func TestRolePermSynthetic_NoOldRole_ReturnsNil(t *testing.T) {
-	role := makeRole("r1", "8")
+	role := makeRole("r1", 8)
 	ev := &events.GuildRoleUpdateEvent{
 		GuildID: snowflake("g1"),
 		NewRole: role,
@@ -295,8 +295,8 @@ func TestRolePermSynthetic_NoOldRole_ReturnsNil(t *testing.T) {
 }
 
 func TestRolePermSynthetic_PermissionsChangeFires(t *testing.T) {
-	oldRole := makeRole("r1", "0")
-	newRole := makeRole("r1", "8")
+	oldRole := makeRole("r1", 0)
+	newRole := makeRole("r1", 8)
 	ev := &events.GuildRoleUpdateEvent{
 		GuildID: snowflake("g1"),
 		NewRole: newRole,
@@ -308,15 +308,15 @@ func TestRolePermSynthetic_PermissionsChangeFires(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, snowflake("g1"), pc.GuildID)
 	assert.Equal(t, snowflake("r1"), pc.RoleID)
-	assert.Equal(t, "0", pc.OldPermissions)
-	assert.Equal(t, "8", pc.NewPermissions)
+	assert.Equal(t, discord.Permission(0), pc.OldPermissions)
+	assert.Equal(t, discord.Permission(8), pc.NewPermissions)
 	assert.NotNil(t, pc.OldRole)
 	assert.NotNil(t, pc.NewRole)
 }
 
 func TestRolePermSynthetic_NotFired_PermissionsUnchanged(t *testing.T) {
-	role := makeRole("r1", "8")
-	old := makeRole("r1", "8")
+	role := makeRole("r1", 8)
+	old := makeRole("r1", 8)
 	ev := &events.GuildRoleUpdateEvent{
 		GuildID: snowflake("g1"),
 		NewRole: role,
@@ -326,8 +326,8 @@ func TestRolePermSynthetic_NotFired_PermissionsUnchanged(t *testing.T) {
 }
 
 func TestRolePermSynthetic_NotFired_NameChangeOnly(t *testing.T) {
-	oldRole := discord.Role{ID: snowflake("r1"), Name: "old name", Permissions: "8"}
-	newRole := discord.Role{ID: snowflake("r1"), Name: "new name", Permissions: "8"}
+	oldRole := discord.Role{ID: snowflake("r1"), Name: "old name", Permissions: 8}
+	newRole := discord.Role{ID: snowflake("r1"), Name: "new name", Permissions: 8}
 	ev := &events.GuildRoleUpdateEvent{
 		GuildID: snowflake("g1"),
 		NewRole: newRole,
@@ -374,13 +374,13 @@ func TestExpressionSynthetic_OnGuildRolePermissionsChange_Dispatches(t *testing.
 
 	done := make(chan struct{})
 	client.OnGuildRolePermissionsChange(func(c *Client, ev *events.GuildRolePermissionsChangeEvent) {
-		if ev.NewPermissions == "8" {
+		if ev.NewPermissions == 8 {
 			close(done)
 		}
 	})
 
-	oldRole := makeRole("r1", "0")
-	newRole := makeRole("r1", "8")
+	oldRole := makeRole("r1", 0)
+	newRole := makeRole("r1", 8)
 	ev := &events.GuildRoleUpdateEvent{
 		GuildID: snowflake("g1"),
 		NewRole: newRole,

@@ -17,9 +17,11 @@ type ApplicationCommandInteractionDataOption[T string | int | bool | interface{}
 
 func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) error {
 	type Alias ApplicationCommandInteractionDataOption[T]
+	// Use json.Number for the raw value field so integer options are not
+	// decoded via float64 (which loses precision for values > 2^53).
 	raw := &struct {
 		*Alias
-		Value interface{} `json:"value,omitempty"`
+		Value json.Number `json:"value,omitempty"`
 	}{
 		Alias: (*Alias)(t),
 	}
@@ -33,32 +35,40 @@ func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) 
 	t.Options = raw.Options
 	t.Focused = raw.Focused
 
-	if raw.Value != nil {
+	if raw.Value != "" {
 		switch t.Type {
 		case discord.ApplicationCommandOptionTypeString:
-			if strVal, ok := raw.Value.(string); ok {
-				v := any(strVal).(T)
-				t.Value = &v
-			}
+			v := any(raw.Value.String()).(T)
+			t.Value = &v
 		case discord.ApplicationCommandOptionTypeInteger:
-			if floatVal, ok := raw.Value.(float64); ok {
-				v := any(int(floatVal)).(T)
-				t.Value = &v
+			n, err := raw.Value.Int64()
+			if err != nil {
+				return fmt.Errorf("option %q: integer value %q: %w", t.Name, raw.Value, err)
 			}
+			v := any(int(n)).(T)
+			t.Value = &v
 		case discord.ApplicationCommandOptionTypeNumber:
-			if floatVal, ok := raw.Value.(float64); ok {
-				v := any(floatVal).(T)
-				t.Value = &v
+			f, err := raw.Value.Float64()
+			if err != nil {
+				return fmt.Errorf("option %q: number value %q: %w", t.Name, raw.Value, err)
 			}
+			v := any(f).(T)
+			t.Value = &v
 		case discord.ApplicationCommandOptionTypeBoolean:
-			if boolVal, ok := raw.Value.(bool); ok {
-				v := any(boolVal).(T)
+			switch raw.Value.String() {
+			case "true":
+				v := any(true).(T)
 				t.Value = &v
+			case "false":
+				v := any(false).(T)
+				t.Value = &v
+			default:
+				return fmt.Errorf("option %q: unexpected boolean value %q", t.Name, raw.Value)
 			}
 		default:
-			v, ok := raw.Value.(T)
+			v, ok := any(raw.Value.String()).(T)
 			if !ok {
-				return fmt.Errorf("unexpected value type %T for option type %v", raw.Value, t.Type)
+				return fmt.Errorf("unexpected value type for option type %v", t.Type)
 			}
 			t.Value = &v
 		}

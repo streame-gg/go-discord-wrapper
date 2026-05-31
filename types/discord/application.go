@@ -17,7 +17,7 @@ const (
 
 type ApplicationTeamMember struct {
 	MembershipState ApplicationTeamMemberMembershipState `json:"membership_state"`
-	TeamID          *string                              `json:"team_id,omitempty"`
+	TeamID          *Snowflake                           `json:"team_id,omitempty"`
 	User            *User                                `json:"user,omitempty"`
 	Role            string                               `json:"role"`
 }
@@ -71,8 +71,8 @@ type Application struct {
 	VerifyKey                         *string                       `json:"verify_key,omitempty"`
 	Team                              *ApplicationTeam              `json:"team,omitempty"`
 	GuildID                           *Snowflake                    `json:"guild_id,omitempty"`
-	Guild                             Guild                         `json:"guild,omitempty"`
-	PrimarySKUID                      *string                       `json:"primary_sku_id,omitempty"`
+	Guild                             *Guild                        `json:"guild,omitempty"`
+	PrimarySKUID                      *Snowflake                    `json:"primary_sku_id,omitempty"`
 	Slug                              *string                       `json:"slug,omitempty"`
 	CoverImage                        *string                       `json:"cover_image,omitempty"`
 	Flags                             *int                          `json:"flags,omitempty"`
@@ -87,6 +87,6 @@ type Application struct {
 	EventWebhooksTypes                *[]string                     `json:"event_webhooks_types,omitempty"`
 	Tags                              *[]string                     `json:"tags,omitempty"`
 	InstallParams                     *ApplicationInstallParams     `json:"install_params,omitempty"`
-	IntegrationTypesConfig            *interface{}                  `json:"integration_types_config,omitempty"`
+	IntegrationTypesConfig            interface{}                   `json:"integration_types_config,omitempty"`
 	CustomInstallURL                  *string                       `json:"custom_install_url,omitempty"`
 }

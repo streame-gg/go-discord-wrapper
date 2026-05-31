@@ -314,7 +314,7 @@ func (c *RestClient) GetWebhookMessage(ctx context.Context, webhookID discord.Sn
 	}
 
 	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +361,7 @@ func (c *RestClient) DeleteWebhookMessage(ctx context.Context, webhookID discord
 	}
 
 	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}

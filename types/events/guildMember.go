@@ -2,6 +2,7 @@ package events
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -61,7 +62,13 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	e.NewMember.Nick = w.Nick
 	e.NewMember.AvatarHash = w.AvatarHash
 	e.NewMember.PremiumSince = w.PremiumSince
-	e.NewMember.CommunicationDisabledUntil = w.CommunicationDisabledUntil
+	if w.CommunicationDisabledUntil != nil {
+		t, err := time.Parse(time.RFC3339, *w.CommunicationDisabledUntil)
+		if err != nil {
+			return fmt.Errorf("communication_disabled_until: %w", err)
+		}
+		e.NewMember.CommunicationDisabledUntil = &t
+	}
 	e.NewMember.Roles = make([]discord.Snowflake, len(w.Roles))
 	copy(e.NewMember.Roles, w.Roles)
 	if w.JoinedAt != nil {
@@ -94,7 +101,7 @@ func (e GuildMemberUpdateEvent) MarshalJSON() ([]byte, error) {
 		AvatarHash                 *string              `json:"avatar,omitempty"`
 		JoinedAt                   *time.Time           `json:"joined_at,omitempty"`
 		PremiumSince               *time.Time           `json:"premium_since,omitempty"`
-		CommunicationDisabledUntil *string              `json:"communication_disabled_until,omitempty"`
+		CommunicationDisabledUntil *time.Time           `json:"communication_disabled_until,omitempty"`
 		OldMember                  *discord.GuildMember `json:"old_member,omitempty"`
 	}
 	var jat *time.Time
@@ -110,6 +117,7 @@ func (e GuildMemberUpdateEvent) MarshalJSON() ([]byte, error) {
 		JoinedAt:                   jat,
 		PremiumSince:               m.PremiumSince,
 		CommunicationDisabledUntil: m.CommunicationDisabledUntil,
+
 		OldMember:                  e.OldMember,
 	})
 }

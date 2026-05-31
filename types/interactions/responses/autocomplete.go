@@ -8,9 +8,9 @@ import (
 
 // AutocompleteChoice is a single option shown in an autocomplete dropdown.
 type AutocompleteChoice struct {
-	Name              string             `json:"name"`
-	NameLocalizations *map[string]string `json:"name_localizations,omitempty"`
-	Value             interface{}        `json:"value"` // string, int, or float64
+	Name              string                      `json:"name"`
+	NameLocalizations map[discord.Locale]string   `json:"name_localizations,omitempty"`
+	Value             interface{}                 `json:"value"` // string, int, or float64
 }
 
 // InteractionResponseDataAutocomplete is the response data for an autocomplete callback.

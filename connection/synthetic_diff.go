@@ -190,7 +190,7 @@ func deriveGuildMemberSyntheticEvents(ev *events.GuildMemberUpdateEvent) []event
 	// Timeout applied or extended.
 	if ev.NewMember.CommunicationDisabledUntil != nil &&
 		(ev.OldMember.CommunicationDisabledUntil == nil ||
-			!timeStringEqual(*ev.OldMember.CommunicationDisabledUntil, *ev.NewMember.CommunicationDisabledUntil)) {
+			!ev.OldMember.CommunicationDisabledUntil.Equal(*ev.NewMember.CommunicationDisabledUntil)) {
 		result = append(result, &events.GuildMemberTimeoutEvent{
 			GuildID: ev.GuildID, UserID: ev.NewMember.UserID,
 			CommunicationDisabledUntil: *ev.NewMember.CommunicationDisabledUntil,
@@ -316,7 +316,24 @@ func emojiChanged(old, new_ *discord.Emoji) bool {
 	return old.Name != new_.Name ||
 		!boolPtrEqual(old.Available, new_.Available) ||
 		!boolPtrEqual(old.RequireColons, new_.RequireColons) ||
-		!stringSliceSetEqual(old.Roles, new_.Roles)
+		!snowflakeSliceSetEqual(old.Roles, new_.Roles)
+}
+
+func snowflakeSliceSetEqual(a, b []discord.Snowflake) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	counts := make(map[discord.Snowflake]int, len(a))
+	for _, s := range a {
+		counts[s]++
+	}
+	for _, s := range b {
+		if counts[s] <= 0 {
+			return false
+		}
+		counts[s]--
+	}
+	return true
 }
 
 func stickerChanged(old, new_ *discord.Sticker) bool {

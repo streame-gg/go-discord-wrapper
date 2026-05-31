@@ -12,7 +12,7 @@ var errRoleNoGuildID = errors.New("discord: Role.GuildID is not set — ensure t
 // RoleCreateOptions configures Guild.CreateRole.
 type RoleCreateOptions struct {
 	Name           *string
-	Permissions    *string
+	Permissions    *Permission
 	Color          *int
 	Hoist          *bool
 	Icon           *string
@@ -24,7 +24,7 @@ type RoleCreateOptions struct {
 // RoleEditOptions configures Role.Edit.
 type RoleEditOptions struct {
 	Name           *string
-	Permissions    *string
+	Permissions    *Permission
 	Color          *int
 	Hoist          *bool
 	Icon           *string

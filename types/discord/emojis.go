@@ -5,7 +5,7 @@ type Emoji struct {
 	GuildID       Snowflake `json:"-"`
 	ID            Snowflake `json:"id,omitempty"`
 	Name          string    `json:"name,omitempty"`
-	Roles         []string  `json:"roles,omitempty"`
+	Roles         []Snowflake `json:"roles,omitempty"`
 	Users         []User    `json:"users,omitempty"`
 	RequireColons *bool     `json:"require_colons,omitempty"`
 	Managed       *bool     `json:"managed,omitempty"`

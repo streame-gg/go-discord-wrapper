@@ -78,13 +78,13 @@ type ModifyGuildChannelPositionsEntry struct {
 }
 
 type CreateGuildRoleParams struct {
-	Name         *string `json:"name,omitempty"`
-	Permissions  *string `json:"permissions,omitempty"`
-	Color        *int    `json:"color,omitempty"`
-	Hoist        *bool   `json:"hoist,omitempty"`
-	Icon         *string `json:"icon,omitempty"`
-	UnicodeEmoji *string `json:"unicode_emoji,omitempty"`
-	Mentionable  *bool   `json:"mentionable,omitempty"`
+	Name         *string            `json:"name,omitempty"`
+	Permissions  *discord.Permission `json:"permissions,omitempty"`
+	Color        *int               `json:"color,omitempty"`
+	Hoist        *bool              `json:"hoist,omitempty"`
+	Icon         *string            `json:"icon,omitempty"`
+	UnicodeEmoji *string            `json:"unicode_emoji,omitempty"`
+	Mentionable  *bool              `json:"mentionable,omitempty"`
 }
 
 type CreateGuildRoleOptions struct {
@@ -92,13 +92,13 @@ type CreateGuildRoleOptions struct {
 }
 
 type ModifyGuildRoleParams struct {
-	Name         *string `json:"name,omitempty"`
-	Permissions  *string `json:"permissions,omitempty"`
-	Color        *int    `json:"color,omitempty"`
-	Hoist        *bool   `json:"hoist,omitempty"`
-	Icon         *string `json:"icon,omitempty"`
-	UnicodeEmoji *string `json:"unicode_emoji,omitempty"`
-	Mentionable  *bool   `json:"mentionable,omitempty"`
+	Name         *string             `json:"name,omitempty"`
+	Permissions  *discord.Permission `json:"permissions,omitempty"`
+	Color        *int                `json:"color,omitempty"`
+	Hoist        *bool               `json:"hoist,omitempty"`
+	Icon         *string             `json:"icon,omitempty"`
+	UnicodeEmoji *string             `json:"unicode_emoji,omitempty"`
+	Mentionable  *bool               `json:"mentionable,omitempty"`
 }
 
 type ModifyGuildRoleOptions struct {

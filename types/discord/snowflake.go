@@ -46,11 +46,11 @@ func (s *Snowflake) MarshalJSON() ([]byte, error) {
 	return json.Marshal(strconv.FormatUint(uint64(*s), 10))
 }
 
-func (s *Snowflake) String() string {
-	if s == nil {
-		return ""
-	}
-	return strconv.FormatUint(uint64(*s), 10)
+// String returns the decimal string representation of the Snowflake.
+// Uses a value receiver so it can be called on non-addressable values
+// (e.g. range-loop variables, function return values).
+func (s Snowflake) String() string {
+	return strconv.FormatUint(uint64(s), 10)
 }
 
 func (s *Snowflake) IsEmpty() bool {

@@ -154,7 +154,13 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 		discord.ComponentTypeUserSelect,
 		discord.ComponentTypeRoleSelect,
 		discord.ComponentTypeMentionableSelect,
-		discord.ComponentTypeChannelSelect:
+		discord.ComponentTypeChannelSelect,
+		// Components V2 interactive types
+		discord.ComponentTypeTextInput,
+		discord.ComponentTypeCheckbox,
+		discord.ComponentTypeCheckboxGroup,
+		discord.ComponentTypeRadioGroup,
+		discord.ComponentTypeFileUpload:
 		var comp responses.InteractionDataMessageComponent
 		if err := json.Unmarshal(aux.Data, &comp); err != nil {
 			return err

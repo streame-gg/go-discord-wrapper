@@ -65,8 +65,8 @@ func (e GuildStickerUpdateEvent) DesiredEventType() Event { return &GuildSticker
 type GuildRolePermissionsChangeEvent struct {
 	GuildID        discord.Snowflake
 	RoleID         discord.Snowflake
-	OldPermissions string
-	NewPermissions string
+	OldPermissions discord.Permission
+	NewPermissions discord.Permission
 	OldRole        *discord.Role
 	NewRole        *discord.Role
 }

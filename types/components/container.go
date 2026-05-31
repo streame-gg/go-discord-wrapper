@@ -47,11 +47,17 @@ func (c *Container) UnmarshalJSON(data []byte) error {
 			if err := json.Unmarshal(comp, &m); err != nil {
 				return err
 			}
+			if m == nil {
+				continue
+			}
 			c.Components = append(c.Components, m)
 		case discord.ComponentTypeFileDisplay:
 			var f *FileComponent
 			if err := json.Unmarshal(comp, &f); err != nil {
 				return err
+			}
+			if f == nil {
+				continue
 			}
 			c.Components = append(c.Components, f)
 		case discord.ComponentTypeSeparator:
@@ -59,11 +65,17 @@ func (c *Container) UnmarshalJSON(data []byte) error {
 			if err := json.Unmarshal(comp, &s); err != nil {
 				return err
 			}
+			if s == nil {
+				continue
+			}
 			c.Components = append(c.Components, s)
 		case discord.ComponentTypeTextInput:
 			var t *TextInputComponent
 			if err := json.Unmarshal(comp, &t); err != nil {
 				return err
+			}
+			if t == nil {
+				continue
 			}
 			c.Components = append(c.Components, t)
 		case discord.ComponentTypeActionRow:
@@ -71,17 +83,26 @@ func (c *Container) UnmarshalJSON(data []byte) error {
 			if err := json.Unmarshal(comp, &a); err != nil {
 				return err
 			}
+			if a == nil {
+				continue
+			}
 			c.Components = append(c.Components, a)
 		case discord.ComponentTypeTextDisplay:
 			var t *TextDisplayComponent
 			if err := json.Unmarshal(comp, &t); err != nil {
 				return err
 			}
+			if t == nil {
+				continue
+			}
 			c.Components = append(c.Components, t)
 		case discord.ComponentTypeSection:
 			var s *Section
 			if err := json.Unmarshal(comp, &s); err != nil {
 				return err
+			}
+			if s == nil {
+				continue
 			}
 			c.Components = append(c.Components, s)
 		default:

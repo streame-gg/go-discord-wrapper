@@ -51,7 +51,7 @@ func (e GuildMemberNickChangeEvent) DesiredEventType() Event { return &GuildMemb
 type GuildMemberTimeoutEvent struct {
 	GuildID                    discord.Snowflake
 	UserID                     discord.Snowflake
-	CommunicationDisabledUntil string
+	CommunicationDisabledUntil time.Time
 	OldMember                  *discord.GuildMember
 	NewMember                  *discord.GuildMember
 }

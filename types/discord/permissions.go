@@ -1,5 +1,10 @@
 package discord
 
+import (
+	"encoding/json"
+	"strconv"
+)
+
 type PermissionOverwriteType int
 
 const (
@@ -7,7 +12,54 @@ const (
 	PermissionOverwriteTypeUser PermissionOverwriteType = 1
 )
 
-type Permission int64
+// Permission is a bitmask of Discord permission flags. Discord transmits
+// permissions as a decimal string (e.g. "2147483647") to avoid JavaScript
+// integer-precision loss on bits ≥ 53; use uint64 so all 64 bits are safe.
+type Permission uint64
+
+// MarshalJSON encodes the permission bitmask as a decimal string, matching
+// Discord's wire format.
+func (p Permission) MarshalJSON() ([]byte, error) {
+	return json.Marshal(strconv.FormatUint(uint64(p), 10))
+}
+
+// UnmarshalJSON accepts either a decimal string (Discord's standard format)
+// or a raw integer for backwards compatibility.
+func (p *Permission) UnmarshalJSON(data []byte) error {
+	if len(data) > 0 && data[0] == '"' {
+		var s string
+		if err := json.Unmarshal(data, &s); err != nil {
+			return err
+		}
+		n, err := strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			return err
+		}
+		*p = Permission(n)
+		return nil
+	}
+	var n uint64
+	if err := json.Unmarshal(data, &n); err != nil {
+		return err
+	}
+	*p = Permission(n)
+	return nil
+}
+
+// NullFlag represents a Discord role-tag boolean flag that is encoded in JSON
+// as the presence of a null field (true) vs. absence of the field (false).
+// Use with json:"field_name,omitempty": a zero NullFlag is omitted; a true
+// NullFlag marshals to JSON null.
+type NullFlag bool
+
+func (f *NullFlag) UnmarshalJSON(_ []byte) error {
+	*f = true // any presence — null or otherwise — means true
+	return nil
+}
+
+func (f NullFlag) MarshalJSON() ([]byte, error) {
+	return []byte("null"), nil
+}
 
 const (
 	PermissionCreateInstantInvite              Permission = 1 << 0

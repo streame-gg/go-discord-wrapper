@@ -357,7 +357,9 @@ func (d *Client) GetChannel(ctx context.Context, channelID discord.Snowflake) (*
 	channel, err := d.RestClient.GetChannel(ctx, channelID)
 	if err == nil {
 		channel.Hydrate(d)
-		d.cacheChannel(channel)
+		if d.cacheStoreEnabled(cache.CategoryChannels) {
+			d.cacheChannel(channel)
+		}
 	}
 	return channel, err
 }

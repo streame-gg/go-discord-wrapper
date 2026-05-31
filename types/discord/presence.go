@@ -1,5 +1,10 @@
 package discord
 
+import (
+	"encoding/json"
+	"time"
+)
+
 type ActivityType int
 
 const (
@@ -11,9 +16,46 @@ const (
 	ActivityTypeCompeting ActivityType = 5
 )
 
+// ActivityTimestamps holds the start and end times for an activity.
+// Discord sends these as Unix milliseconds; they are exposed as time.Time.
 type ActivityTimestamps struct {
-	Start *int64 `json:"start,omitempty"`
-	End   *int64 `json:"end,omitempty"`
+	Start *time.Time
+	End   *time.Time
+}
+
+func (a *ActivityTimestamps) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Start *int64 `json:"start,omitempty"`
+		End   *int64 `json:"end,omitempty"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	if raw.Start != nil {
+		t := time.UnixMilli(*raw.Start).UTC()
+		a.Start = &t
+	}
+	if raw.End != nil {
+		t := time.UnixMilli(*raw.End).UTC()
+		a.End = &t
+	}
+	return nil
+}
+
+func (a ActivityTimestamps) MarshalJSON() ([]byte, error) {
+	raw := struct {
+		Start *int64 `json:"start,omitempty"`
+		End   *int64 `json:"end,omitempty"`
+	}{}
+	if a.Start != nil {
+		ms := a.Start.UnixMilli()
+		raw.Start = &ms
+	}
+	if a.End != nil {
+		ms := a.End.UnixMilli()
+		raw.End = &ms
+	}
+	return json.Marshal(raw)
 }
 
 type ActivityParty struct {
@@ -59,11 +101,13 @@ const (
 	ActivityFlagEmbedded                 ActivityFlags = 1 << 8
 )
 
+// FullActivity represents a rich presence activity.
+// CreatedAt is the activity creation time; Discord sends it as Unix milliseconds.
 type FullActivity struct {
 	Name          string              `json:"name"`
 	Type          ActivityType        `json:"type"`
 	URL           *string             `json:"url,omitempty"`
-	CreatedAt     int64               `json:"created_at"`
+	CreatedAt     time.Time           `json:"-"`
 	Timestamps    *ActivityTimestamps `json:"timestamps,omitempty"`
 	ApplicationID *Snowflake          `json:"application_id,omitempty"`
 	Details       *string             `json:"details,omitempty"`
@@ -77,10 +121,35 @@ type FullActivity struct {
 	Buttons       []string            `json:"buttons,omitempty"`
 }
 
+func (f *FullActivity) UnmarshalJSON(data []byte) error {
+	type Alias FullActivity
+	var raw struct {
+		*Alias
+		CreatedAt int64 `json:"created_at"`
+	}
+	raw.Alias = (*Alias)(f)
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	f.CreatedAt = time.UnixMilli(raw.CreatedAt).UTC()
+	return nil
+}
+
+func (f FullActivity) MarshalJSON() ([]byte, error) {
+	type Alias FullActivity
+	return json.Marshal(struct {
+		Alias
+		CreatedAt int64 `json:"created_at"`
+	}{
+		Alias:     Alias(f),
+		CreatedAt: f.CreatedAt.UnixMilli(),
+	})
+}
+
 type ClientStatus struct {
-	Desktop *string `json:"desktop,omitempty"`
-	Mobile  *string `json:"mobile,omitempty"`
-	Web     *string `json:"web,omitempty"`
+	Desktop *PresenceStatus `json:"desktop,omitempty"`
+	Mobile  *PresenceStatus `json:"mobile,omitempty"`
+	Web     *PresenceStatus `json:"web,omitempty"`
 }
 
 type PresenceStatus string

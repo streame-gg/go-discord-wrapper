@@ -14,6 +14,13 @@ import (
 
 func strPtr(s string) *string { return &s }
 func boolPtr(b bool) *bool    { return &b }
+func timePtr(s string) *time.Time {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		panic(err)
+	}
+	return &t
+}
 
 func newGMUEvent(guildID, userID discord.Snowflake, newRoles []string, oldMember *discord.GuildMember) *events.GuildMemberUpdateEvent {
 	realRoles := make([]discord.Snowflake, len(newRoles))
@@ -141,44 +148,44 @@ func TestMemberSynthetic_NickNotFired_SameValue(t *testing.T) {
 
 func TestMemberSynthetic_TimeoutFires(t *testing.T) {
 	ev := newGMUEvent(15, 16, []string{}, oldMember([]string{}))
-	ev.NewMember.CommunicationDisabledUntil = strPtr("2030-01-01T00:00:00Z")
+	ev.NewMember.CommunicationDisabledUntil = timePtr("2030-01-01T00:00:00Z")
 	result := deriveGuildMemberSyntheticEvents(ev)
 	require.Len(t, result, 1)
 	to, ok := result[0].(*events.GuildMemberTimeoutEvent)
 	require.True(t, ok)
-	assert.Equal(t, "2030-01-01T00:00:00Z", to.CommunicationDisabledUntil)
+	assert.True(t, to.CommunicationDisabledUntil.Equal(*timePtr("2030-01-01T00:00:00Z")))
 }
 
 func TestMemberSynthetic_TimeoutNotFired_Cleared(t *testing.T) {
 	om := oldMember([]string{})
-	om.CommunicationDisabledUntil = strPtr("2030-01-01T00:00:00Z")
+	om.CommunicationDisabledUntil = timePtr("2030-01-01T00:00:00Z")
 	ev := newGMUEvent(15, 16, []string{}, om)
 	assert.Empty(t, deriveGuildMemberSyntheticEvents(ev))
 }
 
 func TestMemberSynthetic_TimeoutNotFired_Unchanged(t *testing.T) {
 	om := oldMember([]string{})
-	om.CommunicationDisabledUntil = strPtr("2030-01-01T00:00:00Z")
+	om.CommunicationDisabledUntil = timePtr("2030-01-01T00:00:00Z")
 	ev := newGMUEvent(15, 16, []string{}, om)
-	ev.NewMember.CommunicationDisabledUntil = strPtr("2030-01-01T00:00:00Z")
+	ev.NewMember.CommunicationDisabledUntil = timePtr("2030-01-01T00:00:00Z")
 	assert.Empty(t, deriveGuildMemberSyntheticEvents(ev))
 }
 
 func TestMemberSynthetic_TimeoutNotFired_EquivalentTimestamp(t *testing.T) {
 	// Same instant expressed with a non-UTC offset — time.Equal must suppress the event.
 	om := oldMember([]string{})
-	om.CommunicationDisabledUntil = strPtr("2030-01-01T00:00:00Z")
+	om.CommunicationDisabledUntil = timePtr("2030-01-01T00:00:00Z")
 	ev := newGMUEvent(15, 16, []string{}, om)
-	ev.NewMember.CommunicationDisabledUntil = strPtr("2030-01-01T01:00:00+01:00")
+	ev.NewMember.CommunicationDisabledUntil = timePtr("2030-01-01T01:00:00+01:00")
 	assert.Empty(t, deriveGuildMemberSyntheticEvents(ev))
 }
 
 func TestMemberSynthetic_TimeoutFires_Extended(t *testing.T) {
 	// Existing timeout extended to a later moment — must fire.
 	om := oldMember([]string{})
-	om.CommunicationDisabledUntil = strPtr("2030-01-01T00:00:00Z")
+	om.CommunicationDisabledUntil = timePtr("2030-01-01T00:00:00Z")
 	ev := newGMUEvent(15, 16, []string{}, om)
-	ev.NewMember.CommunicationDisabledUntil = strPtr("2030-06-01T00:00:00Z")
+	ev.NewMember.CommunicationDisabledUntil = timePtr("2030-06-01T00:00:00Z")
 	result := deriveGuildMemberSyntheticEvents(ev)
 	require.Len(t, result, 1)
 	_, ok := result[0].(*events.GuildMemberTimeoutEvent)

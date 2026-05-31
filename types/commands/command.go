@@ -16,7 +16,7 @@ type ApplicationCommand struct {
 	NameLocalizations        map[discord.Locale]string                       `json:"name_localizations,omitempty"`
 	Description              string                                          `json:"description"`
 	DescriptionLocalizations map[discord.Locale]string                       `json:"description_localizations,omitempty"`
-	DefaultMemberPermissions *string                                         `json:"default_member_permissions,omitempty"`
+	DefaultMemberPermissions *discord.Permission                             `json:"default_member_permissions,omitempty"`
 	NSFW                     *bool                                           `json:"nsfw,omitempty"`
 	IntegrationTypes         []discord.InteractionApplicationIntegrationType `json:"integration_types,omitempty"`
 	Contexts                 []discord.InteractionContextType                `json:"contexts,omitempty"`

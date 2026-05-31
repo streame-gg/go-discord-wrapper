@@ -11,7 +11,7 @@ type GuildMember struct {
 	UserID                     Snowflake   `json:"-"`
 	AvatarHash                 *string     `json:"avatar,omitempty"`
 	BannerHash                 *string     `json:"banner,omitempty"`
-	CommunicationDisabledUntil *string     `json:"communication_disabled_until,omitempty"`
+	CommunicationDisabledUntil *time.Time  `json:"communication_disabled_until,omitempty"`
 	Deaf                       bool        `json:"deaf"`
 	Flags                      int         `json:"flags"`
 	JoinedAt                   time.Time   `json:"joined_at"`

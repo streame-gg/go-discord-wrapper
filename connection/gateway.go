@@ -793,8 +793,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			d.wsMu.Unlock()
 			d.setBotUser(&readyEvent.User)
 
-			if len(readyEvent.Shard) >= 2 {
-				d.Logger.Debug("Connected to shard", slog.Int("shard", readyEvent.Shard[0]+1), slog.Int("total", readyEvent.Shard[1]))
+			if readyEvent.Shard != nil {
+				d.Logger.Debug("Connected to shard", slog.Int("shard", readyEvent.Shard.ShardID+1), slog.Int("total", readyEvent.Shard.NumShards))
 			}
 
 			// Build the set of guilds the bot currently belongs to.
@@ -1741,6 +1741,22 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					ch := ev.Threads[i]
 					d.cacheChannel(&ch)
 					d.trackThread(&ch)
+				}
+			}
+		}
+	case events.EventThreadMembersUpdate:
+		{
+			// Update the cached MemberCount of the affected thread channel.
+			if d.cacheStoreEnabled(cache.CategoryChannels) {
+				var ev events.ThreadMembersUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal THREAD_MEMBERS_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				if ch, ok := d.Cache.Channels().Get(ev.ID); ok {
+					updated := *ch
+					updated.MemberCount = &ev.MemberCount
+					d.Cache.Channels().Set(&updated)
 				}
 			}
 		}
