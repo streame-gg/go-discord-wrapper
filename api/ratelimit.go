@@ -283,13 +283,16 @@ func (r *rateLimiter) update(method, path string, resp *http.Response) {
 			// Clearly a newer rate-limit window — accept all values from the response.
 			b.remaining = remaining
 			b.resetAt = resetAt
-		} else if !resetAt.Before(b.resetAt.Add(-windowTolerance)) {
-			// Same window (within tolerance) — only take the more conservative remaining.
-			if remaining < b.remaining {
+		} else if remaining < b.remaining {
+			// Same window or slightly out-of-order: conservatively take the lower
+			// remaining. Out-of-order responses can arrive with a resetAt that is
+			// slightly older than b.resetAt due to network jitter; discarding them
+			// entirely would leave b.remaining inflated (Bug 110).
+			// Only skip truly stale responses (reset time more than 30 s in the past).
+			if time.Since(resetAt) < 30*time.Second {
 				b.remaining = remaining
 			}
 		}
-		// Older window: ignore remaining/resetAt entirely.
 	}
 	b.mu.Unlock()
 }
@@ -352,6 +355,7 @@ func isSnowflakeID(s string) bool {
 
 // parseRetryAfter reads the Retry-After or X-RateLimit-Reset-After header and
 // returns it as a duration. Returns 0 if neither header is present or parseable.
+// Supports both the seconds format ("1.5") and the HTTP-date format as per RFC 7231 §7.1.3.
 func parseRetryAfter(resp *http.Response) time.Duration {
 	for _, h := range []string{"Retry-After", "X-RateLimit-Reset-After"} {
 		val := strings.TrimSpace(resp.Header.Get(h))
@@ -359,10 +363,16 @@ func parseRetryAfter(resp *http.Response) time.Duration {
 			continue
 		}
 		secs, err := strconv.ParseFloat(val, 64)
-		if err != nil || secs <= 0 {
-			continue
+		if err == nil && secs > 0 {
+			return time.Duration(secs * float64(time.Second))
 		}
-		return time.Duration(secs * float64(time.Second))
+		// RFC 7231 §7.1.3: Retry-After may be an HTTP-date instead of a delay-seconds value.
+		if t, err := http.ParseTime(val); err == nil {
+			if d := time.Until(t); d > 0 {
+				return d
+			}
+			return 0
+		}
 	}
 	return 0
 }
