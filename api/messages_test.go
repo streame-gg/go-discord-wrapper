@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bytes"
+	"io"
 	"mime"
 	"mime/multipart"
 	"strings"
@@ -28,6 +30,88 @@ func TestBasenameFilename(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestBug123_MessageFileReader verifies that MessageFile.Reader is streamed via
+// io.Copy when set, and that the resulting multipart body contains the correct
+// file content (Bug 123).
+func TestBug123_MessageFileReader(t *testing.T) {
+	content := "streaming file content"
+	payload := []byte(`{"content":"hello"}`)
+	files := []discord.MessageFile{
+		{Name: "stream.txt", ContentType: "text/plain", Reader: strings.NewReader(content)},
+	}
+
+	buf, ct, err := buildMultipartMessage(payload, files)
+	if err != nil {
+		t.Fatalf("buildMultipartMessage error: %v", err)
+	}
+
+	mediaType, params, err := mime.ParseMediaType(ct)
+	if err != nil || mediaType != "multipart/form-data" {
+		t.Fatalf("unexpected Content-Type %q: %v", ct, err)
+	}
+
+	mr := multipart.NewReader(buf, params["boundary"])
+	for {
+		p, err := mr.NextPart()
+		if err != nil {
+			break
+		}
+		cd := p.Header.Get("Content-Disposition")
+		if !strings.Contains(cd, "files[") {
+			continue
+		}
+		body, readErr := io.ReadAll(p)
+		if readErr != nil {
+			t.Fatalf("reading file part: %v", readErr)
+		}
+		if !bytes.Equal(body, []byte(content)) {
+			t.Errorf("file part body = %q, want %q", body, content)
+		}
+		return
+	}
+	t.Error("no file part found in multipart body (Bug 123)")
+}
+
+// TestBug123_MessageFileData verifies that the existing Data path still works
+// when Reader is nil (regression guard for Bug 123 change).
+func TestBug123_MessageFileData(t *testing.T) {
+	content := []byte("raw bytes content")
+	payload := []byte(`{}`)
+	files := []discord.MessageFile{
+		{Name: "data.bin", ContentType: "application/octet-stream", Data: content},
+	}
+
+	buf, ct, err := buildMultipartMessage(payload, files)
+	if err != nil {
+		t.Fatalf("buildMultipartMessage error: %v", err)
+	}
+
+	mediaType, params, err := mime.ParseMediaType(ct)
+	if err != nil || mediaType != "multipart/form-data" {
+		t.Fatalf("unexpected Content-Type %q: %v", ct, err)
+	}
+
+	mr := multipart.NewReader(buf, params["boundary"])
+	for {
+		p, err := mr.NextPart()
+		if err != nil {
+			break
+		}
+		if !strings.Contains(p.Header.Get("Content-Disposition"), "files[") {
+			continue
+		}
+		body, readErr := io.ReadAll(p)
+		if readErr != nil {
+			t.Fatalf("reading file part: %v", readErr)
+		}
+		if !bytes.Equal(body, content) {
+			t.Errorf("file part body = %q, want %q", body, content)
+		}
+		return
+	}
+	t.Error("no file part found in multipart body (Bug 123 regression)")
 }
 
 func TestBuildMultipartMessage_BasenameInHeader(t *testing.T) {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -96,8 +97,14 @@ func buildMultipartMessage(payload []byte, files []discord.MessageFile) (*bytes.
 		if err != nil {
 			return nil, "", err
 		}
-		if _, err := part.Write(f.Data); err != nil {
-			return nil, "", err
+		if f.Reader != nil {
+			if _, err := io.Copy(part, f.Reader); err != nil {
+				return nil, "", err
+			}
+		} else {
+			if _, err := part.Write(f.Data); err != nil {
+				return nil, "", err
+			}
 		}
 	}
 	if err := w.Close(); err != nil {
