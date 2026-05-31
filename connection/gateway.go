@@ -474,6 +474,10 @@ func (d *Client) SubscribeShardResponse(responseType, corrID string) (<-chan opt
 		// The returned channel will never receive messages — the caller used a
 		// duplicate corrID, which is a programming error.
 		d.pendingShardReqsMu.Unlock()
+		d.Logger.Warn("SubscribeShardResponse: duplicate corrID — returned channel will never receive messages",
+			slog.String("responseType", responseType),
+			slog.String("corrID", corrID),
+		)
 		return ch, func() {}
 	}
 	d.pendingShardReqs[key] = ch

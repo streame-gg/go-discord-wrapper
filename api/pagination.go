@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/util"
@@ -33,6 +34,9 @@ func (c *RestClient) FetchAllGuildMembers(ctx context.Context, guildID discord.S
 		}
 
 		last := page[len(page)-1]
+		if last.User == nil {
+			return nil, fmt.Errorf("go-discord-wrapper: guild member returned by API has nil User; cannot paginate")
+		}
 		params.After = &last.User.ID
 	}
 }

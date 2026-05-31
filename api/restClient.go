@@ -607,11 +607,12 @@ func (c *RestClient) waitForMinInterval(ctx context.Context) error {
 	}
 
 	c.rateLimitMu.Lock()
-	wait := time.Until(c.nextRequestAt)
-	if wait < 0 {
-		wait = 0
+	now := time.Now()
+	if c.nextRequestAt.Before(now) {
+		c.nextRequestAt = now
 	}
-	c.nextRequestAt = time.Now().Add(c.minRequestInterval)
+	wait := c.nextRequestAt.Sub(now)
+	c.nextRequestAt = c.nextRequestAt.Add(c.minRequestInterval)
 	c.rateLimitMu.Unlock()
 
 	if wait > 0 {
