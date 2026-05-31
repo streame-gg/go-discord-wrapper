@@ -249,6 +249,9 @@ func (c *RestClient) AddThreadMember(ctx context.Context, channelID, userID disc
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
+	if err := userID.Validate(); err != nil {
+		return err
+	}
 
 	path := "/channels/" + channelID.String() + "/thread-members/" + userID.String()
 	req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization())
