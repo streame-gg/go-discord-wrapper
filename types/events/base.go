@@ -120,23 +120,6 @@ const (
 	EventSoundboardSounds            EventType = "SOUNDBOARD_SOUNDS"
 
 	// Wrapper-synthesized events — derived by go-discord-wrapper, never sent by Discord directly.
-	EventWrapperVoiceMemberJoin   EventType = "WRAPPER_VOICE_MEMBER_JOIN"
-	EventWrapperVoiceMemberLeave  EventType = "WRAPPER_VOICE_MEMBER_LEAVE"
-	EventWrapperVoiceMemberMove   EventType = "WRAPPER_VOICE_MEMBER_MOVE"
-	EventWrapperVoiceMemberUpdate EventType = "WRAPPER_VOICE_MEMBER_UPDATE"
-
-	EventWrapperGuildMemberRoleAdd    EventType = "WRAPPER_GUILD_MEMBER_ROLE_ADD"
-	EventWrapperGuildMemberRoleRemove EventType = "WRAPPER_GUILD_MEMBER_ROLE_REMOVE"
-	EventWrapperGuildMemberNickChange EventType = "WRAPPER_GUILD_MEMBER_NICK_CHANGE"
-	EventWrapperGuildMemberTimeout    EventType = "WRAPPER_GUILD_MEMBER_TIMEOUT"
-	EventWrapperGuildMemberBoostStart EventType = "WRAPPER_GUILD_MEMBER_BOOST_START"
-	EventWrapperGuildMemberBoostEnd   EventType = "WRAPPER_GUILD_MEMBER_BOOST_END"
-
-	EventWrapperUserOnline         EventType = "WRAPPER_USER_ONLINE"
-	EventWrapperUserOffline        EventType = "WRAPPER_USER_OFFLINE"
-	EventWrapperUserActivityChange EventType = "WRAPPER_USER_ACTIVITY_CHANGE"
-	EventWrapperUserUpdate         EventType = "WRAPPER_USER_UPDATE"
-
 	EventWrapperGuildEmojiAdd    EventType = "WRAPPER_GUILD_EMOJI_ADD"
 	EventWrapperGuildEmojiRemove EventType = "WRAPPER_GUILD_EMOJI_REMOVE"
 	EventWrapperGuildEmojiUpdate EventType = "WRAPPER_GUILD_EMOJI_UPDATE"
@@ -144,6 +127,4 @@ const (
 	EventWrapperGuildStickerAdd    EventType = "WRAPPER_GUILD_STICKER_ADD"
 	EventWrapperGuildStickerRemove EventType = "WRAPPER_GUILD_STICKER_REMOVE"
 	EventWrapperGuildStickerUpdate EventType = "WRAPPER_GUILD_STICKER_UPDATE"
-
-	EventWrapperGuildRolePermissionsChange EventType = "WRAPPER_GUILD_ROLE_PERMISSIONS_CHANGE"
 )

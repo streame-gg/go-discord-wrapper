@@ -14,16 +14,16 @@ import (
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
+func snowflake(s string) discord.Snowflake { return mustSnowflake(s) }
+func boolPtr(b bool) *bool                 { return &b }
+func strPtr(s string) *string              { return &s }
+
 func makeEmoji(id, name string) discord.Emoji {
 	return discord.Emoji{ID: snowflake(id), Name: name}
 }
 
 func makeSticker(id, name string) discord.Sticker {
 	return discord.Sticker{ID: snowflake(id), Name: name}
-}
-
-func makeRole(id string, perms discord.Permission) discord.Role {
-	return discord.Role{ID: snowflake(id), Permissions: perms}
 }
 
 func emojiPtrs(emojis []discord.Emoji) []*discord.Emoji {
@@ -282,60 +282,6 @@ func TestStickerSynthetic_UpdateFires_AvailableChanged(t *testing.T) {
 	assert.True(t, ok)
 }
 
-// ── Role permissions unit tests ──────────────────────────────────────────────
-
-func TestRolePermSynthetic_NoOldRole_ReturnsNil(t *testing.T) {
-	role := makeRole("r1", 8)
-	ev := &events.GuildRoleUpdateEvent{
-		GuildID: snowflake("g1"),
-		NewRole: role,
-		OldRole: nil,
-	}
-	assert.Nil(t, deriveGuildRoleSyntheticEvents(ev))
-}
-
-func TestRolePermSynthetic_PermissionsChangeFires(t *testing.T) {
-	oldRole := makeRole("r1", 0)
-	newRole := makeRole("r1", 8)
-	ev := &events.GuildRoleUpdateEvent{
-		GuildID: snowflake("g1"),
-		NewRole: newRole,
-		OldRole: &oldRole,
-	}
-	result := deriveGuildRoleSyntheticEvents(ev)
-	require.Len(t, result, 1)
-	pc, ok := result[0].(*events.GuildRolePermissionsChangeEvent)
-	require.True(t, ok)
-	assert.Equal(t, snowflake("g1"), pc.GuildID)
-	assert.Equal(t, snowflake("r1"), pc.RoleID)
-	assert.Equal(t, discord.Permission(0), pc.OldPermissions)
-	assert.Equal(t, discord.Permission(8), pc.NewPermissions)
-	assert.NotNil(t, pc.OldRole)
-	assert.NotNil(t, pc.NewRole)
-}
-
-func TestRolePermSynthetic_NotFired_PermissionsUnchanged(t *testing.T) {
-	role := makeRole("r1", 8)
-	old := makeRole("r1", 8)
-	ev := &events.GuildRoleUpdateEvent{
-		GuildID: snowflake("g1"),
-		NewRole: role,
-		OldRole: &old,
-	}
-	assert.Empty(t, deriveGuildRoleSyntheticEvents(ev))
-}
-
-func TestRolePermSynthetic_NotFired_NameChangeOnly(t *testing.T) {
-	oldRole := discord.Role{ID: snowflake("r1"), Name: "old name", Permissions: 8}
-	newRole := discord.Role{ID: snowflake("r1"), Name: "new name", Permissions: 8}
-	ev := &events.GuildRoleUpdateEvent{
-		GuildID: snowflake("g1"),
-		NewRole: newRole,
-		OldRole: &oldRole,
-	}
-	assert.Empty(t, deriveGuildRoleSyntheticEvents(ev))
-}
-
 // ── Integration: On* helpers dispatched ─────────────────────────────────────
 
 func TestExpressionSynthetic_OnGuildEmojiAdd_Dispatches(t *testing.T) {
@@ -365,34 +311,4 @@ func TestExpressionSynthetic_OnGuildEmojiAdd_Dispatches(t *testing.T) {
 		t.Fatal("timeout waiting for GuildEmojiAdd")
 	}
 	assert.True(t, called.Load())
-}
-
-func TestExpressionSynthetic_OnGuildRolePermissionsChange_Dispatches(t *testing.T) {
-	client, err := NewClient("Bot fake-token", discord.IntentGuilds)
-	require.NoError(t, err)
-	defer client.Shutdown()
-
-	done := make(chan struct{})
-	client.OnGuildRolePermissionsChange(func(c *Client, ev *events.GuildRolePermissionsChangeEvent) {
-		if ev.NewPermissions == 8 {
-			close(done)
-		}
-	})
-
-	oldRole := makeRole("r1", 0)
-	newRole := makeRole("r1", 8)
-	ev := &events.GuildRoleUpdateEvent{
-		GuildID: snowflake("g1"),
-		NewRole: newRole,
-		OldRole: &oldRole,
-	}
-	for _, syn := range client.deriveSyntheticEvents(ev) {
-		_ = client.enqueueOrDispatch(syn)
-	}
-
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Fatal("timeout waiting for GuildRolePermissionsChange")
-	}
 }

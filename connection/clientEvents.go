@@ -247,51 +247,6 @@ func (d *Client) OnGuildStickerRemove(h func(*Client, *events.GuildStickerRemove
 func (d *Client) OnGuildStickerUpdate(h func(*Client, *events.GuildStickerUpdateEvent)) {
 	_ = d.OnEvent(events.EventWrapperGuildStickerUpdate, h)
 }
-func (d *Client) OnGuildRolePermissionsChange(h func(*Client, *events.GuildRolePermissionsChangeEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildRolePermissionsChange, h)
-}
-func (d *Client) OnUserOnline(h func(*Client, *events.UserOnlineEvent)) {
-	_ = d.OnEvent(events.EventWrapperUserOnline, h)
-}
-func (d *Client) OnUserOffline(h func(*Client, *events.UserOfflineEvent)) {
-	_ = d.OnEvent(events.EventWrapperUserOffline, h)
-}
-func (d *Client) OnUserActivityChange(h func(*Client, *events.UserActivityChangeEvent)) {
-	_ = d.OnEvent(events.EventWrapperUserActivityChange, h)
-}
-func (d *Client) OnUserProfileUpdate(h func(*Client, *events.UserProfileUpdateEvent)) {
-	_ = d.OnEvent(events.EventWrapperUserUpdate, h)
-}
-func (d *Client) OnGuildMemberRoleAdd(h func(*Client, *events.GuildMemberRoleAddEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildMemberRoleAdd, h)
-}
-func (d *Client) OnGuildMemberRoleRemove(h func(*Client, *events.GuildMemberRoleRemoveEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildMemberRoleRemove, h)
-}
-func (d *Client) OnGuildMemberNickChange(h func(*Client, *events.GuildMemberNickChangeEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildMemberNickChange, h)
-}
-func (d *Client) OnGuildMemberTimeout(h func(*Client, *events.GuildMemberTimeoutEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildMemberTimeout, h)
-}
-func (d *Client) OnGuildMemberBoostStart(h func(*Client, *events.GuildMemberBoostStartEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildMemberBoostStart, h)
-}
-func (d *Client) OnGuildMemberBoostEnd(h func(*Client, *events.GuildMemberBoostEndEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildMemberBoostEnd, h)
-}
-func (d *Client) OnVoiceMemberJoin(h func(*Client, *events.VoiceMemberJoinEvent)) {
-	_ = d.OnEvent(events.EventWrapperVoiceMemberJoin, h)
-}
-func (d *Client) OnVoiceMemberLeave(h func(*Client, *events.VoiceMemberLeaveEvent)) {
-	_ = d.OnEvent(events.EventWrapperVoiceMemberLeave, h)
-}
-func (d *Client) OnVoiceMemberMove(h func(*Client, *events.VoiceMemberMoveEvent)) {
-	_ = d.OnEvent(events.EventWrapperVoiceMemberMove, h)
-}
-func (d *Client) OnVoiceMemberUpdate(h func(*Client, *events.VoiceMemberUpdateEvent)) {
-	_ = d.OnEvent(events.EventWrapperVoiceMemberUpdate, h)
-}
 func (d *Client) OnStageInstanceCreate(h func(*Client, *events.StageInstanceCreateEvent)) {
 	_ = d.OnEvent(events.EventStageInstanceCreate, h)
 }

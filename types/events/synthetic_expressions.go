@@ -59,21 +59,3 @@ type GuildStickerUpdateEvent struct {
 
 func (e GuildStickerUpdateEvent) Event() EventType        { return EventWrapperGuildStickerUpdate }
 func (e GuildStickerUpdateEvent) DesiredEventType() Event { return &GuildStickerUpdateEvent{} }
-
-// GuildRolePermissionsChangeEvent fires when a role's Permissions bitfield changes.
-// Derived from GUILD_ROLE_UPDATE; requires cache to provide OldRole.
-type GuildRolePermissionsChangeEvent struct {
-	GuildID        discord.Snowflake
-	RoleID         discord.Snowflake
-	OldPermissions discord.Permission
-	NewPermissions discord.Permission
-	OldRole        *discord.Role
-	NewRole        *discord.Role
-}
-
-func (e GuildRolePermissionsChangeEvent) Event() EventType {
-	return EventWrapperGuildRolePermissionsChange
-}
-func (e GuildRolePermissionsChangeEvent) DesiredEventType() Event {
-	return &GuildRolePermissionsChangeEvent{}
-}
