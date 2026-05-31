@@ -1,12 +1,18 @@
 package discord
 
+import "encoding/json"
+
 // AuditLog is the response wrapper returned by the Get Guild Audit Log endpoint.
 //
-// ApplicationCommands is typed as []any because the ApplicationCommand struct
-// lives in types/commands, which imports this package. Unmarshal elements into
-// *commands.ApplicationCommand as needed.
+// ApplicationCommands holds the raw JSON for each application command object.
+// Decode individual elements into *commands.ApplicationCommand as needed:
+//
+//	var cmd commands.ApplicationCommand
+//	if err := json.Unmarshal(auditLog.ApplicationCommands[i], &cmd); err != nil { ... }
+//
+// A direct reference is not possible because types/commands imports types/discord.
 type AuditLog struct {
-	ApplicationCommands  []any                 `json:"application_commands"`
+	ApplicationCommands  []json.RawMessage     `json:"application_commands"`
 	AuditLogEntries      []AuditLogEntry       `json:"audit_log_entries"`
 	AutoModerationRules  []AutoModerationRule  `json:"auto_moderation_rules"`
 	GuildScheduledEvents []GuildScheduledEvent `json:"guild_scheduled_events"`
