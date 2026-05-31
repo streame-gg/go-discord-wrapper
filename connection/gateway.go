@@ -154,6 +154,10 @@ type Client struct {
 	voiceStates   map[string]*discord.VoiceState
 	voiceStatesMu sync.RWMutex
 
+	// entitlements caches the latest known entitlement by ID (as a string key)
+	// so that EntitlementUpdateEvent can carry OldEntitlement alongside the new one.
+	entitlements sync.Map // map[string]*discord.Entitlement
+
 	// Client lifecycle event handlers.
 	onConnect      []func(*Client)
 	onDisconnect   []func(*Client, error)
@@ -1935,6 +1939,27 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 			}
 		}
+	case events.EventEntitlementCreate:
+		if ev, ok := event.(*events.EntitlementCreateEvent); ok {
+			e := ev.Entitlement
+			d.entitlements.Store(e.ID.String(), &e)
+		}
+
+	case events.EventEntitlementUpdate:
+		if ev, ok := event.(*events.EntitlementUpdateEvent); ok {
+			id := ev.NewEntitlement.ID.String()
+			if old, loaded := d.entitlements.Load(id); loaded {
+				ev.OldEntitlement = old.(*discord.Entitlement)
+			}
+			n := ev.NewEntitlement
+			d.entitlements.Store(id, &n)
+		}
+
+	case events.EventEntitlementDelete:
+		if ev, ok := event.(*events.EntitlementDeleteEvent); ok {
+			d.entitlements.Delete(ev.Entitlement.ID.String())
+		}
+
 	case events.EventInteractionCreate:
 		if ev, ok := event.(*events.InteractionCreateEvent); ok {
 			ev.Hydrate(d, context.Background())

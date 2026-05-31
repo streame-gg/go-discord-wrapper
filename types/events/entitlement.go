@@ -12,6 +12,10 @@ type EntitlementCreateEvent struct {
 
 type EntitlementUpdateEvent struct {
 	NewEntitlement discord.Entitlement `json:"-"`
+	// OldEntitlement is the state before the update, populated by the gateway
+	// client from its in-memory entitlement cache. Nil if this entitlement was
+	// not seen before (e.g. the client missed the preceding ENTITLEMENT_CREATE).
+	OldEntitlement *discord.Entitlement `json:"-"`
 }
 
 func (e *EntitlementUpdateEvent) UnmarshalJSON(data []byte) error {
