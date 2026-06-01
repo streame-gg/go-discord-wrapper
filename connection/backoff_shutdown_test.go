@@ -14,7 +14,7 @@ import (
 )
 
 // mockWSAlwaysFail starts a WebSocket server that upgrades the connection and
-// immediately closes it so every NewWebsocket attempt returns an error.
+// immediately closes it so every newWSConn attempt returns an error.
 func mockWSAlwaysFail(t *testing.T) (wsURL string, closeFn func()) {
 	t.Helper()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,7 @@ func mockWSAlwaysFail(t *testing.T) (wsURL string, closeFn func()) {
 //
 // The sequence is:
 //  1. Establish a real initial connection via mockGateway so the Client has a
-//     valid Websocket struct with a ReconnectURL.
+//     valid wsConn struct with a ReconnectURL.
 //  2. Override ReconnectURL to point to a server that always fails so every
 //     reconnect attempt returns an error immediately.
 //  3. Call reconnect in a goroutine with unlimited retries (-1).
@@ -41,7 +41,7 @@ func mockWSAlwaysFail(t *testing.T) (wsURL string, closeFn func()) {
 //     enter the backoff select (backoff ≥ 1 s without the fix).
 //  5. Call Shutdown and assert it returns in < 100 ms.
 func TestP0_4_ShutdownDuringBackoff(t *testing.T) {
-	// Step 1: initial good gateway so we have a valid Websocket.
+	// Step 1: initial good gateway so we have a valid wsConn.
 	goodURL, closeGood := mockGateway(t)
 	defer closeGood()
 
@@ -55,7 +55,7 @@ func TestP0_4_ShutdownDuringBackoff(t *testing.T) {
 	require.NoError(t, c.connectWebsocket(goodURL, false, nil, nil))
 	go func() { _ = c.listenWebsocket() }()
 
-	// Wait for READY so the Websocket struct is fully set up.
+	// Wait for READY so the wsConn struct is fully set up.
 	select {
 	case <-c.Ready():
 	case <-time.After(5 * time.Second):
@@ -64,7 +64,7 @@ func TestP0_4_ShutdownDuringBackoff(t *testing.T) {
 
 	// Point ReconnectURL at the always-failing server.
 	c.wsMu.Lock()
-	c.Websocket.ReconnectURL = &failURL
+	c.wsConn.ReconnectURL = &failURL
 	c.wsMu.Unlock()
 
 	// Unlimited retries so reconnect keeps looping and always enters backoff.

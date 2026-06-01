@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"github.com/stretchr/testify/suite"
 	"strconv"
 	"testing"
 )
@@ -9,7 +10,8 @@ func permString(p Permission) string {
 	return strconv.FormatUint(uint64(p), 10)
 }
 
-func TestPermissionBitmaskHelpers(t *testing.T) {
+func (su *permissionHelpersSuite) TestPermissionBitmaskHelpers() {
+	t := su.T()
 	p := PermissionViewChannel | PermissionSendMessages
 
 	if !p.Has(PermissionViewChannel) {
@@ -54,7 +56,8 @@ func TestPermissionBitmaskHelpers(t *testing.T) {
 	}
 }
 
-func TestPermissionNamesAndString(t *testing.T) {
+func (su *permissionHelpersSuite) TestPermissionNamesAndString() {
+	t := su.T()
 	p := PermissionBanMembers | PermissionViewChannel
 	names := p.Names()
 	if len(names) != 2 || names[0] != "BanMembers" || names[1] != "ViewChannel" {
@@ -68,7 +71,8 @@ func TestPermissionNamesAndString(t *testing.T) {
 	}
 }
 
-func TestPermissionAll(t *testing.T) {
+func (su *permissionHelpersSuite) TestPermissionAll() {
+	t := su.T()
 	if !PermissionAll.Has(PermissionAdministrator) {
 		t.Error("PermissionAll must include Administrator")
 	}
@@ -77,7 +81,8 @@ func TestPermissionAll(t *testing.T) {
 	}
 }
 
-func TestOverwritePermissionParsing(t *testing.T) {
+func (su *permissionHelpersSuite) TestOverwritePermissionParsing() {
+	t := su.T()
 	ow := ChannelPermissionOverwrite{
 		Allow: permString(PermissionSendMessages),
 		Deny:  permString(PermissionAddReactions),
@@ -121,7 +126,8 @@ func makeGuild(everyone, roleA, roleB Permission) *Guild {
 	}
 }
 
-func TestPermissionsFor(t *testing.T) {
+func (su *permissionHelpersSuite) TestPermissionsFor() {
+	t := su.T()
 	t.Run("nil inputs", func(t *testing.T) {
 		if PermissionsFor(nil, &GuildMember{}) != 0 {
 			t.Error("nil guild should yield 0")
@@ -175,7 +181,8 @@ func TestPermissionsFor(t *testing.T) {
 	})
 }
 
-func TestPermissionsInChannel(t *testing.T) {
+func (su *permissionHelpersSuite) TestPermissionsInChannel() {
+	t := su.T()
 	t.Run("nil channel", func(t *testing.T) {
 		if PermissionsInChannel(makeGuild(0, 0, 0), &GuildMember{}, nil) != 0 {
 			t.Error("nil channel should yield 0")
@@ -245,7 +252,8 @@ func TestPermissionsInChannel(t *testing.T) {
 	})
 }
 
-func TestGuildMemberPermissionMethods(t *testing.T) {
+func (su *permissionHelpersSuite) TestGuildMemberPermissionMethods() {
+	t := su.T()
 	g := makeGuild(PermissionViewChannel|PermissionSendMessages, 0, 0)
 	m := &GuildMember{UserID: testUserID}
 
@@ -260,3 +268,7 @@ func TestGuildMemberPermissionMethods(t *testing.T) {
 		t.Error("PermissionsIn method should match PermissionsInChannel")
 	}
 }
+
+type permissionHelpersSuite struct{ suite.Suite }
+
+func TestPermissionHelpersSuite(t *testing.T) { suite.Run(t, new(permissionHelpersSuite)) }

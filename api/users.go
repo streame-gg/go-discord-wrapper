@@ -50,7 +50,9 @@ func (p GetCurrentUserGuildsParams) toQuery() string {
 
 // ── User endpoints ────────────────────────────────────────────────────────────
 
-// GetCurrentUser returns the bot user associated with the current token.
+// GetCurrentUser returns the user associated with the current token.
+// Pass nil for userToken to use the bot token; pass a non-nil OAuth2 bearer
+// token to fetch the user that token belongs to.
 func (c *RestClient) GetCurrentUser(ctx context.Context, userToken *string) (*discord.User, error) {
 	var authOption func(req *http.Request)
 	if userToken != nil {
@@ -102,8 +104,8 @@ func (c *RestClient) ModifyCurrentUser(ctx context.Context, params ModifyCurrent
 	})
 }
 
-// GetCurrentUserGuilds returns the guilds the current user is a member of.
-func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrentUserGuildsParams) ([]*discord.CurrentUserGuild, error) {
+// ListCurrentUserGuilds returns the guilds the current user is a member of.
+func (c *RestClient) ListCurrentUserGuilds(ctx context.Context, params GetCurrentUserGuildsParams) ([]*discord.CurrentUserGuild, error) {
 	var authOption func(req *http.Request)
 	if params.UserToken != nil {
 		authOption = WithUserAuthorization(*params.UserToken)
@@ -123,6 +125,8 @@ func (c *RestClient) GetCurrentUserGuilds(ctx context.Context, params GetCurrent
 }
 
 // GetCurrentUserGuildMember returns the guild member object for the current user in the given guild.
+// Pass nil for userAccessToken to use the bot token; pass a non-nil OAuth2 bearer token
+// (with the guilds.members.read scope) to fetch the member for that token's user.
 func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID discord.Snowflake, userAccessToken *string) (*discord.GuildMember, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err

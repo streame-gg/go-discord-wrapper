@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/stretchr/testify/suite"
 	"testing"
 
 	"github.com/streame-gg/go-discord-wrapper/collection"
@@ -73,7 +74,7 @@ func (s *stubClient) DeleteChannel(ctx context.Context, chID discord.Snowflake, 
 func (s *stubClient) BulkDeleteMessages(ctx context.Context, chID discord.Snowflake, ids []discord.Snowflake, reason *string) error {
 	return nil
 }
-func (s *stubClient) GetChannelMessages(ctx context.Context, chID discord.Snowflake, opts discord.FetchMessagesOptions) ([]*discord.Message, error) {
+func (s *stubClient) ListChannelMessages(ctx context.Context, chID discord.Snowflake, opts discord.FetchMessagesOptions) ([]*discord.Message, error) {
 	return nil, nil
 }
 func (s *stubClient) TriggerTypingIndicator(ctx context.Context, chID discord.Snowflake) error {
@@ -193,7 +194,7 @@ func (s *stubClient) ModifyGuildScheduledEvent(ctx context.Context, guildID, eve
 func (s *stubClient) DeleteGuildScheduledEvent(ctx context.Context, guildID, eventID discord.Snowflake) error {
 	return nil
 }
-func (s *stubClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, opts discord.FetchUsersOptions) ([]*discord.GuildScheduledEventUser, error) {
+func (s *stubClient) ListGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, opts discord.FetchUsersOptions) ([]*discord.GuildScheduledEventUser, error) {
 	return nil, nil
 }
 func (s *stubClient) ModifyGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake, opts discord.StickerEditOptions) (*discord.Sticker, error) {
@@ -217,7 +218,7 @@ func (s *stubClient) DeleteGuildSoundboardSound(ctx context.Context, guildID, so
 func (s *stubClient) DeleteGuildIntegration(ctx context.Context, guildID, integrationID discord.Snowflake, reason *string) error {
 	return nil
 }
-func (s *stubClient) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) ([]*discord.Integration, error) {
+func (s *stubClient) ListGuildIntegrations(ctx context.Context, guildID discord.Snowflake) ([]*discord.Integration, error) {
 	return nil, nil
 }
 func (s *stubClient) GetGuildMember(ctx context.Context, guildID, userID discord.Snowflake) (*discord.GuildMember, error) {
@@ -226,13 +227,13 @@ func (s *stubClient) GetGuildMember(ctx context.Context, guildID, userID discord
 func (s *stubClient) GetGuildRole(ctx context.Context, guildID, roleID discord.Snowflake) (*discord.Role, error) {
 	return nil, nil
 }
-func (s *stubClient) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) ([]*discord.Role, error) {
+func (s *stubClient) ListGuildRoles(ctx context.Context, guildID discord.Snowflake) ([]*discord.Role, error) {
 	return nil, nil
 }
 func (s *stubClient) GetChannel(ctx context.Context, channelID discord.Snowflake) (*discord.Channel, error) {
 	return nil, nil
 }
-func (s *stubClient) GetGuildChannels(ctx context.Context, guildID discord.Snowflake) ([]*discord.Channel, error) {
+func (s *stubClient) ListGuildChannels(ctx context.Context, guildID discord.Snowflake) ([]*discord.Channel, error) {
 	return nil, nil
 }
 func (s *stubClient) GetGuildEmoji(ctx context.Context, guildID, emojiID discord.Snowflake) (*discord.Emoji, error) {
@@ -250,7 +251,7 @@ func (s *stubClient) ListGuildStickers(ctx context.Context, guildID discord.Snow
 func (s *stubClient) GetGuildBan(ctx context.Context, guildID, userID discord.Snowflake) (*discord.Ban, error) {
 	return nil, nil
 }
-func (s *stubClient) GetGuildBans(ctx context.Context, guildID discord.Snowflake, opts discord.FetchBansOptions) ([]*discord.Ban, error) {
+func (s *stubClient) ListGuildBans(ctx context.Context, guildID discord.Snowflake, opts discord.FetchBansOptions) ([]*discord.Ban, error) {
 	return nil, nil
 }
 func (s *stubClient) RemoveGuildBan(ctx context.Context, guildID, userID discord.Snowflake, reason *string) error {
@@ -274,10 +275,10 @@ func (s *stubClient) GetGuildSoundboardSound(ctx context.Context, guildID, sound
 func (s *stubClient) ListGuildSoundboardSounds(ctx context.Context, guildID discord.Snowflake) ([]*discord.SoundboardSound, error) {
 	return nil, nil
 }
-func (s *stubClient) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) ([]*discord.Invite, error) {
+func (s *stubClient) ListGuildInvites(ctx context.Context, guildID discord.Snowflake) ([]*discord.Invite, error) {
 	return nil, nil
 }
-func (s *stubClient) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
+func (s *stubClient) ListGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
 	return nil, nil
 }
 func (s *stubClient) GetAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake) (*discord.AutoModerationRule, error) {
@@ -310,7 +311,8 @@ var _ discord.EntityClient = (*stubClient)(nil)
 
 // ── Infrastructure tests ──────────────────────────────────────────────────────
 
-func TestErrEntityNotHydrated_MessageEdit(t *testing.T) {
+func (su *hydrationSuite) TestErrEntityNotHydrated_MessageEdit() {
+	t := su.T()
 	var msg discord.Message
 	_, err := msg.Edit(context.Background(), discord.MessageEditOptions{})
 	if !errors.Is(err, discord.ErrEntityNotHydrated) {
@@ -318,7 +320,8 @@ func TestErrEntityNotHydrated_MessageEdit(t *testing.T) {
 	}
 }
 
-func TestErrEntityNotHydrated_MessageDelete(t *testing.T) {
+func (su *hydrationSuite) TestErrEntityNotHydrated_MessageDelete() {
+	t := su.T()
 	var msg discord.Message
 	err := msg.Delete(context.Background(), nil)
 	if !errors.Is(err, discord.ErrEntityNotHydrated) {
@@ -326,7 +329,8 @@ func TestErrEntityNotHydrated_MessageDelete(t *testing.T) {
 	}
 }
 
-func TestErrEntityNotHydrated_GuildLeave(t *testing.T) {
+func (su *hydrationSuite) TestErrEntityNotHydrated_GuildLeave() {
+	t := su.T()
 	var g discord.Guild
 	err := g.Leave(context.Background())
 	if !errors.Is(err, discord.ErrEntityNotHydrated) {
@@ -334,7 +338,8 @@ func TestErrEntityNotHydrated_GuildLeave(t *testing.T) {
 	}
 }
 
-func TestErrEntityNotHydrated_RoleDelete(t *testing.T) {
+func (su *hydrationSuite) TestErrEntityNotHydrated_RoleDelete() {
+	t := su.T()
 	var r discord.Role
 	err := r.Delete(context.Background(), nil)
 	if !errors.Is(err, discord.ErrEntityNotHydrated) {
@@ -342,7 +347,8 @@ func TestErrEntityNotHydrated_RoleDelete(t *testing.T) {
 	}
 }
 
-func TestErrEntityNotHydrated_ChannelEdit(t *testing.T) {
+func (su *hydrationSuite) TestErrEntityNotHydrated_ChannelEdit() {
+	t := su.T()
 	var ch discord.Channel
 	_, err := ch.Edit(context.Background(), discord.ChannelEditOptions{})
 	if !errors.Is(err, discord.ErrEntityNotHydrated) {
@@ -350,7 +356,8 @@ func TestErrEntityNotHydrated_ChannelEdit(t *testing.T) {
 	}
 }
 
-func TestErrEntityNotHydrated_MemberKick(t *testing.T) {
+func (su *hydrationSuite) TestErrEntityNotHydrated_MemberKick() {
+	t := su.T()
 	m := &discord.GuildMember{}
 	err := m.Kick(context.Background(), nil)
 	if !errors.Is(err, discord.ErrEntityNotHydrated) {
@@ -360,14 +367,16 @@ func TestErrEntityNotHydrated_MemberKick(t *testing.T) {
 
 // ── IsHydrated ────────────────────────────────────────────────────────────────
 
-func TestIsHydrated_FalseBeforeHydrate(t *testing.T) {
+func (su *hydrationSuite) TestIsHydrated_FalseBeforeHydrate() {
+	t := su.T()
 	var msg discord.Message
 	if msg.IsHydrated() {
 		t.Fatal("expected IsHydrated to be false before Hydrate call")
 	}
 }
 
-func TestIsHydrated_TrueAfterHydrate(t *testing.T) {
+func (su *hydrationSuite) TestIsHydrated_TrueAfterHydrate() {
+	t := su.T()
 	msg := &discord.Message{}
 	msg.Hydrate(&stubClient{})
 	if !msg.IsHydrated() {
@@ -375,7 +384,8 @@ func TestIsHydrated_TrueAfterHydrate(t *testing.T) {
 	}
 }
 
-func TestWithClient_ReturnsHydratedCopy(t *testing.T) {
+func (su *hydrationSuite) TestWithClient_ReturnsHydratedCopy() {
+	t := su.T()
 	c := &stubClient{}
 	original := &discord.Message{}
 	if original.IsHydrated() {
@@ -393,7 +403,8 @@ func TestWithClient_ReturnsHydratedCopy(t *testing.T) {
 
 // ── JSON round-trip: hClient field must not be serialized ─────────────────────
 
-func TestHydrate_JSONOmitsClient(t *testing.T) {
+func (su *hydrationSuite) TestHydrate_JSONOmitsClient() {
+	t := su.T()
 	msg := &discord.Message{
 		ID:        123,
 		ChannelID: 456,
@@ -422,7 +433,8 @@ func TestHydrate_JSONOmitsClient(t *testing.T) {
 
 // ── Hydrate propagates to nested entities ─────────────────────────────────────
 
-func TestHydrate_PropagatesAuthorHydration(t *testing.T) {
+func (su *hydrationSuite) TestHydrate_PropagatesAuthorHydration() {
+	t := su.T()
 	c := &stubClient{}
 	author := &discord.User{ID: 9}
 	msg := &discord.Message{Author: author}
@@ -433,7 +445,8 @@ func TestHydrate_PropagatesAuthorHydration(t *testing.T) {
 	}
 }
 
-func TestGuildHydrate_PropagatesRolesAndEmojis(t *testing.T) {
+func (su *hydrationSuite) TestGuildHydrate_PropagatesRolesAndEmojis() {
+	t := su.T()
 	c := &stubClient{}
 	g := &discord.Guild{
 		ID:        1,
@@ -459,7 +472,8 @@ func TestGuildHydrate_PropagatesRolesAndEmojis(t *testing.T) {
 
 // ── Smoke tests: method routes to correct EntityClient call ───────────────────
 
-func TestMessageEdit_Smoke(t *testing.T) {
+func (su *hydrationSuite) TestMessageEdit_Smoke() {
+	t := su.T()
 	want := &discord.Message{ID: 1}
 	c := &stubClient{
 		editMessageFn: func(_ context.Context, chID, msgID discord.Snowflake, opts discord.MessageEditOptions) (*discord.Message, error) {
@@ -478,7 +492,8 @@ func TestMessageEdit_Smoke(t *testing.T) {
 	}
 }
 
-func TestMessageDelete_Smoke(t *testing.T) {
+func (su *hydrationSuite) TestMessageDelete_Smoke() {
+	t := su.T()
 	var called bool
 	c := &stubClient{
 		deleteMessageFn: func(_ context.Context, chID, msgID discord.Snowflake, _ *string) error {
@@ -497,7 +512,8 @@ func TestMessageDelete_Smoke(t *testing.T) {
 	}
 }
 
-func TestGuildLeave_Smoke(t *testing.T) {
+func (su *hydrationSuite) TestGuildLeave_Smoke() {
+	t := su.T()
 	var gotID discord.Snowflake
 	c := &stubClient{
 		leaveGuildFn: func(_ context.Context, guildID discord.Snowflake) error {
@@ -516,7 +532,8 @@ func TestGuildLeave_Smoke(t *testing.T) {
 	}
 }
 
-func TestRoleDelete_Smoke(t *testing.T) {
+func (su *hydrationSuite) TestRoleDelete_Smoke() {
+	t := su.T()
 	var called bool
 	c := &stubClient{
 		deleteRoleFn: func(_ context.Context, guildID, roleID discord.Snowflake, _ *string) error {
@@ -538,7 +555,8 @@ func TestRoleDelete_Smoke(t *testing.T) {
 	}
 }
 
-func TestMemberKick_Smoke(t *testing.T) {
+func (su *hydrationSuite) TestMemberKick_Smoke() {
+	t := su.T()
 	var called bool
 	c := &stubClient{
 		kickMemberFn: func(_ context.Context, guildID, userID discord.Snowflake, _ *string) error {
@@ -560,7 +578,8 @@ func TestMemberKick_Smoke(t *testing.T) {
 	}
 }
 
-func TestChannelEdit_Smoke(t *testing.T) {
+func (su *hydrationSuite) TestChannelEdit_Smoke() {
+	t := su.T()
 	want := &discord.Channel{ID: 13}
 	c := &stubClient{
 		modifyChannelFn: func(_ context.Context, chID discord.Snowflake, opts discord.ChannelEditOptions) (*discord.Channel, error) {
@@ -578,3 +597,7 @@ func TestChannelEdit_Smoke(t *testing.T) {
 		t.Fatalf("Edit: err=%v got=%v", err, got)
 	}
 }
+
+type hydrationSuite struct{ suite.Suite }
+
+func TestHydrationSuite(t *testing.T) { suite.Run(t, new(hydrationSuite)) }

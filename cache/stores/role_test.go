@@ -1,6 +1,7 @@
 package stores
 
 import (
+	"github.com/stretchr/testify/suite"
 	"sync/atomic"
 	"testing"
 
@@ -14,7 +15,8 @@ import (
 // a reader could find an ID via s.index.forGuild but then miss it in s.base.Get.
 // Fix: base.Set first, then index.add — any ID visible in the index is guaranteed
 // to be present in base.
-func TestBug92_RoleSet_IndexAfterBase(t *testing.T) {
+func (su *storesRoleSuite) TestBug92_RoleSet_IndexAfterBase() {
+	t := su.T()
 	s := NewRoleStore(StoreOptions{})
 	defer s.Close()
 
@@ -53,3 +55,7 @@ func TestBug92_RoleSet_IndexAfterBase(t *testing.T) {
 		t.Errorf("Bug92: %d observation(s) where role ID was visible in index before base.Set completed", v)
 	}
 }
+
+type storesRoleSuite struct{ suite.Suite }
+
+func TestStoresRoleSuite(t *testing.T) { suite.Run(t, new(storesRoleSuite)) }

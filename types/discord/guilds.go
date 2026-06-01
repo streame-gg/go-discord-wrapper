@@ -272,16 +272,16 @@ type Role struct {
 }
 
 type RoleTags struct {
-	BotID                 *Snowflake `json:"bot_id,omitempty"`
-	IntegrationID         *Snowflake `json:"integration_id,omitempty"`
+	BotID         *Snowflake `json:"bot_id,omitempty"`
+	IntegrationID *Snowflake `json:"integration_id,omitempty"`
 	// PremiumSubscriber is true when this is the guild's Nitro Booster role.
 	// Discord encodes it as JSON null when present and omits it when absent.
 	PremiumSubscriber     NullFlag   `json:"premium_subscriber,omitempty"`
 	SubscriptionListingID *Snowflake `json:"subscription_listing_id,omitempty"`
 	// AvailableForPurchase is true when the role can be purchased via a subscription.
-	AvailableForPurchase  NullFlag   `json:"available_for_purchase,omitempty"`
+	AvailableForPurchase NullFlag `json:"available_for_purchase,omitempty"`
 	// GuildConnections is true when this is a linked role.
-	GuildConnections      NullFlag   `json:"guild_connections,omitempty"`
+	GuildConnections NullFlag `json:"guild_connections,omitempty"`
 }
 
 type RoleFlags int

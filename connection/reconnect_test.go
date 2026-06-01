@@ -116,7 +116,7 @@ func TestBug18CorruptReadyPayloadDoesNotCloseReadyChan(t *testing.T) {
 	require.NoError(t, err)
 
 	// Construct a minimal websocket so we can call internalEventHandler directly.
-	c.Websocket = &Websocket{
+	c.wsConn = &wsConn{
 		Ready:  make(chan struct{}),
 		Closed: make(chan struct{}),
 	}
@@ -137,26 +137,26 @@ func TestBug18CorruptReadyPayloadDoesNotCloseReadyChan(t *testing.T) {
 
 // TestBug19RequestGuildMembersRaceSafe verifies that RequestGuildMembers and
 // UpdatePresence are safe to call concurrently with a reconnect that swaps
-// d.Websocket under the hood (race detector must pass).
+// d.wsConn under the hood (race detector must pass).
 func TestBug19RequestGuildMembersRaceSafe(t *testing.T) {
 	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
-	// Seed with a non-nil Websocket so the nil-check path is exercised.
+	// Seed with a non-nil wsConn so the nil-check path is exercised.
 	c.wsMu.Lock()
-	c.Websocket = &Websocket{Closed: make(chan struct{}), Ready: make(chan struct{})}
+	c.wsConn = &wsConn{Closed: make(chan struct{}), Ready: make(chan struct{})}
 	c.wsMu.Unlock()
 
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		for i := 0; i < 200; i++ {
-			// Simulate reconnect swapping the Websocket pointer.
+			// Simulate reconnect swapping the wsConn pointer.
 			c.wsMu.Lock()
-			c.Websocket = nil
+			c.wsConn = nil
 			c.wsMu.Unlock()
 			c.wsMu.Lock()
-			c.Websocket = &Websocket{Closed: make(chan struct{}), Ready: make(chan struct{})}
+			c.wsConn = &wsConn{Closed: make(chan struct{}), Ready: make(chan struct{})}
 			c.wsMu.Unlock()
 		}
 	}()
@@ -173,7 +173,7 @@ func TestBug19RequestGuildMembersRaceSafe(t *testing.T) {
 // start until after a successful write.
 func TestBug16NoHeartbeatLeakOnWriteFailure(t *testing.T) {
 	// Server: sends HELLO then immediately closes the connection before IDENTIFY
-	// can be written, so the WriteJSON in NewWebsocket will fail.
+	// can be written, so the WriteJSON in newWSConn will fail.
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := wsUpgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -196,7 +196,7 @@ func TestBug16NoHeartbeatLeakOnWriteFailure(t *testing.T) {
 
 	before := runtime.NumGoroutine()
 
-	// NewWebsocket (called inside connectWebsocket) should fail cleanly.
+	// newWSConn (called inside connectWebsocket) should fail cleanly.
 	_ = c.connectWebsocket(wsURL, false, nil, nil)
 
 	// Give any stray goroutines time to start (and then they shouldn't).
@@ -207,7 +207,7 @@ func TestBug16NoHeartbeatLeakOnWriteFailure(t *testing.T) {
 	// Allow a small tolerance for background goroutines from the test runtime.
 	const tolerance = 3
 	assert.LessOrEqual(t, after, before+tolerance,
-		"goroutine count grew by %d after failed NewWebsocket — heartbeat leak suspected", after-before)
+		"goroutine count grew by %d after failed newWSConn — heartbeat leak suspected", after-before)
 }
 
 // TestBug28APIVersionInWebSocketURL verifies that WithAPIVersion is respected
@@ -226,7 +226,7 @@ func TestBug28APIVersionInWebSocketURL(t *testing.T) {
 			return
 		}
 		defer conn.Close()
-		// Send HELLO so NewWebsocket can proceed.
+		// Send HELLO so newWSConn can proceed.
 		_ = conn.WriteJSON(map[string]interface{}{
 			"op": 10,
 			"d":  map[string]interface{}{"heartbeat_interval": 60000},
@@ -252,7 +252,7 @@ func TestBug28APIVersionInWebSocketURL(t *testing.T) {
 	}
 }
 
-// TestBug26ConcurrentCloseIsIdempotent verifies that calling Websocket.close()
+// TestBug26ConcurrentCloseIsIdempotent verifies that calling wsConn.close()
 // from many goroutines concurrently only calls Connection.Close() once and does
 // not panic by attempting to close the already-closed Closed channel (Bug 26).
 func TestBug26ConcurrentCloseIsIdempotent(t *testing.T) {
@@ -265,7 +265,7 @@ func TestBug26ConcurrentCloseIsIdempotent(t *testing.T) {
 	err = c.connectWebsocket(wsURL, false, nil, nil)
 	require.NoError(t, err)
 
-	ws := c.Websocket
+	ws := c.wsConn
 	require.NotNil(t, ws, "websocket must be set after connectWebsocket")
 
 	// 100 concurrent close() calls must not panic or deadlock.
@@ -312,12 +312,12 @@ func TestBug47ReconnectBackoffNoOverflow(t *testing.T) {
 }
 
 // TestBug41DoubleReadyDoesNotPanic verifies that receiving a READY event twice
-// on the same Websocket does not panic from a double-close of the Ready channel.
+// on the same wsConn does not panic from a double-close of the Ready channel.
 func TestBug41DoubleReadyDoesNotPanic(t *testing.T) {
 	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
-	c.Websocket = &Websocket{
+	c.wsConn = &wsConn{
 		Ready:  make(chan struct{}),
 		Closed: make(chan struct{}),
 	}

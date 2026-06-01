@@ -75,5 +75,5 @@ func (e *GuildScheduledEvent) FetchUsers(ctx context.Context, opts FetchUsersOpt
 	if err != nil {
 		return nil, err
 	}
-	return c.GetGuildScheduledEventUsers(ctx, e.GuildID, e.ID, opts)
+	return c.ListGuildScheduledEventUsers(ctx, e.GuildID, e.ID, opts)
 }

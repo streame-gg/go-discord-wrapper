@@ -204,8 +204,8 @@ func encodeEmoji(emoji string) string {
 
 // ── Message endpoints ─────────────────────────────────────────────────────────
 
-// GetMessages returns up to 100 messages from a channel.
-func (c *RestClient) GetMessages(ctx context.Context, channelID discord.Snowflake, params GetMessagesParams) ([]*discord.Message, error) {
+// ListMessages returns up to 100 messages from a channel.
+func (c *RestClient) ListMessages(ctx context.Context, channelID discord.Snowflake, params GetMessagesParams) ([]*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -421,8 +421,8 @@ type BulkDeleteMessagesOptions struct {
 
 // ── Pin endpoints ─────────────────────────────────────────────────────────────
 
-// GetPinnedMessages returns all pinned messages in a channel (max 50).
-func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
+// ListPinnedMessages returns all pinned messages in a channel (max 50).
+func (c *RestClient) ListPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -557,8 +557,8 @@ func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageI
 	return doRequestWithoutResponse(c, req)
 }
 
-// GetReactions returns the users who reacted to a message with the given emoji.
-func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params GetReactionsParams) ([]*discord.User, error) {
+// ListReactions returns the users who reacted to a message with the given emoji.
+func (c *RestClient) ListReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params GetReactionsParams) ([]*discord.User, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}

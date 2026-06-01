@@ -157,8 +157,8 @@ func (c *RestClient) DeleteChannel(ctx context.Context, channelID discord.Snowfl
 	})
 }
 
-// GetChannelInvites returns all invites for a channel. Requires MANAGE_CHANNELS.
-func (c *RestClient) GetChannelInvites(ctx context.Context, channelID discord.Snowflake) ([]*discord.Invite, error) {
+// ListChannelInvites returns all invites for a channel. Requires MANAGE_CHANNELS.
+func (c *RestClient) ListChannelInvites(ctx context.Context, channelID discord.Snowflake) ([]*discord.Invite, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}

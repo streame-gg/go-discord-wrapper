@@ -110,8 +110,8 @@ func (c *RestClient) CreateWebhook(ctx context.Context, channelID discord.Snowfl
 	})
 }
 
-// GetChannelWebhooks returns all webhooks for a channel. Requires MANAGE_WEBHOOKS.
-func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID discord.Snowflake) ([]*discord.Webhook, error) {
+// ListChannelWebhooks returns all webhooks for a channel. Requires MANAGE_WEBHOOKS.
+func (c *RestClient) ListChannelWebhooks(ctx context.Context, channelID discord.Snowflake) ([]*discord.Webhook, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -126,8 +126,8 @@ func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID discord.S
 	})
 }
 
-// GetGuildWebhooks returns all webhooks in a guild.
-func (c *RestClient) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
+// ListGuildWebhooks returns all webhooks in a guild.
+func (c *RestClient) ListGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}

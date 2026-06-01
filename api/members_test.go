@@ -2,13 +2,15 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/suite"
 	"strings"
 	"testing"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-func TestModifyGuildMemberParams_RolesJSON(t *testing.T) {
+func (su *membersSuite) TestModifyGuildMemberParams_RolesJSON() {
+	t := su.T()
 	roleID := discord.Snowflake(754246997266923571)
 
 	cases := []struct {
@@ -53,3 +55,7 @@ func TestModifyGuildMemberParams_RolesJSON(t *testing.T) {
 		})
 	}
 }
+
+type membersSuite struct{ suite.Suite }
+
+func TestMembersSuite(t *testing.T) { suite.Run(t, new(membersSuite)) }

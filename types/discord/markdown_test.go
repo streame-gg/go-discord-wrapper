@@ -1,8 +1,13 @@
 package discord
 
-import "testing"
+import (
+	"testing"
 
-func TestEscapeMarkdownInline(t *testing.T) {
+	"github.com/stretchr/testify/suite"
+)
+
+func (su *markdownSuite) TestEscapeMarkdownInline() {
+	t := su.T()
 	cases := []struct {
 		name string
 		in   string
@@ -28,7 +33,8 @@ func TestEscapeMarkdownInline(t *testing.T) {
 	}
 }
 
-func TestEscapeMarkdownLineStart(t *testing.T) {
+func (su *markdownSuite) TestEscapeMarkdownLineStart() {
+	t := su.T()
 	cases := []struct {
 		name string
 		in   string
@@ -54,7 +60,8 @@ func TestEscapeMarkdownLineStart(t *testing.T) {
 	}
 }
 
-func TestEscapeMarkdownMultiline(t *testing.T) {
+func (su *markdownSuite) TestEscapeMarkdownMultiline() {
+	t := su.T()
 	in := "# Title\nsome *text*\n- bullet"
 	want := "\\# Title\nsome \\*text\\*\n\\- bullet"
 	if got := EscapeMarkdown(in); got != want {
@@ -62,7 +69,8 @@ func TestEscapeMarkdownMultiline(t *testing.T) {
 	}
 }
 
-func TestEscapeMarkdownSelective(t *testing.T) {
+func (su *markdownSuite) TestEscapeMarkdownSelective() {
+	t := su.T()
 	// Only escape spoilers; leave bold/italic intact.
 	opts := EscapeMarkdownOptions{Spoiler: true}
 	if got := EscapeMarkdown("**bold** ||secret||", opts); got != `**bold** \|\|secret\|\|` {
@@ -74,3 +82,7 @@ func TestEscapeMarkdownSelective(t *testing.T) {
 		t.Errorf("zero options should escape nothing: got %q", got)
 	}
 }
+
+type markdownSuite struct{ suite.Suite }
+
+func TestMarkdownSuite(t *testing.T) { suite.Run(t, new(markdownSuite)) }

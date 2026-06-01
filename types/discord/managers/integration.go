@@ -16,7 +16,7 @@ func NewIntegrationManager(guildID discord.Snowflake, c discord.EntityClient) di
 }
 
 func (m *integrationManager) FetchAll(ctx context.Context) ([]*discord.Integration, error) {
-	return m.client.GetGuildIntegrations(ctx, m.guildID)
+	return m.client.ListGuildIntegrations(ctx, m.guildID)
 }
 
 func (m *integrationManager) Remove(ctx context.Context, integrationID discord.Snowflake, reason *string) error {

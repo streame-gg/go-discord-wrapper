@@ -1,6 +1,7 @@
 package stores
 
 import (
+	"github.com/stretchr/testify/suite"
 	"sync"
 	"testing"
 	"time"
@@ -8,7 +9,8 @@ import (
 
 // ── TestBaseStore_GetSet ──────────────────────────────────────────────────────
 
-func TestBaseStore_GetSet(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_GetSet() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -26,7 +28,8 @@ func TestBaseStore_GetSet(t *testing.T) {
 	}
 }
 
-func TestBaseStoreBug60_GetLazyRemoval(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStoreBug60_GetLazyRemoval() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		TTL:        20 * time.Millisecond,
 		TrackBytes: true,
@@ -72,7 +75,8 @@ func TestBaseStoreBug60_GetLazyRemoval(t *testing.T) {
 
 // ── TestBaseStore_Delete ──────────────────────────────────────────────────────
 
-func TestBaseStore_Delete(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Delete() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -90,7 +94,8 @@ func TestBaseStore_Delete(t *testing.T) {
 
 // ── TestBaseStore_Has ─────────────────────────────────────────────────────────
 
-func TestBaseStore_Has(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Has() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -116,7 +121,8 @@ func TestBaseStore_Has(t *testing.T) {
 
 // ── TestBaseStore_Len ─────────────────────────────────────────────────────────
 
-func TestBaseStore_Len(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Len() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -136,7 +142,8 @@ func TestBaseStore_Len(t *testing.T) {
 
 // ── TestBaseStore_Clear ───────────────────────────────────────────────────────
 
-func TestBaseStore_Clear(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Clear() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -151,7 +158,8 @@ func TestBaseStore_Clear(t *testing.T) {
 
 // ── TestBaseStore_TTL_Expiry ──────────────────────────────────────────────────
 
-func TestBaseStore_TTL_Expiry(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_TTL_Expiry() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{TTL: 20 * time.Millisecond})
 	defer s.Close()
 
@@ -174,7 +182,8 @@ func TestBaseStore_TTL_Expiry(t *testing.T) {
 
 // ── TestBaseStore_TTL_RefreshOnAccess ─────────────────────────────────────────
 
-func TestBaseStore_TTL_RefreshOnAccess(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_TTL_RefreshOnAccess() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		TTL:             40 * time.Millisecond,
 		RefreshOnAccess: true,
@@ -200,7 +209,8 @@ func TestBaseStore_TTL_RefreshOnAccess(t *testing.T) {
 
 // ── TestBaseStore_MaxItems_EvictLRU ───────────────────────────────────────────
 
-func TestBaseStore_MaxItems_EvictLRU(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_MaxItems_EvictLRU() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		MaxItems:         2,
 		EvictionStrategy: EvictLRU,
@@ -232,7 +242,8 @@ func TestBaseStore_MaxItems_EvictLRU(t *testing.T) {
 
 // ── TestBaseStore_MaxItems_EvictLFU ───────────────────────────────────────────
 
-func TestBaseStore_MaxItems_EvictLFU(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_MaxItems_EvictLFU() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		MaxItems:         2,
 		EvictionStrategy: EvictLFU,
@@ -262,7 +273,8 @@ func TestBaseStore_MaxItems_EvictLFU(t *testing.T) {
 
 // ── TestBaseStore_MaxItems_EvictFIFO ──────────────────────────────────────────
 
-func TestBaseStore_MaxItems_EvictFIFO(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_MaxItems_EvictFIFO() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		MaxItems:         2,
 		EvictionStrategy: EvictFIFO,
@@ -293,7 +305,8 @@ func TestBaseStore_MaxItems_EvictFIFO(t *testing.T) {
 
 // ── TestBaseStore_PreservesMetadataOnUpdate ───────────────────────────────────
 
-func TestBaseStore_PreservesMetadataOnUpdate(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_PreservesMetadataOnUpdate() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		MaxItems:         2,
 		EvictionStrategy: EvictLFU,
@@ -360,7 +373,8 @@ func TestBaseStore_PreservesMetadataOnUpdate(t *testing.T) {
 
 // ── TestBaseStore_Sweeper_Removes ─────────────────────────────────────────────
 
-func TestBaseStore_Sweeper_Removes(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Sweeper_Removes() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		Sweepers: []Sweeper{
 			{
@@ -393,7 +407,8 @@ func TestBaseStore_Sweeper_Removes(t *testing.T) {
 
 // ── TestBaseStore_Close_StopsSweepers ─────────────────────────────────────────
 
-func TestBaseStore_Close_StopsSweepers(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Close_StopsSweepers() {
+	t := su.T()
 	// Use a channel signal instead of a sleep+count so the test is reliable
 	// even under the race detector's slower goroutine scheduling.
 	ran := make(chan struct{}, 1)
@@ -442,7 +457,8 @@ func TestBaseStore_Close_StopsSweepers(t *testing.T) {
 
 // ── TestBaseStore_All_ReturnsSnapshot ─────────────────────────────────────────
 
-func TestBaseStore_All_ReturnsSnapshot(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_All_ReturnsSnapshot() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -467,7 +483,8 @@ func TestBaseStore_All_ReturnsSnapshot(t *testing.T) {
 
 // ── TestBaseStore_All_FiltersExpired ──────────────────────────────────────────
 
-func TestBaseStore_All_FiltersExpired(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_All_FiltersExpired() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{TTL: 20 * time.Millisecond})
 	defer s.Close()
 
@@ -486,7 +503,8 @@ func TestBaseStore_All_FiltersExpired(t *testing.T) {
 
 // ── TestBaseStore_ReplaceKeys ─────────────────────────────────────────────────
 
-func TestBaseStore_ReplaceKeys(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_ReplaceKeys() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -516,7 +534,8 @@ func TestBaseStore_ReplaceKeys(t *testing.T) {
 	}
 }
 
-func TestBaseStore_ReplaceKeys_RespectsMaxItems(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_ReplaceKeys_RespectsMaxItems() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		MaxItems:         2,
 		EvictionStrategy: EvictFIFO,
@@ -533,7 +552,8 @@ func TestBaseStore_ReplaceKeys_RespectsMaxItems(t *testing.T) {
 
 // ── TestBaseStore_Disabled ────────────────────────────────────────────────────
 
-func TestBaseStore_Disabled(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Disabled() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{Disabled: true})
 	defer s.Close()
 
@@ -563,7 +583,7 @@ func TestBaseStore_Disabled(t *testing.T) {
 
 // ── TestBaseStore_ConcurrentSafe ──────────────────────────────────────────────
 
-func TestBaseStore_ConcurrentSafe(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_ConcurrentSafe() {
 	s := NewBaseStore[int, int](StoreOptions{
 		MaxItems: 50,
 		Sweepers: []Sweeper{
@@ -599,14 +619,14 @@ func TestBaseStore_ConcurrentSafe(t *testing.T) {
 }
 
 // J0-#12: Close must be idempotent; a second call must not panic.
-func TestBaseStore_CloseIdempotent(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_CloseIdempotent() {
 	s := NewBaseStore[string, int](Defaults())
 	// Must not panic even when called twice.
 	s.Close()
 	s.Close()
 }
 
-func TestMemMessageStore_CloseIdempotent(t *testing.T) {
+func (su *storesStoreSuite) TestMemMessageStore_CloseIdempotent() {
 	s := NewMessageStore(MessageDefaults())
 	s.Close()
 	s.Close()
@@ -620,7 +640,8 @@ func TestMemMessageStore_CloseIdempotent(t *testing.T) {
 // Root cause: ReplaceKeys always created fresh entries, resetting LFU/FIFO
 // eviction metadata. It also leaked totalBytes because the old entry's sizeBytes
 // was never subtracted before re-adding.
-func TestBug94_ReplaceKeys_PreservesEvictionMetadata(t *testing.T) {
+func (su *storesStoreSuite) TestBug94_ReplaceKeys_PreservesEvictionMetadata() {
+	t := su.T()
 	t.Run("LFU: hitCount preserved", func(t *testing.T) {
 		s := NewBaseStore[string, int](StoreOptions{
 			MaxItems:         2,
@@ -708,7 +729,8 @@ func TestBug94_ReplaceKeys_PreservesEvictionMetadata(t *testing.T) {
 //
 // Root cause: the Disabled check was missing in Delete, causing a needless
 // write-lock acquisition on every call even though the store is a no-op.
-func TestBug116_DeleteOnDisabledStore(t *testing.T) {
+func (su *storesStoreSuite) TestBug116_DeleteOnDisabledStore() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{Disabled: true, TrackBytes: true})
 	defer s.Close()
 
@@ -733,7 +755,8 @@ func TestBug116_DeleteOnDisabledStore(t *testing.T) {
 // lock acquisitions. The fix collects all entries once, sorts once (O(n log n)),
 // and deletes in one lock acquisition. This test verifies correctness, not
 // performance; correctness requires that the highest-priority victims are chosen.
-func TestBug150_EvictToCount_CorrectVictims(t *testing.T) {
+func (su *storesStoreSuite) TestBug150_EvictToCount_CorrectVictims() {
+	t := su.T()
 	t.Run("LFU: keeps highest hit counts across batch eviction", func(t *testing.T) {
 		s := NewBaseStore[string, int](StoreOptions{
 			MaxItems:         3,
@@ -787,3 +810,7 @@ func TestBug150_EvictToCount_CorrectVictims(t *testing.T) {
 		}
 	})
 }
+
+type storesStoreSuite struct{ suite.Suite }
+
+func TestStoresStoreSuite(t *testing.T) { suite.Run(t, new(storesStoreSuite)) }

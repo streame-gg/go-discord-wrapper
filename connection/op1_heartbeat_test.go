@@ -104,14 +104,14 @@ func TestOp1HeartbeatRequest(t *testing.T) {
 		"client should have sent at least one heartbeat in response to Op-1")
 
 	// Compile-time check: heartbeatRequest must be chan struct{}.
-	var _ chan struct{} = client.Websocket.heartbeatRequest
+	var _ chan struct{} = client.wsConn.heartbeatRequest
 }
 
 // TestOp1HeartbeatRequestChannelNonBlocking verifies the non-blocking send
 // in the listener: signalling heartbeatRequest when the buffer is full must
 // not block (Issue 6).
 func TestOp1HeartbeatRequestChannelNonBlocking(t *testing.T) {
-	ws := &Websocket{
+	ws := &wsConn{
 		heartbeatRequest: make(chan struct{}, 1),
 		Closed:           make(chan struct{}),
 	}

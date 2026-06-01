@@ -56,9 +56,9 @@ func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID discord.Sno
 
 // ── Global command management ─────────────────────────────────────────────────
 
-// GetGlobalApplicationCommands returns all global application commands for the given application ID.
+// ListGlobalApplicationCommands returns all global application commands for the given application ID.
 // Set withLocalizations to true to include localization dictionaries.
-func (c *RestClient) GetGlobalApplicationCommands(ctx context.Context, appID discord.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
+func (c *RestClient) ListGlobalApplicationCommands(ctx context.Context, appID discord.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -146,8 +146,8 @@ func (c *RestClient) DeleteGlobalApplicationCommand(ctx context.Context, appID, 
 
 // ── Guild command management ──────────────────────────────────────────────────
 
-// GetGuildApplicationCommands returns all application commands registered to a specific guild.
-func (c *RestClient) GetGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
+// ListGuildApplicationCommands returns all application commands registered to a specific guild.
+func (c *RestClient) ListGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -305,8 +305,8 @@ func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, 
 
 // ── Command permissions ───────────────────────────────────────────────────────
 
-// GetGuildApplicationCommandPermissions returns all permission overrides for every command in a guild.
-func (c *RestClient) GetGuildApplicationCommandPermissions(ctx context.Context, appID, guildID discord.Snowflake) ([]*discord.GuildApplicationCommandPermissions, error) {
+// ListGuildApplicationCommandPermissions returns all permission overrides for every command in a guild.
+func (c *RestClient) ListGuildApplicationCommandPermissions(ctx context.Context, appID, guildID discord.Snowflake) ([]*discord.GuildApplicationCommandPermissions, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}

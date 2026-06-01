@@ -1,10 +1,15 @@
 package discord
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/suite"
+)
 
 func strptr(s string) *string { return &s }
 
-func TestUserAvatarURL(t *testing.T) {
+func (su *cdnSuite) TestUserAvatarURL() {
+	t := su.T()
 	u := &User{ID: 123, AvatarHash: strptr("abc")}
 	if got := u.AvatarURL(nil); got != "https://cdn.discordapp.com/avatars/123/abc.webp" {
 		t.Errorf("default: got %q", got)
@@ -24,7 +29,8 @@ func TestUserAvatarURL(t *testing.T) {
 	}
 }
 
-func TestUserDefaultAndDisplayAvatarURL(t *testing.T) {
+func (su *cdnSuite) TestUserDefaultAndDisplayAvatarURL() {
+	t := su.T()
 	// Migrated username (discriminator "0") → index from ID>>22 % 6.
 	migrated := &User{ID: 1 << 22, Discriminator: "0"} // (ID>>22)=1, %6=1
 	if got := migrated.DefaultAvatarURL(); got != "https://cdn.discordapp.com/embed/avatars/1.png" {
@@ -47,7 +53,8 @@ func TestUserDefaultAndDisplayAvatarURL(t *testing.T) {
 	}
 }
 
-func TestMemberAvatarAndBannerURL(t *testing.T) {
+func (su *cdnSuite) TestMemberAvatarAndBannerURL() {
+	t := su.T()
 	m := &GuildMember{GuildID: 10, UserID: 20, AvatarHash: strptr("a_anim"), BannerHash: strptr("ban")}
 	if got := m.AvatarURL(nil); got != "https://cdn.discordapp.com/guilds/10/users/20/avatars/a_anim.gif" {
 		t.Errorf("member avatar: got %q", got)
@@ -62,7 +69,8 @@ func TestMemberAvatarAndBannerURL(t *testing.T) {
 	}
 }
 
-func TestGuildImageURLs(t *testing.T) {
+func (su *cdnSuite) TestGuildImageURLs() {
+	t := su.T()
 	g := &Guild{ID: 7, IconHash: strptr("ic"), Splash: strptr("sp"), DiscoverySplash: strptr("ds")}
 	if got := g.IconURL(nil); got != "https://cdn.discordapp.com/icons/7/ic.webp" {
 		t.Errorf("icon: got %q", got)
@@ -78,7 +86,8 @@ func TestGuildImageURLs(t *testing.T) {
 	}
 }
 
-func TestRoleAndEmojiURL(t *testing.T) {
+func (su *cdnSuite) TestRoleAndEmojiURL() {
+	t := su.T()
 	r := &Role{ID: 3, IconHash: strptr("ri")}
 	if got := r.IconURL(nil); got != "https://cdn.discordapp.com/role-icons/3/ri.webp" {
 		t.Errorf("role icon: got %q", got)
@@ -98,7 +107,8 @@ func TestRoleAndEmojiURL(t *testing.T) {
 	}
 }
 
-func TestStickerURL(t *testing.T) {
+func (su *cdnSuite) TestStickerURL() {
+	t := su.T()
 	cases := []struct {
 		format StickerFormatType
 		want   string
@@ -116,7 +126,8 @@ func TestStickerURL(t *testing.T) {
 	}
 }
 
-func TestApplicationImageURLs(t *testing.T) {
+func (su *cdnSuite) TestApplicationImageURLs() {
+	t := su.T()
 	a := &Application{ID: 9, IconHash: strptr("ai"), CoverImage: strptr("cv")}
 	if got := a.IconURL(nil); got != "https://cdn.discordapp.com/app-icons/9/ai.webp" {
 		t.Errorf("app icon: got %q", got)
@@ -125,3 +136,7 @@ func TestApplicationImageURLs(t *testing.T) {
 		t.Errorf("app cover: got %q", got)
 	}
 }
+
+type cdnSuite struct{ suite.Suite }
+
+func TestCdnSuite(t *testing.T) { suite.Run(t, new(cdnSuite)) }

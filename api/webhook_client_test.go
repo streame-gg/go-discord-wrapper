@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"github.com/stretchr/testify/suite"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,7 +13,8 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-func TestParseWebhookURL(t *testing.T) {
+func (su *apiWebhookClientSuite) TestParseWebhookURL() {
+	t := su.T()
 	t.Run("standard url", func(t *testing.T) {
 		id, token, err := parseWebhookURL("https://discord.com/api/webhooks/123456789012345678/abc-token")
 		if err != nil {
@@ -49,7 +51,8 @@ func TestParseWebhookURL(t *testing.T) {
 	})
 }
 
-func TestNewWebhookClientValidation(t *testing.T) {
+func (su *apiWebhookClientSuite) TestNewWebhookClientValidation() {
+	t := su.T()
 	if _, err := NewWebhookClient(123456789012345678, "   "); err == nil {
 		t.Error("expected error for empty token")
 	}
@@ -81,7 +84,8 @@ func newTestWebhookClient(t *testing.T, srv *httptest.Server) *WebhookClient {
 	return wc
 }
 
-func TestWebhookClientSendAndManage(t *testing.T) {
+func (su *apiWebhookClientSuite) TestWebhookClientSendAndManage() {
+	t := su.T()
 	var gotMethod, gotPath, gotWait string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotMethod = r.Method
@@ -155,7 +159,8 @@ func TestWebhookClientSendAndManage(t *testing.T) {
 	})
 }
 
-func TestWebhookClientSendDefaults(t *testing.T) {
+func (su *apiWebhookClientSuite) TestWebhookClientSendDefaults() {
+	t := su.T()
 	var gotBody struct {
 		Content   string  `json:"content"`
 		Username  *string `json:"username"`
@@ -205,7 +210,8 @@ func TestWebhookClientSendDefaults(t *testing.T) {
 
 // Ensure the WebhookClient needs no bot token: construction succeeds with only
 // an ID and token, unlike NewRestClient.
-func TestWebhookClientNeedsNoBotToken(t *testing.T) {
+func (su *apiWebhookClientSuite) TestWebhookClientNeedsNoBotToken() {
+	t := su.T()
 	if _, err := NewRestClient(""); err == nil {
 		t.Error("NewRestClient should require a token")
 	}
@@ -215,3 +221,7 @@ func TestWebhookClientNeedsNoBotToken(t *testing.T) {
 	}
 	wc.Close()
 }
+
+type apiWebhookClientSuite struct{ suite.Suite }
+
+func TestApiWebhookClientSuite(t *testing.T) { suite.Run(t, new(apiWebhookClientSuite)) }

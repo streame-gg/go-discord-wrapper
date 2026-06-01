@@ -1,6 +1,7 @@
 package stores
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +20,8 @@ func newTestInviteWithGuild(code string, guildID discord.Snowflake) *discord.Inv
 
 // ── MemInviteStore ────────────────────────────────────────────────────────────
 
-func TestMemInviteStore_SetGet(t *testing.T) {
+func (su *storesInviteSuite) TestMemInviteStore_SetGet() {
+	t := su.T()
 	s := NewInviteStore(Defaults())
 	defer s.Close()
 
@@ -31,7 +33,8 @@ func TestMemInviteStore_SetGet(t *testing.T) {
 	assert.Equal(t, "abc123", got.Code)
 }
 
-func TestMemInviteStore_GetMiss(t *testing.T) {
+func (su *storesInviteSuite) TestMemInviteStore_GetMiss() {
+	t := su.T()
 	s := NewInviteStore(Defaults())
 	defer s.Close()
 
@@ -39,7 +42,8 @@ func TestMemInviteStore_GetMiss(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestMemInviteStore_SetNilIsNoop(t *testing.T) {
+func (su *storesInviteSuite) TestMemInviteStore_SetNilIsNoop() {
+	t := su.T()
 	s := NewInviteStore(Defaults())
 	defer s.Close()
 
@@ -47,7 +51,8 @@ func TestMemInviteStore_SetNilIsNoop(t *testing.T) {
 	assert.Equal(t, 0, s.Size())
 }
 
-func TestMemInviteStore_SetEmptyCodeIsNoop(t *testing.T) {
+func (su *storesInviteSuite) TestMemInviteStore_SetEmptyCodeIsNoop() {
+	t := su.T()
 	s := NewInviteStore(Defaults())
 	defer s.Close()
 
@@ -55,7 +60,8 @@ func TestMemInviteStore_SetEmptyCodeIsNoop(t *testing.T) {
 	assert.Equal(t, 0, s.Size())
 }
 
-func TestMemInviteStore_Delete(t *testing.T) {
+func (su *storesInviteSuite) TestMemInviteStore_Delete() {
+	t := su.T()
 	s := NewInviteStore(Defaults())
 	defer s.Close()
 
@@ -67,7 +73,8 @@ func TestMemInviteStore_Delete(t *testing.T) {
 	assert.Equal(t, 0, s.Size())
 }
 
-func TestMemInviteStore_SetWithGuild_GetByGuild(t *testing.T) {
+func (su *storesInviteSuite) TestMemInviteStore_SetWithGuild_GetByGuild() {
+	t := su.T()
 	s := NewInviteStore(Defaults())
 	defer s.Close()
 
@@ -84,7 +91,8 @@ func TestMemInviteStore_SetWithGuild_GetByGuild(t *testing.T) {
 	assert.True(t, ok2)
 }
 
-func TestMemInviteStore_Set_WithGuildField_GetByGuild(t *testing.T) {
+func (su *storesInviteSuite) TestMemInviteStore_Set_WithGuildField_GetByGuild() {
+	t := su.T()
 	s := NewInviteStore(Defaults())
 	defer s.Close()
 
@@ -95,7 +103,8 @@ func TestMemInviteStore_Set_WithGuildField_GetByGuild(t *testing.T) {
 	assert.Equal(t, 1, all.Len())
 }
 
-func TestMemInviteStore_GetByGuild_OtherGuildIsolated(t *testing.T) {
+func (su *storesInviteSuite) TestMemInviteStore_GetByGuild_OtherGuildIsolated() {
+	t := su.T()
 	s := NewInviteStore(Defaults())
 	defer s.Close()
 
@@ -111,7 +120,8 @@ func TestMemInviteStore_GetByGuild_OtherGuildIsolated(t *testing.T) {
 	assert.False(t, okB, "guild B invite must not appear in guild A GetByGuild")
 }
 
-func TestMemInviteStore_DeleteGuild(t *testing.T) {
+func (su *storesInviteSuite) TestMemInviteStore_DeleteGuild() {
+	t := su.T()
 	s := NewInviteStore(Defaults())
 	defer s.Close()
 
@@ -133,7 +143,8 @@ func TestMemInviteStore_DeleteGuild(t *testing.T) {
 	assert.Equal(t, 1, s.Size())
 }
 
-func TestMemInviteStore_Delete_RemovesFromGuildIndex(t *testing.T) {
+func (su *storesInviteSuite) TestMemInviteStore_Delete_RemovesFromGuildIndex() {
+	t := su.T()
 	s := NewInviteStore(Defaults())
 	defer s.Close()
 
@@ -148,3 +159,7 @@ func TestMemInviteStore_Delete_RemovesFromGuildIndex(t *testing.T) {
 	_, ok := all.Get("code1")
 	assert.False(t, ok)
 }
+
+type storesInviteSuite struct{ suite.Suite }
+
+func TestStoresInviteSuite(t *testing.T) { suite.Run(t, new(storesInviteSuite)) }

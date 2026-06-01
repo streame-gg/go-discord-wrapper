@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
-	"github.com/streame-gg/go-discord-wrapper/util"
 )
 
 // FetchAllGuildMembers fetches every member in a guild across as many pages as
@@ -54,7 +54,7 @@ func (c *RestClient) FetchAllMessages(ctx context.Context, channelID discord.Sno
 	params := GetMessagesParams{Limit: util.PointerOf(pageSize)}
 
 	for {
-		page, err := c.GetMessages(ctx, channelID, params)
+		page, err := c.ListMessages(ctx, channelID, params)
 		if err != nil {
 			return nil, err
 		}
@@ -85,7 +85,7 @@ func (c *RestClient) FetchAllGuildBans(ctx context.Context, guildID discord.Snow
 	params := GetGuildBansParams{Limit: util.PointerOf(pageSize)}
 
 	for {
-		page, err := c.GetGuildBans(ctx, guildID, params)
+		page, err := c.ListGuildBans(ctx, guildID, params)
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +185,7 @@ func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, e
 	}
 
 	for {
-		page, err := c.GetGuildScheduledEventUsers(ctx, guildID, eventID, params)
+		page, err := c.ListGuildScheduledEventUsers(ctx, guildID, eventID, params)
 		if err != nil {
 			return nil, err
 		}

@@ -18,9 +18,9 @@ import (
 	"time"
 
 	"github.com/streame-gg/go-discord-wrapper"
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
-	"github.com/streame-gg/go-discord-wrapper/util"
 )
 
 // routePathKey is the context key used to carry the relative route path through

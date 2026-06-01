@@ -15,31 +15,31 @@ import (
 
 // TestP0_2_ClientReadyChannelSurvivesWebsocketReplacement verifies the core
 // property that fixes the Login-Reconnect Race: the client-level readyCh is
-// closed when READY arrives and is NOT reset when d.Websocket is replaced by
+// closed when READY arrives and is NOT reset when d.wsConn is replaced by
 // a reconnect.
 //
-// The bug: Login() used to capture d.Websocket.Ready into a local variable.
-// After a reconnect replaced d.Websocket, the READY event closed the NEW
-// Websocket.Ready, while Login was still waiting on the OLD channel (never
+// The bug: Login() used to capture d.wsConn.Ready into a local variable.
+// After a reconnect replaced d.wsConn, the READY event closed the NEW
+// wsConn.Ready, while Login was still waiting on the OLD channel (never
 // closed). Login would block until ctx.Done().
 //
 // The fix: Login waits on d.readyCh (a Client-level channel), which is closed
-// by d.readyOnce.Do exactly once, surviving any number of Websocket swaps.
+// by d.readyOnce.Do exactly once, surviving any number of wsConn swaps.
 func TestP0_2_ClientReadyChannelSurvivesWebsocketReplacement(t *testing.T) {
 	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
-	// Simulate the first connection: give the client a Websocket and close its
+	// Simulate the first connection: give the client a wsConn and close its
 	// Ready channel (as internalEventHandler does via readyOnce).
-	firstWS := &Websocket{
+	firstWS := &wsConn{
 		Closed: make(chan struct{}),
 		Ready:  make(chan struct{}),
 	}
 	c.wsMu.Lock()
-	c.Websocket = firstWS
+	c.wsConn = firstWS
 	c.wsMu.Unlock()
 
-	// Fire READY on the first Websocket — this closes both Websocket.Ready and
+	// Fire READY on the first wsConn — this closes both wsConn.Ready and
 	// the client-level readyCh.
 	firstWS.readyOnce.Do(func() { close(firstWS.Ready) })
 	c.readyOnce.Do(func() { close(c.readyCh) })
@@ -51,14 +51,14 @@ func TestP0_2_ClientReadyChannelSurvivesWebsocketReplacement(t *testing.T) {
 		t.Fatal("c.Ready() must be closed after first READY event")
 	}
 
-	// Simulate a reconnect: replace d.Websocket with a brand-new one whose
+	// Simulate a reconnect: replace d.wsConn with a brand-new one whose
 	// Ready channel is NOT yet closed (exactly what reconnect() does).
-	secondWS := &Websocket{
+	secondWS := &wsConn{
 		Closed: make(chan struct{}),
 		Ready:  make(chan struct{}),
 	}
 	c.wsMu.Lock()
-	c.Websocket = secondWS
+	c.wsConn = secondWS
 	c.wsMu.Unlock()
 
 	// The OLD code would have captured firstWS.Ready; Login would still see it
@@ -70,18 +70,18 @@ func TestP0_2_ClientReadyChannelSurvivesWebsocketReplacement(t *testing.T) {
 	case <-c.Ready():
 		// correct: client-level channel stays closed after reconnect
 	default:
-		t.Fatal("c.Ready() must remain closed after Websocket replacement — " +
-			"Login() would have hung if it waited on the old Websocket.Ready")
+		t.Fatal("c.Ready() must remain closed after wsConn replacement — " +
+			"Login() would have hung if it waited on the old wsConn.Ready")
 	}
 }
 
 // TestP0_2_LoginReconnectRace verifies that Login() returns successfully even
-// when a reconnect replaces d.Websocket between the time Login starts and
+// when a reconnect replaces d.wsConn between the time Login starts and
 // the time READY arrives.
 //
 // Sequence:
 //  1. First gateway sends HELLO then a 1006 abnormal close (triggers reconnect).
-//  2. The reconnect is intercepted by patching d.Websocket.ReconnectURL so it
+//  2. The reconnect is intercepted by patching d.wsConn.ReconnectURL so it
 //     goes to a second test server that sends a full HELLO + READY.
 //  3. Login() — exercised via c.Ready() — must fire within 5 s.
 func TestP0_2_LoginReconnectRace(t *testing.T) {
@@ -165,12 +165,12 @@ func TestP0_2_LoginReconnectRace(t *testing.T) {
 
 	// Wait for c.Ready() — this fires when READY arrives (either on gateway 1
 	// or gateway 2 after the reconnect).  With the fix, the client-level readyCh
-	// survives the Websocket swap.
+	// survives the wsConn swap.
 	select {
 	case <-c.Ready():
 	case <-time.After(5 * time.Second):
 		t.Fatal("c.Ready() did not fire within 5 s — " +
-			"Login() would have hung on the old Websocket.Ready channel (P0-2)")
+			"Login() would have hung on the old wsConn.Ready channel (P0-2)")
 	}
 
 	_ = c.Shutdown()

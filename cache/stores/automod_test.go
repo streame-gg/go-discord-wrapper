@@ -1,6 +1,7 @@
 package stores
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +20,8 @@ func newTestAutoModRule(guildID, ruleID discord.Snowflake) *discord.AutoModerati
 
 // ── MemAutoModerationRuleStore ────────────────────────────────────────────────
 
-func TestMemAutoModStore_SetGet(t *testing.T) {
+func (su *storesAutomodSuite) TestMemAutoModStore_SetGet() {
+	t := su.T()
 	s := NewAutoModerationRuleStore(Defaults())
 	defer s.Close()
 
@@ -34,7 +36,8 @@ func TestMemAutoModStore_SetGet(t *testing.T) {
 	assert.Equal(t, "test-rule", got.Name)
 }
 
-func TestMemAutoModStore_GetMiss(t *testing.T) {
+func (su *storesAutomodSuite) TestMemAutoModStore_GetMiss() {
+	t := su.T()
 	s := NewAutoModerationRuleStore(Defaults())
 	defer s.Close()
 
@@ -42,7 +45,8 @@ func TestMemAutoModStore_GetMiss(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestMemAutoModStore_SetNilIsNoop(t *testing.T) {
+func (su *storesAutomodSuite) TestMemAutoModStore_SetNilIsNoop() {
+	t := su.T()
 	s := NewAutoModerationRuleStore(Defaults())
 	defer s.Close()
 
@@ -50,7 +54,8 @@ func TestMemAutoModStore_SetNilIsNoop(t *testing.T) {
 	assert.Equal(t, 0, s.Size())
 }
 
-func TestMemAutoModStore_Delete(t *testing.T) {
+func (su *storesAutomodSuite) TestMemAutoModStore_Delete() {
+	t := su.T()
 	s := NewAutoModerationRuleStore(Defaults())
 	defer s.Close()
 
@@ -64,7 +69,8 @@ func TestMemAutoModStore_Delete(t *testing.T) {
 	assert.Equal(t, 0, s.Size())
 }
 
-func TestMemAutoModStore_DeleteGuild(t *testing.T) {
+func (su *storesAutomodSuite) TestMemAutoModStore_DeleteGuild() {
+	t := su.T()
 	s := NewAutoModerationRuleStore(Defaults())
 	defer s.Close()
 
@@ -89,7 +95,8 @@ func TestMemAutoModStore_DeleteGuild(t *testing.T) {
 	assert.Equal(t, 1, s.Size())
 }
 
-func TestMemAutoModStore_GetByGuild(t *testing.T) {
+func (su *storesAutomodSuite) TestMemAutoModStore_GetByGuild() {
+	t := su.T()
 	s := NewAutoModerationRuleStore(Defaults())
 	defer s.Close()
 
@@ -109,7 +116,8 @@ func TestMemAutoModStore_GetByGuild(t *testing.T) {
 	assert.True(t, ok2)
 }
 
-func TestMemAutoModStore_GetByGuild_OtherGuildIsolated(t *testing.T) {
+func (su *storesAutomodSuite) TestMemAutoModStore_GetByGuild_OtherGuildIsolated() {
+	t := su.T()
 	s := NewAutoModerationRuleStore(Defaults())
 	defer s.Close()
 
@@ -126,3 +134,7 @@ func TestMemAutoModStore_GetByGuild_OtherGuildIsolated(t *testing.T) {
 	_, okB := allA.Get(ruleB)
 	assert.False(t, okB, "guild B rule must not appear in guild A GetByGuild")
 }
+
+type storesAutomodSuite struct{ suite.Suite }
+
+func TestStoresAutomodSuite(t *testing.T) { suite.Run(t, new(storesAutomodSuite)) }

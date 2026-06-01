@@ -6,6 +6,7 @@ package stores
 // phantom entries whose backing data had already been removed.
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
 	"time"
 
@@ -65,7 +66,8 @@ func assertPresenceIndexInSync(t *testing.T, s *MemPresenceStore, guildID discor
 
 // TestBug93_VoiceStateStore_MaxItemsEvictionKeepsIndexInSync verifies that
 // capacity-based eviction (evictOne) removes the entry from the guild index.
-func TestBug93_VoiceStateStore_MaxItemsEvictionKeepsIndexInSync(t *testing.T) {
+func (su *storesEvictionSuite) TestBug93_VoiceStateStore_MaxItemsEvictionKeepsIndexInSync() {
+	t := su.T()
 	guildID := discord.Snowflake(1000)
 	user1 := discord.Snowflake(1)
 	user2 := discord.Snowflake(2)
@@ -95,7 +97,8 @@ func TestBug93_VoiceStateStore_MaxItemsEvictionKeepsIndexInSync(t *testing.T) {
 
 // TestBug93_VoiceStateStore_TrimToKeepsIndexInSync verifies that TrimTo
 // (evictToCount path) keeps the guild index in sync.
-func TestBug93_VoiceStateStore_TrimToKeepsIndexInSync(t *testing.T) {
+func (su *storesEvictionSuite) TestBug93_VoiceStateStore_TrimToKeepsIndexInSync() {
+	t := su.T()
 	guildID := discord.Snowflake(1000)
 	user1 := discord.Snowflake(1)
 	user2 := discord.Snowflake(2)
@@ -119,7 +122,8 @@ func TestBug93_VoiceStateStore_TrimToKeepsIndexInSync(t *testing.T) {
 
 // TestBug93_VoiceStateStore_SweepExpiredKeepsIndexInSync verifies that TTL
 // expiry (SweepExpired path) removes entries from the guild index.
-func TestBug93_VoiceStateStore_SweepExpiredKeepsIndexInSync(t *testing.T) {
+func (su *storesEvictionSuite) TestBug93_VoiceStateStore_SweepExpiredKeepsIndexInSync() {
+	t := su.T()
 	guildID := discord.Snowflake(1000)
 	user1 := discord.Snowflake(1)
 	user2 := discord.Snowflake(2)
@@ -139,7 +143,8 @@ func TestBug93_VoiceStateStore_SweepExpiredKeepsIndexInSync(t *testing.T) {
 
 // TestBug93_VoiceStateStore_SweeperKeepsIndexInSync verifies that a background
 // Sweeper (runSweeper path) removes entries from the guild index.
-func TestBug93_VoiceStateStore_SweeperKeepsIndexInSync(t *testing.T) {
+func (su *storesEvictionSuite) TestBug93_VoiceStateStore_SweeperKeepsIndexInSync() {
+	t := su.T()
 	guildID := discord.Snowflake(1000)
 	keep := discord.Snowflake(1)
 	remove := discord.Snowflake(2)
@@ -170,7 +175,8 @@ func TestBug93_VoiceStateStore_SweeperKeepsIndexInSync(t *testing.T) {
 
 // TestBug93_MemberStore_MaxItemsEvictionKeepsIndexInSync is the same scenario
 // as the VoiceStateStore test but for MemMemberStore.
-func TestBug93_MemberStore_MaxItemsEvictionKeepsIndexInSync(t *testing.T) {
+func (su *storesEvictionSuite) TestBug93_MemberStore_MaxItemsEvictionKeepsIndexInSync() {
+	t := su.T()
 	guildID := discord.Snowflake(1000)
 	user1 := discord.Snowflake(1)
 	user2 := discord.Snowflake(2)
@@ -200,7 +206,8 @@ func TestBug93_MemberStore_MaxItemsEvictionKeepsIndexInSync(t *testing.T) {
 
 // TestBug93_PresenceStore_MaxItemsEvictionKeepsIndexInSync is the same scenario
 // as the VoiceStateStore test but for MemPresenceStore.
-func TestBug93_PresenceStore_MaxItemsEvictionKeepsIndexInSync(t *testing.T) {
+func (su *storesEvictionSuite) TestBug93_PresenceStore_MaxItemsEvictionKeepsIndexInSync() {
+	t := su.T()
 	guildID := discord.Snowflake(1000)
 	user1 := discord.Snowflake(1)
 	user2 := discord.Snowflake(2)
@@ -226,3 +233,7 @@ func TestBug93_PresenceStore_MaxItemsEvictionKeepsIndexInSync(t *testing.T) {
 	require.Equal(t, 2, s.Size())
 	assertPresenceIndexInSync(t, s, guildID, 2, user1)
 }
+
+type storesEvictionSuite struct{ suite.Suite }
+
+func TestStoresEvictionSuite(t *testing.T) { suite.Run(t, new(storesEvictionSuite)) }

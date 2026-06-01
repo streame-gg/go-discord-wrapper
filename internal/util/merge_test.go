@@ -1,11 +1,12 @@
 package util_test
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
-	"github.com/streame-gg/go-discord-wrapper/util"
 )
 
 // --- helpers -----------------------------------------------------------------
@@ -29,7 +30,8 @@ func strPtr(s string) *string { return &s }
 
 // --- scalar fields -----------------------------------------------------------
 
-func TestMergePartial_EmptyPartialKeepsOld(t *testing.T) {
+func (su *mergeSuite) TestMergePartial_EmptyPartialKeepsOld() {
+	t := su.T()
 	old := flat{Name: "hello", Count: 5, Flag: true, Ptr: strPtr("x")}
 	result := util.MergePartial(old, flat{})
 
@@ -47,7 +49,8 @@ func TestMergePartial_EmptyPartialKeepsOld(t *testing.T) {
 	}
 }
 
-func TestMergePartial_NonZeroScalarApplied(t *testing.T) {
+func (su *mergeSuite) TestMergePartial_NonZeroScalarApplied() {
+	t := su.T()
 	old := flat{Name: "old", Count: 1}
 	result := util.MergePartial(old, flat{Name: "new", Count: 99})
 
@@ -59,7 +62,8 @@ func TestMergePartial_NonZeroScalarApplied(t *testing.T) {
 	}
 }
 
-func TestMergePartial_ZeroScalarKeepsOld(t *testing.T) {
+func (su *mergeSuite) TestMergePartial_ZeroScalarKeepsOld() {
+	t := su.T()
 	old := flat{Count: 42}
 	result := util.MergePartial(old, flat{Name: "only-name"})
 
@@ -70,7 +74,8 @@ func TestMergePartial_ZeroScalarKeepsOld(t *testing.T) {
 
 // --- pointer fields ----------------------------------------------------------
 
-func TestMergePartial_NonNilPtrApplied(t *testing.T) {
+func (su *mergeSuite) TestMergePartial_NonNilPtrApplied() {
+	t := su.T()
 	old := flat{Ptr: strPtr("old")}
 	result := util.MergePartial(old, flat{Ptr: strPtr("new")})
 
@@ -79,7 +84,8 @@ func TestMergePartial_NonNilPtrApplied(t *testing.T) {
 	}
 }
 
-func TestMergePartial_NilPtrKeepsOld(t *testing.T) {
+func (su *mergeSuite) TestMergePartial_NilPtrKeepsOld() {
+	t := su.T()
 	old := flat{Ptr: strPtr("keep")}
 	result := util.MergePartial(old, flat{})
 
@@ -90,7 +96,8 @@ func TestMergePartial_NilPtrKeepsOld(t *testing.T) {
 
 // --- slice fields ------------------------------------------------------------
 
-func TestMergePartial_NonNilSliceApplied(t *testing.T) {
+func (su *mergeSuite) TestMergePartial_NonNilSliceApplied() {
+	t := su.T()
 	old := flat{Slice: []int{1, 2, 3}}
 	result := util.MergePartial(old, flat{Slice: []int{9}})
 
@@ -99,7 +106,8 @@ func TestMergePartial_NonNilSliceApplied(t *testing.T) {
 	}
 }
 
-func TestMergePartial_NilSliceKeepsOld(t *testing.T) {
+func (su *mergeSuite) TestMergePartial_NilSliceKeepsOld() {
+	t := su.T()
 	old := flat{Slice: []int{1, 2, 3}}
 	result := util.MergePartial(old, flat{})
 
@@ -108,7 +116,8 @@ func TestMergePartial_NilSliceKeepsOld(t *testing.T) {
 	}
 }
 
-func TestMergePartial_EmptySliceApplied(t *testing.T) {
+func (su *mergeSuite) TestMergePartial_EmptySliceApplied() {
+	t := su.T()
 	// An explicit empty (non-nil) slice overwrites the old slice.
 	old := flat{Slice: []int{1, 2, 3}}
 	result := util.MergePartial(old, flat{Slice: []int{}})
@@ -120,7 +129,8 @@ func TestMergePartial_EmptySliceApplied(t *testing.T) {
 
 // --- nested struct -----------------------------------------------------------
 
-func TestMergePartial_NestedStructMergedRecursively(t *testing.T) {
+func (su *mergeSuite) TestMergePartial_NestedStructMergedRecursively() {
+	t := su.T()
 	old := flat{Nested: inner{X: 10, Y: strPtr("deep")}}
 	result := util.MergePartial(old, flat{Nested: inner{X: 20}})
 
@@ -134,7 +144,8 @@ func TestMergePartial_NestedStructMergedRecursively(t *testing.T) {
 
 // --- does not mutate inputs --------------------------------------------------
 
-func TestMergePartial_DoesNotMutateOld(t *testing.T) {
+func (su *mergeSuite) TestMergePartial_DoesNotMutateOld() {
+	t := su.T()
 	old := flat{Name: "original"}
 	_ = util.MergePartial(old, flat{Name: "changed"})
 
@@ -145,7 +156,8 @@ func TestMergePartial_DoesNotMutateOld(t *testing.T) {
 
 // --- discord.Message ---------------------------------------------------------
 
-func TestMergePartial_EmptyMessageKeepsOld(t *testing.T) {
+func (su *mergeSuite) TestMergePartial_EmptyMessageKeepsOld() {
+	t := su.T()
 	ts := time.Now()
 	old := discord.Message{
 		ID:        123,
@@ -178,7 +190,8 @@ func TestMergePartial_EmptyMessageKeepsOld(t *testing.T) {
 	}
 }
 
-func TestMergePartial_OldMessageIsEmpty(t *testing.T) {
+func (su *mergeSuite) TestMergePartial_OldMessageIsEmpty() {
+	t := su.T()
 	ts := time.Now()
 	newMsg := discord.Message{
 		ID:        123,
@@ -211,7 +224,8 @@ func TestMergePartial_OldMessageIsEmpty(t *testing.T) {
 	}
 }
 
-func TestMergePartial_PartialMessageUpdatesContent(t *testing.T) {
+func (su *mergeSuite) TestMergePartial_PartialMessageUpdatesContent() {
+	t := su.T()
 	ts := time.Now()
 	old := discord.Message{
 		ID:        123,
@@ -239,3 +253,7 @@ func TestMergePartial_PartialMessageUpdatesContent(t *testing.T) {
 		t.Error("Timestamp: got nil, want preserved from old")
 	}
 }
+
+type mergeSuite struct{ suite.Suite }
+
+func TestMergeSuite(t *testing.T) { suite.Run(t, new(mergeSuite)) }

@@ -35,7 +35,7 @@ func (m *roleManager) Fetch(ctx context.Context, roleID discord.Snowflake) (*dis
 }
 
 func (m *roleManager) FetchAll(ctx context.Context) (*collection.Collection[discord.Snowflake, *discord.Role], error) {
-	roles, err := m.client.GetGuildRoles(ctx, m.guildID)
+	roles, err := m.client.ListGuildRoles(ctx, m.guildID)
 	if err != nil {
 		return nil, err
 	}

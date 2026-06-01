@@ -33,13 +33,13 @@ type ReadyApplication struct {
 }
 
 type ReadyEvent struct {
-	User             discord.User              `json:"user"`
-	Application      ReadyApplication          `json:"application"`
-	SessionID        string                    `json:"session_id"`
-	ResumeGatewayURL string                    `json:"resume_gateway_url"`
+	User             discord.User     `json:"user"`
+	Application      ReadyApplication `json:"application"`
+	SessionID        string           `json:"session_id"`
+	ResumeGatewayURL string           `json:"resume_gateway_url"`
 	// Shard is present only when the client was started with sharding.
-	Shard            *ReadyShard               `json:"shard,omitempty"`
-	Guilds           []discord.AnyGuildWrapper `json:"guilds"`
+	Shard  *ReadyShard               `json:"shard,omitempty"`
+	Guilds []discord.AnyGuildWrapper `json:"guilds"`
 }
 
 // ResumedEvent is dispatched when a session is successfully resumed.

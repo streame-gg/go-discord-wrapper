@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"github.com/stretchr/testify/suite"
 	"hash/fnv"
 	"net/http"
 	"net/http/httptest"
@@ -91,7 +92,8 @@ func makeMessagePage(ids []string, channelID string) []*discord.Message {
 	return msgs
 }
 
-func TestFetchAllGuildMembersOnePage(t *testing.T) {
+func (su *paginationSuite) TestFetchAllGuildMembersOnePage() {
+	t := su.T()
 	var reqCount int32
 
 	// Build 5 members
@@ -118,7 +120,8 @@ func TestFetchAllGuildMembersOnePage(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount), "expected single request for one page")
 }
 
-func TestFetchAllGuildMembersMultiplePages(t *testing.T) {
+func (su *paginationSuite) TestFetchAllGuildMembersMultiplePages() {
+	t := su.T()
 	// Build page 1: exactly 1000 members with IDs "1" through "1000"
 	page1 := make([]*discord.GuildMember, 1000)
 	for i := range page1 {
@@ -169,7 +172,8 @@ func intToSnowflake(n int) string {
 	return string(b)
 }
 
-func TestFetchAllMessagesMultiplePages(t *testing.T) {
+func (su *paginationSuite) TestFetchAllMessagesMultiplePages() {
+	t := su.T()
 	// Page 1: 100 messages with IDs "100" down to "1" (newest-first)
 	page1 := make([]*discord.Message, 100)
 	for i := range page1 {
@@ -219,7 +223,8 @@ func TestFetchAllMessagesMultiplePages(t *testing.T) {
 	assert.Equal(t, oldestPage1ID.String(), secondRequestBefore, "second request should use before=last_id_of_page1")
 }
 
-func TestFetchAllGuildBansOnePage(t *testing.T) {
+func (su *paginationSuite) TestFetchAllGuildBansOnePage() {
+	t := su.T()
 	bans := make([]*discord.Ban, 7)
 	for i := range bans {
 		bans[i] = &discord.Ban{
@@ -264,7 +269,8 @@ func makeAuditLogPage(ids []string) *discord.AuditLog {
 	return &discord.AuditLog{AuditLogEntries: entries}
 }
 
-func TestFetchAllAuditLogEntriesOnePage(t *testing.T) {
+func (su *paginationSuite) TestFetchAllAuditLogEntriesOnePage() {
+	t := su.T()
 	page := makeAuditLogPage([]string{"10", "9", "8", "7", "6"})
 
 	var reqCount int32
@@ -284,7 +290,8 @@ func TestFetchAllAuditLogEntriesOnePage(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount))
 }
 
-func TestFetchAllAuditLogEntriesMultiplePages(t *testing.T) {
+func (su *paginationSuite) TestFetchAllAuditLogEntriesMultiplePages() {
+	t := su.T()
 	// Build 100 entries (page 1) + 3 entries (page 2)
 	ids1 := make([]string, 100)
 	for i := range ids1 {
@@ -332,7 +339,8 @@ func makeEntitlementPage(ids []string) []*discord.Entitlement {
 	return page
 }
 
-func TestFetchAllEntitlementsOnePage(t *testing.T) {
+func (su *paginationSuite) TestFetchAllEntitlementsOnePage() {
+	t := su.T()
 	page := makeEntitlementPage([]string{"1", "2", "3"})
 
 	var reqCount int32
@@ -352,7 +360,8 @@ func TestFetchAllEntitlementsOnePage(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount))
 }
 
-func TestFetchAllEntitlementsMultiplePages(t *testing.T) {
+func (su *paginationSuite) TestFetchAllEntitlementsMultiplePages() {
+	t := su.T()
 	ids1 := make([]string, 100)
 	for i := range ids1 {
 		ids1[i] = intToSnowflake(i + 1)
@@ -399,7 +408,8 @@ func makeScheduledEventUsersPage(userIDs []string) []*discord.GuildScheduledEven
 	return page
 }
 
-func TestFetchAllScheduledEventUsersOnePage(t *testing.T) {
+func (su *paginationSuite) TestFetchAllScheduledEventUsersOnePage() {
+	t := su.T()
 	page := makeScheduledEventUsersPage([]string{"u1", "u2", "u3"})
 
 	var reqCount int32
@@ -419,7 +429,8 @@ func TestFetchAllScheduledEventUsersOnePage(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&reqCount))
 }
 
-func TestFetchAllScheduledEventUsersMultiplePages(t *testing.T) {
+func (su *paginationSuite) TestFetchAllScheduledEventUsersMultiplePages() {
+	t := su.T()
 	ids1 := make([]string, 100)
 	for i := range ids1 {
 		ids1[i] = intToSnowflake(i + 1)
@@ -453,3 +464,7 @@ func TestFetchAllScheduledEventUsersMultiplePages(t *testing.T) {
 	assert.Equal(t, int32(2), atomic.LoadInt32(&reqCount))
 	assert.Equal(t, lastID1, secondAfter)
 }
+
+type paginationSuite struct{ suite.Suite }
+
+func TestPaginationSuite(t *testing.T) { suite.Run(t, new(paginationSuite)) }

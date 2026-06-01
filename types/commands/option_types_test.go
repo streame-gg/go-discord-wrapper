@@ -2,13 +2,15 @@ package commands
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/suite"
 	"strings"
 	"testing"
 )
 
 // TestIntegerOptionChoicesMarshalAsInt verifies that IntegerOption choices
 // serialize as JSON numbers, not quoted strings (Issue 8).
-func TestIntegerOptionChoicesMarshalAsInt(t *testing.T) {
+func (su *optionTypesSuite) TestIntegerOptionChoicesMarshalAsInt() {
+	t := su.T()
 	opt := ApplicationCommandOptionInteger{
 		Name:        "level",
 		Description: "pick a level",
@@ -34,7 +36,8 @@ func TestIntegerOptionChoicesMarshalAsInt(t *testing.T) {
 
 // TestNumberOptionChoicesMarshalAsFloat verifies that NumberOption choices
 // serialize as JSON floats and that MinValue/MaxValue are float64 (Issue 8).
-func TestNumberOptionChoicesMarshalAsFloat(t *testing.T) {
+func (su *optionTypesSuite) TestNumberOptionChoicesMarshalAsFloat() {
+	t := su.T()
 	minVal := float64(0.5)
 	maxVal := float64(99.9)
 
@@ -64,7 +67,8 @@ func TestNumberOptionChoicesMarshalAsFloat(t *testing.T) {
 }
 
 // TestStringOptionChoicesStillWork verifies that string choices are unaffected.
-func TestStringOptionChoicesStillWork(t *testing.T) {
+func (su *optionTypesSuite) TestStringOptionChoicesStillWork() {
+	t := su.T()
 	opt := ApplicationCommandOptionString{
 		Name:        "lang",
 		Description: "pick a language",
@@ -84,3 +88,7 @@ func TestStringOptionChoicesStillWork(t *testing.T) {
 		t.Errorf("string choices must be quoted; got: %s", out)
 	}
 }
+
+type optionTypesSuite struct{ suite.Suite }
+
+func TestOptionTypesSuite(t *testing.T) { suite.Run(t, new(optionTypesSuite)) }

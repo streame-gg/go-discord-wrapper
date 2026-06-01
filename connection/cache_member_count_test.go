@@ -31,8 +31,8 @@ func TestReconnect_CleansStaleGuildMemberCount(t *testing.T) {
 
 	require.Equal(t, 2, c.GuildCount(), "setup: expected 2 guilds before reconnect")
 
-	// The READY handler writes to d.Websocket — init a minimal stub.
-	c.Websocket = &Websocket{
+	// The READY handler writes to d.wsConn — init a minimal stub.
+	c.wsConn = &wsConn{
 		Closed: make(chan struct{}),
 		Ready:  make(chan struct{}),
 	}
@@ -68,8 +68,8 @@ func TestReconnect_CleansStaleGuildMemberCount_NoCache(t *testing.T) {
 
 	require.Equal(t, 2, c.GuildCount(), "setup: expected 2 guilds before reconnect")
 
-	// The READY handler writes to d.Websocket — init a minimal stub.
-	c.Websocket = &Websocket{
+	// The READY handler writes to d.wsConn — init a minimal stub.
+	c.wsConn = &wsConn{
 		Closed: make(chan struct{}),
 		Ready:  make(chan struct{}),
 	}

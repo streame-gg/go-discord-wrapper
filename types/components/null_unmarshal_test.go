@@ -2,12 +2,14 @@ package components
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/suite"
 	"testing"
 )
 
 // TestNullUnmarshalNoPanic verifies that every component type with a custom
 // UnmarshalJSON safely handles a JSON null input without panicking (P1-13).
-func TestNullUnmarshalNoPanic(t *testing.T) {
+func (su *nullUnmarshalSuite) TestNullUnmarshalNoPanic() {
+	t := su.T()
 	null := []byte("null")
 
 	cases := []struct {
@@ -129,3 +131,7 @@ func TestNullUnmarshalNoPanic(t *testing.T) {
 		})
 	}
 }
+
+type nullUnmarshalSuite struct{ suite.Suite }
+
+func TestNullUnmarshalSuite(t *testing.T) { suite.Run(t, new(nullUnmarshalSuite)) }

@@ -2,6 +2,7 @@ package discord
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/suite"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,7 +10,8 @@ import (
 )
 
 // J0-#26: Emoji.Users must decode as a slice, not a single pointer.
-func TestEmojiUsersDecodeSlice(t *testing.T) {
+func (su *emojiUserSuite) TestEmojiUsersDecodeSlice() {
+	t := su.T()
 	raw := `{"users":[{"id":"123","username":"a"},{"id":"456","username":"b"}]}`
 	var e Emoji
 	require.NoError(t, json.Unmarshal([]byte(raw), &e))
@@ -18,7 +20,8 @@ func TestEmojiUsersDecodeSlice(t *testing.T) {
 	assert.Equal(t, "b", e.Users[1].Username)
 }
 
-func TestEmojiUsersRoundtrip(t *testing.T) {
+func (su *emojiUserSuite) TestEmojiUsersRoundtrip() {
+	t := su.T()
 	e := Emoji{Users: []User{{Username: "foo"}, {Username: "bar"}}}
 	b, err := json.Marshal(e)
 	require.NoError(t, err)
@@ -28,17 +31,23 @@ func TestEmojiUsersRoundtrip(t *testing.T) {
 }
 
 // J0-#27: User.AvatarHash must be *string so null and absent are distinguishable.
-func TestUserAvatarHashNull(t *testing.T) {
+func (su *emojiUserSuite) TestUserAvatarHashNull() {
+	t := su.T()
 	raw := `{"id":"1","username":"u","discriminator":"0","avatar":null}`
 	var u User
 	require.NoError(t, json.Unmarshal([]byte(raw), &u))
 	assert.Nil(t, u.AvatarHash, "null avatar must decode to nil pointer")
 }
 
-func TestUserAvatarHashPresent(t *testing.T) {
+func (su *emojiUserSuite) TestUserAvatarHashPresent() {
+	t := su.T()
 	raw := `{"id":"1","username":"u","discriminator":"0","avatar":"abc123"}`
 	var u User
 	require.NoError(t, json.Unmarshal([]byte(raw), &u))
 	require.NotNil(t, u.AvatarHash)
 	assert.Equal(t, "abc123", *u.AvatarHash)
 }
+
+type emojiUserSuite struct{ suite.Suite }
+
+func TestEmojiUserSuite(t *testing.T) { suite.Run(t, new(emojiUserSuite)) }

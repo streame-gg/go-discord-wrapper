@@ -126,8 +126,8 @@ func TestBug2_SessionIDWriteUnderLock(t *testing.T) {
 		defer close(done)
 		for i := 0; i < 500; i++ {
 			c.wsMu.RLock()
-			_ = c.Websocket.SessionID
-			_ = c.Websocket.ReconnectURL
+			_ = c.wsConn.SessionID
+			_ = c.wsConn.ReconnectURL
 			c.wsMu.RUnlock()
 		}
 	}()

@@ -135,7 +135,7 @@ func (ch *Channel) FetchMessages(ctx context.Context, opts FetchMessagesOptions)
 	if err != nil {
 		return nil, err
 	}
-	return c.GetChannelMessages(ctx, ch.ID, opts)
+	return c.ListChannelMessages(ctx, ch.ID, opts)
 }
 
 // TriggerTyping posts a typing indicator for ~10 seconds.

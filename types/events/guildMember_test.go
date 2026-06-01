@@ -2,6 +2,7 @@ package events
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/suite"
 	"testing"
 )
 
@@ -9,7 +10,8 @@ import (
 // deaf, mute, pending, and flags fields. Previously MarshalJSON omitted them
 // from its wire struct, so Unmarshal -> Marshal silently dropped the values
 // even though UnmarshalJSON read them.
-func TestGuildMemberUpdateMarshalRoundTrip(t *testing.T) {
+func (su *guildMemberSuite) TestGuildMemberUpdateMarshalRoundTrip() {
+	t := su.T()
 	payload := `{
 		"guild_id": "123456789012345678",
 		"user": {"id": "987654321098765432", "username": "tester"},
@@ -49,3 +51,7 @@ func TestGuildMemberUpdateMarshalRoundTrip(t *testing.T) {
 		t.Errorf("want Flags=8 after round-trip, got %d", round.NewMember.Flags)
 	}
 }
+
+type guildMemberSuite struct{ suite.Suite }
+
+func TestGuildMemberSuite(t *testing.T) { suite.Run(t, new(guildMemberSuite)) }

@@ -343,7 +343,7 @@ func (d *Client) onRawEvent(
 // by callers — a wrong type means the handler will never be invoked.
 // Use the typed helpers (OnMessageCreate, OnInteractionCreate, etc.) for
 // compile-time-safe registration that cannot fail.
-func (d *Client) OnEvent(eventName events.EventType, handler interface{}) error {
+func (d *Client) OnEvent(eventName events.EventType, handler any) error {
 	wrapped, err := toEventHandler(handler, eventName)
 	if err != nil {
 		return err

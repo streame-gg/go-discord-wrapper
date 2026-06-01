@@ -1,6 +1,7 @@
 package stores
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,8 @@ func newTestBan(guildID, userID discord.Snowflake) *discord.Ban {
 
 // ── MemBanStore ───────────────────────────────────────────────────────────────
 
-func TestMemBanStore_SetGet(t *testing.T) {
+func (su *storesBanSuite) TestMemBanStore_SetGet() {
+	t := su.T()
 	s := NewBanStore(Defaults())
 	defer s.Close()
 
@@ -32,7 +34,8 @@ func TestMemBanStore_SetGet(t *testing.T) {
 	assert.Equal(t, userID, got.User.ID)
 }
 
-func TestMemBanStore_GetMiss(t *testing.T) {
+func (su *storesBanSuite) TestMemBanStore_GetMiss() {
+	t := su.T()
 	s := NewBanStore(Defaults())
 	defer s.Close()
 
@@ -40,7 +43,8 @@ func TestMemBanStore_GetMiss(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestMemBanStore_SetNilIsNoop(t *testing.T) {
+func (su *storesBanSuite) TestMemBanStore_SetNilIsNoop() {
+	t := su.T()
 	s := NewBanStore(Defaults())
 	defer s.Close()
 
@@ -48,7 +52,8 @@ func TestMemBanStore_SetNilIsNoop(t *testing.T) {
 	assert.Equal(t, 0, s.Size())
 }
 
-func TestMemBanStore_Delete(t *testing.T) {
+func (su *storesBanSuite) TestMemBanStore_Delete() {
+	t := su.T()
 	s := NewBanStore(Defaults())
 	defer s.Close()
 
@@ -62,7 +67,8 @@ func TestMemBanStore_Delete(t *testing.T) {
 	assert.Equal(t, 0, s.Size())
 }
 
-func TestMemBanStore_DeleteGuild(t *testing.T) {
+func (su *storesBanSuite) TestMemBanStore_DeleteGuild() {
+	t := su.T()
 	s := NewBanStore(Defaults())
 	defer s.Close()
 
@@ -87,7 +93,8 @@ func TestMemBanStore_DeleteGuild(t *testing.T) {
 	assert.Equal(t, 1, s.Size())
 }
 
-func TestMemBanStore_AllInGuild(t *testing.T) {
+func (su *storesBanSuite) TestMemBanStore_AllInGuild() {
+	t := su.T()
 	s := NewBanStore(Defaults())
 	defer s.Close()
 
@@ -107,7 +114,8 @@ func TestMemBanStore_AllInGuild(t *testing.T) {
 	assert.True(t, ok2)
 }
 
-func TestMemBanStore_AllInGuild_OtherGuildIsolated(t *testing.T) {
+func (su *storesBanSuite) TestMemBanStore_AllInGuild_OtherGuildIsolated() {
+	t := su.T()
 	s := NewBanStore(Defaults())
 	defer s.Close()
 
@@ -124,3 +132,7 @@ func TestMemBanStore_AllInGuild_OtherGuildIsolated(t *testing.T) {
 	_, okB := allA.Get(userB)
 	assert.False(t, okB, "guild B user must not appear in guild A AllInGuild")
 }
+
+type storesBanSuite struct{ suite.Suite }
+
+func TestStoresBanSuite(t *testing.T) { suite.Run(t, new(storesBanSuite)) }

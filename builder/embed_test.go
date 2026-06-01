@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"github.com/stretchr/testify/suite"
 	"strings"
 	"testing"
 
@@ -11,7 +12,8 @@ import (
 
 // TestEmbedBuilder_BuildNoAlias verifies that AddFields after Build() does
 // not mutate the already-returned Embed (P2-33).
-func TestEmbedBuilder_BuildNoAlias(t *testing.T) {
+func (su *embedSuite) TestEmbedBuilder_BuildNoAlias() {
+	t := su.T()
 	b := NewEmbed().SetTitle("T").AddFields(discord.EmbedFields{Name: "a", Value: "1"})
 
 	first := b.Build()
@@ -29,7 +31,8 @@ func TestEmbedBuilder_BuildNoAlias(t *testing.T) {
 
 // ── Bug 134: Validate / BuildChecked ─────────────────────────────────────────
 
-func TestBug134_Validate_OkOnValid(t *testing.T) {
+func (su *embedSuite) TestBug134_Validate_OkOnValid() {
+	t := su.T()
 	b := NewEmbed().
 		SetTitle("Hello").
 		SetDescription("World").
@@ -39,17 +42,20 @@ func TestBug134_Validate_OkOnValid(t *testing.T) {
 	assert.NoError(t, b.Validate())
 }
 
-func TestBug134_Validate_TitleTooLong(t *testing.T) {
+func (su *embedSuite) TestBug134_Validate_TitleTooLong() {
+	t := su.T()
 	b := NewEmbed().SetTitle(strings.Repeat("x", 257))
 	assert.ErrorContains(t, b.Validate(), "title")
 }
 
-func TestBug134_Validate_DescriptionTooLong(t *testing.T) {
+func (su *embedSuite) TestBug134_Validate_DescriptionTooLong() {
+	t := su.T()
 	b := NewEmbed().SetDescription(strings.Repeat("d", 4097))
 	assert.ErrorContains(t, b.Validate(), "description")
 }
 
-func TestBug134_Validate_TooManyFields(t *testing.T) {
+func (su *embedSuite) TestBug134_Validate_TooManyFields() {
+	t := su.T()
 	b := NewEmbed()
 	for i := 0; i < 26; i++ {
 		b.AddFields(discord.EmbedFields{Name: "n", Value: "v"})
@@ -57,27 +63,32 @@ func TestBug134_Validate_TooManyFields(t *testing.T) {
 	assert.ErrorContains(t, b.Validate(), "fields")
 }
 
-func TestBug134_Validate_FieldNameTooLong(t *testing.T) {
+func (su *embedSuite) TestBug134_Validate_FieldNameTooLong() {
+	t := su.T()
 	b := NewEmbed().AddFields(discord.EmbedFields{Name: strings.Repeat("n", 257), Value: "v"})
 	assert.ErrorContains(t, b.Validate(), "field 0 name")
 }
 
-func TestBug134_Validate_FieldValueTooLong(t *testing.T) {
+func (su *embedSuite) TestBug134_Validate_FieldValueTooLong() {
+	t := su.T()
 	b := NewEmbed().AddFields(discord.EmbedFields{Name: "n", Value: strings.Repeat("v", 1025)})
 	assert.ErrorContains(t, b.Validate(), "field 0 value")
 }
 
-func TestBug134_Validate_FooterTooLong(t *testing.T) {
+func (su *embedSuite) TestBug134_Validate_FooterTooLong() {
+	t := su.T()
 	b := NewEmbed().SetFooter(strings.Repeat("f", 2049), "")
 	assert.ErrorContains(t, b.Validate(), "footer")
 }
 
-func TestBug134_Validate_AuthorTooLong(t *testing.T) {
+func (su *embedSuite) TestBug134_Validate_AuthorTooLong() {
+	t := su.T()
 	b := NewEmbed().SetAuthor(strings.Repeat("a", 257), "", "")
 	assert.ErrorContains(t, b.Validate(), "author")
 }
 
-func TestBug134_Validate_TotalExceeds6000(t *testing.T) {
+func (su *embedSuite) TestBug134_Validate_TotalExceeds6000() {
+	t := su.T()
 	// Two fields each contributing 3000 chars → total 6000 → still OK.
 	b := NewEmbed().
 		AddFields(discord.EmbedFields{Name: strings.Repeat("a", 256), Value: strings.Repeat("b", 1024)}).
@@ -91,7 +102,8 @@ func TestBug134_Validate_TotalExceeds6000(t *testing.T) {
 	assert.ErrorContains(t, b.Validate(), "6000")
 }
 
-func TestBug134_BuildChecked_ReturnsEmbedOnSuccess(t *testing.T) {
+func (su *embedSuite) TestBug134_BuildChecked_ReturnsEmbedOnSuccess() {
+	t := su.T()
 	b := NewEmbed().SetTitle("ok")
 	embed, err := b.BuildChecked()
 	require.NoError(t, err)
@@ -99,13 +111,15 @@ func TestBug134_BuildChecked_ReturnsEmbedOnSuccess(t *testing.T) {
 	assert.Equal(t, "ok", *embed.Title)
 }
 
-func TestBug134_BuildChecked_ReturnsErrorOnViolation(t *testing.T) {
+func (su *embedSuite) TestBug134_BuildChecked_ReturnsErrorOnViolation() {
+	t := su.T()
 	b := NewEmbed().SetTitle(strings.Repeat("x", 257))
 	_, err := b.BuildChecked()
 	assert.Error(t, err)
 }
 
-func TestBug134_Build_StillWorksWithoutValidation(t *testing.T) {
+func (su *embedSuite) TestBug134_Build_StillWorksWithoutValidation() {
+	t := su.T()
 	// Build() must not call Validate() — it must always return the embed as-is.
 	b := NewEmbed().SetTitle(strings.Repeat("x", 257))
 	embed := b.Build()
@@ -115,7 +129,8 @@ func TestBug134_Build_StillWorksWithoutValidation(t *testing.T) {
 
 // TestEmbedBuilder_TwoBuildsAreIndependent checks that two Build() calls on
 // the same builder return embeds backed by separate slices.
-func TestEmbedBuilder_TwoBuildsAreIndependent(t *testing.T) {
+func (su *embedSuite) TestEmbedBuilder_TwoBuildsAreIndependent() {
+	t := su.T()
 	b := NewEmbed().AddFields(discord.EmbedFields{Name: "x", Value: "y"})
 	a := b.Build()
 	c := b.Build()
@@ -123,3 +138,7 @@ func TestEmbedBuilder_TwoBuildsAreIndependent(t *testing.T) {
 	a.Fields[0].Name = "mutated"
 	assert.Equal(t, "x", c.Fields[0].Name, "builds must not share backing array")
 }
+
+type embedSuite struct{ suite.Suite }
+
+func TestEmbedSuite(t *testing.T) { suite.Run(t, new(embedSuite)) }

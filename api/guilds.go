@@ -78,13 +78,13 @@ type ModifyGuildChannelPositionsEntry struct {
 }
 
 type CreateGuildRoleParams struct {
-	Name         *string            `json:"name,omitempty"`
+	Name         *string             `json:"name,omitempty"`
 	Permissions  *discord.Permission `json:"permissions,omitempty"`
-	Color        *int               `json:"color,omitempty"`
-	Hoist        *bool              `json:"hoist,omitempty"`
-	Icon         *string            `json:"icon,omitempty"`
-	UnicodeEmoji *string            `json:"unicode_emoji,omitempty"`
-	Mentionable  *bool              `json:"mentionable,omitempty"`
+	Color        *int                `json:"color,omitempty"`
+	Hoist        *bool               `json:"hoist,omitempty"`
+	Icon         *string             `json:"icon,omitempty"`
+	UnicodeEmoji *string             `json:"unicode_emoji,omitempty"`
+	Mentionable  *bool               `json:"mentionable,omitempty"`
 }
 
 type CreateGuildRoleOptions struct {
@@ -330,8 +330,8 @@ func (c *RestClient) DeleteGuild(ctx context.Context, guildID discord.Snowflake)
 
 // ── Guild channel endpoints ───────────────────────────────────────────────────
 
-// GetGuildChannels returns all channels in a guild.
-func (c *RestClient) GetGuildChannels(ctx context.Context, guildID discord.Snowflake) ([]*discord.Channel, error) {
+// ListGuildChannels returns all channels in a guild.
+func (c *RestClient) ListGuildChannels(ctx context.Context, guildID discord.Snowflake) ([]*discord.Channel, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -406,8 +406,8 @@ func (c *RestClient) ModifyGuildChannelPositions(ctx context.Context, guildID di
 
 // ── Guild role endpoints ──────────────────────────────────────────────────────
 
-// GetGuildRoles returns all roles in a guild.
-func (c *RestClient) GetGuildRoles(ctx context.Context, guildID discord.Snowflake) ([]*discord.Role, error) {
+// ListGuildRoles returns all roles in a guild.
+func (c *RestClient) ListGuildRoles(ctx context.Context, guildID discord.Snowflake) ([]*discord.Role, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -424,7 +424,7 @@ func (c *RestClient) GetGuildRoles(ctx context.Context, guildID discord.Snowflak
 
 // GetGuildRoleMemberCounts returns the role.
 // https://docs.discord.com/developers/resources/guild#get-guild-role-member-counts
-func (c *RestClient) GetGuildRoleMemberCounts(ctx context.Context, guildID discord.Snowflake) (*map[string]int64, error) {
+func (c *RestClient) GetGuildRoleMemberCounts(ctx context.Context, guildID discord.Snowflake) (map[string]int64, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -434,9 +434,16 @@ func (c *RestClient) GetGuildRoleMemberCounts(ctx context.Context, guildID disco
 		return nil, err
 	}
 
-	return doRequest[map[string]int64](c, req, map[int]bool{
+	counts, err := doRequest[map[string]int64](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	if counts == nil {
+		return nil, nil
+	}
+	return *counts, nil
 }
 
 // GetGuildRole returns a single role in a guild.
@@ -582,8 +589,8 @@ func (c *RestClient) DeleteGuildRole(ctx context.Context, guildID, roleID discor
 	return doRequestWithoutResponse(c, req)
 }
 
-// GetGuildBans returns a paginated list of bans in a guild. Requires BAN_MEMBERS.
-func (c *RestClient) GetGuildBans(ctx context.Context, guildID discord.Snowflake, params GetGuildBansParams) ([]*discord.Ban, error) {
+// ListGuildBans returns a paginated list of bans in a guild. Requires BAN_MEMBERS.
+func (c *RestClient) ListGuildBans(ctx context.Context, guildID discord.Snowflake, params GetGuildBansParams) ([]*discord.Ban, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -731,8 +738,8 @@ func (c *RestClient) BeginGuildPrune(ctx context.Context, guildID discord.Snowfl
 
 // ── Invite and misc endpoints ─────────────────────────────────────────────────
 
-// GetGuildInvites returns all active invites for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) GetGuildInvites(ctx context.Context, guildID discord.Snowflake) ([]*discord.Invite, error) {
+// ListGuildInvites returns all active invites for a guild. Requires MANAGE_GUILD.
+func (c *RestClient) ListGuildInvites(ctx context.Context, guildID discord.Snowflake) ([]*discord.Invite, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -1149,8 +1156,8 @@ func (c *RestClient) GetGuildNewMemberWelcome(ctx context.Context, guildID disco
 	})
 }
 
-// GetGuildIntegrations returns all integrations for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) GetGuildIntegrations(ctx context.Context, guildID discord.Snowflake) ([]*discord.Integration, error) {
+// ListGuildIntegrations returns all integrations for a guild. Requires MANAGE_GUILD.
+func (c *RestClient) ListGuildIntegrations(ctx context.Context, guildID discord.Snowflake) ([]*discord.Integration, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}

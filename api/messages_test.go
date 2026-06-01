@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"github.com/stretchr/testify/suite"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -11,7 +12,8 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-func TestBasenameFilename(t *testing.T) {
+func (su *apiMessagesSuite) TestBasenameFilename() {
+	t := su.T()
 	cases := []struct{ in, want string }{
 		{"report.pdf", "report.pdf"},
 		{"/tmp/upload/report.pdf", "report.pdf"},
@@ -35,7 +37,8 @@ func TestBasenameFilename(t *testing.T) {
 // TestBug123_MessageFileReader verifies that MessageFile.Reader is streamed via
 // io.Copy when set, and that the resulting multipart body contains the correct
 // file content (Bug 123).
-func TestBug123_MessageFileReader(t *testing.T) {
+func (su *apiMessagesSuite) TestBug123_MessageFileReader() {
+	t := su.T()
 	content := "streaming file content"
 	payload := []byte(`{"content":"hello"}`)
 	files := []discord.MessageFile{
@@ -76,7 +79,8 @@ func TestBug123_MessageFileReader(t *testing.T) {
 
 // TestBug123_MessageFileData verifies that the existing Data path still works
 // when Reader is nil (regression guard for Bug 123 change).
-func TestBug123_MessageFileData(t *testing.T) {
+func (su *apiMessagesSuite) TestBug123_MessageFileData() {
+	t := su.T()
 	content := []byte("raw bytes content")
 	payload := []byte(`{}`)
 	files := []discord.MessageFile{
@@ -114,7 +118,8 @@ func TestBug123_MessageFileData(t *testing.T) {
 	t.Error("no file part found in multipart body (Bug 123 regression)")
 }
 
-func TestBuildMultipartMessage_BasenameInHeader(t *testing.T) {
+func (su *apiMessagesSuite) TestBuildMultipartMessage_BasenameInHeader() {
+	t := su.T()
 	payload := []byte(`{"content":"hello"}`)
 	files := []discord.MessageFile{
 		{Name: "/home/user/Downloads/secret_report.pdf", ContentType: "application/pdf", Data: []byte("pdfdata")},
@@ -154,3 +159,7 @@ func TestBuildMultipartMessage_BasenameInHeader(t *testing.T) {
 	}
 	t.Error("no file part found in multipart body")
 }
+
+type apiMessagesSuite struct{ suite.Suite }
+
+func TestApiMessagesSuite(t *testing.T) { suite.Run(t, new(apiMessagesSuite)) }

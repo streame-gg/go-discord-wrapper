@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
 
 	"github.com/streame-gg/go-discord-wrapper/types/components"
@@ -19,7 +20,8 @@ func labelComp(label string) *components.LabelComponent {
 // TestModalBuilder_BuildNoAlias verifies that the returned *Modal is
 // independent of the builder: further AddComponents calls must not
 // mutate the already-built Modal (P2-32).
-func TestModalBuilder_BuildNoAlias(t *testing.T) {
+func (su *modalSuite) TestModalBuilder_BuildNoAlias() {
+	t := su.T()
 	b := NewModal().SetCustomID("m").SetTitle("T").AddComponents(labelComp("first"))
 
 	first := b.Build()
@@ -37,10 +39,15 @@ func TestModalBuilder_BuildNoAlias(t *testing.T) {
 
 // TestModalBuilder_TwoBuildsAreIndependent verifies that two consecutive
 // Build() calls return independent objects (not the same pointer).
-func TestModalBuilder_TwoBuildsAreIndependent(t *testing.T) {
+func (su *modalSuite) TestModalBuilder_TwoBuildsAreIndependent() {
+	t := su.T()
 	b := NewModal().SetCustomID("m").SetTitle("T")
 	a := b.Build()
 	c := b.Build()
 	assert.NotSame(t, a, c)
 	assert.NotSame(t, a.Components, c.Components)
 }
+
+type modalSuite struct{ suite.Suite }
+
+func TestModalSuite(t *testing.T) { suite.Run(t, new(modalSuite)) }

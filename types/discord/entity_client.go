@@ -28,7 +28,7 @@ type EntityClient interface {
 	ModifyChannel(ctx context.Context, channelID Snowflake, opts ChannelEditOptions) (*Channel, error)
 	DeleteChannel(ctx context.Context, channelID Snowflake, reason *string) (*Channel, error)
 	BulkDeleteMessages(ctx context.Context, channelID Snowflake, messageIDs []Snowflake, reason *string) error
-	GetChannelMessages(ctx context.Context, channelID Snowflake, opts FetchMessagesOptions) ([]*Message, error)
+	ListChannelMessages(ctx context.Context, channelID Snowflake, opts FetchMessagesOptions) ([]*Message, error)
 	TriggerTypingIndicator(ctx context.Context, channelID Snowflake) error
 	SetVoiceChannelStatus(ctx context.Context, channelID Snowflake, status *string) error
 	CreateChannelInvite(ctx context.Context, channelID Snowflake, opts InviteCreateOptions) (*Invite, error)
@@ -80,7 +80,7 @@ type EntityClient interface {
 	// ── GuildScheduledEvent ───────────────────────────────────────────────
 	ModifyGuildScheduledEvent(ctx context.Context, guildID, eventID Snowflake, opts ScheduledEventEditOptions) (*GuildScheduledEvent, error)
 	DeleteGuildScheduledEvent(ctx context.Context, guildID, eventID Snowflake) error
-	GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID Snowflake, opts FetchUsersOptions) ([]*GuildScheduledEventUser, error)
+	ListGuildScheduledEventUsers(ctx context.Context, guildID, eventID Snowflake, opts FetchUsersOptions) ([]*GuildScheduledEventUser, error)
 
 	// ── Sticker ───────────────────────────────────────────────────────────
 	ModifyGuildSticker(ctx context.Context, guildID, stickerID Snowflake, opts StickerEditOptions) (*Sticker, error)
@@ -96,20 +96,20 @@ type EntityClient interface {
 
 	// ── Integration ───────────────────────────────────────────────────────
 	DeleteGuildIntegration(ctx context.Context, guildID, integrationID Snowflake, reason *string) error
-	GetGuildIntegrations(ctx context.Context, guildID Snowflake) ([]*Integration, error)
+	ListGuildIntegrations(ctx context.Context, guildID Snowflake) ([]*Integration, error)
 
 	// ── Fetch (read) — used by sub-managers ──────────────────────────────
 	GetGuildMember(ctx context.Context, guildID, userID Snowflake) (*GuildMember, error)
 	GetGuildRole(ctx context.Context, guildID, roleID Snowflake) (*Role, error)
-	GetGuildRoles(ctx context.Context, guildID Snowflake) ([]*Role, error)
+	ListGuildRoles(ctx context.Context, guildID Snowflake) ([]*Role, error)
 	GetChannel(ctx context.Context, channelID Snowflake) (*Channel, error)
-	GetGuildChannels(ctx context.Context, guildID Snowflake) ([]*Channel, error)
+	ListGuildChannels(ctx context.Context, guildID Snowflake) ([]*Channel, error)
 	GetGuildEmoji(ctx context.Context, guildID, emojiID Snowflake) (*Emoji, error)
 	ListGuildEmojis(ctx context.Context, guildID Snowflake) ([]*Emoji, error)
 	GetGuildSticker(ctx context.Context, guildID, stickerID Snowflake) (*Sticker, error)
 	ListGuildStickers(ctx context.Context, guildID Snowflake) ([]*Sticker, error)
 	GetGuildBan(ctx context.Context, guildID, userID Snowflake) (*Ban, error)
-	GetGuildBans(ctx context.Context, guildID Snowflake, opts FetchBansOptions) ([]*Ban, error)
+	ListGuildBans(ctx context.Context, guildID Snowflake, opts FetchBansOptions) ([]*Ban, error)
 	RemoveGuildBan(ctx context.Context, guildID, userID Snowflake, reason *string) error
 	GetGuildScheduledEvent(ctx context.Context, guildID, eventID Snowflake) (*GuildScheduledEvent, error)
 	ListGuildScheduledEvents(ctx context.Context, guildID Snowflake) ([]*GuildScheduledEvent, error)
@@ -117,8 +117,8 @@ type EntityClient interface {
 	CreateStageInstance(ctx context.Context, opts StageCreateOptions) (*StageInstance, error)
 	GetGuildSoundboardSound(ctx context.Context, guildID, soundID Snowflake) (*SoundboardSound, error)
 	ListGuildSoundboardSounds(ctx context.Context, guildID Snowflake) ([]*SoundboardSound, error)
-	GetGuildInvites(ctx context.Context, guildID Snowflake) ([]*Invite, error)
-	GetGuildWebhooks(ctx context.Context, guildID Snowflake) ([]*Webhook, error)
+	ListGuildInvites(ctx context.Context, guildID Snowflake) ([]*Invite, error)
+	ListGuildWebhooks(ctx context.Context, guildID Snowflake) ([]*Webhook, error)
 	GetAutoModerationRule(ctx context.Context, guildID, ruleID Snowflake) (*AutoModerationRule, error)
 	ListAutoModerationRules(ctx context.Context, guildID Snowflake) ([]*AutoModerationRule, error)
 	CreateAutoModerationRule(ctx context.Context, guildID Snowflake, opts RuleCreateOptions) (*AutoModerationRule, error)

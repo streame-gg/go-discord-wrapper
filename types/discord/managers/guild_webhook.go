@@ -16,5 +16,5 @@ func NewGuildWebhookManager(guildID discord.Snowflake, c discord.EntityClient) d
 }
 
 func (m *guildWebhookManager) FetchAll(ctx context.Context) ([]*discord.Webhook, error) {
-	return m.client.GetGuildWebhooks(ctx, m.guildID)
+	return m.client.ListGuildWebhooks(ctx, m.guildID)
 }

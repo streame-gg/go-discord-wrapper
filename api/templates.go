@@ -58,8 +58,8 @@ func (c *RestClient) CreateGuildFromTemplate(ctx context.Context, templateCode s
 	})
 }
 
-// GetGuildTemplates returns the templates for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildTemplate, error) {
+// ListGuildTemplates returns the templates for a guild. Requires MANAGE_GUILD.
+func (c *RestClient) ListGuildTemplates(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildTemplate, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}

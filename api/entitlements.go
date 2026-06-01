@@ -163,9 +163,9 @@ func (p GetCurrentUserApplicationEntitlementsParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
-// GetCurrentUserApplicationEntitlements returns entitlements for the current user for the given
+// ListCurrentUserApplicationEntitlements returns entitlements for the current user for the given
 // application. Requires an OAuth2 bearer token.
-func (c *RestClient) GetCurrentUserApplicationEntitlements(ctx context.Context, appID discord.Snowflake, params GetCurrentUserApplicationEntitlementsParams, userToken string) ([]*discord.Entitlement, error) {
+func (c *RestClient) ListCurrentUserApplicationEntitlements(ctx context.Context, appID discord.Snowflake, params GetCurrentUserApplicationEntitlementsParams, userToken string) ([]*discord.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}

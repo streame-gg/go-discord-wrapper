@@ -36,7 +36,7 @@ func (m *guildChannelManager) Fetch(ctx context.Context, channelID discord.Snowf
 }
 
 func (m *guildChannelManager) FetchAll(ctx context.Context) (*collection.Collection[discord.Snowflake, *discord.Channel], error) {
-	channels, err := m.client.GetGuildChannels(ctx, m.guildID)
+	channels, err := m.client.ListGuildChannels(ctx, m.guildID)
 	if err != nil {
 		return nil, err
 	}

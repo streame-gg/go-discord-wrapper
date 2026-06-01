@@ -49,14 +49,14 @@ func (d *Client) CreateMessage(ctx context.Context, channelID discord.Snowflake,
 	return msg, err
 }
 
-func (d *Client) GetChannelMessages(ctx context.Context, channelID discord.Snowflake, opts discord.FetchMessagesOptions) ([]*discord.Message, error) {
+func (d *Client) ListChannelMessages(ctx context.Context, channelID discord.Snowflake, opts discord.FetchMessagesOptions) ([]*discord.Message, error) {
 	params := api.GetMessagesParams{
 		Around: opts.Around,
 		Before: opts.Before,
 		After:  opts.After,
 		Limit:  opts.Limit,
 	}
-	msgs, err := d.RestClient.GetMessages(ctx, channelID, params)
+	msgs, err := d.RestClient.ListMessages(ctx, channelID, params)
 	if err == nil {
 		d.cacheMessages(msgs)
 	}
@@ -511,14 +511,14 @@ func (d *Client) DeleteGuildScheduledEvent(ctx context.Context, guildID, eventID
 	return d.RestClient.DeleteGuildScheduledEvent(ctx, guildID, eventID)
 }
 
-func (d *Client) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, opts discord.FetchUsersOptions) ([]*discord.GuildScheduledEventUser, error) {
+func (d *Client) ListGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, opts discord.FetchUsersOptions) ([]*discord.GuildScheduledEventUser, error) {
 	params := api.GetGuildScheduledEventUsersParams{
 		Limit:      opts.Limit,
 		WithMember: opts.WithMember,
 		Before:     opts.Before,
 		After:      opts.After,
 	}
-	return d.RestClient.GetGuildScheduledEventUsers(ctx, guildID, eventID, params)
+	return d.RestClient.ListGuildScheduledEventUsers(ctx, guildID, eventID, params)
 }
 
 // ── Sticker ────────────────────────────────────────────────────────────────────
@@ -735,8 +735,8 @@ func (d *Client) CreateStageInstance(ctx context.Context, opts discord.StageCrea
 	return d.RestClient.CreateStageInstance(ctx, params, apiOpts)
 }
 
-func (d *Client) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
-	webhooks, err := d.RestClient.GetGuildWebhooks(ctx, guildID)
+func (d *Client) ListGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
+	webhooks, err := d.RestClient.ListGuildWebhooks(ctx, guildID)
 	if err == nil {
 		for _, w := range webhooks {
 			w.Hydrate(d)

@@ -18,11 +18,11 @@ import (
 	"github.com/streame-gg/go-discord-wrapper"
 	"github.com/streame-gg/go-discord-wrapper/api"
 	"github.com/streame-gg/go-discord-wrapper/cache"
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions"
-	"github.com/streame-gg/go-discord-wrapper/util"
 
 	"github.com/gorilla/websocket"
 )
@@ -38,7 +38,7 @@ type Client struct {
 
 	Intents *discord.Intent
 
-	Websocket *Websocket
+	wsConn *wsConn
 
 	// httpClient is the shared HTTP client used for REST calls inside the
 	// gateway package (e.g. GET /gateway/bot). Reusing it avoids allocating a
@@ -49,7 +49,7 @@ type Client struct {
 
 	mu sync.RWMutex
 
-	// wsMu protects concurrent reads and writes of the Websocket pointer.
+	// wsMu protects concurrent reads and writes of the wsConn pointer.
 	wsMu sync.RWMutex
 
 	// dispatchWg tracks in-flight user event handler goroutines for graceful shutdown.
@@ -75,8 +75,8 @@ type Client struct {
 	shutdownOnce sync.Once
 
 	// readyCh is closed exactly once when the first READY event is received.
-	// Unlike Websocket.Ready, it lives on the Client and survives reconnects,
-	// so Login() can safely wait on it without racing against d.Websocket being
+	// Unlike wsConn.Ready, it lives on the Client and survives reconnects,
+	// so Login() can safely wait on it without racing against d.wsConn being
 	// replaced by a concurrent reconnect.
 	readyCh   chan struct{}
 	readyOnce sync.Once
@@ -277,7 +277,7 @@ func NewClient(token string, intents discord.Intent, opts ...options.Option) (*C
 }
 
 // Ready returns a channel that is closed once the first READY event is
-// received from the Discord gateway.  Unlike Websocket.Ready, this channel
+// received from the Discord gateway.  Unlike wsConn.Ready, this channel
 // lives on the Client and is never replaced, so it is safe to use across
 // reconnects.
 func (d *Client) Ready() <-chan struct{} {
@@ -720,7 +720,7 @@ func (d *Client) Login(ctx context.Context) error {
 			}
 
 			d.wsMu.RLock()
-			wsAlive := d.Websocket != nil
+			wsAlive := d.wsConn != nil
 			d.wsMu.RUnlock()
 			if wsAlive {
 				d.Logger.Debug("Restarting websocket listener")
@@ -801,8 +801,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			}
 
 			d.wsMu.Lock()
-			d.Websocket.SessionID = &readyEvent.SessionID
-			d.Websocket.ReconnectURL = &readyEvent.ResumeGatewayURL
+			d.wsConn.SessionID = &readyEvent.SessionID
+			d.wsConn.ReconnectURL = &readyEvent.ResumeGatewayURL
 			d.wsMu.Unlock()
 			d.setBotUser(&readyEvent.User)
 			d.appIDMu.Lock()
@@ -848,7 +848,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 			}
 
-			d.Websocket.readyOnce.Do(func() { close(d.Websocket.Ready) })
+			d.wsConn.readyOnce.Do(func() { close(d.wsConn.Ready) })
 			d.readyOnce.Do(func() { close(d.readyCh) })
 
 			return true
@@ -1261,7 +1261,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal AUTO_MODERATION_RULE_DELETE event", slog.Any("err", err))
 					return false
 				}
-				d.Cache.AutoModRules().Delete(ev.AutoModerationRule.ID)
+				d.Cache.AutoModRules().Delete(ev.ID)
 			}
 		}
 	case events.EventInviteCreate:
@@ -1962,7 +1962,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 
 	case events.EventEntitlementDelete:
 		if ev, ok := event.(*events.EntitlementDeleteEvent); ok {
-			d.entitlements.Delete(ev.Entitlement.ID.String())
+			d.entitlements.Delete(ev.ID.String())
 		}
 
 	case events.EventInteractionCreate:
@@ -2063,7 +2063,7 @@ func (d *Client) Shutdown() error {
 		close(d.shutdownCh) // unblocks any eventCh senders still in listenWebsocket
 
 		d.wsMu.RLock()
-		ws := d.Websocket
+		ws := d.wsConn
 		d.wsMu.RUnlock()
 		if ws != nil {
 			if err := ws.close(); err != nil {

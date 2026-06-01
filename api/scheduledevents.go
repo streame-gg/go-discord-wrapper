@@ -183,8 +183,8 @@ func (c *RestClient) DeleteGuildScheduledEvent(ctx context.Context, guildID, eve
 	return doRequestWithoutResponse(c, req)
 }
 
-// GetGuildScheduledEventUsers returns users subscribed to a scheduled event.
-func (c *RestClient) GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, params GetGuildScheduledEventUsersParams) ([]*discord.GuildScheduledEventUser, error) {
+// ListGuildScheduledEventUsers returns users subscribed to a scheduled event.
+func (c *RestClient) ListGuildScheduledEventUsers(ctx context.Context, guildID, eventID discord.Snowflake, params GetGuildScheduledEventUsersParams) ([]*discord.GuildScheduledEventUser, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}

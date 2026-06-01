@@ -1,12 +1,14 @@
 package discord
 
 import (
+	"github.com/stretchr/testify/suite"
 	"math"
 	"testing"
 	"time"
 )
 
-func TestSnowflakeFromInt(t *testing.T) {
+func (su *snowflakeSuite) TestSnowflakeFromInt() {
+	t := su.T()
 	cases := []struct {
 		name      string
 		in        int64
@@ -33,7 +35,8 @@ func TestSnowflakeFromInt(t *testing.T) {
 	}
 }
 
-func TestSnowflakeFromUint(t *testing.T) {
+func (su *snowflakeSuite) TestSnowflakeFromUint() {
+	t := su.T()
 	cases := []struct {
 		name string
 		in   uint64
@@ -53,14 +56,16 @@ func TestSnowflakeFromUint(t *testing.T) {
 	}
 }
 
-func TestSnowflakeFromInt_NegativeFailsValidate(t *testing.T) {
+func (su *snowflakeSuite) TestSnowflakeFromInt_NegativeFailsValidate() {
+	t := su.T()
 	_, err := SnowflakeFromInt(-1)
 	if err == nil {
 		t.Error("expected Validate() to return an error for negative Snowflake, got nil")
 	}
 }
 
-func TestSnowflakeTime(t *testing.T) {
+func (su *snowflakeSuite) TestSnowflakeTime() {
+	t := su.T()
 	cases := []struct {
 		name string
 		id   Snowflake
@@ -89,7 +94,8 @@ func TestSnowflakeTime(t *testing.T) {
 	}
 }
 
-func TestUserCreatedAt(t *testing.T) {
+func (su *snowflakeSuite) TestUserCreatedAt() {
+	t := su.T()
 	u := &User{ID: Snowflake(175928847299117063)}
 	id := Snowflake(175928847299117063)
 	want := id.Time()
@@ -98,3 +104,7 @@ func TestUserCreatedAt(t *testing.T) {
 		t.Errorf("User.CreatedAt() = %v, want %v", got, want)
 	}
 }
+
+type snowflakeSuite struct{ suite.Suite }
+
+func TestSnowflakeSuite(t *testing.T) { suite.Run(t, new(snowflakeSuite)) }
