@@ -104,6 +104,14 @@ func NewRestClient(token string, opts ...options.Option) (*RestClient, error) {
 		return nil, errors.New("go-discord-wrapper: token must not be empty")
 	}
 
+	return newRestClient(token, opts...)
+}
+
+// newRestClient assembles a RestClient from the given options without enforcing
+// that token is non-empty. It is used by NewRestClient (after token validation)
+// and by clients that authenticate per-request rather than with a bot token,
+// such as WebhookClient.
+func newRestClient(token string, opts ...options.Option) (*RestClient, error) {
 	cfg := options.Build(options.Config{
 		BaseURL:    "https://discord.com/api",
 		APIVersion: discord.APIVersion10,
