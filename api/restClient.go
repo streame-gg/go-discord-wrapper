@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper"
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/util"
@@ -313,7 +314,7 @@ func (c *RestClient) generateRequest(ctx context.Context, method, path string, b
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", fmt.Sprintf("GoDiscordWrapper (%s@%s)", discord.RepositoryURL, discord.RepositoryVersion))
+	req.Header.Set("User-Agent", fmt.Sprintf("GoDiscordWrapper (%s@%s)", go_discord_wrapper.RepositoryURL, go_discord_wrapper.RepositoryVersion))
 
 	for _, option := range options {
 		option(req)
@@ -322,17 +323,9 @@ func (c *RestClient) generateRequest(ctx context.Context, method, path string, b
 	return req, nil
 }
 
-// doRequest executes req and decodes a successful response into v (when v != nil).
-// The returned *http.Response has its Body already closed; callers must not
-// read from it. Inspect headers and status codes via the returned value, but
-// do not call resp.Body.Read or resp.Body.Close again.
-
-// successResponseCodeData is based on map[statusCode]returnRequestBody
-// if statusCode is 204 (No Content), no request body will be returned, so you do not have to set it to false
-
-// Waiting for Go 1.27 to implement this in the RestClient;
-// https://github.com/golang/go/issues/77273
-
+// doRequestWithoutResponse executes req and discards the response body.
+// enforceStatusCodes optionally restricts which HTTP status codes are treated
+// as success; when empty, 200, 201, 202, and 204 are all accepted.
 func doRequestWithoutResponse(c *RestClient, req *http.Request, enforceStatusCodes ...int) error {
 	if len(enforceStatusCodes) == 0 {
 		_, err := doRequest[NoReturnData](c, req, map[int]bool{
@@ -453,6 +446,11 @@ func doRequestSlice[T any](c *RestClient, req *http.Request, codes map[int]bool)
 	return *result, nil
 }
 
+// doRequest executes req through the full rate-limit/retry pipeline and decodes
+// the response body into T on success. successResponseCodeData maps each
+// accepted HTTP status code to a bool: true means "decode body into T", false
+// means "success but no body to decode" (e.g. 204 No Content). The returned
+// *http.Response has its Body already closed; do not read or close it again.
 func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData map[int]bool) (*T, error) {
 	if req == nil {
 		return nil, errors.New("request must not be nil")

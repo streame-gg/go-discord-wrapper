@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 
@@ -143,8 +144,8 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 				"intents": *bot.Intents,
 				"properties": map[string]string{
 					"os":      runtime.GOOS,
-					"browser": discord.RepositoryURL + "@" + discord.RepositoryVersion,
-					"device":  discord.RepositoryURL + "@" + discord.RepositoryVersion,
+					"browser": go_discord_wrapper.RepositoryURL + "@" + go_discord_wrapper.RepositoryVersion,
+					"device":  go_discord_wrapper.RepositoryURL + "@" + go_discord_wrapper.RepositoryVersion,
 				},
 			},
 		}

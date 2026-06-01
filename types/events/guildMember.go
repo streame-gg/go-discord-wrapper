@@ -74,12 +74,8 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	if w.JoinedAt != nil {
 		e.NewMember.JoinedAt = *w.JoinedAt
 	}
-	if w.Deaf != nil {
-		e.NewMember.Deaf = *w.Deaf
-	}
-	if w.Mute != nil {
-		e.NewMember.Mute = *w.Mute
-	}
+	e.NewMember.Deaf = w.Deaf
+	e.NewMember.Mute = w.Mute
 	if w.Pending != nil {
 		e.NewMember.Pending = *w.Pending
 	}
@@ -102,6 +98,10 @@ func (e GuildMemberUpdateEvent) MarshalJSON() ([]byte, error) {
 		JoinedAt                   *time.Time           `json:"joined_at,omitempty"`
 		PremiumSince               *time.Time           `json:"premium_since,omitempty"`
 		CommunicationDisabledUntil *time.Time           `json:"communication_disabled_until,omitempty"`
+		Deaf                       *bool                `json:"deaf,omitempty"`
+		Mute                       *bool                `json:"mute,omitempty"`
+		Pending                    bool                 `json:"pending,omitempty"`
+		Flags                      int                  `json:"flags,omitempty"`
 		OldMember                  *discord.GuildMember `json:"old_member,omitempty"`
 	}
 	var jat *time.Time
@@ -117,7 +117,10 @@ func (e GuildMemberUpdateEvent) MarshalJSON() ([]byte, error) {
 		JoinedAt:                   jat,
 		PremiumSince:               m.PremiumSince,
 		CommunicationDisabledUntil: m.CommunicationDisabledUntil,
-
+		Deaf:                       m.Deaf,
+		Mute:                       m.Mute,
+		Pending:                    m.Pending,
+		Flags:                      m.Flags,
 		OldMember:                  e.OldMember,
 	})
 }

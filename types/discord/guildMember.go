@@ -12,10 +12,10 @@ type GuildMember struct {
 	AvatarHash                 *string     `json:"avatar,omitempty"`
 	BannerHash                 *string     `json:"banner,omitempty"`
 	CommunicationDisabledUntil *time.Time  `json:"communication_disabled_until,omitempty"`
-	Deaf                       bool        `json:"deaf"`
+	Deaf                       *bool       `json:"deaf,omitempty"`
 	Flags                      int         `json:"flags"`
 	JoinedAt                   time.Time   `json:"joined_at"`
-	Mute                       bool        `json:"mute"`
+	Mute                       *bool       `json:"mute,omitempty"`
 	Nick                       *string     `json:"nick,omitempty"`
 	Pending                    bool        `json:"pending,omitempty"`
 	PremiumSince               *time.Time  `json:"premium_since,omitempty"`

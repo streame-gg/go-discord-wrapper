@@ -279,6 +279,9 @@ func WithCacheStores(stores cache.OverflowCategory) Option {
 
 // WithDisableCacheStore disables auto-population for the specified stores.
 // It starts from the default CategoryAll unless you have already set CacheStores.
+// Do not combine with WithDisableCacheAutoPopulation: that option sets
+// DisableCacheAutoPopulation=true, which causes NewClient to override CacheStores
+// to 0 regardless of what this option sets.
 func WithDisableCacheStore(stores cache.OverflowCategory) Option {
 	return func(c *Config) {
 		if c.CacheStores == 0 {

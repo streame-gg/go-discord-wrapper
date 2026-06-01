@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper"
 	"github.com/streame-gg/go-discord-wrapper/api"
 	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/options"
@@ -581,7 +582,7 @@ func (d *Client) dispatchShardMessage(msg options.ShardMessage) {
 // ── Gateway connection ───────────────────────────────────────────────────────
 
 func (d *Client) initializeGatewayConnection(ctx context.Context) (*discord.BotRegisterResponse, error) {
-	const userAgent = "DiscordBot (" + discord.RepositoryURL + ", " + discord.RepositoryVersion + ")"
+	userAgent := "DiscordBot (" + go_discord_wrapper.RepositoryURL + ", " + go_discord_wrapper.RepositoryVersion + ")"
 
 	for {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://discord.com"+discord.APIBaseString(*d.APIVersion)+"gateway/bot", nil)
