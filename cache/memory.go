@@ -469,9 +469,9 @@ func (c *MemoryCache) evictByBytes(need int64, target OverflowCategory, by Clear
 		if toEvict > info.e.size {
 			toEvict = info.e.size
 		}
-		if toEvict <= 0 {
-			continue
-		}
+		// toEvict is always >= 1 here: the loop only runs while need >= 1, avgSize
+		// is clamped to >= 1, and info.e.size >= 1 (zero-size stores are skipped
+		// above), so ceil(need/avgSize) capped at size cannot be <= 0.
 		info.e.trimTo(info.e.size - toEvict)
 		need -= int64(toEvict) * info.avgSize
 	}

@@ -4,18 +4,15 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
-	"log"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/suite"
-	tc "github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/cache/rediscache"
@@ -25,8 +22,9 @@ import (
 type RedisCacheTestSuite struct {
 	suite.Suite
 
-	container tc.Container
+	mr        *miniredis.Miniredis
 	redisAddr string
+	stopClock chan struct{}
 }
 
 func TestRedisCacheTestSuite(t *testing.T) {
@@ -34,42 +32,46 @@ func TestRedisCacheTestSuite(t *testing.T) {
 }
 
 func (s *RedisCacheTestSuite) SetupSuite() {
-	ctx := context.Background()
+	mr, err := miniredis.Run()
+	s.Require().NoError(err, "start miniredis")
+	s.mr = mr
+	s.redisAddr = mr.Addr()
 
-	container, err := tc.GenericContainer(ctx, tc.GenericContainerRequest{
-		ContainerRequest: tc.ContainerRequest{
-			Image:        "redis:7-alpine",
-			ExposedPorts: []string{"6379/tcp"},
-			WaitingFor:   wait.ForListeningPort("6379/tcp"),
-		},
-		Started: true,
-	})
-	if err != nil {
-		if isDockerUnavailable(err) {
-			log.Fatalf("Docker is not available — enable Docker Desktop WSL2 integration: %v", err)
+	// miniredis keeps its own clock and never advances it on its own, so
+	// real-time key expiry (exercised by the *_TTL tests) would never fire.
+	// Advance the clock in lockstep with wall time so keys expire exactly as
+	// the production code expects against a real Redis server.
+	s.stopClock = make(chan struct{})
+	go func() {
+		const step = 5 * time.Millisecond
+		t := time.NewTicker(step)
+		defer t.Stop()
+		for {
+			select {
+			case <-s.stopClock:
+				return
+			case <-t.C:
+				mr.FastForward(step)
+			}
 		}
-		log.Fatalf("failed to start Redis container: %v", err)
-	}
-
-	host, err := container.Host(ctx)
-	if err != nil {
-		log.Fatalf("container.Host: %v", err)
-	}
-	port, err := container.MappedPort(ctx, "6379")
-	if err != nil {
-		log.Fatalf("container.MappedPort: %v", err)
-	}
-
-	s.container = container
-	s.redisAddr = fmt.Sprintf("%s:%s", host, port.Port())
+	}()
 }
 
 func (s *RedisCacheTestSuite) TearDownSuite() {
-	if s.container == nil {
-		return
+	if s.stopClock != nil {
+		close(s.stopClock)
 	}
-	ctx := context.Background()
-	_ = s.container.Terminate(ctx)
+	if s.mr != nil {
+		s.mr.Close()
+	}
+}
+
+// SetupTest gives every test a clean keyspace so tests that share the default
+// "discord" prefix cannot observe each other's data.
+func (s *RedisCacheTestSuite) SetupTest() {
+	if s.mr != nil {
+		s.mr.FlushAll()
+	}
 }
 
 func (s *RedisCacheTestSuite) newCache(opts cache.Options) *rediscache.RedisCache {
@@ -80,11 +82,6 @@ func (s *RedisCacheTestSuite) newCache(opts cache.Options) *rediscache.RedisCach
 	c.EnableSyncWrites()
 	s.T().Cleanup(func() { _ = c.Close() })
 	return c
-}
-
-func isDockerUnavailable(err error) bool {
-	s := strings.ToLower(err.Error())
-	return strings.Contains(s, "provider") || strings.Contains(s, "docker host")
 }
 
 func mustSnowflake(s string) discord.Snowflake {
@@ -495,6 +492,8 @@ func (s *RedisCacheTestSuite) TestKeyPrefix_Isolation() {
 
 	c1 := rediscache.NewRedisCache(client, cache.Options{}).WithKeyPrefix("bot-a")
 	c2 := rediscache.NewRedisCache(client, cache.Options{}).WithKeyPrefix("bot-b")
+	c1.EnableSyncWrites()
+	c2.EnableSyncWrites()
 	s.T().Cleanup(func() { _ = c1.Close(); _ = c2.Close() })
 
 	c1.Guilds().Set(guild("42"))
