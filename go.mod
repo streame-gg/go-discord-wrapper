@@ -1,6 +1,6 @@
 module github.com/streame-gg/go-discord-wrapper
 
-go 1.26
+go 1.26.2
 
 require (
 	github.com/alicebob/miniredis/v2 v2.38.0

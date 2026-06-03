@@ -82,7 +82,8 @@ func mockGatewayWithOp1(t *testing.T, heartbeatInterval int, heartbeatCount *ato
 //
 // The heartbeat interval is 200 ms so the test runs quickly. After the client
 // processes Op-1 we wait 300 ms and assert the server received ≥ 1 heartbeat.
-func TestOp1HeartbeatRequest(t *testing.T) {
+func (cs *ConnectionSuite) TestOp1HeartbeatRequest() {
+	t := cs.T()
 	var heartbeatCount atomic.Int32
 
 	wsURL, closeServer := mockGatewayWithOp1(t, 200, &heartbeatCount)
@@ -110,7 +111,8 @@ func TestOp1HeartbeatRequest(t *testing.T) {
 // TestOp1HeartbeatRequestChannelNonBlocking verifies the non-blocking send
 // in the listener: signalling heartbeatRequest when the buffer is full must
 // not block (Issue 6).
-func TestOp1HeartbeatRequestChannelNonBlocking(t *testing.T) {
+func (cs *ConnectionSuite) TestOp1HeartbeatRequestChannelNonBlocking() {
+	t := cs.T()
 	ws := &wsConn{
 		heartbeatRequest: make(chan struct{}, 1),
 		Closed:           make(chan struct{}),

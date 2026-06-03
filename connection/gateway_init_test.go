@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
-	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -23,7 +22,8 @@ var gatewayBotResponse = discord.BotRegisterResponse{
 
 // TestBug38UserAgentSent verifies that initializeGatewayConnection sends the
 // required Discord User-Agent header (Bug 38).
-func TestBug38UserAgentSent(t *testing.T) {
+func (cs *ConnectionSuite) TestBug38UserAgentSent() {
+	t := cs.T()
 	var gotUserAgent string
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotUserAgent = r.Header.Get("User-Agent")
@@ -54,7 +54,8 @@ func TestBug38UserAgentSent(t *testing.T) {
 
 // TestBug37ContextCancelledAbortsRequest verifies that a cancelled context
 // causes initializeGatewayConnection to return ctx.Err() (Bug 37).
-func TestBug37ContextCancelledAbortsRequest(t *testing.T) {
+func (cs *ConnectionSuite) TestBug37ContextCancelledAbortsRequest() {
+	t := cs.T()
 	// Server that blocks forever so the context cancellation must fire first.
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		<-r.Context().Done()
@@ -79,7 +80,8 @@ func TestBug37ContextCancelledAbortsRequest(t *testing.T) {
 
 // TestBug39RateLimitRetry verifies that a 429 with Retry-After causes
 // initializeGatewayConnection to retry after the specified delay (Bug 39).
-func TestBug39RateLimitRetry(t *testing.T) {
+func (cs *ConnectionSuite) TestBug39RateLimitRetry() {
+	t := cs.T()
 	var calls atomic.Int32
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		n := calls.Add(1)
@@ -112,7 +114,8 @@ func TestBug39RateLimitRetry(t *testing.T) {
 
 // TestBug40HttpClientReused verifies that the Client field httpClient is the
 // same pointer across multiple calls (Bug 40).
-func TestBug40HttpClientReused(t *testing.T) {
+func (cs *ConnectionSuite) TestBug40HttpClientReused() {
+	t := cs.T()
 	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 	first := c.httpClient

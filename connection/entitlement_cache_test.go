@@ -2,7 +2,6 @@ package connection
 
 import (
 	"sync/atomic"
-	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -15,7 +14,8 @@ import (
 // TestBug122_EntitlementUpdateEvent_OldEntitlementPopulated verifies that
 // OldEntitlement is populated from the in-memory cache when ENTITLEMENT_UPDATE
 // arrives after a preceding ENTITLEMENT_CREATE (Bug 122).
-func TestBug122_EntitlementUpdateEvent_OldEntitlementPopulated(t *testing.T) {
+func (cs *ConnectionSuite) TestBug122_EntitlementUpdateEvent_OldEntitlementPopulated() {
+	t := cs.T()
 	entitlementID := "175928847299117063"
 
 	createPacket := dispatchPacket("ENTITLEMENT_CREATE", map[string]interface{}{
@@ -66,7 +66,8 @@ func TestBug122_EntitlementUpdateEvent_OldEntitlementPopulated(t *testing.T) {
 
 // TestBug122_EntitlementUpdateEvent_OldEntitlementNilWhenMissed verifies that
 // OldEntitlement is nil when no ENTITLEMENT_CREATE preceded the update (cache miss).
-func TestBug122_EntitlementUpdateEvent_OldEntitlementNilWhenMissed(t *testing.T) {
+func (cs *ConnectionSuite) TestBug122_EntitlementUpdateEvent_OldEntitlementNilWhenMissed() {
+	t := cs.T()
 	updatePacket := dispatchPacket("ENTITLEMENT_UPDATE", map[string]interface{}{
 		"id":             "175928847299117064",
 		"sku_id":         "100000000000000002",

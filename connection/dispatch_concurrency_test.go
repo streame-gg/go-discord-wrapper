@@ -3,7 +3,6 @@ package connection
 import (
 	"encoding/json"
 	"sync/atomic"
-	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +18,8 @@ import (
 //
 // Before the fix, handlers ran in goroutines inside each worker so all 10
 // could complete in ≈200 ms regardless of the worker count.
-func TestBug9_MaxConcurrentEventsLimitsHandlers(t *testing.T) {
+func (cs *ConnectionSuite) TestBug9_MaxConcurrentEventsLimitsHandlers() {
+	t := cs.T()
 	// Build 10 ready-made MESSAGE_CREATE events.
 	rawMsg, _ := json.Marshal(map[string]interface{}{
 		"id": "1", "channel_id": "2",

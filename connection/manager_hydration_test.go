@@ -56,7 +56,8 @@ func dispatchGuildUpdate(t *testing.T, c *Client, payload map[string]any) {
 
 // ── Bug 1: client-level managers must work without a cache ───────────────────
 
-func TestClientManagers_WorkWithoutCache(t *testing.T) {
+func (cs *ConnectionSuite) TestClientManagers_WorkWithoutCache() {
+	t := cs.T()
 	c, err := NewClient("test-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
@@ -79,7 +80,8 @@ func TestClientManagers_WorkWithoutCache(t *testing.T) {
 
 // ── Bug 2: guild from cache after GUILD_CREATE must have all sub-managers ────
 
-func TestGuildFromCache_HasAllSubManagers(t *testing.T) {
+func (cs *ConnectionSuite) TestGuildFromCache_HasAllSubManagers() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(111222333444555666)
@@ -107,7 +109,8 @@ func TestGuildFromCache_HasAllSubManagers(t *testing.T) {
 
 // TestGuildFromGuildCreateCallback_HasAllSubManagers verifies that the guild
 // object passed to OnGuildCreate has all sub-managers populated.
-func TestGuildFromGuildCreateCallback_HasAllSubManagers(t *testing.T) {
+func (cs *ConnectionSuite) TestGuildFromGuildCreateCallback_HasAllSubManagers() {
+	t := cs.T()
 	mc := cache.NewMemoryCache(cache.Options{})
 	c, err := NewClient("test-token", discord.IntentGuilds, options.WithCache(mc))
 	require.NoError(t, err)
@@ -167,7 +170,8 @@ func TestGuildFromGuildCreateCallback_HasAllSubManagers(t *testing.T) {
 
 // TestGuildUpdatePreservesSubManagers verifies that a GUILD_UPDATE replaces the
 // cached guild with a fully hydrated copy that still has sub-managers.
-func TestGuildUpdatePreservesSubManagers(t *testing.T) {
+func (cs *ConnectionSuite) TestGuildUpdatePreservesSubManagers() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(111222333444555666)
@@ -200,7 +204,8 @@ func TestGuildUpdatePreservesSubManagers(t *testing.T) {
 
 // ── Audit 5: Channel sub-managers after GUILD_CREATE ─────────────────────────
 
-func TestChannelFromCache_HasSubManagers(t *testing.T) {
+func (cs *ConnectionSuite) TestChannelFromCache_HasSubManagers() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(222333444)
@@ -229,7 +234,8 @@ func TestChannelFromCache_HasSubManagers(t *testing.T) {
 
 // ── Audit 4: nested hydration chain ─────────────────────────────────────────
 
-func TestNestedHydration_GuildMembers(t *testing.T) {
+func (cs *ConnectionSuite) TestNestedHydration_GuildMembers() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(333444555)
@@ -259,7 +265,8 @@ func TestNestedHydration_GuildMembers(t *testing.T) {
 	assert.True(t, u.IsHydrated(), "user must be hydrated")
 }
 
-func TestNestedHydration_GuildMembersChunk(t *testing.T) {
+func (cs *ConnectionSuite) TestNestedHydration_GuildMembersChunk() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(444555666)
@@ -294,7 +301,8 @@ func TestNestedHydration_GuildMembersChunk(t *testing.T) {
 	assert.True(t, u.IsHydrated(), "user must be hydrated from GUILD_MEMBERS_CHUNK")
 }
 
-func TestNestedHydration_MessageCreate(t *testing.T) {
+func (cs *ConnectionSuite) TestNestedHydration_MessageCreate() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	msgPayload := map[string]any{
@@ -325,7 +333,8 @@ func TestNestedHydration_MessageCreate(t *testing.T) {
 //
 // This catches regressions where a new sub-manager is added to Guild but
 // setGuildManagers is not updated.
-func TestEntityHydrationCompleteness_Guild_Reflection(t *testing.T) {
+func (cs *ConnectionSuite) TestEntityHydrationCompleteness_Guild_Reflection() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(999888777)
@@ -365,7 +374,8 @@ func TestEntityHydrationCompleteness_Guild_Reflection(t *testing.T) {
 // interaction.Guild.Members().Cache().Get(someUserID) works after GUILD_CREATE.
 // This is a regression test for the production panic reported when guild sub-managers
 // were nil on ev.Guild in OnInteractionCreate handlers.
-func TestInteractionCreate_GuildMembersAccessible(t *testing.T) {
+func (cs *ConnectionSuite) TestInteractionCreate_GuildMembersAccessible() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(111222333444555666)
@@ -434,7 +444,8 @@ func TestInteractionCreate_GuildMembersAccessible(t *testing.T) {
 // TestInteractionCreate_NilGuildStub verifies that when Discord omits the
 // guild object from the interaction payload (which happens for some interaction
 // types), the library synthesizes a stub so accessor methods never panic.
-func TestInteractionCreate_NilGuildStub(t *testing.T) {
+func (cs *ConnectionSuite) TestInteractionCreate_NilGuildStub() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(111222333444555000)
@@ -498,7 +509,8 @@ func TestInteractionCreate_NilGuildStub(t *testing.T) {
 // TestStickerHydration_GuildIDSet verifies that stickers embedded directly in a
 // Guild struct (via RawStickers) have GuildID set after Hydrate, so that
 // Sticker.Edit/Delete work without error on stickers accessed from the guild object.
-func TestStickerHydration_GuildIDSet(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerHydration_GuildIDSet() {
+	t := cs.T()
 	guildID := discord.Snowflake(111000111000111000)
 	stickerID := discord.Snowflake(222000222000222000)
 
@@ -526,7 +538,8 @@ func TestStickerHydration_GuildIDSet(t *testing.T) {
 
 // ── Fix 8: bonus — GuildMemberUpdate/Remove User hydration + ThreadListSync ──
 
-func TestHydrateEvent_GuildMemberUpdate_UserHydrated(t *testing.T) {
+func (cs *ConnectionSuite) TestHydrateEvent_GuildMemberUpdate_UserHydrated() {
+	t := cs.T()
 	c := newClientWithCache(t)
 	ev := &events.GuildMemberUpdateEvent{}
 	ev.NewMember.User = &discord.User{ID: mustSnowflake("user-update-1")}
@@ -534,7 +547,8 @@ func TestHydrateEvent_GuildMemberUpdate_UserHydrated(t *testing.T) {
 	assert.True(t, ev.NewMember.User.IsHydrated(), "GuildMemberUpdate: ev.NewMember.User must be hydrated after hydrateEvent")
 }
 
-func TestHydrateEvent_GuildMemberRemove_UserHydrated(t *testing.T) {
+func (cs *ConnectionSuite) TestHydrateEvent_GuildMemberRemove_UserHydrated() {
+	t := cs.T()
 	c := newClientWithCache(t)
 	ev := &events.GuildMemberRemoveEvent{}
 	ev.User.ID = mustSnowflake("user-remove-1")
@@ -542,7 +556,8 @@ func TestHydrateEvent_GuildMemberRemove_UserHydrated(t *testing.T) {
 	assert.True(t, ev.User.IsHydrated(), "GuildMemberRemove: ev.User must be hydrated after hydrateEvent")
 }
 
-func TestHydrateEvent_ThreadListSync_ChannelsHaveSubManagers(t *testing.T) {
+func (cs *ConnectionSuite) TestHydrateEvent_ThreadListSync_ChannelsHaveSubManagers() {
+	t := cs.T()
 	c := newClientWithCache(t)
 	ev := &events.ThreadListSyncEvent{
 		GuildID: mustSnowflake("g1"),
@@ -559,7 +574,8 @@ func TestHydrateEvent_ThreadListSync_ChannelsHaveSubManagers(t *testing.T) {
 	}
 }
 
-func TestHydrateEvent_ChannelCreate_HasSubManagers(t *testing.T) {
+func (cs *ConnectionSuite) TestHydrateEvent_ChannelCreate_HasSubManagers() {
+	t := cs.T()
 	c := newClientWithCache(t)
 	ev := &events.ChannelCreateEvent{}
 	ev.Channel.ID = mustSnowflake("ch-create-1")
@@ -569,7 +585,8 @@ func TestHydrateEvent_ChannelCreate_HasSubManagers(t *testing.T) {
 	assert.True(t, ev.Channel.IsHydrated(), "ChannelCreate: channel must be hydrated after hydrateEvent")
 }
 
-func TestHydrateEvent_ChannelUpdate_HasSubManagers(t *testing.T) {
+func (cs *ConnectionSuite) TestHydrateEvent_ChannelUpdate_HasSubManagers() {
+	t := cs.T()
 	c := newClientWithCache(t)
 	ev := &events.ChannelUpdateEvent{}
 	ev.NewChannel.ID = mustSnowflake("ch-update-1")
@@ -578,7 +595,8 @@ func TestHydrateEvent_ChannelUpdate_HasSubManagers(t *testing.T) {
 	assert.NotNil(t, ev.NewChannel.Threads(), "ChannelUpdate: Threads() must not be nil after hydrateEvent")
 }
 
-func TestHydrateEvent_ChannelDelete_HasSubManagers(t *testing.T) {
+func (cs *ConnectionSuite) TestHydrateEvent_ChannelDelete_HasSubManagers() {
+	t := cs.T()
 	c := newClientWithCache(t)
 	ev := &events.ChannelDeleteEvent{}
 	ev.Channel.ID = mustSnowflake("ch-delete-1")
@@ -587,7 +605,8 @@ func TestHydrateEvent_ChannelDelete_HasSubManagers(t *testing.T) {
 	assert.NotNil(t, ev.Channel.Threads(), "ChannelDelete: Threads() must not be nil after hydrateEvent")
 }
 
-func TestHydrateEvent_ThreadCreate_HasSubManagers(t *testing.T) {
+func (cs *ConnectionSuite) TestHydrateEvent_ThreadCreate_HasSubManagers() {
+	t := cs.T()
 	c := newClientWithCache(t)
 	ev := &events.ThreadCreateEvent{}
 	ev.Channel.ID = mustSnowflake("thread-create-1")
@@ -596,7 +615,8 @@ func TestHydrateEvent_ThreadCreate_HasSubManagers(t *testing.T) {
 	assert.NotNil(t, ev.Channel.Threads(), "ThreadCreate: Threads() must not be nil after hydrateEvent")
 }
 
-func TestHydrateEvent_ThreadUpdate_HasSubManagers(t *testing.T) {
+func (cs *ConnectionSuite) TestHydrateEvent_ThreadUpdate_HasSubManagers() {
+	t := cs.T()
 	c := newClientWithCache(t)
 	ev := &events.ThreadUpdateEvent{}
 	ev.NewThread.ID = mustSnowflake("thread-update-1")
@@ -605,7 +625,8 @@ func TestHydrateEvent_ThreadUpdate_HasSubManagers(t *testing.T) {
 	assert.NotNil(t, ev.NewThread.Threads(), "ThreadUpdate: Threads() must not be nil after hydrateEvent")
 }
 
-func TestManagerFetch_WorksWithoutCache(t *testing.T) {
+func (cs *ConnectionSuite) TestManagerFetch_WorksWithoutCache() {
+	t := cs.T()
 	guildID := discord.Snowflake(777888999000111222)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

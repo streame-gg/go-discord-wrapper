@@ -5,7 +5,6 @@ package connection
 
 import (
 	"encoding/json"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,7 +13,8 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 )
 
-func TestBug79_GuildBanAdd_CachesBan(t *testing.T) {
+func (cs *ConnectionSuite) TestBug79_GuildBanAdd_CachesBan() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100000000000000001)
@@ -38,7 +38,8 @@ func TestBug79_GuildBanAdd_CachesBan(t *testing.T) {
 	assert.Equal(t, userID, ban.User.ID)
 }
 
-func TestBug79_GuildBanAdd_RemovesMemberFromCache(t *testing.T) {
+func (cs *ConnectionSuite) TestBug79_GuildBanAdd_RemovesMemberFromCache() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100000000000000001)
@@ -70,7 +71,8 @@ func TestBug79_GuildBanAdd_RemovesMemberFromCache(t *testing.T) {
 	assert.False(t, ok, "banned member must be removed from member cache on GUILD_BAN_ADD (Bug 79)")
 }
 
-func TestBug79_GuildBanRemove_DeletesBan(t *testing.T) {
+func (cs *ConnectionSuite) TestBug79_GuildBanRemove_DeletesBan() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100000000000000001)
@@ -100,7 +102,8 @@ func TestBug79_GuildBanRemove_DeletesBan(t *testing.T) {
 	assert.False(t, ok, "ban must be removed from BanStore on GUILD_BAN_REMOVE (Bug 79)")
 }
 
-func TestBug79_GuildDelete_ClearsBans(t *testing.T) {
+func (cs *ConnectionSuite) TestBug79_GuildDelete_ClearsBans() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100000000000000001)

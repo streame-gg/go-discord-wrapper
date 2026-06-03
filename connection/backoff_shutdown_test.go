@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -40,7 +42,8 @@ func mockWSAlwaysFail(t *testing.T) (wsURL string, closeFn func()) {
 //  4. Wait 200 ms — enough for the first attempt to fail and the second to
 //     enter the backoff select (backoff ≥ 1 s without the fix).
 //  5. Call Shutdown and assert it returns in < 100 ms.
-func TestP0_4_ShutdownDuringBackoff(t *testing.T) {
+func (s *backoffShutdownSuite) TestP0_4_ShutdownDuringBackoff() {
+	t := s.T()
 	// Step 1: initial good gateway so we have a valid wsConn.
 	goodURL, closeGood := mockGateway(t)
 	defer closeGood()
@@ -90,3 +93,7 @@ func TestP0_4_ShutdownDuringBackoff(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 	assert.True(t, reconnectDone.Load(), "reconnect goroutine must exit after Shutdown")
 }
+
+type backoffShutdownSuite struct{ suite.Suite }
+
+func TestBackoffShutdownSuite(t *testing.T) { suite.Run(t, new(backoffShutdownSuite)) }

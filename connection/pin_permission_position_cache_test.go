@@ -4,8 +4,6 @@ package connection
 // and channel position cache updates.
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -15,7 +13,8 @@ import (
 
 // ── Bug 75: PinMessage / UnpinMessage ────────────────────────────────────────
 
-func TestBug75_PinMessage_SetsPinnedTrue(t *testing.T) {
+func (cs *ConnectionSuite) TestBug75_PinMessage_SetsPinnedTrue() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	channelID := discord.Snowflake(111)
@@ -39,7 +38,8 @@ func TestBug75_PinMessage_SetsPinnedTrue(t *testing.T) {
 	assert.True(t, got.Pinned, "Pinned must be true after PinMessage cache update (Bug 75)")
 }
 
-func TestBug75_UnpinMessage_SetsPinnedFalse(t *testing.T) {
+func (cs *ConnectionSuite) TestBug75_UnpinMessage_SetsPinnedFalse() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	channelID := discord.Snowflake(111)
@@ -59,7 +59,8 @@ func TestBug75_UnpinMessage_SetsPinnedFalse(t *testing.T) {
 	assert.False(t, got.Pinned, "Pinned must be false after UnpinMessage cache update (Bug 75)")
 }
 
-func TestBug75_PinMessage_NoOpWhenNotCached(t *testing.T) {
+func (cs *ConnectionSuite) TestBug75_PinMessage_NoOpWhenNotCached() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	channelID := discord.Snowflake(111)
@@ -78,7 +79,8 @@ func TestBug75_PinMessage_NoOpWhenNotCached(t *testing.T) {
 
 // ── Bug 80: EditChannelPermissions / DeleteChannelPermission ──────────────────
 
-func TestBug80_EditChannelPermissions_UpsertOverwrite(t *testing.T) {
+func (cs *ConnectionSuite) TestBug80_EditChannelPermissions_UpsertOverwrite() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(1000)
@@ -128,7 +130,8 @@ func TestBug80_EditChannelPermissions_UpsertOverwrite(t *testing.T) {
 	assert.Equal(t, "8", got.PermissionOverwrites[0].Allow)
 }
 
-func TestBug80_EditChannelPermissions_UpdatesExistingOverwrite(t *testing.T) {
+func (cs *ConnectionSuite) TestBug80_EditChannelPermissions_UpdatesExistingOverwrite() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(1000)
@@ -172,7 +175,8 @@ func TestBug80_EditChannelPermissions_UpdatesExistingOverwrite(t *testing.T) {
 	}
 }
 
-func TestBug80_DeleteChannelPermission_RemovesOverwrite(t *testing.T) {
+func (cs *ConnectionSuite) TestBug80_DeleteChannelPermission_RemovesOverwrite() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(1000)
@@ -211,7 +215,8 @@ func TestBug80_DeleteChannelPermission_RemovesOverwrite(t *testing.T) {
 
 // ── Bug 81: ModifyGuildChannelPositions ──────────────────────────────────────
 
-func TestBug81_ModifyGuildChannelPositions_UpdatesPosition(t *testing.T) {
+func (cs *ConnectionSuite) TestBug81_ModifyGuildChannelPositions_UpdatesPosition() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(1000)
@@ -242,7 +247,8 @@ func TestBug81_ModifyGuildChannelPositions_UpdatesPosition(t *testing.T) {
 	assert.Equal(t, 5, *got.Position, "Position must be updated after ModifyGuildChannelPositions (Bug 81)")
 }
 
-func TestBug81_ModifyGuildChannelPositions_UpdatesParentID(t *testing.T) {
+func (cs *ConnectionSuite) TestBug81_ModifyGuildChannelPositions_UpdatesParentID() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(1000)
@@ -273,7 +279,8 @@ func TestBug81_ModifyGuildChannelPositions_UpdatesParentID(t *testing.T) {
 	assert.Equal(t, newParent, *got.ParentID, "ParentID must be updated after ModifyGuildChannelPositions (Bug 81)")
 }
 
-func TestBug81_ModifyGuildChannelPositions_UncachedChannelIsNoop(t *testing.T) {
+func (cs *ConnectionSuite) TestBug81_ModifyGuildChannelPositions_UncachedChannelIsNoop() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	newPos := 5

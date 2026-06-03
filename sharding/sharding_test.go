@@ -625,7 +625,8 @@ func (s *shardingTestSuite) TestBug26BackwardsCompat_NilRest() {
 // slot i and the function returned with only 1 result and nil error even though
 // shard 1 never sent a valid reply. The new `for len(results) < total` loop
 // correctly blocks until all valid responses arrive, returning a context error.
-func TestBug29RequestAllMalformedResponseDoesNotConsumeSlot(t *testing.T) {
+func (s *shardingTestSuite) TestBug29RequestAllMalformedResponseDoesNotConsumeSlot() {
+	t := s.T()
 	const total = 2
 	coord := sharding.NewLocalCoordinator(total)
 
@@ -680,7 +681,8 @@ func TestBug29RequestAllMalformedResponseDoesNotConsumeSlot(t *testing.T) {
 // is counted. Previously the loop advanced the counter for every valid message
 // regardless of msg.From, so two replies from shard 0 would satisfy the total
 // of 2 while shard 1 was never heard from (Bug 99).
-func TestBug99RequestAllDeduplicatesDuplicateReplies(t *testing.T) {
+func (s *shardingTestSuite) TestBug99RequestAllDeduplicatesDuplicateReplies() {
+	t := s.T()
 	const total = 2
 	coord := sharding.NewLocalCoordinator(total)
 

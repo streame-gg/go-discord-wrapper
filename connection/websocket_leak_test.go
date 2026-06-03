@@ -34,7 +34,8 @@ func mockWSCloseAfterUpgrade(t *testing.T) (wsURL string, closeFn func()) {
 //
 // Without the fix, the gorilla/websocket connection leaks because the four
 // early-return paths in newWSConn returned without calling c.Close().
-func TestP0_3_NewWebsocketClosesConnOnError(t *testing.T) {
+func (cs *ConnectionSuite) TestP0_3_NewWebsocketClosesConnOnError() {
+	t := cs.T()
 	wsURL, closeFn := mockWSCloseAfterUpgrade(t)
 	defer closeFn()
 

@@ -3,7 +3,6 @@ package connection
 import (
 	"net/http"
 	"net/http/httptest"
-	"testing"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -25,7 +24,8 @@ import (
 //
 // The fix: Login waits on d.readyCh (a Client-level channel), which is closed
 // by d.readyOnce.Do exactly once, surviving any number of wsConn swaps.
-func TestP0_2_ClientReadyChannelSurvivesWebsocketReplacement(t *testing.T) {
+func (cs *ConnectionSuite) TestP0_2_ClientReadyChannelSurvivesWebsocketReplacement() {
+	t := cs.T()
 	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
@@ -84,7 +84,8 @@ func TestP0_2_ClientReadyChannelSurvivesWebsocketReplacement(t *testing.T) {
 //  2. The reconnect is intercepted by patching d.wsConn.ReconnectURL so it
 //     goes to a second test server that sends a full HELLO + READY.
 //  3. Login() — exercised via c.Ready() — must fire within 5 s.
-func TestP0_2_LoginReconnectRace(t *testing.T) {
+func (cs *ConnectionSuite) TestP0_2_LoginReconnectRace() {
+	t := cs.T()
 	// Gateway 2: sends HELLO + READY and holds the connection.
 	second := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := wsUpgrader.Upgrade(w, r, nil)

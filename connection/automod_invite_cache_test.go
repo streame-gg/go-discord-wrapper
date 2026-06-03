@@ -4,7 +4,6 @@ package connection
 
 import (
 	"encoding/json"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +14,8 @@ import (
 
 // ── AutoMod gateway events ────────────────────────────────────────────────────
 
-func TestAutoModRuleCreate_CachesRule(t *testing.T) {
+func (cs *ConnectionSuite) TestAutoModRuleCreate_CachesRule() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100000000000000001)
@@ -44,7 +44,8 @@ func TestAutoModRuleCreate_CachesRule(t *testing.T) {
 	assert.Equal(t, "no-spam", rule.Name)
 }
 
-func TestAutoModRuleUpdate_UpdatesCache(t *testing.T) {
+func (cs *ConnectionSuite) TestAutoModRuleUpdate_UpdatesCache() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100000000000000001)
@@ -85,7 +86,8 @@ func TestAutoModRuleUpdate_UpdatesCache(t *testing.T) {
 	assert.Equal(t, "new-name", rule.Name)
 }
 
-func TestAutoModRuleDelete_EvictsRule(t *testing.T) {
+func (cs *ConnectionSuite) TestAutoModRuleDelete_EvictsRule() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100000000000000001)
@@ -121,7 +123,8 @@ func TestAutoModRuleDelete_EvictsRule(t *testing.T) {
 	assert.False(t, ok, "AUTO_MODERATION_RULE_DELETE must evict rule from AutoModRuleStore")
 }
 
-func TestGuildDelete_ClearsAutoModRules(t *testing.T) {
+func (cs *ConnectionSuite) TestGuildDelete_ClearsAutoModRules() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100000000000000001)
@@ -141,7 +144,8 @@ func TestGuildDelete_ClearsAutoModRules(t *testing.T) {
 
 // ── Invite gateway events ─────────────────────────────────────────────────────
 
-func TestInviteCreate_CachesInvite(t *testing.T) {
+func (cs *ConnectionSuite) TestInviteCreate_CachesInvite() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100000000000000001)
@@ -164,7 +168,8 @@ func TestInviteCreate_CachesInvite(t *testing.T) {
 	assert.Equal(t, "abc123", inv.Code)
 }
 
-func TestInviteCreate_GuildScoped_GetByGuild(t *testing.T) {
+func (cs *ConnectionSuite) TestInviteCreate_GuildScoped_GetByGuild() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100000000000000001)
@@ -186,7 +191,8 @@ func TestInviteCreate_GuildScoped_GetByGuild(t *testing.T) {
 	assert.Equal(t, 1, all.Len(), "invite must be retrievable via GetByGuild after INVITE_CREATE")
 }
 
-func TestInviteDelete_EvictsInvite(t *testing.T) {
+func (cs *ConnectionSuite) TestInviteDelete_EvictsInvite() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100000000000000001)
@@ -211,7 +217,8 @@ func TestInviteDelete_EvictsInvite(t *testing.T) {
 	assert.False(t, ok, "INVITE_DELETE must evict invite from InviteStore")
 }
 
-func TestGuildDelete_ClearsInvites(t *testing.T) {
+func (cs *ConnectionSuite) TestGuildDelete_ClearsInvites() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100000000000000001)

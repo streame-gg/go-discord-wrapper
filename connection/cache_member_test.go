@@ -3,7 +3,6 @@ package connection
 import (
 	"encoding/json"
 	"strconv"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +16,8 @@ import (
 // Bug 5: cacheMember must respect cacheStoreEnabled(CategoryMembers).
 // When CategoryMembers is disabled, a GUILD_MEMBER_ADD event must not
 // write to the member store.
-func TestBug5_CacheMemberRespectsStoreEnabled(t *testing.T) {
+func (cs *ConnectionSuite) TestBug5_CacheMemberRespectsStoreEnabled() {
+	t := cs.T()
 	mc := cache.NewMemoryCache(cache.Options{})
 	c, err := NewClient("test-token", discord.IntentGuilds,
 		options.WithCache(mc),
@@ -50,7 +50,8 @@ func TestBug5_CacheMemberRespectsStoreEnabled(t *testing.T) {
 }
 
 // Bug 5: cacheMember must still cache the member when CategoryMembers is enabled.
-func TestBug5_CacheMemberWorksWhenEnabled(t *testing.T) {
+func (cs *ConnectionSuite) TestBug5_CacheMemberWorksWhenEnabled() {
+	t := cs.T()
 	mc := cache.NewMemoryCache(cache.Options{})
 	c, err := NewClient("test-token", discord.IntentGuilds,
 		options.WithCache(mc),

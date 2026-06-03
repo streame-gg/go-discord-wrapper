@@ -5,7 +5,6 @@ package connection
 
 import (
 	"encoding/json"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,25 +15,29 @@ import (
 
 // ── reactionEmojiMatches ──────────────────────────────────────────────────────
 
-func TestReactionEmojiMatches_CustomEmoji_ById(t *testing.T) {
+func (cs *ConnectionSuite) TestReactionEmojiMatches_CustomEmoji_ById() {
+	t := cs.T()
 	a := discord.Emoji{ID: 111}
 	b := discord.Emoji{ID: 111}
 	assert.True(t, reactionEmojiMatches(a, b))
 }
 
-func TestReactionEmojiMatches_CustomEmoji_DifferentId(t *testing.T) {
+func (cs *ConnectionSuite) TestReactionEmojiMatches_CustomEmoji_DifferentId() {
+	t := cs.T()
 	a := discord.Emoji{ID: 111}
 	b := discord.Emoji{ID: 222}
 	assert.False(t, reactionEmojiMatches(a, b))
 }
 
-func TestReactionEmojiMatches_UnicodeEmoji_ByName(t *testing.T) {
+func (cs *ConnectionSuite) TestReactionEmojiMatches_UnicodeEmoji_ByName() {
+	t := cs.T()
 	a := discord.Emoji{Name: "👍"}
 	b := discord.Emoji{Name: "👍"}
 	assert.True(t, reactionEmojiMatches(a, b))
 }
 
-func TestReactionEmojiMatches_UnicodeEmoji_DifferentName(t *testing.T) {
+func (cs *ConnectionSuite) TestReactionEmojiMatches_UnicodeEmoji_DifferentName() {
+	t := cs.T()
 	a := discord.Emoji{Name: "👍"}
 	b := discord.Emoji{Name: "👎"}
 	assert.False(t, reactionEmojiMatches(a, b))
@@ -42,7 +45,8 @@ func TestReactionEmojiMatches_UnicodeEmoji_DifferentName(t *testing.T) {
 
 // ── appendOrIncrementReaction ─────────────────────────────────────────────────
 
-func TestAppendOrIncrementReaction_NilSlice(t *testing.T) {
+func (cs *ConnectionSuite) TestAppendOrIncrementReaction_NilSlice() {
+	t := cs.T()
 	emoji := discord.Emoji{Name: "👍"}
 	result := appendOrIncrementReaction(nil, emoji)
 
@@ -51,7 +55,8 @@ func TestAppendOrIncrementReaction_NilSlice(t *testing.T) {
 	assert.Equal(t, emoji, result[0].Emoji)
 }
 
-func TestAppendOrIncrementReaction_NewEmoji(t *testing.T) {
+func (cs *ConnectionSuite) TestAppendOrIncrementReaction_NewEmoji() {
+	t := cs.T()
 	existing := &[]discord.Reaction{
 		{Count: 3, Emoji: discord.Emoji{Name: "👎"}},
 	}
@@ -63,7 +68,8 @@ func TestAppendOrIncrementReaction_NewEmoji(t *testing.T) {
 	assert.Equal(t, 1, result[1].Count, "new reaction must start at count 1")
 }
 
-func TestAppendOrIncrementReaction_ExistingEmoji(t *testing.T) {
+func (cs *ConnectionSuite) TestAppendOrIncrementReaction_ExistingEmoji() {
+	t := cs.T()
 	existing := &[]discord.Reaction{
 		{Count: 5, Emoji: discord.Emoji{Name: "👍"}},
 	}
@@ -73,7 +79,8 @@ func TestAppendOrIncrementReaction_ExistingEmoji(t *testing.T) {
 	assert.Equal(t, 6, result[0].Count, "existing reaction count must be incremented")
 }
 
-func TestAppendOrIncrementReaction_DoesNotMutateOriginal(t *testing.T) {
+func (cs *ConnectionSuite) TestAppendOrIncrementReaction_DoesNotMutateOriginal() {
+	t := cs.T()
 	orig := []discord.Reaction{{Count: 2, Emoji: discord.Emoji{Name: "👍"}}}
 	existing := &orig
 	appendOrIncrementReaction(existing, discord.Emoji{Name: "👍"})
@@ -82,12 +89,14 @@ func TestAppendOrIncrementReaction_DoesNotMutateOriginal(t *testing.T) {
 
 // ── decrementOrRemoveReaction ─────────────────────────────────────────────────
 
-func TestDecrementOrRemoveReaction_NilSlice(t *testing.T) {
+func (cs *ConnectionSuite) TestDecrementOrRemoveReaction_NilSlice() {
+	t := cs.T()
 	result := decrementOrRemoveReaction(nil, discord.Emoji{Name: "👍"})
 	assert.Nil(t, result)
 }
 
-func TestDecrementOrRemoveReaction_ReducesCount(t *testing.T) {
+func (cs *ConnectionSuite) TestDecrementOrRemoveReaction_ReducesCount() {
+	t := cs.T()
 	existing := &[]discord.Reaction{
 		{Count: 3, Emoji: discord.Emoji{Name: "👍"}},
 	}
@@ -97,7 +106,8 @@ func TestDecrementOrRemoveReaction_ReducesCount(t *testing.T) {
 	assert.Equal(t, 2, result[0].Count)
 }
 
-func TestDecrementOrRemoveReaction_RemovesAtOne(t *testing.T) {
+func (cs *ConnectionSuite) TestDecrementOrRemoveReaction_RemovesAtOne() {
+	t := cs.T()
 	existing := &[]discord.Reaction{
 		{Count: 1, Emoji: discord.Emoji{Name: "👍"}},
 		{Count: 2, Emoji: discord.Emoji{Name: "👎"}},
@@ -110,12 +120,14 @@ func TestDecrementOrRemoveReaction_RemovesAtOne(t *testing.T) {
 
 // ── removeEmojiReaction ───────────────────────────────────────────────────────
 
-func TestRemoveEmojiReaction_NilSlice(t *testing.T) {
+func (cs *ConnectionSuite) TestRemoveEmojiReaction_NilSlice() {
+	t := cs.T()
 	result := removeEmojiReaction(nil, discord.Emoji{Name: "👍"})
 	assert.Nil(t, result)
 }
 
-func TestRemoveEmojiReaction_RemovesAll(t *testing.T) {
+func (cs *ConnectionSuite) TestRemoveEmojiReaction_RemovesAll() {
+	t := cs.T()
 	existing := &[]discord.Reaction{
 		{Count: 10, Emoji: discord.Emoji{Name: "👍"}},
 		{Count: 5, Emoji: discord.Emoji{Name: "👎"}},
@@ -126,7 +138,8 @@ func TestRemoveEmojiReaction_RemovesAll(t *testing.T) {
 	assert.Equal(t, discord.Emoji{Name: "👎"}, result[0].Emoji)
 }
 
-func TestRemoveEmojiReaction_MissingEmojiIsNoop(t *testing.T) {
+func (cs *ConnectionSuite) TestRemoveEmojiReaction_MissingEmojiIsNoop() {
+	t := cs.T()
 	existing := &[]discord.Reaction{
 		{Count: 3, Emoji: discord.Emoji{Name: "👍"}},
 	}
@@ -136,7 +149,8 @@ func TestRemoveEmojiReaction_MissingEmojiIsNoop(t *testing.T) {
 
 // ── MESSAGE_REACTION_ADD gateway event ───────────────────────────────────────
 
-func TestBug77_MessageReactionAdd_UpdatesCache(t *testing.T) {
+func (cs *ConnectionSuite) TestBug77_MessageReactionAdd_UpdatesCache() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	channelID := discord.Snowflake(300000000000000001)
@@ -163,7 +177,8 @@ func TestBug77_MessageReactionAdd_UpdatesCache(t *testing.T) {
 	assert.Equal(t, "👍", (*msg.Reactions)[0].Emoji.Name)
 }
 
-func TestBug77_MessageReactionAdd_IncrementsExisting(t *testing.T) {
+func (cs *ConnectionSuite) TestBug77_MessageReactionAdd_IncrementsExisting() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	channelID := discord.Snowflake(300000000000000001)
@@ -190,7 +205,8 @@ func TestBug77_MessageReactionAdd_IncrementsExisting(t *testing.T) {
 
 // ── MESSAGE_REACTION_REMOVE gateway event ─────────────────────────────────────
 
-func TestBug77_MessageReactionRemove_DecrementsCache(t *testing.T) {
+func (cs *ConnectionSuite) TestBug77_MessageReactionRemove_DecrementsCache() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	channelID := discord.Snowflake(300000000000000001)
@@ -215,7 +231,8 @@ func TestBug77_MessageReactionRemove_DecrementsCache(t *testing.T) {
 	assert.Equal(t, 2, (*msg.Reactions)[0].Count, "count must be decremented to 2")
 }
 
-func TestBug77_MessageReactionRemove_RemovesEntryAtOne(t *testing.T) {
+func (cs *ConnectionSuite) TestBug77_MessageReactionRemove_RemovesEntryAtOne() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	channelID := discord.Snowflake(300000000000000001)
@@ -242,7 +259,8 @@ func TestBug77_MessageReactionRemove_RemovesEntryAtOne(t *testing.T) {
 
 // ── MESSAGE_REACTION_REMOVE_ALL gateway event ─────────────────────────────────
 
-func TestBug77_MessageReactionRemoveAll_ClearsReactions(t *testing.T) {
+func (cs *ConnectionSuite) TestBug77_MessageReactionRemoveAll_ClearsReactions() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	channelID := discord.Snowflake(300000000000000001)
@@ -269,7 +287,8 @@ func TestBug77_MessageReactionRemoveAll_ClearsReactions(t *testing.T) {
 
 // ── MESSAGE_REACTION_REMOVE_EMOJI gateway event ───────────────────────────────
 
-func TestBug77_MessageReactionRemoveEmoji_RemovesOneEmoji(t *testing.T) {
+func (cs *ConnectionSuite) TestBug77_MessageReactionRemoveEmoji_RemovesOneEmoji() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	channelID := discord.Snowflake(300000000000000001)

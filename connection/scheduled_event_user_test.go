@@ -23,7 +23,8 @@ func seedScheduledEvent(t *testing.T, c *Client, guildID, eventID discord.Snowfl
 	})
 }
 
-func TestBug78_ScheduledEventUserAdd_IncrementsUserCount(t *testing.T) {
+func (cs *ConnectionSuite) TestBug78_ScheduledEventUserAdd_IncrementsUserCount() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100)
@@ -46,7 +47,8 @@ func TestBug78_ScheduledEventUserAdd_IncrementsUserCount(t *testing.T) {
 	assert.Equal(t, 6, *got.UserCount, "UserCount must be incremented to 6 (Bug 78)")
 }
 
-func TestBug78_ScheduledEventUserRemove_DecrementsUserCount(t *testing.T) {
+func (cs *ConnectionSuite) TestBug78_ScheduledEventUserRemove_DecrementsUserCount() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100)
@@ -69,7 +71,8 @@ func TestBug78_ScheduledEventUserRemove_DecrementsUserCount(t *testing.T) {
 	assert.Equal(t, 4, *got.UserCount, "UserCount must be decremented to 4 (Bug 78)")
 }
 
-func TestBug78_ScheduledEventUserRemove_DoesNotGoBelowZero(t *testing.T) {
+func (cs *ConnectionSuite) TestBug78_ScheduledEventUserRemove_DoesNotGoBelowZero() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100)
@@ -92,7 +95,8 @@ func TestBug78_ScheduledEventUserRemove_DoesNotGoBelowZero(t *testing.T) {
 	assert.Equal(t, 0, *got.UserCount, "UserCount must not go below 0 (Bug 78)")
 }
 
-func TestBug78_ScheduledEventUserAdd_NilUserCount_IsNoop(t *testing.T) {
+func (cs *ConnectionSuite) TestBug78_ScheduledEventUserAdd_NilUserCount_IsNoop() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(100)
@@ -121,7 +125,8 @@ func TestBug78_ScheduledEventUserAdd_NilUserCount_IsNoop(t *testing.T) {
 	assert.Nil(t, got.UserCount, "UserCount must remain nil when it was not known (Bug 78)")
 }
 
-func TestBug78_ScheduledEventUserAdd_UncachedEvent_IsNoop(t *testing.T) {
+func (cs *ConnectionSuite) TestBug78_ScheduledEventUserAdd_UncachedEvent_IsNoop() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	payload := map[string]any{

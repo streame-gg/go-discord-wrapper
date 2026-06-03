@@ -5,7 +5,6 @@ package connection
 
 import (
 	"encoding/json"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,7 +15,8 @@ import (
 
 // ── Bug 82: THREAD_UPDATE fallback path sets OldThread ───────────────────────
 
-func TestBug82_ThreadUpdate_FallbackSetsOldThread(t *testing.T) {
+func (cs *ConnectionSuite) TestBug82_ThreadUpdate_FallbackSetsOldThread() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(1000)
@@ -53,7 +53,8 @@ func TestBug82_ThreadUpdate_FallbackSetsOldThread(t *testing.T) {
 	assert.Equal(t, "new-name", ev.NewThread.Name)
 }
 
-func TestBug82_ThreadUpdate_FallbackWithNilEvent_UpdatesCache(t *testing.T) {
+func (cs *ConnectionSuite) TestBug82_ThreadUpdate_FallbackWithNilEvent_UpdatesCache() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(1000)
@@ -87,7 +88,8 @@ func TestBug82_ThreadUpdate_FallbackWithNilEvent_UpdatesCache(t *testing.T) {
 
 // ── Bug 83: GUILD_DELETE cleans up threadsByParent index ─────────────────────
 
-func TestBug83_GuildDelete_CleansThreadsByParentIndex(t *testing.T) {
+func (cs *ConnectionSuite) TestBug83_GuildDelete_CleansThreadsByParentIndex() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(1000)
@@ -116,7 +118,8 @@ func TestBug83_GuildDelete_CleansThreadsByParentIndex(t *testing.T) {
 
 // ── Bug 84: THREAD_UPDATE with changed ParentID removes old index entry ───────
 
-func TestBug84_ThreadUpdate_ReparentCleansOldIndex(t *testing.T) {
+func (cs *ConnectionSuite) TestBug84_ThreadUpdate_ReparentCleansOldIndex() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(1000)
@@ -157,7 +160,8 @@ func TestBug84_ThreadUpdate_ReparentCleansOldIndex(t *testing.T) {
 		"thread must be added to new parent index on reparent (Bug 84)")
 }
 
-func TestBug84_ThreadUpdate_SameParent_IndexUnchanged(t *testing.T) {
+func (cs *ConnectionSuite) TestBug84_ThreadUpdate_SameParent_IndexUnchanged() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(1000)

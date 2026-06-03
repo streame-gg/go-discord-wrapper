@@ -27,7 +27,8 @@ func seedThread(t *testing.T, c *Client, guildID, parentID, threadID discord.Sno
 // TestBug43ThreadListSync_EvictsStaleThreads verifies that THREAD_LIST_SYNC
 // removes threads for the named parent channels that are absent from the
 // server's authoritative list (Bug 43).
-func TestBug43ThreadListSync_EvictsStaleThreads(t *testing.T) {
+func (cs *ConnectionSuite) TestBug43ThreadListSync_EvictsStaleThreads() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(1000)
@@ -67,7 +68,8 @@ func TestBug43ThreadListSync_EvictsStaleThreads(t *testing.T) {
 
 // TestBug43ThreadListSync_NoChannelIDsEvictsGuild verifies that when ChannelIDs
 // is absent, THREAD_LIST_SYNC evicts stale threads from all parents in the guild.
-func TestBug43ThreadListSync_NoChannelIDsEvictsGuild(t *testing.T) {
+func (cs *ConnectionSuite) TestBug43ThreadListSync_NoChannelIDsEvictsGuild() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(1001)
@@ -108,7 +110,8 @@ func TestBug43ThreadListSync_NoChannelIDsEvictsGuild(t *testing.T) {
 
 // TestBug43ThreadIndexUpdatesOnCreateAndDelete verifies that the threadsByParent
 // index is maintained correctly by THREAD_CREATE and THREAD_DELETE events.
-func TestBug43ThreadIndexUpdatesOnCreateAndDelete(t *testing.T) {
+func (cs *ConnectionSuite) TestBug43ThreadIndexUpdatesOnCreateAndDelete() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(1002)
@@ -147,7 +150,8 @@ func TestBug43ThreadIndexUpdatesOnCreateAndDelete(t *testing.T) {
 // TestBug52ThreadUpdateTracksIndex verifies that THREAD_UPDATE adds the thread
 // to the threadsByParent index so that a subsequent THREAD_LIST_SYNC can evict
 // it if it is no longer active (Bug 52).
-func TestBug52ThreadUpdateTracksIndex(t *testing.T) {
+func (cs *ConnectionSuite) TestBug52ThreadUpdateTracksIndex() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(6000)
@@ -171,7 +175,8 @@ func TestBug52ThreadUpdateTracksIndex(t *testing.T) {
 // TestBug52GuildCreateThreadsTracksIndex verifies that threads arriving in
 // GUILD_CREATE.threads are added to the threadsByParent index so that a later
 // THREAD_LIST_SYNC can evict stale ones (Bug 52).
-func TestBug52GuildCreateThreadsTracksIndex(t *testing.T) {
+func (cs *ConnectionSuite) TestBug52GuildCreateThreadsTracksIndex() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(7000)

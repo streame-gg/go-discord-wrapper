@@ -26,7 +26,14 @@ var RepositoryVersion = resolveVersion()
 
 func resolveVersion() string {
 	info, ok := debug.ReadBuildInfo()
-	if !ok {
+	return versionFromBuildInfo(info, ok)
+}
+
+// versionFromBuildInfo resolves the module version from already-read build info,
+// kept separate from resolveVersion so every branch is testable without
+// depending on the ambient build (debug.ReadBuildInfo cannot be stubbed).
+func versionFromBuildInfo(info *debug.BuildInfo, ok bool) string {
+	if !ok || info == nil {
 		return repositoryVersionFallback
 	}
 	if v := info.Main.Version; info.Main.Path == modulePath && isReleaseVersion(v) {

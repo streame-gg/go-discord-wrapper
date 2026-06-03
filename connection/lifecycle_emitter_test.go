@@ -2,7 +2,6 @@ package connection
 
 import (
 	"sync/atomic"
-	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,8 @@ import (
 // TestBug66_LifecycleEmittersTrackedByDispatchWg verifies that goroutines
 // spawned by emitConnect/Disconnect/Reconnect/PacketError are counted in
 // dispatchWg, so Shutdown waits for them to finish.
-func TestBug66_LifecycleEmittersTrackedByDispatchWg(t *testing.T) {
+func (cs *ConnectionSuite) TestBug66_LifecycleEmittersTrackedByDispatchWg() {
+	t := cs.T()
 	c, err := NewClient("fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
@@ -50,7 +50,8 @@ func TestBug66_LifecycleEmittersTrackedByDispatchWg(t *testing.T) {
 // TestBug66_DispatchWgWaitsBeforeHandlersFinish is the inverse: confirm that
 // dispatchWg.Wait() does NOT return while handlers are still blocked, proving
 // the Add/Done pairing is not trivially vacuous.
-func TestBug66_DispatchWgBlocksUntilHandlersDone(t *testing.T) {
+func (cs *ConnectionSuite) TestBug66_DispatchWgBlocksUntilHandlersDone() {
+	t := cs.T()
 	c, err := NewClient("fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
@@ -83,7 +84,8 @@ func TestBug66_DispatchWgBlocksUntilHandlersDone(t *testing.T) {
 // TestBug67_LifecycleEmitterPanicDoesNotCrash verifies that a panic inside any
 // lifecycle handler is caught by the per-goroutine recover, leaving the process
 // alive and dispatchWg balanced.
-func TestBug67_LifecycleEmitterPanicDoesNotCrash(t *testing.T) {
+func (cs *ConnectionSuite) TestBug67_LifecycleEmitterPanicDoesNotCrash() {
+	t := cs.T()
 	c, err := NewClient("fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 

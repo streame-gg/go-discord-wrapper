@@ -2,7 +2,6 @@ package connection
 
 import (
 	"sync/atomic"
-	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -62,12 +61,14 @@ func newStickerUpdateEvent(guildID string, newStickers []discord.Sticker, oldSti
 
 // ── Emoji unit tests ─────────────────────────────────────────────────────────
 
-func TestEmojiSynthetic_NoOldEmojis_ReturnsNil(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_NoOldEmojis_ReturnsNil() {
+	t := cs.T()
 	ev := newEmojiUpdateEvent("g1", []discord.Emoji{makeEmoji("e1", "wave")}, nil)
 	assert.Nil(t, deriveGuildEmojiSyntheticEvents(ev))
 }
 
-func TestEmojiSynthetic_AddFires(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_AddFires() {
+	t := cs.T()
 	ev := newEmojiUpdateEvent("g1",
 		[]discord.Emoji{makeEmoji("e1", "wave"), makeEmoji("e2", "fire")},
 		emojiPtrs([]discord.Emoji{makeEmoji("e1", "wave")}))
@@ -80,7 +81,8 @@ func TestEmojiSynthetic_AddFires(t *testing.T) {
 	assert.Equal(t, snowflake("g1"), add.GuildID)
 }
 
-func TestEmojiSynthetic_RemoveFires(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_RemoveFires() {
+	t := cs.T()
 	ev := newEmojiUpdateEvent("g1",
 		[]discord.Emoji{makeEmoji("e1", "wave")},
 		emojiPtrs([]discord.Emoji{makeEmoji("e1", "wave"), makeEmoji("e2", "fire")}))
@@ -92,7 +94,8 @@ func TestEmojiSynthetic_RemoveFires(t *testing.T) {
 	assert.Equal(t, snowflake("e2"), rem.Emoji.ID)
 }
 
-func TestEmojiSynthetic_UpdateFires_NameChanged(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_UpdateFires_NameChanged() {
+	t := cs.T()
 	ev := newEmojiUpdateEvent("g1",
 		[]discord.Emoji{makeEmoji("e1", "newname")},
 		emojiPtrs([]discord.Emoji{makeEmoji("e1", "oldname")}))
@@ -105,14 +108,16 @@ func TestEmojiSynthetic_UpdateFires_NameChanged(t *testing.T) {
 	assert.Equal(t, "newname", upd.NewEmoji.Name)
 }
 
-func TestEmojiSynthetic_UpdateNotFired_NameUnchanged(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_UpdateNotFired_NameUnchanged() {
+	t := cs.T()
 	ev := newEmojiUpdateEvent("g1",
 		[]discord.Emoji{makeEmoji("e1", "wave")},
 		emojiPtrs([]discord.Emoji{makeEmoji("e1", "wave")}))
 	assert.Empty(t, deriveGuildEmojiSyntheticEvents(ev))
 }
 
-func TestEmojiSynthetic_UpdateFires_AvailableChanged(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_UpdateFires_AvailableChanged() {
+	t := cs.T()
 	old := makeEmoji("e1", "wave")
 	old.Available = boolPtr(true)
 	new_ := makeEmoji("e1", "wave")
@@ -126,7 +131,8 @@ func TestEmojiSynthetic_UpdateFires_AvailableChanged(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func TestEmojiSynthetic_UpdateFires_RequireColonsChanged(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_UpdateFires_RequireColonsChanged() {
+	t := cs.T()
 	old := makeEmoji("e1", "wave")
 	old.RequireColons = boolPtr(true)
 	new_ := makeEmoji("e1", "wave")
@@ -140,7 +146,8 @@ func TestEmojiSynthetic_UpdateFires_RequireColonsChanged(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func TestEmojiSynthetic_UpdateFires_RolesChanged(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_UpdateFires_RolesChanged() {
+	t := cs.T()
 	old := makeEmoji("e1", "wave")
 	old.Roles = []discord.Snowflake{snowflake("r1")}
 	new_ := makeEmoji("e1", "wave")
@@ -154,7 +161,8 @@ func TestEmojiSynthetic_UpdateFires_RolesChanged(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func TestEmojiSynthetic_UpdateNotFired_RolesReordered(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_UpdateNotFired_RolesReordered() {
+	t := cs.T()
 	// Same role set in different order must not trigger an update event.
 	old := makeEmoji("e1", "wave")
 	old.Roles = []discord.Snowflake{snowflake("r1"), snowflake("r2")}
@@ -166,7 +174,8 @@ func TestEmojiSynthetic_UpdateNotFired_RolesReordered(t *testing.T) {
 	assert.Empty(t, deriveGuildEmojiSyntheticEvents(ev))
 }
 
-func TestEmojiSynthetic_MultipleChanges(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_MultipleChanges() {
+	t := cs.T()
 	// e1 renamed, e2 removed, e3 added
 	ev := newEmojiUpdateEvent("g1",
 		[]discord.Emoji{makeEmoji("e1", "renamed"), makeEmoji("e3", "new")},
@@ -184,7 +193,8 @@ func TestEmojiSynthetic_MultipleChanges(t *testing.T) {
 	assert.Equal(t, 1, typeCount[events.EventWrapperGuildEmojiUpdate])
 }
 
-func TestEmojiSynthetic_Unchanged_NoEvents(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_Unchanged_NoEvents() {
+	t := cs.T()
 	emojis := []discord.Emoji{makeEmoji("e1", "wave"), makeEmoji("e2", "fire")}
 	ev := newEmojiUpdateEvent("g1", emojis, emojiPtrs(emojis))
 	assert.Empty(t, deriveGuildEmojiSyntheticEvents(ev))
@@ -192,12 +202,14 @@ func TestEmojiSynthetic_Unchanged_NoEvents(t *testing.T) {
 
 // ── Sticker unit tests ───────────────────────────────────────────────────────
 
-func TestStickerSynthetic_NoOldStickers_ReturnsNil(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerSynthetic_NoOldStickers_ReturnsNil() {
+	t := cs.T()
 	ev := newStickerUpdateEvent("g1", []discord.Sticker{makeSticker("s1", "doge")}, nil)
 	assert.Nil(t, deriveGuildStickerSyntheticEvents(ev))
 }
 
-func TestStickerSynthetic_AddFires(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerSynthetic_AddFires() {
+	t := cs.T()
 	ev := newStickerUpdateEvent("g1",
 		[]discord.Sticker{makeSticker("s1", "doge"), makeSticker("s2", "cat")},
 		stickerPtrs([]discord.Sticker{makeSticker("s1", "doge")}))
@@ -209,7 +221,8 @@ func TestStickerSynthetic_AddFires(t *testing.T) {
 	assert.Equal(t, snowflake("s2"), add.Sticker.ID)
 }
 
-func TestStickerSynthetic_RemoveFires(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerSynthetic_RemoveFires() {
+	t := cs.T()
 	ev := newStickerUpdateEvent("g1",
 		[]discord.Sticker{makeSticker("s1", "doge")},
 		stickerPtrs([]discord.Sticker{makeSticker("s1", "doge"), makeSticker("s2", "cat")}))
@@ -221,7 +234,8 @@ func TestStickerSynthetic_RemoveFires(t *testing.T) {
 	assert.Equal(t, snowflake("s2"), rem.Sticker.ID)
 }
 
-func TestStickerSynthetic_UpdateFires_NameChanged(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerSynthetic_UpdateFires_NameChanged() {
+	t := cs.T()
 	ev := newStickerUpdateEvent("g1",
 		[]discord.Sticker{makeSticker("s1", "newname")},
 		stickerPtrs([]discord.Sticker{makeSticker("s1", "oldname")}))
@@ -234,13 +248,15 @@ func TestStickerSynthetic_UpdateFires_NameChanged(t *testing.T) {
 	assert.Equal(t, "newname", upd.NewSticker.Name)
 }
 
-func TestStickerSynthetic_UpdateNotFired_Unchanged(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerSynthetic_UpdateNotFired_Unchanged() {
+	t := cs.T()
 	stickers := []discord.Sticker{makeSticker("s1", "doge")}
 	ev := newStickerUpdateEvent("g1", stickers, stickerPtrs(stickers))
 	assert.Empty(t, deriveGuildStickerSyntheticEvents(ev))
 }
 
-func TestStickerSynthetic_UpdateFires_TagsChanged(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerSynthetic_UpdateFires_TagsChanged() {
+	t := cs.T()
 	old := makeSticker("s1", "doge")
 	old.Tags = "dog,cute"
 	new_ := makeSticker("s1", "doge")
@@ -254,7 +270,8 @@ func TestStickerSynthetic_UpdateFires_TagsChanged(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func TestStickerSynthetic_UpdateFires_DescriptionChanged(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerSynthetic_UpdateFires_DescriptionChanged() {
+	t := cs.T()
 	old := makeSticker("s1", "doge")
 	old.Description = strPtr("cute dog")
 	new_ := makeSticker("s1", "doge")
@@ -268,7 +285,8 @@ func TestStickerSynthetic_UpdateFires_DescriptionChanged(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func TestStickerSynthetic_UpdateFires_AvailableChanged(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerSynthetic_UpdateFires_AvailableChanged() {
+	t := cs.T()
 	old := makeSticker("s1", "doge")
 	old.Available = boolPtr(true)
 	new_ := makeSticker("s1", "doge")
@@ -284,7 +302,8 @@ func TestStickerSynthetic_UpdateFires_AvailableChanged(t *testing.T) {
 
 // ── Integration: On* helpers dispatched ─────────────────────────────────────
 
-func TestExpressionSynthetic_OnGuildEmojiAdd_Dispatches(t *testing.T) {
+func (cs *ConnectionSuite) TestExpressionSynthetic_OnGuildEmojiAdd_Dispatches() {
+	t := cs.T()
 	client, err := NewClient("Bot fake-token", discord.IntentGuildExpressions)
 	require.NoError(t, err)
 	defer client.Shutdown()

@@ -63,7 +63,8 @@ func mockGatewayThenClose(t *testing.T, closeCode int) (wsURL string, closeFn fu
 // codes 4004, 4010, 4011, 4012, 4013, 4014 cause listenWebsocket to return a
 // correctly-typed error, so the Login goroutine can classify them as terminal
 // rather than triggering a reconnect loop.
-func TestBug17NonRecoverableCloseCodesExitListenerLoop(t *testing.T) {
+func (cs *ConnectionSuite) TestBug17NonRecoverableCloseCodesExitListenerLoop() {
+	t := cs.T()
 	nonRecoverable := []int{4004, 4010, 4011, 4012, 4013, 4014}
 
 	for _, code := range nonRecoverable {
@@ -111,7 +112,8 @@ func TestBug17NonRecoverableCloseCodesExitListenerLoop(t *testing.T) {
 // TestBug18CorruptReadyPayloadDoesNotCloseReadyChan verifies that a corrupted
 // READY payload causes internalEventHandler to return false without closing
 // the Ready channel or modifying the cache.
-func TestBug18CorruptReadyPayloadDoesNotCloseReadyChan(t *testing.T) {
+func (cs *ConnectionSuite) TestBug18CorruptReadyPayloadDoesNotCloseReadyChan() {
+	t := cs.T()
 	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
@@ -138,7 +140,8 @@ func TestBug18CorruptReadyPayloadDoesNotCloseReadyChan(t *testing.T) {
 // TestBug19RequestGuildMembersRaceSafe verifies that RequestGuildMembers and
 // UpdatePresence are safe to call concurrently with a reconnect that swaps
 // d.wsConn under the hood (race detector must pass).
-func TestBug19RequestGuildMembersRaceSafe(t *testing.T) {
+func (cs *ConnectionSuite) TestBug19RequestGuildMembersRaceSafe() {
+	t := cs.T()
 	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
@@ -171,7 +174,8 @@ func TestBug19RequestGuildMembersRaceSafe(t *testing.T) {
 // TestBug16NoHeartbeatLeakOnWriteFailure verifies that if the Identify/Resume
 // write fails, no goroutine is left running. The heartbeat goroutine must not
 // start until after a successful write.
-func TestBug16NoHeartbeatLeakOnWriteFailure(t *testing.T) {
+func (cs *ConnectionSuite) TestBug16NoHeartbeatLeakOnWriteFailure() {
+	t := cs.T()
 	// Server: sends HELLO then immediately closes the connection before IDENTIFY
 	// can be written, so the WriteJSON in newWSConn will fail.
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -213,7 +217,8 @@ func TestBug16NoHeartbeatLeakOnWriteFailure(t *testing.T) {
 // TestBug28APIVersionInWebSocketURL verifies that WithAPIVersion is respected
 // in the WebSocket dial URL so that a client configured with APIVersion9 dials
 // "?v=9&encoding=json" rather than the hardcoded "?v=10" (Bug 28).
-func TestBug28APIVersionInWebSocketURL(t *testing.T) {
+func (cs *ConnectionSuite) TestBug28APIVersionInWebSocketURL() {
+	t := cs.T()
 	const want = "v=9"
 
 	dialedURL := make(chan string, 1)
@@ -255,7 +260,8 @@ func TestBug28APIVersionInWebSocketURL(t *testing.T) {
 // TestBug26ConcurrentCloseIsIdempotent verifies that calling wsConn.close()
 // from many goroutines concurrently only calls Connection.Close() once and does
 // not panic by attempting to close the already-closed Closed channel (Bug 26).
-func TestBug26ConcurrentCloseIsIdempotent(t *testing.T) {
+func (cs *ConnectionSuite) TestBug26ConcurrentCloseIsIdempotent() {
+	t := cs.T()
 	wsURL, closeFn := mockGatewayThenClose(t, websocket.CloseNormalClosure)
 	defer closeFn()
 
@@ -291,7 +297,8 @@ func TestBug26ConcurrentCloseIsIdempotent(t *testing.T) {
 
 // TestBug47ReconnectBackoffNoOverflow verifies that the reconnect back-off never
 // goes negative for iteration counts that would overflow 1<<uint(i-1) (Bug 47).
-func TestBug47ReconnectBackoffNoOverflow(t *testing.T) {
+func (cs *ConnectionSuite) TestBug47ReconnectBackoffNoOverflow() {
+	t := cs.T()
 	const maxBackoff = 30 * time.Second
 	for _, i := range []int{64, 100, 1000} {
 		shiftBy := uint(i - 1)
@@ -313,7 +320,8 @@ func TestBug47ReconnectBackoffNoOverflow(t *testing.T) {
 
 // TestBug41DoubleReadyDoesNotPanic verifies that receiving a READY event twice
 // on the same wsConn does not panic from a double-close of the Ready channel.
-func TestBug41DoubleReadyDoesNotPanic(t *testing.T) {
+func (cs *ConnectionSuite) TestBug41DoubleReadyDoesNotPanic() {
+	t := cs.T()
 	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 

@@ -1,8 +1,6 @@
 package connection
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -13,7 +11,8 @@ import (
 // roles from the previous cache fill that are no longer returned by the API
 // (Bug 25). We exercise the DeleteGuild+cacheRoles sequence directly because
 // RestClient is a concrete type and cannot be stubbed.
-func TestBug25GetGuildRolesEvictsStaleRoles(t *testing.T) {
+func (cs *ConnectionSuite) TestBug25GetGuildRolesEvictsStaleRoles() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(111222333444555)
@@ -40,7 +39,8 @@ func TestBug25GetGuildRolesEvictsStaleRoles(t *testing.T) {
 
 // TestBug25GetGuildChannelsEvictsStaleChannels verifies that ListGuildChannels
 // evicts stale channels (deleted on Discord) before inserting the fresh set.
-func TestBug25GetGuildChannelsEvictsStaleChannels(t *testing.T) {
+func (cs *ConnectionSuite) TestBug25GetGuildChannelsEvictsStaleChannels() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(222333444555666)

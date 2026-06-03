@@ -1,8 +1,6 @@
 package connection
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -15,7 +13,8 @@ import (
 // after a successful REST call. RestClient is a concrete type and cannot be
 // stubbed, so we exercise the cache-update logic directly.
 
-func TestBug72_AddGuildMemberRole_UpdatesCache(t *testing.T) {
+func (cs *ConnectionSuite) TestBug72_AddGuildMemberRole_UpdatesCache() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(111222333444555666)
@@ -44,7 +43,8 @@ func TestBug72_AddGuildMemberRole_UpdatesCache(t *testing.T) {
 	assert.Contains(t, got.Roles, roleB, "roleB must be present after AddGuildMemberRole (Bug 72)")
 }
 
-func TestBug72_RemoveGuildMemberRole_UpdatesCache(t *testing.T) {
+func (cs *ConnectionSuite) TestBug72_RemoveGuildMemberRole_UpdatesCache() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(111222333444555666)
@@ -79,7 +79,8 @@ func TestBug72_RemoveGuildMemberRole_UpdatesCache(t *testing.T) {
 	assert.NotContains(t, got.Roles, roleB, "roleB must be absent after RemoveGuildMemberRole (Bug 72)")
 }
 
-func TestBug72_AddGuildMemberRole_NoOpWhenMemberNotCached(t *testing.T) {
+func (cs *ConnectionSuite) TestBug72_AddGuildMemberRole_NoOpWhenMemberNotCached() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(111222333444555666)
@@ -102,7 +103,8 @@ func TestBug72_AddGuildMemberRole_NoOpWhenMemberNotCached(t *testing.T) {
 		"no partial member must be inserted when member was not already cached (Bug 72)")
 }
 
-func TestBug72_AddGuildMemberRole_NoOpWhenCacheDisabled(t *testing.T) {
+func (cs *ConnectionSuite) TestBug72_AddGuildMemberRole_NoOpWhenCacheDisabled() {
+	t := cs.T()
 	mc := cache.NewMemoryCache(cache.Options{})
 	c, err := NewClient("test-token", discord.IntentGuilds,
 		options.WithCache(mc),

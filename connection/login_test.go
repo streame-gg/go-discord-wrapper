@@ -47,7 +47,8 @@ func mockGatewayNoReady(t *testing.T) (wsURL string, closeFn func()) {
 
 // Bug 1: When the context is cancelled before a READY event arrives, Login
 // must return ctx.Err() instead of blocking forever.
-func TestBug1_LoginReturnsOnContextCancel(t *testing.T) {
+func (cs *ConnectionSuite) TestBug1_LoginReturnsOnContextCancel() {
+	t := cs.T()
 	wsURL, closeWS := mockGatewayNoReady(t)
 	defer closeWS()
 
@@ -111,7 +112,8 @@ func (t *gatewayStubTransport) RoundTrip(req *http.Request) (*http.Response, err
 // Bug 2: SessionID and ReconnectURL must be written under wsMu.Lock so that
 // concurrent reads (as in reconnect()) are race-free. This test verifies the
 // race detector reports no data race.
-func TestBug2_SessionIDWriteUnderLock(t *testing.T) {
+func (cs *ConnectionSuite) TestBug2_SessionIDWriteUnderLock() {
+	t := cs.T()
 	wsURL, closeServer := mockGateway(t)
 	defer closeServer()
 

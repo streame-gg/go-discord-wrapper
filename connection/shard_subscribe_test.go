@@ -1,8 +1,6 @@
 package connection
 
 import (
-	"testing"
-
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/stretchr/testify/assert"
@@ -11,7 +9,8 @@ import (
 
 // TestSubscribeShardResponse_NilCoordinator verifies that SubscribeShardResponse
 // does not panic when no Coordinator is configured (Bug 101).
-func TestSubscribeShardResponse_NilCoordinator(t *testing.T) {
+func (cs *ConnectionSuite) TestSubscribeShardResponse_NilCoordinator() {
+	t := cs.T()
 	c, err := NewClient("test-token", discord.IntentGuilds)
 	require.NoError(t, err)
 	require.Nil(t, c.Coordinator, "precondition: no coordinator")
@@ -25,7 +24,8 @@ func TestSubscribeShardResponse_NilCoordinator(t *testing.T) {
 
 // TestSubscribeShardResponse_DuplicateCorrID verifies that a second call with the
 // same responseType+corrID does not overwrite the first subscription (Bug 100).
-func TestSubscribeShardResponse_DuplicateCorrID(t *testing.T) {
+func (cs *ConnectionSuite) TestSubscribeShardResponse_DuplicateCorrID() {
+	t := cs.T()
 	c, err := NewClient("test-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
