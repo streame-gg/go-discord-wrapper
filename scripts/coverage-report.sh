@@ -4,20 +4,25 @@
 # profile. Statement counts are read straight from the profile, so the numbers
 # match `go tool cover` exactly and no second test run is needed.
 #
+# Alongside the Markdown report it writes a Shields "endpoint" JSON
+# (.github/badges/coverage.json) that the README's coverage badge points at, so
+# the badge updates itself whenever CI commits the refreshed report.
+#
 # Usage:
 #   scripts/coverage-report.sh [profile] [output]
 #
 #   profile   path to a coverage profile (default: coverage.out)
-#   output    Markdown file to write     (default: COVERAGE.md)
+#   output    Markdown file to write, or "-" for stdout (default: COVERAGE.md)
 #
 # Examples:
 #   go test ./... -coverprofile=coverage.out -covermode=atomic
-#   scripts/coverage-report.sh                      # writes COVERAGE.md
-#   scripts/coverage-report.sh coverage.out -       # print to stdout
+#   scripts/coverage-report.sh                      # writes COVERAGE.md + badge
+#   scripts/coverage-report.sh coverage.out -       # print report to stdout only
 set -euo pipefail
 
 PROFILE="${1:-coverage.out}"
 OUTPUT="${2:-COVERAGE.md}"
+BADGE="${COVERAGE_BADGE:-.github/badges/coverage.json}"
 
 if [[ ! -f "$PROFILE" ]]; then
 	echo "coverage-report: profile '$PROFILE' not found" >&2
@@ -86,4 +91,17 @@ if [[ "$OUTPUT" == "-" ]]; then
 else
 	render > "$OUTPUT"
 	echo "coverage-report: wrote $OUTPUT"
+
+	# Shields endpoint JSON for the README coverage badge.
+	total="$(go tool cover -func="$PROFILE" | awk '/^total:/ { gsub(/%/, "", $NF); print $NF }')"
+	color="red"
+	awk "BEGIN { exit !($total >= 50) }" && color="orange"
+	awk "BEGIN { exit !($total >= 60) }" && color="yellow"
+	awk "BEGIN { exit !($total >= 70) }" && color="yellowgreen"
+	awk "BEGIN { exit !($total >= 80) }" && color="green"
+	awk "BEGIN { exit !($total >= 90) }" && color="brightgreen"
+	mkdir -p "$(dirname "$BADGE")"
+	printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"%s"}\n' \
+		"$total" "$color" > "$BADGE"
+	echo "coverage-report: wrote $BADGE (${total}%, ${color})"
 fi

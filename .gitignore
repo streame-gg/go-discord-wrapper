@@ -16,6 +16,8 @@
 coverage.*
 *.coverprofile
 profile.cov
+# …but the committed Shields badge endpoint is not a throwaway profile.
+!.github/badges/coverage.json
 
 # Dependency directories (remove the comment below to include it)
 # vendor/

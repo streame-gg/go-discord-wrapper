@@ -1,5 +1,11 @@
 # go-discord-wrapper
 
+[![CI](https://github.com/streame-gg/go-discord-wrapper/actions/workflows/go.yml/badge.svg)](https://github.com/streame-gg/go-discord-wrapper/actions/workflows/go.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/streame-gg/go-discord-wrapper/master/.github/badges/coverage.json)](https://github.com/streame-gg/go-discord-wrapper/blob/master/COVERAGE.md)
+[![Version](https://img.shields.io/github/v/tag/streame-gg/go-discord-wrapper?sort=semver&label=version)](https://github.com/streame-gg/go-discord-wrapper/tags)
+[![Go Reference](https://pkg.go.dev/badge/github.com/streame-gg/go-discord-wrapper.svg)](https://pkg.go.dev/github.com/streame-gg/go-discord-wrapper)
+[![Go Report Card](https://goreportcard.com/badge/github.com/streame-gg/go-discord-wrapper)](https://goreportcard.com/report/github.com/streame-gg/go-discord-wrapper)
+
 A Go library for the Discord gateway and REST API.
 
 ## Features
