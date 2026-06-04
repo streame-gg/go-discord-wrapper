@@ -96,6 +96,9 @@ func (s *RedisCacheTestSuite) TestMGetErrorBranches() {
 	c.Emojis().Set(gA, &discord.Emoji{ID: 1, Name: "e1"})
 	c.Stickers().Set(gA, sticker("1"))
 	c.Presences().Set(&discord.Presence{GuildID: gA, User: discord.PartialPresenceUser{ID: 1}})
+	c.Bans().Set(gA, &discord.Ban{User: discord.User{ID: 1}})
+	c.AutoModRules().Set(gA, &discord.AutoModerationRule{ID: 1, GuildID: gA, Name: "r1"})
+	c.Invites().SetWithGuild(gA, &discord.Invite{Code: "c1"})
 	c.Messages().Add(message("1", "9"))
 
 	// Sanity: everything is readable before the fault is armed.
@@ -118,6 +121,9 @@ func (s *RedisCacheTestSuite) TestMGetErrorBranches() {
 	s.Equal(0, c.Emojis().GetByGuild(gA).Len())
 	s.Equal(0, c.Stickers().GetByGuild(gA).Len())
 	s.Equal(0, c.Presences().GetByGuild(gA).Len())
+	s.Equal(0, c.Bans().AllInGuild(gA).Len())
+	s.Equal(0, c.AutoModRules().GetByGuild(gA).Len())
+	s.Equal(0, c.Invites().GetByGuild(gA).Len())
 	s.Equal(0, c.Messages().Channel(mustSnowflake("9")).Len())
 }
 

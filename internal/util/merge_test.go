@@ -1,9 +1,11 @@
 package util_test
 
 import (
-	"github.com/stretchr/testify/suite"
+	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -300,3 +302,97 @@ func (s *mergeSuite) TestMergePartial_GuildMemberJoinedAt() {
 }
 
 func ptr[T any](v T) *T { return &v }
+
+// --- MergePartialJSON: presence-aware merging --------------------------------
+
+// TestMergePartialJSON_PresentZeroOverwrites is the core fix: a field that is
+// present in the raw payload with an intentional zero value ("" / false / 0)
+// must overwrite the old value — something value-based MergePartial cannot do.
+func (s *mergeSuite) TestMergePartialJSON_PresentZeroOverwrites() {
+	old := discord.Message{ID: 1, ChannelID: 2, Content: "original", Pinned: true}
+	partial := discord.Message{ID: 1, ChannelID: 2, Content: "", Pinned: false}
+	raw := json.RawMessage(`{"id":"1","channel_id":"2","content":"","pinned":false}`)
+
+	got := util.MergePartialJSON(old, partial, raw)
+	s.Equal("", got.Content, "content present as empty string must clear the old value")
+	s.False(got.Pinned, "pinned present as false must clear the old value")
+}
+
+// TestMergePartialJSON_AbsentFieldKeepsOld verifies that a zero-valued field
+// which is NOT present in the payload is preserved from old.
+func (s *mergeSuite) TestMergePartialJSON_AbsentFieldKeepsOld() {
+	ts := time.Now()
+	old := discord.Message{ID: 1, ChannelID: 2, Content: "keep me", Timestamp: &ts}
+	// Only content is present; it changed. Timestamp/Author etc. are absent.
+	partial := discord.Message{ID: 1, ChannelID: 2, Content: "edited"}
+	raw := json.RawMessage(`{"id":"1","channel_id":"2","content":"edited"}`)
+
+	got := util.MergePartialJSON(old, partial, raw)
+	s.Equal("edited", got.Content)
+	s.Require().NotNil(got.Timestamp, "timestamp absent from payload must be preserved")
+	s.True(got.Timestamp.Equal(ts))
+}
+
+// TestMergePartialJSON_PresentNullClearsPointer verifies an explicit JSON null
+// on a pointer field clears it (the partial decodes that field to nil).
+func (s *mergeSuite) TestMergePartialJSON_PresentNullClearsPointer() {
+	old := discord.GuildMember{Nick: ptr("old-nick")}
+	partial := discord.GuildMember{Nick: nil}
+	raw := json.RawMessage(`{"nick":null}`)
+
+	got := util.MergePartialJSON(old, partial, raw)
+	s.Nil(got.Nick, "nick present as null must clear the old pointer")
+}
+
+// TestMergePartialJSON_DashTaggedFieldNeverSourced confirms json:"-" fields
+// (e.g. GuildMember.GuildID) are never taken from the payload, even if a key of
+// the same name appears.
+func (s *mergeSuite) TestMergePartialJSON_DashTaggedFieldNeverSourced() {
+	old := discord.GuildMember{GuildID: 555}
+	partial := discord.GuildMember{GuildID: 999, Nick: ptr("n")}
+	raw := json.RawMessage(`{"guild_id":"999","nick":"n"}`)
+
+	got := util.MergePartialJSON(old, partial, raw)
+	s.Equal(discord.Snowflake(555), got.GuildID, "json:\"-\" field must retain old value")
+	s.Require().NotNil(got.Nick)
+	s.Equal("n", *got.Nick)
+}
+
+// TestMergePartialJSON_FallsBackOnNonObject verifies that a non-object raw
+// payload falls back to value-based MergePartial (zero values do not overwrite).
+func (s *mergeSuite) TestMergePartialJSON_FallsBackOnNonObject() {
+	old := flat{Name: "keep", Count: 7}
+	partial := flat{Name: "", Count: 0}
+
+	// Empty, null, and array payloads all trigger the fallback.
+	for _, raw := range []json.RawMessage{nil, json.RawMessage(`null`), json.RawMessage(`[1,2]`), json.RawMessage(`oops`)} {
+		got := util.MergePartialJSON(old, partial, raw)
+		s.Equal("keep", got.Name, "fallback must preserve old on zero-valued partial")
+		s.Equal(7, got.Count)
+	}
+}
+
+// TestMergePartialJSON_NoJSONTagUsesFieldName covers the json-tag-less branch:
+// encoding/json matches such fields by (case-insensitive) field name.
+func (s *mergeSuite) TestMergePartialJSON_NoJSONTagUsesFieldName() {
+	old := flat{Name: "old", Count: 5}
+	partial := flat{Name: "new", Count: 0}
+	// "count" present as 0 must overwrite; "Name" matched case-insensitively.
+	raw := json.RawMessage(`{"name":"new","count":0}`)
+
+	got := util.MergePartialJSON(old, partial, raw)
+	s.Equal("new", got.Name)
+	s.Equal(0, got.Count, "count present as zero must overwrite via field-name match")
+}
+
+// TestMergePartialJSON_UnexportedFieldUntouched guards the CanSet check.
+func (s *mergeSuite) TestMergePartialJSON_UnexportedFieldUntouched() {
+	when := time.Now()
+	old := flat{Name: "x", created: when}
+	partial := flat{Name: "y"}
+	raw := json.RawMessage(`{"name":"y","created":"whatever"}`)
+
+	got := util.MergePartialJSON(old, partial, raw)
+	s.Equal("y", got.Name)
+	s.True(got.created.Equal(when), "unexported field must never be set from the payload")
+}

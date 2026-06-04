@@ -54,6 +54,9 @@ func (s *mongoStoresSuite) TestTTLFilterBranches_AllStores() {
 	c.Emojis().Set(gA, &discord.Emoji{ID: 1})
 	c.Stickers().Set(gA, sticker("s"))
 	c.Presences().Set(&discord.Presence{GuildID: gA, User: discord.PartialPresenceUser{ID: 1}})
+	c.Bans().Set(gA, &discord.Ban{User: discord.User{ID: 1}})
+	c.AutoModRules().Set(gA, &discord.AutoModerationRule{ID: 1, GuildID: gA})
+	c.Invites().SetWithGuild(gA, &discord.Invite{Code: "c1"})
 	c.Messages().Add(message("m1", "c1"))
 
 	// Get with TTL filter (expires_at > now).
@@ -81,6 +84,12 @@ func (s *mongoStoresSuite) TestTTLFilterBranches_AllStores() {
 	s.True(ok)
 	_, ok = c.Presences().Get(gA, 1)
 	s.True(ok)
+	_, ok = c.Bans().Get(gA, 1)
+	s.True(ok)
+	_, ok = c.AutoModRules().Get(1)
+	s.True(ok)
+	_, ok = c.Invites().Get("c1")
+	s.True(ok)
 	_, ok = c.Messages().Get(mustSnowflake("c1"), mustSnowflake("m1"))
 	s.True(ok)
 
@@ -98,6 +107,9 @@ func (s *mongoStoresSuite) TestTTLFilterBranches_AllStores() {
 	s.Equal(1, c.Emojis().GetByGuild(gA).Len())
 	s.Equal(1, c.Stickers().GetByGuild(gA).Len())
 	s.Equal(1, c.Presences().GetByGuild(gA).Len())
+	s.Equal(1, c.Bans().AllInGuild(gA).Len())
+	s.Equal(1, c.AutoModRules().GetByGuild(gA).Len())
+	s.Equal(1, c.Invites().GetByGuild(gA).Len())
 	s.Equal(1, c.Messages().Channel(mustSnowflake("c1")).Len())
 }
 
@@ -130,6 +142,9 @@ func (s *mongoStoresSuite) TestUnmarshalErrorBranches() {
 	s.insertBad("emojis", "1", gid)
 	s.insertBad("stickers", "1", gid)
 	s.insertBad("presences", "1001:1", gid)
+	s.insertBad("bans", "1001:1", gid)
+	s.insertBad("automod_rules", "1", gid)
+	s.insertBad("invites", "c1", gid)
 	s.insertBad("messages", "1001:1", "")
 	// messages need a channel_id field for Channel(); add one.
 	_, err := s.db.Collection("messages").UpdateOne(context.Background(),
@@ -161,6 +176,12 @@ func (s *mongoStoresSuite) TestUnmarshalErrorBranches() {
 	s.False(ok)
 	_, ok = c.Presences().Get(gA, 1)
 	s.False(ok)
+	_, ok = c.Bans().Get(gA, 1)
+	s.False(ok)
+	_, ok = c.AutoModRules().Get(1)
+	s.False(ok)
+	_, ok = c.Invites().Get("c1")
+	s.False(ok)
 	_, ok = c.Messages().Get(gA, 1)
 	s.False(ok)
 
@@ -178,6 +199,9 @@ func (s *mongoStoresSuite) TestUnmarshalErrorBranches() {
 	s.Equal(0, c.Emojis().GetByGuild(gA).Len())
 	s.Equal(0, c.Stickers().GetByGuild(gA).Len())
 	s.Equal(0, c.Presences().GetByGuild(gA).Len())
+	s.Equal(0, c.Bans().AllInGuild(gA).Len())
+	s.Equal(0, c.AutoModRules().GetByGuild(gA).Len())
+	s.Equal(0, c.Invites().GetByGuild(gA).Len())
 	s.Equal(0, c.Messages().Channel(gA).Len())
 }
 
@@ -213,6 +237,9 @@ func (s *mongoStoresSuite) TestCursorDecodeErrorBranches() {
 	s.insertBadType("emojis", "1", gid)
 	s.insertBadType("stickers", "1", gid)
 	s.insertBadType("presences", "1001:1", gid)
+	s.insertBadType("bans", "1001:1", gid)
+	s.insertBadType("automod_rules", "1", gid)
+	s.insertBadType("invites", "c1", gid)
 	_, err := s.db.Collection("messages").InsertOne(context.Background(),
 		bson.M{"_id": "1001:1", "channel_id": "1001", "json": 12345})
 	s.Require().NoError(err)
@@ -230,6 +257,9 @@ func (s *mongoStoresSuite) TestCursorDecodeErrorBranches() {
 	s.Equal(0, c.Emojis().GetByGuild(gA).Len())
 	s.Equal(0, c.Stickers().GetByGuild(gA).Len())
 	s.Equal(0, c.Presences().GetByGuild(gA).Len())
+	s.Equal(0, c.Bans().AllInGuild(gA).Len())
+	s.Equal(0, c.AutoModRules().GetByGuild(gA).Len())
+	s.Equal(0, c.Invites().GetByGuild(gA).Len())
 	s.Equal(0, c.Messages().Channel(mustSnowflake("1001")).Len())
 }
 
@@ -304,6 +334,12 @@ func (s *mongoStoresSuite) TestMarshalErrorBranches_TimeOverflow() {
 
 	c.Channels().Set(&discord.Channel{ID: 1, LastPinTimestamp: &ff})
 	s.Equal(0, c.Channels().Size())
+
+	// Invite carries an *time.Time ExpiresAt, so its store() marshal guard is
+	// reachable the same way. Set (no guild) and SetWithGuild both route through store().
+	c.Invites().Set(&discord.Invite{Code: "x", ExpiresAt: &ff})
+	c.Invites().SetWithGuild(gA, &discord.Invite{Code: "y", ExpiresAt: &ff})
+	s.Equal(0, c.Invites().Size())
 }
 
 // ── Backend-error branches (cancelled context after Close) ────────────────────
@@ -326,10 +362,24 @@ func (s *mongoStoresSuite) TestBackendErrorBranches_AfterClose() {
 	s.Equal(0, c.Emojis().GetByGuild(gA).Len())
 	s.Equal(0, c.Stickers().GetByGuild(gA).Len())
 	s.Equal(0, c.Presences().GetByGuild(gA).Len())
+	s.Equal(0, c.Bans().AllInGuild(gA).Len())
+	s.Equal(0, c.AutoModRules().GetByGuild(gA).Len())
+	s.Equal(0, c.Invites().GetByGuild(gA).Len())
 	s.Equal(0, c.Messages().Channel(gA).Len())
+
+	// Get on a dead backend → FindOne error → miss.
+	_, ok := c.Bans().Get(gA, 1)
+	s.False(ok)
+	_, ok = c.AutoModRules().Get(1)
+	s.False(ok)
+	_, ok = c.Invites().Get("c1")
+	s.False(ok)
 
 	// Size on a dead backend returns 0 (CountDocuments error ignored).
 	s.Equal(0, c.Guilds().Size())
+	s.Equal(0, c.Bans().Size())
+	s.Equal(0, c.AutoModRules().Size())
+	s.Equal(0, c.Invites().Size())
 }
 
 // ── Async write worker + enqueueWrite paths ───────────────────────────────────

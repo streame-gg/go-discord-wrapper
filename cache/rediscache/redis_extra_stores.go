@@ -385,6 +385,9 @@ func (s *redisInviteStore) Size() int { return s.c.scanIndexCardinality(s.c.k("i
 
 // ── interface accessors ───────────────────────────────────────────────────────
 
+// Compile-time guarantee that RedisCache satisfies the full cache.Cache interface.
+var _ cache.Cache = (*RedisCache)(nil)
+
 func (c *RedisCache) Bans() cache.BanStore                        { return c.banStore }
 func (c *RedisCache) AutoModRules() cache.AutoModerationRuleStore { return c.autoModStore }
 func (c *RedisCache) Invites() cache.InviteStore                  { return c.inviteStore }

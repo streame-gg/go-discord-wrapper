@@ -76,6 +76,9 @@ func (s *mongoStoresSuite) TestAccessors_NotNil() {
 	s.NotNil(c.Emojis())
 	s.NotNil(c.Stickers())
 	s.NotNil(c.Presences())
+	s.NotNil(c.Bans())
+	s.NotNil(c.AutoModRules())
+	s.NotNil(c.Invites())
 }
 
 // ── Role store ────────────────────────────────────────────────────────────────
@@ -298,6 +301,109 @@ func (s *mongoStoresSuite) TestPresenceStore() {
 	p.DeleteGuild(gA)
 	assert.Equal(t, 0, p.GetByGuild(gA).Len())
 	assert.Equal(t, 1, p.Size())
+}
+
+// ── Ban store ─────────────────────────────────────────────────────────────────
+
+func (s *mongoStoresSuite) TestBanStore() {
+	t := s.T()
+	c := s.cache(cache.Options{})
+	b := c.Bans()
+
+	b.Set(gA, nil) // no-op
+	b.Set(gA, &discord.Ban{User: discord.User{ID: 1}})
+	b.Set(gA, &discord.Ban{User: discord.User{ID: 2}})
+	b.Set(gB, &discord.Ban{User: discord.User{ID: 3}})
+
+	got, ok := b.Get(gA, 1)
+	require.True(t, ok)
+	assert.Equal(t, discord.Snowflake(1), got.User.ID)
+
+	_, ok = b.Get(gA, 999)
+	assert.False(t, ok)
+
+	assert.Equal(t, 2, b.AllInGuild(gA).Len())
+	assert.Equal(t, 3, b.Size())
+
+	b.Delete(gA, 1)
+	assert.Equal(t, 1, b.AllInGuild(gA).Len())
+
+	b.DeleteGuild(gA)
+	assert.Equal(t, 0, b.AllInGuild(gA).Len())
+	assert.Equal(t, 1, b.Size())
+}
+
+// ── AutoModeration rule store ─────────────────────────────────────────────────
+
+func (s *mongoStoresSuite) TestAutoModRuleStore() {
+	t := s.T()
+	c := s.cache(cache.Options{})
+	a := c.AutoModRules()
+
+	a.Set(gA, nil) // no-op
+	a.Set(gA, &discord.AutoModerationRule{ID: 1, GuildID: gA, Name: "r1"})
+	a.Set(gA, &discord.AutoModerationRule{ID: 2, GuildID: gA})
+	a.Set(gB, &discord.AutoModerationRule{ID: 3, GuildID: gB})
+
+	got, ok := a.Get(1)
+	require.True(t, ok)
+	assert.Equal(t, "r1", got.Name)
+
+	_, ok = a.Get(999)
+	assert.False(t, ok)
+
+	assert.Equal(t, 2, a.GetByGuild(gA).Len())
+	assert.Equal(t, 3, a.Size())
+
+	a.Delete(1)
+	assert.Equal(t, 1, a.GetByGuild(gA).Len())
+
+	a.DeleteGuild(gA)
+	assert.Equal(t, 0, a.GetByGuild(gA).Len())
+	assert.Equal(t, 1, a.Size())
+}
+
+// ── Invite store ──────────────────────────────────────────────────────────────
+
+func (s *mongoStoresSuite) TestInviteStore() {
+	t := s.T()
+	c := s.cache(cache.Options{})
+	i := c.Invites()
+
+	i.Set(nil)                                // no-op
+	i.Set(&discord.Invite{})                  // empty code → no-op
+	i.Set(&discord.Invite{Code: "guildless"}) // stored, no guild association
+
+	// Guild-associated via the invite's own Guild field.
+	i.Set(&discord.Invite{Code: "abc", Guild: &discord.Guild{ID: gA}})
+	// Guild-associated via SetWithGuild (gateway events lack Guild).
+	i.SetWithGuild(gA, &discord.Invite{Code: "def"})
+	i.SetWithGuild(gB, &discord.Invite{Code: "ghi"})
+	i.SetWithGuild(gA, nil)               // no-op
+	i.SetWithGuild(gA, &discord.Invite{}) // empty code → no-op
+
+	got, ok := i.Get("abc")
+	require.True(t, ok)
+	assert.Equal(t, "abc", got.Code)
+
+	got, ok = i.Get("guildless")
+	require.True(t, ok)
+	assert.Equal(t, "guildless", got.Code)
+
+	_, ok = i.Get("missing")
+	assert.False(t, ok)
+
+	assert.Equal(t, 2, i.GetByGuild(gA).Len())
+	assert.Equal(t, 1, i.GetByGuild(gB).Len())
+	assert.Equal(t, 4, i.Size()) // guildless + abc + def + ghi
+
+	i.Delete("abc")
+	assert.Equal(t, 1, i.GetByGuild(gA).Len())
+
+	i.DeleteGuild(gA)
+	assert.Equal(t, 0, i.GetByGuild(gA).Len())
+	_, ok = i.Get("def")
+	assert.False(t, ok, "DeleteGuild must remove the guild's invites")
 }
 
 // ── Sticker SetAll skip-nil ───────────────────────────────────────────────────

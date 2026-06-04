@@ -8,6 +8,9 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/cache/stores"
 )
 
+// Compile-time guarantee that MemoryCache satisfies the full Cache interface.
+var _ Cache = (*MemoryCache)(nil)
+
 // MemoryCache is an in-process implementation of [Cache].
 //
 // Create with [NewMemoryCache] and wire it to the gateway client via

@@ -20,10 +20,22 @@ A Go library for the Discord gateway and REST API.
 - Horizontal sharding with a built-in shard coordinator
 - Middleware support for event handlers
 
-> **Voice support:** Voice state and server events are tracked, but voice-connection
-> establishment (UDP, Opus encoding/decoding, sending or receiving audio) is **not supported**.
-> If you need voice capabilities, consider using [bwmarrin/discordgo](https://github.com/bwmarrin/discordgo)
-> alongside this library for voice operations only.
+## Project status & v1.0 scope
+
+> ### ⚠️ Voice connections are **out of scope** for v1.0 — and will stay that way.
+>
+> This library tracks voice **state and server events** (`VOICE_STATE_UPDATE`,
+> `VOICE_SERVER_UPDATE`, etc.) and exposes the voice REST endpoints, **but it does
+> not — and for v1.0 will not — establish voice connections.** There is no UDP
+> transport, no Opus encoding/decoding, and no sending or receiving of audio.
+>
+> If you need to play or receive audio, run
+> [bwmarrin/discordgo](https://github.com/bwmarrin/discordgo) alongside this
+> library for voice operations only. Voice connectivity is not on the v1.0
+> roadmap; do not file it as a v1.0 blocker.
+
+Everything else in the [feature list](#features) above is in scope and covered by
+the test suite. See [COVERAGE.md](COVERAGE.md) for current per-package coverage.
 
 ## Installation
 

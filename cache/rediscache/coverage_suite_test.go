@@ -103,6 +103,9 @@ func (s *RedisCacheTestSuite) TestBackendErrorBranches_AfterClose() {
 	s.Equal(0, c.Emojis().GetByGuild(gA).Len())
 	s.Equal(0, c.Stickers().GetByGuild(gA).Len())
 	s.Equal(0, c.Presences().GetByGuild(gA).Len())
+	s.Equal(0, c.Bans().AllInGuild(gA).Len())
+	s.Equal(0, c.AutoModRules().GetByGuild(gA).Len())
+	s.Equal(0, c.Invites().GetByGuild(gA).Len())
 	s.Equal(0, c.Messages().Channel(gA).Len())
 
 	// Get on a dead backend → miss (Get error branch).
@@ -130,6 +133,12 @@ func (s *RedisCacheTestSuite) TestBackendErrorBranches_AfterClose() {
 	s.False(ok)
 	_, ok = c.Presences().Get(gA, 1)
 	s.False(ok)
+	_, ok = c.Bans().Get(gA, 1)
+	s.False(ok)
+	_, ok = c.AutoModRules().Get(1)
+	s.False(ok)
+	_, ok = c.Invites().Get("c1")
+	s.False(ok)
 
 	// Size on a dead backend returns 0 for every store (Scan/SCard error break).
 	s.Equal(0, c.Guilds().Size())
@@ -144,6 +153,9 @@ func (s *RedisCacheTestSuite) TestBackendErrorBranches_AfterClose() {
 	s.Equal(0, c.Emojis().Size())
 	s.Equal(0, c.Stickers().Size())
 	s.Equal(0, c.Presences().Size())
+	s.Equal(0, c.Bans().Size())
+	s.Equal(0, c.AutoModRules().Size())
+	s.Equal(0, c.Invites().Size())
 	s.Equal(0, c.Messages().Size())
 }
 

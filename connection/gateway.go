@@ -1164,7 +1164,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				presence := ev.NewPresence
 				if old, exists := d.Cache.Presences().Get(ev.NewPresence.GuildID, ev.NewPresence.User.ID); exists {
 					ev.OldPresence = old
-					presence = util.MergePartial(*old, presence)
+					presence = util.MergePartialJSON(*old, presence, msg)
 				}
 				d.Cache.Presences().Set(&presence)
 			}
@@ -1373,7 +1373,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				member := ev.NewMember
 				if existing, exists := d.Cache.Members().Get(ev.GuildID, ev.NewMember.UserID); exists {
 					ev.OldMember = existing
-					member = util.MergePartial(*existing, member)
+					member = util.MergePartialJSON(*existing, member, msg)
 				}
 				member.GuildID = ev.GuildID
 				if member.User != nil {
@@ -1807,14 +1807,14 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryMessages) {
-				msg := ev.NewMessage
+				m := ev.NewMessage
 				if old, exists := d.Cache.Messages().Get(ev.NewMessage.ChannelID, ev.NewMessage.ID); exists {
 					ev.OldMessage = old
-					msg = util.MergePartial(*ev.OldMessage, ev.NewMessage)
+					m = util.MergePartialJSON(*ev.OldMessage, ev.NewMessage, msg)
 				}
 
-				msg.Hydrate(d)
-				d.Cache.Messages().Update(&msg)
+				m.Hydrate(d)
+				d.Cache.Messages().Update(&m)
 			}
 		}
 	case events.EventMessageDelete:
