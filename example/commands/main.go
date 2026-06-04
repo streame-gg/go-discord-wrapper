@@ -33,7 +33,7 @@ func main() {
 	//
 	// GetFullCommand returns the command name plus any subcommand-group and
 	// subcommand, space-separated — e.g. "echo", "config set". Branch on it.
-	bot.OnEvent(events.EventInteractionCreate, func(c *connection.Client, ev *events.InteractionCreateEvent) {
+	bot.OnInteractionCreate(func(c *connection.Client, ev *events.InteractionCreateEvent) {
 		i := &ev.Interaction
 		if !ev.IsCommand() {
 			return

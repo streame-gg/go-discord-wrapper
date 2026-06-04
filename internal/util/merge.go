@@ -33,7 +33,7 @@ func mergeValues(dst, src reflect.Value) {
 			continue
 		}
 		switch d.Kind() {
-		case reflect.Ptr, reflect.Interface:
+		case reflect.Pointer, reflect.Interface:
 			if !s.IsNil() {
 				d.Set(s)
 			}
