@@ -40,11 +40,17 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    # Allow this job to push the regenerated COVERAGE.md back to master.
+    # Allow this job to push the regenerated coverage report back to the branch
+    # (master or the PR head branch).
     permissions:
       contents: write
     steps:
+      # Check out the real branch tip (the PR head branch on pull_request, the
+      # pushed branch on push) rather than the detached merge ref, so the
+      # refreshed coverage report can be committed straight back to it.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
 
       - uses: actions/setup-go@v5
         with:
@@ -62,12 +68,17 @@ jobs:
       - name: Generate COVERAGE.md and coverage badge
         run: bash scripts/coverage-report.sh coverage.out COVERAGE.md
 
-      # Commit the refreshed report only for pushes to master (never on PRs,
-      # which may come from forks without write access). Pushes made with the
-      # built-in GITHUB_TOKEN do not retrigger workflows, and "[skip ci]" is a
-      # second safeguard against loops.
-      - name: Commit COVERAGE.md
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      # Commit the refreshed report on pushes to master and on every same-repo PR
+      # push (forks can't be pushed to with the built-in token, so they're
+      # skipped). GITHUB_TOKEN pushes do not retrigger workflows, and "[skip ci]"
+      # is a second safeguard against loops.
+      - name: Commit coverage report
+        if: >
+          github.event_name == 'push' ||
+          (github.event_name == 'pull_request' &&
+           github.event.pull_request.head.repo.full_name == github.repository)
+        env:
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -76,7 +87,7 @@ jobs:
             echo "Coverage report is up to date."
           else
             git commit -m "chore: update coverage report [skip ci]"
-            git push
+            git push origin "HEAD:${TARGET_BRANCH}"
           fi
 
   security:

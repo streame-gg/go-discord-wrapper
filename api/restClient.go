@@ -10,8 +10,10 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -78,6 +80,20 @@ type RestClient struct {
 	maxResponseBodySize int64
 }
 
+// resolveLogger returns the logger configured via WithLogger/WithLogLevel, or a
+// silent (DiscardHandler) logger by default so the library does not write to the
+// application's logs unless asked to.
+func resolveLogger(cfg options.Config) *slog.Logger {
+	switch {
+	case cfg.Logger != nil:
+		return cfg.Logger
+	case cfg.LogLevel != nil:
+		return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: *cfg.LogLevel}))
+	default:
+		return slog.New(slog.DiscardHandler)
+	}
+}
+
 // NewRestClient creates a REST client for the Discord API.
 // Configure it using options from the options package:
 //
@@ -92,7 +108,9 @@ func NewRestClient(token string, opts ...options.Option) (*RestClient, error) {
 	}
 
 	if parts := strings.SplitN(token, " ", 2); strings.ToLower(parts[0]) == "bot" {
-		slog.Info("NewRestClient: token appears to be a bot token with 'Bot' prefix; the library will add this prefix automatically, so you should pass the raw token without 'Bot '")
+		// Route through the configured logger so the advisory is silent by default
+		// (a library should not write to the application's logs unless asked to).
+		resolveLogger(options.Build(options.Config{}, opts)).Info("NewRestClient: token appears to be a bot token with 'Bot' prefix; the library will add this prefix automatically, so you should pass the raw token without 'Bot '")
 		if len(parts) == 2 {
 			token = strings.TrimSpace(parts[1])
 		} else {
@@ -144,8 +162,14 @@ func newRestClient(token string, opts ...options.Option) (*RestClient, error) {
 	}
 
 	maxBody := cfg.MaxResponseBodySize
-	if maxBody == 0 {
-		maxBody = 50 << 20
+	switch {
+	case maxBody == 0:
+		maxBody = 50 << 20 // default 50 MiB
+	case maxBody < 0:
+		// WithMaxResponseBodySize(-1) disables the limit. io.LimitReader treats a
+		// negative limit as "already exhausted" and returns EOF immediately, so
+		// translate it to an effectively unlimited read instead.
+		maxBody = math.MaxInt64
 	}
 
 	return &RestClient{
@@ -256,8 +280,14 @@ func validateAPIPath(path string) error {
 		if seg == "" {
 			return fmt.Errorf("go-discord-wrapper: path %q contains an empty segment at position %d", path, i)
 		}
-		if isAllDigits(seg) && !isSnowflakeID(seg) {
-			return fmt.Errorf("go-discord-wrapper: path segment %q is not a valid Discord Snowflake (must be 15–20 decimal digits)", seg)
+		// All-digit segments cannot alter the path structure, so they are
+		// injection-safe. Both Snowflakes (15–20 digits) and small integer
+		// sub-resource indexes — e.g. poll answer IDs in
+		// /channels/{id}/polls/{id}/answers/{answer_id} — are legitimate;
+		// Snowflake-typed parameters are validated at the call site. Reject only
+		// abnormally long digit runs, which no real Discord ID or index uses.
+		if isAllDigits(seg) && len(seg) > 20 {
+			return fmt.Errorf("go-discord-wrapper: path segment %q is too long to be a valid Discord ID", seg)
 		}
 	}
 	return nil

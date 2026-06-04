@@ -211,10 +211,10 @@ func (s *BaseStore[K, V]) Get(key K) (V, bool) {
 
 	// Full write lock: we may delete an expired entry or update access metadata.
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	e, ok := s.items.Get(key)
 	if !ok {
+		s.mu.Unlock()
 		var zero V
 		return zero, false
 	}
@@ -223,6 +223,14 @@ func (s *BaseStore[K, V]) Get(key K) (V, bool) {
 	if !e.expiresAt.IsZero() && now.After(e.expiresAt) {
 		s.items.Delete(key)
 		s.totalBytes.Add(-e.sizeBytes)
+		s.mu.Unlock()
+		// Lazy expiry must honour the onEvict contract too, otherwise stores with
+		// a secondary index leak entries for items first observed as expired here
+		// (rather than by the background sweeper). Called after unlocking, like
+		// the sweep/evict paths.
+		if s.onEvict != nil {
+			s.onEvict(key)
+		}
 		var zero V
 		return zero, false
 	}
@@ -232,8 +240,9 @@ func (s *BaseStore[K, V]) Get(key K) (V, bool) {
 	if s.options.RefreshOnAccess && s.options.TTL > 0 {
 		e.expiresAt = now.Add(s.options.TTL)
 	}
-
-	return e.value, true
+	v := e.value
+	s.mu.Unlock()
+	return v, true
 }
 
 // Set inserts or replaces the value for key.

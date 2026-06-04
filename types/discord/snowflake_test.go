@@ -108,3 +108,20 @@ func (su *snowflakeSuite) TestUserCreatedAt() {
 type snowflakeSuite struct{ suite.Suite }
 
 func TestSnowflakeSuite(t *testing.T) { suite.Run(t, new(snowflakeSuite)) }
+
+// snowflakeTimeReturner lets us call Time() on a function return value — a
+// non-addressable value. This compiles only because Time has a value receiver
+// (regression guard for the pointer-receiver bug).
+func snowflakeTimeReturner() Snowflake { return Snowflake(175928847299117063) }
+
+func (s *snowflakeSuite) TestTime_ValueReceiverOnNonAddressable() {
+	// Composite-literal value (non-addressable) — would not compile with a
+	// pointer receiver.
+	s.False(Snowflake(175928847299117063).Time().IsZero())
+	// Function-return value (non-addressable).
+	s.False(snowflakeTimeReturner().Time().IsZero())
+
+	// Sanity: a later snowflake decodes to a later embedded creation time.
+	got := Snowflake(175928847299117063).Time()
+	s.True(got.After(Snowflake(0).Time()), "later snowflake → later time")
+}

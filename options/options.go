@@ -160,7 +160,8 @@ func WithAPIVersion(v discord.APIVersion) Option {
 	return func(c *Config) { c.APIVersion = v }
 }
 
-// WithLogger sets a custom slog logger on the Client.
+// WithLogger sets a custom slog logger on the Client. By default the Client is
+// silent (logs are discarded); provide a logger here to receive them.
 func WithLogger(l *slog.Logger) Option {
 	return func(c *Config) { c.Logger = l }
 }
@@ -241,7 +242,8 @@ func WithMaxConcurrentEvents(n int) Option {
 }
 
 // WithLogLevel sets the minimum slog level when no custom logger is provided via
-// WithLogger. Has no effect if WithLogger is also used.
+// WithLogger. Has no effect if WithLogger is also used. Without this option (and
+// without WithLogger) the Client is silent by default.
 func WithLogLevel(level slog.Level) Option {
 	return func(c *Config) { c.LogLevel = &level }
 }

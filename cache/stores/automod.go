@@ -14,10 +14,14 @@ type MemAutoModerationRuleStore struct {
 }
 
 func NewAutoModerationRuleStore(opts StoreOptions) *MemAutoModerationRuleStore {
-	return &MemAutoModerationRuleStore{
+	s := &MemAutoModerationRuleStore{
 		base:  NewBaseStore[discord.Snowflake, *discord.AutoModerationRule](opts),
 		index: newGuildIndex(),
 	}
+	// Keep the guild index in sync when TTL sweeps or LRU/TrimTo evictions remove
+	// entries straight from the base store.
+	s.base.onEvict = func(ruleID discord.Snowflake) { s.index.removeEntity(ruleID) }
+	return s
 }
 
 func (s *MemAutoModerationRuleStore) Set(guildID discord.Snowflake, rule *discord.AutoModerationRule) {

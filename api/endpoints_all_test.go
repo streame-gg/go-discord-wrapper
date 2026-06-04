@@ -613,22 +613,26 @@ func (s *endpointSuite) TestAuditReasonForwarding() {
 	})
 }
 
-// TestGetPollAnswerVoters_PathValidation documents current behaviour: the REST
-// client's path-injection guard (validateAPIPath) rejects any digit-only path
-// segment that is not a 15–20 digit Snowflake. Poll answer IDs are small
-// integers, so they trip the guard and the request never reaches the server.
-//
-// This is a latent bug — GetPollAnswerVoters is effectively unusable with real
-// answer IDs (1, 2, 3 …). The test pins the observable behaviour so a future
-// fix (whitelisting the answer-id segment) will flip this expectation loudly.
+// TestGetPollAnswerVoters_PathValidation verifies the small integer poll answer
+// ID (1, 2, 3 …) is accepted by the path guard: such all-digit segments are
+// injection-safe, and Snowflake parameters are validated at the call site, so
+// the request reaches the server.
 func (s *endpointSuite) TestGetPollAnswerVoters_PathValidation() {
 	s.respondWith(http.StatusOK, "{}")
 
 	_, err := s.client.GetPollAnswerVoters(context.Background(), testChanID, testMsgID, 1, GetPollAnswerVotersParams{})
 
-	s.Require().Error(err, "small answer ID currently rejected by path validation")
-	s.Contains(err.Error(), "Snowflake")
-	s.Equal(int32(0), s.last.CallCount, "request must not reach the server")
+	s.Require().NoError(err, "small answer ID must be accepted, not rejected as a non-Snowflake")
+	s.Equal(int32(1), s.last.CallCount, "request must reach the server")
+	s.Contains(s.last.Path, "/answers/1", "answer id must appear in the request path")
+}
+
+// TestValidateAPIPath_RejectsOversizedDigitRun keeps a guard on abnormally long
+// digit runs (no real Discord ID/index is longer than 20 digits).
+func (s *endpointSuite) TestValidateAPIPath_RejectsOversizedDigitRun() {
+	err := validateAPIPath("/channels/123456789012345678901234567890/messages")
+	s.Require().Error(err)
+	s.Contains(err.Error(), "too long")
 }
 
 func (s *endpointSuite) TestInteractionEndpoints() {

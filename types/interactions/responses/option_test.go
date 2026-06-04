@@ -42,14 +42,55 @@ func (s *responsesSuite) TestOptionNoValue() {
 	s.Equal("x", o.Options[0].Name)
 }
 
-// TestOptionStringValueIsRejected pins the current behaviour: because the value
-// field is decoded as json.Number, a string-valued option (the common case for
-// String/User/Channel/Role options) currently fails to decode. This is a known
-// latent bug; the test documents it so a future fix is a deliberate change.
-func (s *responsesSuite) TestOptionStringValueIsRejected() {
+// TestOptionStringValue decodes a string option (the common case for
+// String/User/Channel/Role options, whose value arrives as a JSON string).
+func (s *responsesSuite) TestOptionStringValue() {
 	var o ApplicationCommandInteractionDataOption[interface{}]
-	err := json.Unmarshal([]byte(`{"type":3,"name":"text","value":"hello"}`), &o)
-	s.Require().Error(err, "string option values currently fail to decode (json.Number path)")
+	s.Require().NoError(json.Unmarshal([]byte(`{"type":3,"name":"text","value":"hello"}`), &o))
+	s.Require().NotNil(o.Value)
+	s.Equal("hello", *o.Value)
+}
+
+// TestOptionBooleanValue decodes a boolean option sent as a JSON boolean.
+func (s *responsesSuite) TestOptionBooleanValue() {
+	var o ApplicationCommandInteractionDataOption[interface{}]
+	s.Require().NoError(json.Unmarshal([]byte(`{"type":5,"name":"flag","value":true}`), &o))
+	s.Require().NotNil(o.Value)
+	s.Equal(true, *o.Value)
+}
+
+// TestOptionSnowflakeValue decodes a User/Channel/Role option whose value is a
+// snowflake ID sent as a JSON string (the default branch).
+func (s *responsesSuite) TestOptionSnowflakeValue() {
+	var o ApplicationCommandInteractionDataOption[interface{}]
+	s.Require().NoError(json.Unmarshal([]byte(`{"type":6,"name":"who","value":"175928847299117063"}`), &o))
+	s.Require().NotNil(o.Value)
+	s.Equal("175928847299117063", *o.Value)
+}
+
+// TestOptionStringBadValue returns an error when a string option carries a
+// non-string JSON value.
+func (s *responsesSuite) TestOptionStringBadValue() {
+	var o ApplicationCommandInteractionDataOption[interface{}]
+	err := json.Unmarshal([]byte(`{"type":3,"name":"text","value":123}`), &o)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "string value")
+}
+
+// TestOptionBooleanBadValue returns an error when a boolean option carries a
+// non-boolean JSON value.
+func (s *responsesSuite) TestOptionBooleanBadValue() {
+	var o ApplicationCommandInteractionDataOption[interface{}]
+	err := json.Unmarshal([]byte(`{"type":5,"name":"flag","value":"yes"}`), &o)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "boolean value")
+}
+
+// TestOptionNullValue treats an explicit JSON null value as no value.
+func (s *responsesSuite) TestOptionNullValue() {
+	var o ApplicationCommandInteractionDataOption[interface{}]
+	s.Require().NoError(json.Unmarshal([]byte(`{"type":3,"name":"text","value":null}`), &o))
+	s.Nil(o.Value)
 }
 
 // ── command data unmarshalling error paths ────────────────────────────────────

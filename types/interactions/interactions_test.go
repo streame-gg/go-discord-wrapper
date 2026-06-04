@@ -117,21 +117,25 @@ func (s *interactionsSuite) TestUnmarshalNoData() {
 	s.Nil(i.Data)
 }
 
-// TestStringOptionValue_CurrentlyFails documents a latent bug: the option
-// decoder declares the raw value field as json.Number, so a String option whose
-// value is a JSON string (the common case, e.g. {"type":3,"value":"hello"})
-// fails to unmarshal with "invalid number literal". This pins the broken
-// behaviour so a fix (decoding the value into json.RawMessage / any first) will
-// flip this expectation loudly.
-func (s *interactionsSuite) TestStringOptionValue_CurrentlyFails() {
+// TestStringOptionValue decodes a String option whose value is a JSON string
+// (the common case, e.g. {"type":3,"value":"hello"}). The option decoder reads
+// the raw value as json.RawMessage and interprets it by option type, so string
+// and boolean options decode correctly.
+func (s *interactionsSuite) TestStringOptionValue() {
 	const raw = `{
 		"type": 2,
 		"data": {"id":"1","name":"echo","type":1,"options":[{"type":3,"name":"text","value":"hello"}]}
 	}`
 	var i interactions.Interaction
-	err := json.Unmarshal([]byte(raw), &i)
-	s.Require().Error(err, "string option values currently fail to decode (json.Number)")
-	s.Contains(err.Error(), "number literal")
+	s.Require().NoError(json.Unmarshal([]byte(raw), &i))
+	cmd, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	s.Require().True(ok)
+	s.Equal("echo", cmd.CommandName)
+	s.Require().NotNil(cmd.Options)
+	opts := *cmd.Options
+	s.Require().Len(opts, 1)
+	s.Require().NotNil(opts[0].Value)
+	s.Equal("hello", *opts[0].Value)
 }
 
 // TestHelpersOnEmptyInteraction verifies the helpers are nil-safe when Data is

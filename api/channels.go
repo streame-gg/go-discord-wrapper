@@ -295,11 +295,10 @@ func (c *RestClient) SetVoiceChannelStatus(ctx context.Context, channelID discor
 		return err
 	}
 
-	statusVal := ""
-	if status != nil {
-		statusVal = *status
-	}
-	body, err := json.Marshal(map[string]string{"status": statusVal})
+	// status is nullable: a nil pointer must marshal to JSON null (which clears
+	// the voice channel status), not "". Keep the pointer so encoding/json emits
+	// null for nil and the string value otherwise.
+	body, err := json.Marshal(map[string]*string{"status": status})
 	if err != nil {
 		return err
 	}

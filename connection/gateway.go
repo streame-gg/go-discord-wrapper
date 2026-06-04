@@ -209,8 +209,20 @@ func NewClient(token string, intents discord.Intent, opts ...options.Option) (*C
 		cacheStores = 0
 	}
 
+	// Resolve the logger first so even the early token advisory respects it.
+	// Silent by default (DiscardHandler); opt in via WithLogger or WithLogLevel.
+	var logger *slog.Logger
+	switch {
+	case cfg.Logger != nil:
+		logger = cfg.Logger
+	case cfg.LogLevel != nil:
+		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: *cfg.LogLevel}))
+	default:
+		logger = slog.New(slog.DiscardHandler)
+	}
+
 	if parts := strings.SplitN(token, " ", 2); strings.ToLower(parts[0]) == "bot" {
-		slog.Info("NewClient: token appears to be a bot token with 'Bot' prefix; the library will add this prefix automatically, so you should pass the raw token without 'Bot '")
+		logger.Info("NewClient: token appears to be a bot token with 'Bot' prefix; the library will add this prefix automatically, so you should pass the raw token without 'Bot '")
 		if len(parts) == 2 {
 			token = strings.TrimSpace(parts[1])
 		} else {
@@ -257,14 +269,7 @@ func NewClient(token string, intents discord.Intent, opts ...options.Option) (*C
 		}
 	}
 
-	switch {
-	case cfg.Logger != nil:
-		c.Logger = cfg.Logger
-	case cfg.LogLevel != nil:
-		c.Logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: *cfg.LogLevel}))
-	default:
-		c.Logger = slog.Default()
-	}
+	c.Logger = logger
 
 	// Register this shard with the coordinator so messages can arrive.
 	if c.Coordinator != nil && c.Sharding != nil {

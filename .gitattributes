@@ -1,0 +1,11 @@
+# Normalize line endings so the gofmt CI gate stays green regardless of the
+# editor/OS used to commit (GoLand on Windows/WSL otherwise writes CRLF).
+* text=auto eol=lf
+
+# Go toolchain files are always LF.
+*.go text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
+
+# Shell scripts must keep LF to remain executable.
+*.sh text eol=lf

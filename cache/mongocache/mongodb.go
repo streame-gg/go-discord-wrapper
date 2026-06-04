@@ -284,12 +284,16 @@ func (c *MongoDBCache) Presences() cache.PresenceStore {
 // Safe to call multiple times.
 func (c *MongoDBCache) Close() error {
 	c.stopOnce.Do(func() {
-		c.cancel()
+		// Stop accepting new writes and let the worker flush everything still
+		// queued. The context must stay live while the drain runs, otherwise the
+		// flushed writes would execute with an already-cancelled callCtx and be
+		// silently dropped.
 		c.writeMu.Lock()
 		c.writerClosed = true
 		close(c.writeCh)
 		c.writeMu.Unlock()
 		<-c.writerDone
+		c.cancel()
 	})
 	return nil
 }

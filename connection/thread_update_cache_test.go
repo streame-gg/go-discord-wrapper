@@ -182,7 +182,12 @@ func (cs *ConnectionSuite) TestBug84_ThreadUpdate_SameParent_IndexUnchanged() {
 	raw, err := json.Marshal(payload)
 	require.NoError(t, err)
 
+	// Pre-unmarshal so ev.NewThread.ID is populated — same as the websocket loop
+	// and the reparent test above. Without this the handler operates on a
+	// zero-value thread and the same-parent path is never actually exercised.
 	var ev events.ThreadUpdateEvent
+	require.NoError(t, json.Unmarshal(raw, &ev))
+
 	c.internalEventHandler(json.RawMessage(raw), events.EventThreadUpdate, &ev)
 
 	c.threadIndexMu.RLock()

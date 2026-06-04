@@ -257,3 +257,46 @@ func (su *mergeSuite) TestMergePartial_PartialMessageUpdatesContent() {
 type mergeSuite struct{ suite.Suite }
 
 func TestMergeSuite(t *testing.T) { suite.Run(t, new(mergeSuite)) }
+
+// withTime exercises the atomic value-struct path: time.Time has only
+// unexported fields, so a field-by-field recursive merge could never set it.
+type withTime struct {
+	Name string
+	When time.Time
+}
+
+// TestMergePartial_TimeTimeReplacedWhenNonZero is a regression test: a non-zero
+// time.Time in the partial must replace a zero/older destination value. Before
+// the fix the recursive merge silently dropped it (unexported fields).
+func (s *mergeSuite) TestMergePartial_TimeTimeReplacedWhenNonZero() {
+	when := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
+
+	// Zero destination, non-zero source → source wins.
+	got := util.MergePartial(withTime{Name: "old"}, withTime{When: when})
+	s.True(got.When.Equal(when), "non-zero time.Time must replace a zero destination")
+	s.Equal("old", got.Name, "zero-valued source scalar must not overwrite destination")
+}
+
+// TestMergePartial_TimeTimeZeroSourceKeepsDestination verifies the dual: a zero
+// time.Time in the partial leaves the destination untouched.
+func (s *mergeSuite) TestMergePartial_TimeTimeZeroSourceKeepsDestination() {
+	when := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
+	got := util.MergePartial(withTime{Name: "keep", When: when}, withTime{Name: "new"})
+	s.True(got.When.Equal(when), "zero-valued source time.Time must not clear the destination")
+	s.Equal("new", got.Name)
+}
+
+// TestMergePartial_GuildMemberJoinedAt covers the concrete payload type the fix
+// targets: GuildMember.JoinedAt is a value time.Time.
+func (s *mergeSuite) TestMergePartial_GuildMemberJoinedAt() {
+	joined := time.Date(2023, 6, 1, 12, 0, 0, 0, time.UTC)
+	old := discord.GuildMember{Nick: ptr("old-nick")}
+	partial := discord.GuildMember{JoinedAt: joined}
+
+	got := util.MergePartial(old, partial)
+	s.True(got.JoinedAt.Equal(joined), "JoinedAt must be applied from the partial")
+	s.Require().NotNil(got.Nick)
+	s.Equal("old-nick", *got.Nick, "fields absent from the partial must be preserved")
+}
+
+func ptr[T any](v T) *T { return &v }

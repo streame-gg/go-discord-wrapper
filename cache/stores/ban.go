@@ -17,10 +17,14 @@ type MemBanStore struct {
 }
 
 func NewBanStore(opts StoreOptions) *MemBanStore {
-	return &MemBanStore{
+	s := &MemBanStore{
 		base:  NewBaseStore[BanKey, *discord.Ban](opts),
 		index: newCompositeGuildIndex(),
 	}
+	// Keep the guild index in sync when TTL sweeps or LRU/TrimTo evictions remove
+	// entries straight from the base store.
+	s.base.onEvict = func(k BanKey) { s.index.remove(k.GuildID, k.UserID) }
+	return s
 }
 
 func (s *MemBanStore) Set(guildID discord.Snowflake, ban *discord.Ban) {

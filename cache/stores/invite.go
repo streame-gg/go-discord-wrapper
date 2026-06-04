@@ -86,10 +86,14 @@ type MemInviteStore struct {
 }
 
 func NewInviteStore(opts StoreOptions) *MemInviteStore {
-	return &MemInviteStore{
+	s := &MemInviteStore{
 		base:  NewBaseStore[string, *discord.Invite](opts),
 		index: newInviteGuildIndex(),
 	}
+	// Keep the guild index in sync when TTL sweeps or LRU/TrimTo evictions remove
+	// entries straight from the base store.
+	s.base.onEvict = func(code string) { s.index.remove(code) }
+	return s
 }
 
 func (s *MemInviteStore) Set(invite *discord.Invite) {

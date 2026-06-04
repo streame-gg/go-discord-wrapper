@@ -96,6 +96,9 @@ type RedisCache struct {
 	emojiStore          *redisEmojiStore
 	stickerStore        *redisStickerStore
 	presenceStore       *redisPresenceStore
+	banStore            *redisBanStore
+	autoModStore        *redisAutoModStore
+	inviteStore         *redisInviteStore
 }
 
 // NewRedisCache creates a RedisCache backed by client.
@@ -182,6 +185,9 @@ func (c *RedisCache) initStores() {
 	c.emojiStore = &redisEmojiStore{c}
 	c.stickerStore = &redisStickerStore{c}
 	c.presenceStore = &redisPresenceStore{c}
+	c.banStore = &redisBanStore{c}
+	c.autoModStore = &redisAutoModStore{c}
+	c.inviteStore = &redisInviteStore{c}
 }
 
 // setJSONAndIndex atomically stores key → JSON and adds id to the Redis SET at idx
@@ -297,12 +303,16 @@ func (c *RedisCache) Presences() cache.PresenceStore           { return c.presen
 // The underlying [*redis.Client] is not closed. Safe to call multiple times.
 func (c *RedisCache) Close() error {
 	c.stopOnce.Do(func() {
-		c.cancel()
+		// Stop accepting new writes and let the worker flush everything still
+		// queued. The context must stay live while the drain runs, otherwise the
+		// flushed writes would execute with an already-cancelled callCtx and be
+		// silently lost.
 		c.writeMu.Lock()
 		c.writerClosed = true
 		close(c.writeCh)
 		c.writeMu.Unlock()
 		<-c.writerDone
+		c.cancel()
 	})
 	return nil
 }

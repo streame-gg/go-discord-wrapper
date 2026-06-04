@@ -34,8 +34,12 @@ func (s *Snowflake) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (s *Snowflake) Time() time.Time {
-	ms := (uint64(*s) >> 22) + Epoch
+// Time returns the creation time encoded in the Snowflake.
+// Uses a value receiver so it can be called on non-addressable values
+// (e.g. discord.Snowflake(0).Time(), range-loop variables, function returns),
+// mirroring String; it does not mutate the value.
+func (s Snowflake) Time() time.Time {
+	ms := (uint64(s) >> 22) + Epoch
 	return time.UnixMilli(int64(ms)).UTC()
 }
 
