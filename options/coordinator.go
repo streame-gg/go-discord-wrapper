@@ -6,7 +6,7 @@ import "encoding/json"
 // "deliver to every registered shard".
 const BroadcastAll = -1
 
-// Reserved internal message types used by the built-in cross-shard statistics
+// Reserved pkg message types used by the built-in cross-shard statistics
 // helpers (sharding.GetTotalServers, sharding.GetTotalUsers).
 // Do not use these strings in your own OnShardMessage handlers.
 const (

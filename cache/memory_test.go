@@ -601,7 +601,7 @@ func (s *memoryTestSuite) TestBug15PresenceSetNilDoesNotPanic() {
 
 // TestBug12EmptyRingRemovedAfterTTLExpiry verifies that once all messages in a
 // channel have expired (EvictExpired / default behavior), the channel's ring
-// entry is removed from the internal map during the next sweep, preventing
+// entry is removed from the pkg map during the next sweep, preventing
 // unbounded map growth for bots with many short-lived channels (Bug 12).
 func (s *memoryTestSuite) TestBug12EmptyRingRemovedAfterTTLExpiry() {
 	c := cache.NewMemoryCache(cache.Options{
@@ -623,7 +623,7 @@ func (s *memoryTestSuite) TestBug12EmptyRingRemovedAfterTTLExpiry() {
 	_, ok := c.Messages().Get(mustSnowflake("ch1"), mustSnowflake("m1"))
 	s.False(ok, "expired message still returned — TTL not enforced")
 
-	// The internal ring must also be gone (not just zeroed) so the channel map
+	// The pkg ring must also be gone (not just zeroed) so the channel map
 	// doesn't accumulate empty rings. We verify via Size: it must be 0.
 	s.Equal(0, c.Messages().Size(), "empty rings kept after expiry (Bug 12)")
 }

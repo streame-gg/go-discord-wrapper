@@ -13,7 +13,7 @@
 
 # Code coverage profiles and other test artifacts
 *.out
-coverage.*
+coverage.out
 *.coverprofile
 profile.cov
 # …but the committed Shields badge endpoint is not a throwaway profile.

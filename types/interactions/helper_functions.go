@@ -103,6 +103,89 @@ func (i *Interaction) GetCustomID() string {
 	return ""
 }
 
+// As asserts an interaction's data union to a concrete data type, reporting
+// whether the assertion held:
+//
+//	cmd, ok := interactions.As[*responses.InteractionDataApplicationCommand](ev.Data)
+//
+// It is a thin, generic wrapper over a type assertion that reads at the call
+// site and avoids spelling out the concrete type twice.
+func As[T discord.InteractionData](data discord.InteractionData) (T, bool) {
+	v, ok := data.(T)
+	return v, ok
+}
+
+// GetOption returns the command option named name, descending into the selected
+// subcommand / subcommand-group so options nested under a subcommand are found
+// too. The bool reports whether the option was present.
+func (i *Interaction) GetOption(name string) (responses.ApplicationCommandInteractionDataOption[interface{}], bool) {
+	data, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	if !ok || data.Options == nil {
+		return responses.ApplicationCommandInteractionDataOption[interface{}]{}, false
+	}
+	return findOption(*data.Options, name)
+}
+
+// OptionValue returns the value of the command option named name as T, reporting
+// whether such an option was present and held a value of type T. Discord decodes
+// option values to concrete Go types: string options to string, integer options
+// to int, number options to float64, boolean options to bool, and snowflake
+// (user/channel/role/mentionable) options to their ID as a string.
+func OptionValue[T any](i *Interaction, name string) (T, bool) {
+	var zero T
+	opt, ok := i.GetOption(name)
+	if !ok || opt.Value == nil {
+		return zero, false
+	}
+	v, ok := (*opt.Value).(T)
+	return v, ok
+}
+
+// GetStringOption returns the string option named name, or "" if absent. Also
+// use it for user/channel/role/mentionable options, whose values are snowflake
+// ID strings.
+func (i *Interaction) GetStringOption(name string) string {
+	v, _ := OptionValue[string](i, name)
+	return v
+}
+
+// GetIntOption returns the integer option named name, or 0 if absent.
+func (i *Interaction) GetIntOption(name string) int {
+	v, _ := OptionValue[int](i, name)
+	return v
+}
+
+// GetFloatOption returns the number option named name, or 0 if absent.
+func (i *Interaction) GetFloatOption(name string) float64 {
+	v, _ := OptionValue[float64](i, name)
+	return v
+}
+
+// GetBoolOption returns the boolean option named name, or false if absent.
+func (i *Interaction) GetBoolOption(name string) bool {
+	v, _ := OptionValue[bool](i, name)
+	return v
+}
+
+// findOption returns the option named name, descending into nested subcommand
+// options. The bool reports whether it was found.
+func findOption(
+	opts []responses.ApplicationCommandInteractionDataOption[interface{}],
+	name string,
+) (responses.ApplicationCommandInteractionDataOption[interface{}], bool) {
+	for _, opt := range opts {
+		if opt.Name == name {
+			return opt, true
+		}
+		if len(opt.Options) > 0 {
+			if found, ok := findOption(opt.Options, name); ok {
+				return found, true
+			}
+		}
+	}
+	return responses.ApplicationCommandInteractionDataOption[interface{}]{}, false
+}
+
 func (i *Interaction) UnmarshalJSON(data []byte) error {
 	type Alias Interaction
 	aux := &struct {

@@ -92,7 +92,7 @@ type Client struct {
 	cacheAutoPopulate cache.OverflowCategory
 
 	// UnavailableGuilds tracks guild IDs that arrived as unavailable in READY
-	// or via GUILD_DELETE with unavailable=true. All internal accesses are
+	// or via GUILD_DELETE with unavailable=true. All pkg accesses are
 	// protected by the Client's mu lock. Direct external reads race with
 	// gateway events — use IsGuildUnavailable instead.
 	UnavailableGuilds map[discord.Snowflake]struct{}
@@ -292,7 +292,7 @@ func (d *Client) Ready() <-chan struct{} {
 // BotUser returns the bot's own User object as received in the READY event.
 // Returns nil before the first READY. Safe for concurrent use.
 //
-// The returned pointer is the library's internal copy; do not mutate the
+// The returned pointer is the library's pkg copy; do not mutate the
 // struct it points to, as changes would be visible to any concurrent caller.
 // Copy the value (*user = *client.BotUser()) if you need a mutable snapshot.
 func (d *Client) BotUser() *discord.User {
@@ -2043,24 +2043,14 @@ func (d *Client) IsGuildUnavailable(id discord.Snowflake) bool {
 	return exists
 }
 
-// Close gracefully closes the gateway connection and the entity cache.
-// It implements io.Closer.
-func (d *Client) Close() error {
-	var errs []error
-	if d.Coordinator != nil {
-		if err := d.Coordinator.Close(); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if err := d.Shutdown(); err != nil {
-		errs = append(errs, err)
-	}
-	return errors.Join(errs...)
-}
-
 // Shutdown gracefully closes the gateway connection and the entity cache.
 // It waits for all in-flight event handlers to finish before returning.
 // Shutdown is idempotent: concurrent or repeated calls are safe.
+//
+// Shutdown does not close the shard Coordinator, which may be shared across
+// shard clients: the ShardManager closes the shared Coordinator once, after
+// shutting down every shard (see sharding.ShardManager.Shutdown). A standalone
+// client that owns a Coordinator should close it alongside calling Shutdown.
 func (d *Client) Shutdown() error {
 	var errs []error
 	d.shutdownOnce.Do(func() {

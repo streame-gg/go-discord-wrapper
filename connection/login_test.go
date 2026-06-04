@@ -71,7 +71,7 @@ func (cs *ConnectionSuite) TestBug1_LoginReturnsOnContextCancel() {
 	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
-	// Point the client's internal HTTP client at our gateway stub so that
+	// Point the client's pkg HTTP client at our gateway stub so that
 	// initializeGatewayConnection hits it instead of Discord's real API.
 	c.httpClient = gatewayStub.Client()
 	// Repoint the gateway URL: we monkey-patch the http transport to redirect.

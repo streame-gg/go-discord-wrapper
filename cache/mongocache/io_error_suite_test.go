@@ -81,7 +81,7 @@ func (s *mongoStoresSuite) TestEnqueueWrite_QueueFullIsDropped() {
 // but CountDocuments errors out and Add returns via its `if err != nil` guard.
 func (s *mongoStoresSuite) TestMessageEviction_BackendErrorGuard() {
 	c := s.cache(cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 1}})
-	c.Close() // cancels the internal context → backend commands error
+	c.Close() // cancels the pkg context → backend commands error
 
 	// Sync write still executes fn; upsert + CountDocuments both error, exercising
 	// the eviction guard. No panic, no eviction.

@@ -65,7 +65,7 @@ import (
 //
 // The underlying [*redis.Client] is not owned by RedisCache; the caller is
 // responsible for connecting and closing it. Call [RedisCache.Close] on
-// shutdown to release the internal context used for Redis commands.
+// shutdown to release the pkg context used for Redis commands.
 type RedisCache struct {
 	client   *redis.Client
 	opts     cache.Options
@@ -299,7 +299,7 @@ func (c *RedisCache) Emojis() cache.EmojiStore                 { return c.emojiS
 func (c *RedisCache) Stickers() cache.StickerStore             { return c.stickerStore }
 func (c *RedisCache) Presences() cache.PresenceStore           { return c.presenceStore }
 
-// Close drains the write queue, then cancels the internal context.
+// Close drains the write queue, then cancels the pkg context.
 // The underlying [*redis.Client] is not closed. Safe to call multiple times.
 func (c *RedisCache) Close() error {
 	c.stopOnce.Do(func() {

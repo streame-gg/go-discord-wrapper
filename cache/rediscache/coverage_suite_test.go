@@ -83,7 +83,7 @@ func (s *RedisCacheTestSuite) TestEnqueueWrite_AfterCloseIsDropped() {
 
 func (s *RedisCacheTestSuite) TestBackendErrorBranches_AfterClose() {
 	c := s.newCache(cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 100}})
-	c.Close() // cancels the internal context → every command errors
+	c.Close() // cancels the pkg context → every command errors
 
 	// A sync write after Close still runs fn directly, exercising the
 	// TxPipelined error return in setJSONAndIndex.

@@ -30,7 +30,7 @@ func (s *responsesSuite) TestDefaultDataMarshalJSON() {
 	var out map[string]any
 	s.Require().NoError(json.Unmarshal(b, &out))
 	s.Equal("hello", out["content"])
-	// The internal Files field is tagged json:"-" and must not be serialised.
+	// The pkg Files field is tagged json:"-" and must not be serialised.
 	s.NotContains(out, "Files")
 }
 

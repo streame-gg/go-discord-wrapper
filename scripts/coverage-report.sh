@@ -18,10 +18,22 @@
 #   go test ./... -coverprofile=coverage.out -covermode=atomic
 #   scripts/coverage-report.sh                      # writes COVERAGE.md + badge
 #   scripts/coverage-report.sh coverage.out -       # print report to stdout only
+
 set -euo pipefail
 
-PROFILE="${1:-coverage.out}"
-OUTPUT="${2:-COVERAGE.md}"
+# Resolve paths against the repo root so the report and badge always land in the
+# same place, whether the script runs from the root (as CI does) or from inside
+# scripts/ — the latter is what the relative defaults used to get wrong. Paths
+# you pass explicitly are still resolved against your current directory; only the
+# defaults are rooted at the repo.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+resolve() { case "$1" in /* | -) printf '%s' "$1" ;; *) printf '%s/%s' "$PWD" "$1" ;; esac; }
+PROFILE="$(resolve "${1:-$REPO_ROOT/coverage.out}")"
+OUTPUT="$(resolve "${2:-$REPO_ROOT/COVERAGE.md}")"
+
+cd "$REPO_ROOT"
 BADGE="${COVERAGE_BADGE:-.github/badges/coverage.json}"
 
 if [[ ! -f "$PROFILE" ]]; then
@@ -29,6 +41,14 @@ if [[ ! -f "$PROFILE" ]]; then
 	echo "  run: go test ./... -coverprofile=$PROFILE -covermode=atomic" >&2
 	exit 1
 fi
+
+# Coverage measures the library itself; example/ programs are excluded so the
+# samples neither inflate nor drag down the numbers. Filtering the profile once
+# (rather than in each consumer) keeps the Markdown report and the badge total
+# in agreement.
+FILTERED="$(mktemp)"
+trap 'rm -f "$FILTERED"' EXIT
+awk '!/\/example\//' "$PROFILE" > "$FILTERED"
 
 # No timestamp/commit are embedded on purpose: the report should only change —
 # and therefore only be committed by CI — when coverage numbers actually move.
@@ -83,7 +103,7 @@ render() {
 		printf "\n_Coverage is measured by the `test` job in `.github/workflows/go.yml` "
 		printf "and regenerated on every push to `master`._\n"
 	}
-	' "$PROFILE"
+	' "$FILTERED"
 }
 
 if [[ "$OUTPUT" == "-" ]]; then
@@ -93,7 +113,7 @@ else
 	echo "coverage-report: wrote $OUTPUT"
 
 	# Shields endpoint JSON for the README coverage badge.
-	total="$(go tool cover -func="$PROFILE" | awk '/^total:/ { gsub(/%/, "", $NF); print $NF }')"
+	total="$(go tool cover -func="$FILTERED" | awk '/^total:/ { gsub(/%/, "", $NF); print $NF }')"
 	color="red"
 	awk "BEGIN { exit !($total >= 50) }" && color="orange"
 	awk "BEGIN { exit !($total >= 60) }" && color="yellow"

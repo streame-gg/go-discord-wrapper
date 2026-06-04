@@ -19,7 +19,7 @@ func RegisterEvent(e Event) {
 }
 
 // GetEventFactory returns the factory function for the given event type and
-// whether it was found. Use this instead of accessing the internal map directly.
+// whether it was found. Use this instead of accessing the pkg map directly.
 func GetEventFactory(t EventType) (func() Event, bool) {
 	f, ok := eventFactories[t]
 	return f, ok

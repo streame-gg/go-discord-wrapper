@@ -12,7 +12,7 @@ const (
 	// version is "(devel)", or when build info is unavailable). When the library
 	// is consumed as a tagged dependency, RepositoryVersion reflects the real
 	// module version instead.
-	repositoryVersionFallback = "v0.1.0-alpha"
+	repositoryVersionFallback = "v1.0"
 
 	RepositoryURL = "https://github.com/streame-gg/go-discord-wrapper"
 )

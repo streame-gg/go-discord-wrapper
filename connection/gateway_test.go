@@ -1,17 +1,12 @@
 package connection
 
 import (
-	"io"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
-
-// TestClientImplementsCloser is a compile-time check that *Client satisfies io.Closer.
-var _ io.Closer = (*Client)(nil)
 
 func (cs *ConnectionSuite) TestNewClientValidConfig() {
 	t := cs.T()

@@ -424,7 +424,7 @@ func (su *hydrationSuite) TestHydrate_JSONOmitsClient() {
 		t.Fatalf("json.Unmarshal: %v", err)
 	}
 	if out.IsHydrated() {
-		t.Fatal("deserialized message must not be hydrated (hClient is internal)")
+		t.Fatal("deserialized message must not be hydrated (hClient is pkg)")
 	}
 	if out.ID != 123 || out.ChannelID != 456 {
 		t.Fatalf("JSON round-trip lost fields: %+v", out)

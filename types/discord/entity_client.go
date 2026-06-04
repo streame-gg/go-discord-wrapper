@@ -131,13 +131,13 @@ type EntityClient interface {
 	ClientCache() Cache
 
 	// ThreadsForParent returns a snapshot of all cached threads whose parent
-	// channel is parentID. It uses the client's internal parent→threads index
+	// channel is parentID. It uses the client's pkg parent→threads index
 	// and is O(threads_in_parent) rather than O(total_channels). Returns an
 	// empty collection when no cache is configured.
 	ThreadsForParent(parentID Snowflake) *collection.Collection[Snowflake, *Channel]
 
 	// ChannelsForGuild returns a snapshot of all cached non-thread channels for
-	// guildID. It uses the client's internal guild→channels index and is
+	// guildID. It uses the client's pkg guild→channels index and is
 	// O(channels_in_guild) rather than O(total_channels). Threads are excluded
 	// to match the Discord API (GET /guilds/{id}/channels). Returns an empty
 	// collection when no cache is configured.

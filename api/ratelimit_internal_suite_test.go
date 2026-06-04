@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// rateLimitSuite covers the internal, dependency-free rate-limiter helpers:
+// rateLimitSuite covers the pkg, dependency-free rate-limiter helpers:
 // route-key normalisation (which drives bucket sharing), major-parameter
 // detection, snowflake recognition, Retry-After parsing, and the bucket
 // lifecycle (create → wait → purge → close).

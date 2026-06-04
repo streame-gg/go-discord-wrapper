@@ -127,7 +127,7 @@ type msgDoc struct {
 //
 // The underlying [*mongo.Database] is not owned by MongoDBCache; the caller is
 // responsible for connecting and disconnecting the client. Call
-// [MongoDBCache.Close] on shutdown to cancel the internal context.
+// [MongoDBCache.Close] on shutdown to cancel the pkg context.
 type MongoDBCache struct {
 	db       *mongo.Database
 	opts     cache.Options
@@ -279,7 +279,7 @@ func (c *MongoDBCache) Presences() cache.PresenceStore {
 	return &mongoPresenceStore{c}
 }
 
-// Close drains the write queue, then cancels the internal context.
+// Close drains the write queue, then cancels the pkg context.
 // The underlying [*mongo.Database] and its client are not closed.
 // Safe to call multiple times.
 func (c *MongoDBCache) Close() error {

@@ -346,7 +346,7 @@ func (s *mongoStoresSuite) TestMarshalErrorBranches_TimeOverflow() {
 
 func (s *mongoStoresSuite) TestBackendErrorBranches_AfterClose() {
 	c := s.cache(cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 100}})
-	c.Close() // cancels the internal context → all queries error
+	c.Close() // cancels the pkg context → all queries error
 
 	// Find returns an error → each collection method returns an empty result.
 	s.Equal(0, c.Guilds().All().Len())

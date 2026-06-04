@@ -47,7 +47,7 @@ func (s *stubCoordinator) TotalShards() int { return len(s.handlers) }
 func (s *stubCoordinator) Close() error     { return nil }
 
 // gatewayAccessorsSuite covers the lightweight *Client accessors and the
-// shard-messaging surface, which don't need a live websocket: they read internal
+// shard-messaging surface, which don't need a live websocket: they read pkg
 // state guarded by mutexes or route through a ShardCoordinator. The shard methods
 // are exercised on both the unconfigured path (returns an error) and the
 // configured path (LocalCoordinator + Sharding).
@@ -141,6 +141,8 @@ func (s *gatewayAccessorsSuite) TestShardMessagingConfigured() {
 
 	c.dispatchShardMessage(options.ShardMessage{Type: "plain", From: 1})
 
-	// Close() routes through the coordinator + Shutdown.
-	s.NoError(c.Close())
+	// Shutdown tears down the client; the Coordinator is closed by its owner
+	// (the ShardManager in production, explicitly here).
+	s.NoError(c.Shutdown())
+	s.NoError(c.Coordinator.Close())
 }

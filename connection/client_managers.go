@@ -25,7 +25,7 @@ func (d *Client) Channels() discord.ChannelManager {
 }
 
 // ThreadsForParent returns a snapshot of all cached threads whose parent channel
-// is parentID. Uses the internal threadsByParent index — O(threads_in_parent)
+// is parentID. Uses the pkg threadsByParent index — O(threads_in_parent)
 // rather than O(total_channels). Returns an empty collection when no cache is
 // configured. Satisfies the discord.EntityClient interface.
 func (d *Client) ThreadsForParent(parentID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Channel] {
@@ -49,7 +49,7 @@ func (d *Client) ThreadsForParent(parentID discord.Snowflake) *collection.Collec
 }
 
 // ChannelsForGuild returns a snapshot of all cached non-thread channels for
-// guildID. Uses the internal channelsByGuild index — O(channels_in_guild)
+// guildID. Uses the pkg channelsByGuild index — O(channels_in_guild)
 // rather than O(total_channels). Threads are excluded to match the Discord API.
 // Returns an empty collection when no cache is configured.
 // Satisfies the discord.EntityClient interface.

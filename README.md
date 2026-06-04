@@ -203,7 +203,7 @@ _, err := bot.BulkRegisterCommands(ctx, []*commands.ApplicationCommand{
     {
         Name:        "ping",
         Description: "Replies with Pong!",
-        Type:        common.ApplicationCommandTypeChatInput,
+        Type:        discord.ApplicationCommandTypeChatInput,
     },
 })
 ```
@@ -361,6 +361,30 @@ bot.OnGuildStickerRemove(func(c *connection.Client, ev *events.GuildStickerRemov
 | Voice Channel Start Time Update | `events.EventVoiceChannelStartTimeUpdate` |
 | Voice Channel Effect Send | `events.EventVoiceChannelEffectSend` |
 | Webhooks Update | `events.EventWebhooksUpdate` |
+
+## Documentation
+
+In-depth guides live in [`docs/`](docs/README.md):
+
+| Guide | Covers |
+|-------|--------|
+| [Getting started](docs/GETTING_STARTED.md) | From empty folder to a running bot |
+| [Configuration](docs/CONFIGURATION.md) | Intents and every `options.With…` option |
+| [Events & handlers](docs/EVENTS.md) | Handlers, middleware, concurrency, synthetic events |
+| [Slash commands](docs/COMMANDS.md) | Registering commands, reading options, replying |
+| [Command management](docs/COMMAND_MANAGEMENT.md) | Create, edit, delete, scope commands; permissions |
+| [Components](docs/COMPONENTS.md) | Buttons, select menus, Components V2 |
+| [Modals](docs/MODALS.md) | Modal forms: build, show, read |
+| [Messages](docs/MESSAGES.md) | Sending, editing, attachments, mentions |
+| [Embeds](docs/EMBEDS.md) | Building and validating embeds |
+| [Cache behavior](docs/CACHE.md) | What is cached, when, and incomplete member caches |
+| [Sharding](docs/SHARDING.md) | `ShardManager`, local coordinator, cross-shard messaging |
+| [REST client](docs/REST.md) | Standalone REST usage and typed errors |
+
+New to the library? Start with [Getting started](docs/GETTING_STARTED.md), then
+copy [`example/template`](example/template) as your project skeleton. Other
+runnable programs under [`example/`](example): `caching`, `commands`,
+`sharding`, and `slash_with_defer`.
 
 ## API reference
 

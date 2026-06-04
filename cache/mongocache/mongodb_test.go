@@ -51,7 +51,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		if isDockerUnavailable(err) {
 			// Docker isn't available (e.g. CI without a Docker daemon). Run the
-			// suite anyway so the Docker-free internal tests still execute; the
+			// suite anyway so the Docker-free pkg tests still execute; the
 			// container-backed tests skip themselves when mongoClient is nil.
 			log.Printf("Docker is not available — skipping MongoDB integration tests: %v", err)
 			os.Exit(m.Run())

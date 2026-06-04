@@ -20,7 +20,7 @@ import (
 
 // wsConn wraps a single Discord gateway connection.
 // The exported fields below are read-only for external consumers; they are
-// written by the library under internal locks and must not be mutated directly.
+// written by the library under pkg locks and must not be mutated directly.
 // Use the typed accessors on Client (e.g. Client.BotUser, Client.IsGuildUnavailable)
 // for safe concurrent access to gateway state.
 type wsConn struct {
@@ -513,7 +513,7 @@ func (d *Client) listenWebsocket() error {
 			canDispatch := func() (ok bool) {
 				defer func() {
 					if r := recover(); r != nil {
-						d.Logger.Error("panic in internal event handler", slog.Any("recover", r))
+						d.Logger.Error("panic in pkg event handler", slog.Any("recover", r))
 					}
 				}()
 				return d.internalEventHandler(payload.D, event.Event(), event)

@@ -68,7 +68,7 @@ func (s *endpointSuite) TestWebhookRestEndpoints() {
 }
 
 // webhookClientSuite covers the high-level WebhookClient wrapper. It uses its
-// own mock server (the WebhookClient owns an internal RestClient) and verifies
+// own mock server (the WebhookClient owns an pkg RestClient) and verifies
 // the convenience methods that the existing webhook_client_test.go leaves
 // uncovered (Edit, Delete, SendSlack, SendGitHub, FetchMessage, EditMessage,
 // the Reset* default helpers, and NewWebhookClientFromURL).

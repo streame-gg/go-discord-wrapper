@@ -247,7 +247,7 @@ func (su *restSuite) TestNoRetryWhenDisabled() {
 		atomic.AddInt32(&callCount, 1)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(`{"code":0,"message":"internal server error"}`))
+		_, _ = w.Write([]byte(`{"code":0,"message":"pkg server error"}`))
 	}))
 	defer ts.Close()
 

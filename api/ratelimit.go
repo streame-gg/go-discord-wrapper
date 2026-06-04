@@ -207,7 +207,7 @@ func (r *rateLimiter) wait(ctx context.Context, method, path string) error {
 	return nil
 }
 
-// update reads Discord rate-limit headers from resp and updates internal state.
+// update reads Discord rate-limit headers from resp and updates pkg state.
 // It must be called after every HTTP response, including 429s.
 func (r *rateLimiter) update(method, path string, resp *http.Response) {
 	if resp == nil {
