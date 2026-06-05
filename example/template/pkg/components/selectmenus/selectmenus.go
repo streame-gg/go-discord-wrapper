@@ -17,8 +17,9 @@ func Register(h components.Handler) { registry.Register(h) }
 // Lookup returns the select-menu handler for the given custom ID, if any.
 func Lookup(id string) (components.Handler, bool) { return registry.Lookup(id) }
 
-// Reload rebuilds the lookup table. Called at startup and by /dev reload.
-func Reload() { registry.Reload() }
+// Reload rebuilds the lookup table, returning an error on a duplicate custom ID.
+// Called at startup and by /dev reload.
+func Reload() error { return registry.Reload() }
 
 // SelectedValues returns the values the user chose in a select-menu interaction.
 func SelectedValues(i *interactions.Interaction) []string {

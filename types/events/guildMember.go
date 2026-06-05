@@ -38,18 +38,18 @@ type GuildMemberUpdateEvent struct {
 
 func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	type wire struct {
-		GuildID                    discord.Snowflake   `json:"guild_id"`
-		Roles                      []discord.Snowflake `json:"roles"`
-		User                       discord.User        `json:"user"`
-		Nick                       *string             `json:"nick,omitempty"`
-		AvatarHash                 *string             `json:"avatar,omitempty"`
-		JoinedAt                   *time.Time          `json:"joined_at,omitempty"`
-		PremiumSince               *time.Time          `json:"premium_since,omitempty"`
-		Deaf                       *bool               `json:"deaf,omitempty"`
-		Mute                       *bool               `json:"mute,omitempty"`
-		Pending                    *bool               `json:"pending,omitempty"`
-		CommunicationDisabledUntil *string             `json:"communication_disabled_until,omitempty"`
-		Flags                      *int                `json:"flags,omitempty"`
+		GuildID                    discord.Snowflake         `json:"guild_id"`
+		Roles                      []discord.Snowflake       `json:"roles"`
+		User                       discord.User              `json:"user"`
+		Nick                       *string                   `json:"nick,omitempty"`
+		AvatarHash                 *string                   `json:"avatar,omitempty"`
+		JoinedAt                   *time.Time                `json:"joined_at,omitempty"`
+		PremiumSince               *time.Time                `json:"premium_since,omitempty"`
+		Deaf                       *bool                     `json:"deaf,omitempty"`
+		Mute                       *bool                     `json:"mute,omitempty"`
+		Pending                    *bool                     `json:"pending,omitempty"`
+		CommunicationDisabledUntil *string                   `json:"communication_disabled_until,omitempty"`
+		Flags                      *discord.GuildMemberFlags `json:"flags,omitempty"`
 	}
 	var w wire
 	if err := json.Unmarshal(data, &w); err != nil {
@@ -90,19 +90,19 @@ func (e GuildMemberUpdateEvent) MarshalJSON() ([]byte, error) {
 	roles := make([]discord.Snowflake, len(m.Roles))
 	copy(roles, m.Roles)
 	type wire struct {
-		GuildID                    discord.Snowflake    `json:"guild_id"`
-		Roles                      []discord.Snowflake  `json:"roles"`
-		User                       *discord.User        `json:"user,omitempty"`
-		Nick                       *string              `json:"nick,omitempty"`
-		AvatarHash                 *string              `json:"avatar,omitempty"`
-		JoinedAt                   *time.Time           `json:"joined_at,omitempty"`
-		PremiumSince               *time.Time           `json:"premium_since,omitempty"`
-		CommunicationDisabledUntil *time.Time           `json:"communication_disabled_until,omitempty"`
-		Deaf                       *bool                `json:"deaf,omitempty"`
-		Mute                       *bool                `json:"mute,omitempty"`
-		Pending                    bool                 `json:"pending,omitempty"`
-		Flags                      int                  `json:"flags,omitempty"`
-		OldMember                  *discord.GuildMember `json:"old_member,omitempty"`
+		GuildID                    discord.Snowflake        `json:"guild_id"`
+		Roles                      []discord.Snowflake      `json:"roles"`
+		User                       *discord.User            `json:"user,omitempty"`
+		Nick                       *string                  `json:"nick,omitempty"`
+		AvatarHash                 *string                  `json:"avatar,omitempty"`
+		JoinedAt                   *time.Time               `json:"joined_at,omitempty"`
+		PremiumSince               *time.Time               `json:"premium_since,omitempty"`
+		CommunicationDisabledUntil *time.Time               `json:"communication_disabled_until,omitempty"`
+		Deaf                       *bool                    `json:"deaf,omitempty"`
+		Mute                       *bool                    `json:"mute,omitempty"`
+		Pending                    bool                     `json:"pending,omitempty"`
+		Flags                      discord.GuildMemberFlags `json:"flags,omitempty"`
+		OldMember                  *discord.GuildMember     `json:"old_member,omitempty"`
 	}
 	var jat *time.Time
 	if !m.JoinedAt.IsZero() {

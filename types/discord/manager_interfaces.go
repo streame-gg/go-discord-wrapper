@@ -15,11 +15,16 @@ import (
 // intentional: the caller must check the pointer before use. This is
 // intentionally distinct from ErrNotConvertable, which indicates an
 // unsupported input type. Use Get+Fetch when you need a guaranteed result.
+//
+// GetOrFetch contract: returns the cached entity when present, otherwise falls
+// back to Fetch (a REST call). It is the convenient "give me this entity"
+// path — equivalent to checking Get and calling Fetch on a miss.
 
 // MemberManager manages guild members for a single guild.
 type MemberManager interface {
 	Cache() *collection.Collection[Snowflake, *GuildMember]
 	Get(userID Snowflake) (*GuildMember, bool)
+	GetOrFetch(ctx context.Context, userID Snowflake) (*GuildMember, error)
 	Fetch(ctx context.Context, userID Snowflake) (*GuildMember, error)
 	FetchAll(ctx context.Context, opts FetchMembersOptions) (*collection.Collection[Snowflake, *GuildMember], error)
 	Resolve(input any) (*GuildMember, error)
@@ -30,6 +35,7 @@ type MemberManager interface {
 type RoleManager interface {
 	Cache() *collection.Collection[Snowflake, *Role]
 	Get(roleID Snowflake) (*Role, bool)
+	GetOrFetch(ctx context.Context, roleID Snowflake) (*Role, error)
 	Fetch(ctx context.Context, roleID Snowflake) (*Role, error)
 	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, *Role], error)
 	Create(ctx context.Context, opts RoleCreateOptions) (*Role, error)
@@ -41,6 +47,7 @@ type RoleManager interface {
 type GuildChannelManager interface {
 	Cache() *collection.Collection[Snowflake, *Channel]
 	Get(channelID Snowflake) (*Channel, bool)
+	GetOrFetch(ctx context.Context, channelID Snowflake) (*Channel, error)
 	Fetch(ctx context.Context, channelID Snowflake) (*Channel, error)
 	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, *Channel], error)
 	Create(ctx context.Context, opts ChannelCreateOptions) (*Channel, error)
@@ -52,6 +59,7 @@ type GuildChannelManager interface {
 type EmojiManager interface {
 	Cache() *collection.Collection[Snowflake, *Emoji]
 	Get(emojiID Snowflake) (*Emoji, bool)
+	GetOrFetch(ctx context.Context, emojiID Snowflake) (*Emoji, error)
 	Fetch(ctx context.Context, emojiID Snowflake) (*Emoji, error)
 	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, *Emoji], error)
 	Create(ctx context.Context, opts EmojiCreateOptions) (*Emoji, error)
@@ -63,6 +71,7 @@ type EmojiManager interface {
 type StickerManager interface {
 	Cache() *collection.Collection[Snowflake, *Sticker]
 	Get(stickerID Snowflake) (*Sticker, bool)
+	GetOrFetch(ctx context.Context, stickerID Snowflake) (*Sticker, error)
 	Fetch(ctx context.Context, stickerID Snowflake) (*Sticker, error)
 	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, *Sticker], error)
 	Create(ctx context.Context, opts StickerCreateOptions) (*Sticker, error)
@@ -82,6 +91,7 @@ type BanManager interface {
 type ScheduledEventManager interface {
 	Cache() *collection.Collection[Snowflake, *GuildScheduledEvent]
 	Get(eventID Snowflake) (*GuildScheduledEvent, bool)
+	GetOrFetch(ctx context.Context, eventID Snowflake) (*GuildScheduledEvent, error)
 	Fetch(ctx context.Context, eventID Snowflake) (*GuildScheduledEvent, error)
 	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, *GuildScheduledEvent], error)
 	Create(ctx context.Context, opts ScheduledEventCreateOptions) (*GuildScheduledEvent, error)
@@ -105,6 +115,7 @@ type StageInstanceManager interface {
 type SoundboardManager interface {
 	Cache() *collection.Collection[Snowflake, *SoundboardSound]
 	Get(soundID Snowflake) (*SoundboardSound, bool)
+	GetOrFetch(ctx context.Context, soundID Snowflake) (*SoundboardSound, error)
 	Fetch(ctx context.Context, soundID Snowflake) (*SoundboardSound, error)
 	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, *SoundboardSound], error)
 	Resolve(input any) (*SoundboardSound, error)
@@ -150,6 +161,7 @@ type IntegrationManager interface {
 type MessageManager interface {
 	Cache() *collection.Collection[Snowflake, *Message]
 	Get(messageID Snowflake) (*Message, bool)
+	GetOrFetch(ctx context.Context, messageID Snowflake) (*Message, error)
 	Fetch(ctx context.Context, messageID Snowflake) (*Message, error)
 	FetchAll(ctx context.Context, opts FetchMessagesOptions) (*collection.Collection[Snowflake, *Message], error)
 	Create(ctx context.Context, opts MessageCreateOptions) (*Message, error)
@@ -163,6 +175,7 @@ type MessageManager interface {
 type ThreadManager interface {
 	Cache() *collection.Collection[Snowflake, *Channel]
 	Get(threadID Snowflake) (*Channel, bool)
+	GetOrFetch(ctx context.Context, threadID Snowflake) (*Channel, error)
 	Fetch(ctx context.Context, threadID Snowflake) (*Channel, error)
 	Resolve(input any) (*Channel, error)
 	Size() int
@@ -174,6 +187,7 @@ type ThreadManager interface {
 type GuildManager interface {
 	Cache() *collection.Collection[Snowflake, *Guild]
 	Get(guildID Snowflake) (*Guild, bool)
+	GetOrFetch(ctx context.Context, guildID Snowflake) (*Guild, error)
 	Fetch(ctx context.Context, guildID Snowflake) (*Guild, error)
 	Resolve(input any) (*Guild, error)
 	Size() int
@@ -183,6 +197,7 @@ type GuildManager interface {
 type UserManager interface {
 	Cache() *collection.Collection[Snowflake, *User]
 	Get(userID Snowflake) (*User, bool)
+	GetOrFetch(ctx context.Context, userID Snowflake) (*User, error)
 	Fetch(ctx context.Context, userID Snowflake) (*User, error)
 	Resolve(input any) (*User, error)
 	Size() int
@@ -192,6 +207,7 @@ type UserManager interface {
 type ChannelManager interface {
 	Cache() *collection.Collection[Snowflake, *Channel]
 	Get(channelID Snowflake) (*Channel, bool)
+	GetOrFetch(ctx context.Context, channelID Snowflake) (*Channel, error)
 	Fetch(ctx context.Context, channelID Snowflake) (*Channel, error)
 	Resolve(input any) (*Channel, error)
 	Size() int

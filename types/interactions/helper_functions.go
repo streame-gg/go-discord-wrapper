@@ -87,6 +87,34 @@ func (i *Interaction) GetFullCommand() (fullCommand string) {
 	return fullCommand
 }
 
+// InvokingUser returns the user who triggered the interaction, whether it
+// arrived from a guild (carried on Member.User) or a DM (carried on User). It
+// returns nil when neither is populated.
+func (i *Interaction) InvokingUser() *discord.User {
+	if i == nil {
+		return nil
+	}
+	if i.Member != nil && i.Member.User != nil {
+		return i.Member.User
+	}
+	return i.User
+}
+
+// UserID returns the ID of the user who triggered the interaction, or a zero
+// Snowflake when it cannot be determined.
+func (i *Interaction) UserID() discord.Snowflake {
+	if u := i.InvokingUser(); u != nil {
+		return u.ID
+	}
+	return 0
+}
+
+// InGuild reports whether the interaction was invoked inside a guild (as opposed
+// to a DM or group DM).
+func (i *Interaction) InGuild() bool {
+	return i != nil && i.GuildID != nil && !i.GuildID.IsEmpty()
+}
+
 func (i *Interaction) GetCustomID() string {
 	if i.Data == nil {
 		return ""

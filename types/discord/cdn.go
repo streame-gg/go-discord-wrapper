@@ -126,6 +126,19 @@ func (m *GuildMember) AvatarURL(opts *ImageOptions) string {
 	return imageURL(cdnBaseURL, path, hashIsAnimated(h), opts)
 }
 
+// DisplayAvatarURL returns the avatar Discord shows for this member: their
+// per-guild avatar when set, otherwise the underlying user's avatar (custom or
+// default). It returns "" only when no user is attached to fall back to.
+func (m *GuildMember) DisplayAvatarURL(opts *ImageOptions) string {
+	if url := m.AvatarURL(opts); url != "" {
+		return url
+	}
+	if m != nil && m.User != nil {
+		return m.User.DisplayAvatarURL(opts)
+	}
+	return ""
+}
+
 // BannerURL returns the member's guild-specific banner URL, or "" if unset.
 func (m *GuildMember) BannerURL(opts *ImageOptions) string {
 	if m == nil || m.BannerHash == nil {

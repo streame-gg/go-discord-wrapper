@@ -75,7 +75,7 @@ type Application struct {
 	PrimarySKUID                      *Snowflake                    `json:"primary_sku_id,omitempty"`
 	Slug                              *string                       `json:"slug,omitempty"`
 	CoverImage                        *string                       `json:"cover_image,omitempty"`
-	Flags                             *int                          `json:"flags,omitempty"`
+	Flags                             *ApplicationFlags             `json:"flags,omitempty"`
 	ApproximateGuildCount             *int                          `json:"approximate_guild_count,omitempty"`
 	ApproximateUserInstallCount       *int                          `json:"approximate_user_install_count,omitempty"`
 	ApproximateUserAuthorizationCount *int                          `json:"approximate_user_authorization_count,omitempty"`

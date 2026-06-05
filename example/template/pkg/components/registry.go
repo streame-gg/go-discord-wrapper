@@ -16,6 +16,7 @@
 package components
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/streame-gg/go-discord-wrapper/connection"
@@ -59,19 +60,22 @@ func (r *Registry) Lookup(id string) (Handler, bool) {
 	return h, ok
 }
 
-// Reload rebuilds the lookup table from the registered handlers. Panics on a
-// duplicate custom ID so collisions surface immediately instead of silently
-// shadowing a handler.
-func (r *Registry) Reload() {
+// Reload rebuilds the lookup table from the registered handlers. It returns an
+// error if two handlers share a custom ID, rather than panicking — Reload runs
+// at runtime (see /dev reload), so a collision should surface as an error the
+// caller can report, not crash the bot. On error the live table is left
+// unchanged, so a failed reload keeps the previous working set intact.
+func (r *Registry) Reload() error {
 	m := make(map[string]Handler, len(r.sources))
 	for _, h := range r.sources {
 		id := h.CustomID()
 		if _, dup := m[id]; dup {
-			panic("components: duplicate custom ID " + id)
+			return fmt.Errorf("components: duplicate custom ID %q", id)
 		}
 		m[id] = h
 	}
 	r.mu.Lock()
 	r.live = m
 	r.mu.Unlock()
+	return nil
 }

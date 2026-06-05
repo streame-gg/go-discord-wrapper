@@ -19,8 +19,9 @@ func Register(h components.Handler) { registry.Register(h) }
 // Lookup returns the modal handler for the given custom ID, if any.
 func Lookup(id string) (components.Handler, bool) { return registry.Lookup(id) }
 
-// Reload rebuilds the lookup table. Called at startup and by /dev reload.
-func Reload() { registry.Reload() }
+// Reload rebuilds the lookup table, returning an error on a duplicate custom ID.
+// Called at startup and by /dev reload.
+func Reload() error { return registry.Reload() }
 
 // TextValue returns the submitted value of the text input with the given custom
 // ID, or "" if the modal carried no such field.

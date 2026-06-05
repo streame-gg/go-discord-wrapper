@@ -131,6 +131,36 @@ func (c *Channel) IsThread() bool {
 		c.Type == ChannelTypePrivateThread
 }
 
+// IsTextBased reports whether messages can be sent in this channel — guild text,
+// announcement, voice/stage (text-in-voice), forum/media threads, DMs and group
+// DMs all qualify.
+func (c *Channel) IsTextBased() bool {
+	switch c.Type {
+	case ChannelTypeGuildText,
+		ChannelTypeDM,
+		ChannelTypeGroupDM,
+		ChannelTypeGuildAnnouncement,
+		ChannelTypeGuildVoice,
+		ChannelTypeGuildStageVoice,
+		ChannelTypeAnnouncementThread,
+		ChannelTypePublicThread,
+		ChannelTypePrivateThread:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsVoiceBased reports whether this is a voice or stage channel.
+func (c *Channel) IsVoiceBased() bool {
+	return c.Type == ChannelTypeGuildVoice || c.Type == ChannelTypeGuildStageVoice
+}
+
+// IsDMBased reports whether this channel is a DM or group DM (i.e. has no guild).
+func (c *Channel) IsDMBased() bool {
+	return c.Type == ChannelTypeDM || c.Type == ChannelTypeGroupDM
+}
+
 // FollowedChannel is returned when following an announcement channel.
 type FollowedChannel struct {
 	ChannelID Snowflake `json:"channel_id"`

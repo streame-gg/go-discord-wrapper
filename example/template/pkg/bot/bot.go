@@ -71,9 +71,13 @@ func New(token string) (*Bot, error) {
 	events.Attach(client)
 
 	// Build the component lookup tables (commands build theirs from init()).
-	buttons.Reload()
-	selectmenus.Reload()
-	modals.Reload()
+	// A duplicate custom ID here is a programming error — surface it rather than
+	// start a bot with a shadowed handler.
+	for _, reload := range []func() error{buttons.Reload, selectmenus.Reload, modals.Reload} {
+		if err := reload(); err != nil {
+			return nil, err
+		}
+	}
 
 	// Register the command set once the application ID is known. READY carries
 	// it, and /dev reload re-runs the same commands.Sync, so startup and reload

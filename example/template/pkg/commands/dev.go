@@ -60,7 +60,7 @@ func (dev) Definition() *dcmd.ApplicationCommand {
 }
 
 func (dev) Handle(c *connection.Client, ev *events.InteractionCreateEvent) {
-	if !config.Current.IsOwner(invokingUser(&ev.Interaction)) {
+	if !config.Current.IsOwner(ev.UserID()) {
 		_, _ = ev.Reply(interactions.ReplyOptions{
 			Content: "⛔ This command is owner-only.",
 			Flags:   discord.MessageFlagEphemeral,
@@ -81,15 +81,18 @@ func (dev) Handle(c *connection.Client, ev *events.InteractionCreateEvent) {
 }
 
 // reload performs the requested reload and returns a status line to show the
-// user. It returns an error only when re-registering commands with Discord
-// fails; the in-memory reloads cannot fail.
+// user. It returns an error when re-registering commands with Discord fails or a
+// component registry has a duplicate custom ID, so /dev reload reports the
+// problem instead of crashing the bot.
 func reload(c *connection.Client, i *interactions.Interaction, choice string) (string, error) {
 	switch choice {
 	case "events":
 		tevents.Reload()
 		return "🔁 Reloaded event handlers.", nil
 	case "components":
-		reloadComponents()
+		if err := reloadComponents(); err != nil {
+			return "", fmt.Errorf("component reload failed: %w", err)
+		}
 		return "🔁 Reloaded button, select-menu, and modal handlers.", nil
 	case "commands":
 		n, err := syncCommands(c, i.ApplicationID)
@@ -99,7 +102,9 @@ func reload(c *connection.Client, i *interactions.Interaction, choice string) (s
 		return fmt.Sprintf("🔁 Re-registered %d commands.", n), nil
 	case "all":
 		tevents.Reload()
-		reloadComponents()
+		if err := reloadComponents(); err != nil {
+			return "", fmt.Errorf("component reload failed: %w", err)
+		}
 		n, err := syncCommands(c, i.ApplicationID)
 		if err != nil {
 			return "", fmt.Errorf("reloaded events and components, but command sync failed: %w", err)
@@ -111,11 +116,15 @@ func reload(c *connection.Client, i *interactions.Interaction, choice string) (s
 }
 
 // reloadComponents rebuilds every component registry: buttons, select menus,
-// and modals.
-func reloadComponents() {
-	buttons.Reload()
-	selectmenus.Reload()
-	modals.Reload()
+// and modals. It returns the first duplicate-custom-ID error so the caller can
+// report it; a failed reload leaves that registry's previous table intact.
+func reloadComponents() error {
+	for _, reload := range []func() error{buttons.Reload, selectmenus.Reload, modals.Reload} {
+		if err := reload(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // syncCommands re-registers the command set with Discord, scoped to the
@@ -125,16 +134,4 @@ func syncCommands(c *connection.Client, appID discord.Snowflake) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	return Sync(ctx, c, appID, config.Current.DevGuild)
-}
-
-// invokingUser returns the ID of the user who ran the interaction, whether it
-// arrived from a guild (Member) or a DM (User).
-func invokingUser(i *interactions.Interaction) discord.Snowflake {
-	if i.Member != nil && i.Member.User != nil {
-		return i.Member.User.ID
-	}
-	if i.User != nil {
-		return i.User.ID
-	}
-	return 0
 }

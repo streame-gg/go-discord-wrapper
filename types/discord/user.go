@@ -22,13 +22,13 @@ type User struct {
 	AvatarDecorationData *AvatarDecorationData `json:"avatar_decoration,omitempty"`
 	Bot                  bool                  `json:"bot,omitempty"`
 	Discriminator        string                `json:"discriminator"`
-	Flags                int                   `json:"flags"`
+	Flags                UserFlags             `json:"flags"`
 	GlobalName           *string               `json:"global_name,omitempty"`
 	ID                   Snowflake             `json:"id"`
 	Locale               *string               `json:"locale,omitempty"`
 	MFAEnabled           bool                  `json:"mfa_enabled"`
 	PrimaryGuild         *Clan                 `json:"primary_guild,omitempty"`
-	PublicFlags          int                   `json:"public_flags"`
+	PublicFlags          UserFlags             `json:"public_flags"`
 	System               bool                  `json:"system,omitempty"`
 	Username             string                `json:"username"`
 }

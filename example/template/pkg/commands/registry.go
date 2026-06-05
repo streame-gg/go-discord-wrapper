@@ -69,7 +69,7 @@ func Definitions() []*dcmd.ApplicationCommand {
 // where commands live.
 func Sync(ctx context.Context, c *connection.Client, appID, guild discord.Snowflake) (int, error) {
 	defs := Definitions()
-	if guild != 0 {
+	if !guild.IsEmpty() {
 		out, err := c.RestClient.BulkOverwriteGuildApplicationCommands(ctx, appID, guild, defs)
 		return len(out), err
 	}
