@@ -1,5 +1,10 @@
 package discord
 
+import (
+	"encoding/json"
+	"strconv"
+)
+
 // Generic bitfield helpers, modelled on discord.js' BitField. Discord encodes
 // many things as integer bitmasks (message flags, channel flags, role flags,
 // user badges, application flags, the system-channel suppression mask, …).
@@ -189,8 +194,36 @@ func (m *GuildMember) FlagBits() FlagBits[GuildMemberFlags] {
 // ── Application flags ──────────────────────────────────────────────────────────
 
 // ApplicationFlags is the bitfield of capabilities/gateway intents declared by
-// an application.
-type ApplicationFlags int
+// an application. It is uint64-backed so it can hold flag bits beyond bit 30,
+// which Discord transmits via the string-serialized flags_new field.
+type ApplicationFlags uint64
+
+// UnmarshalJSON accepts either a JSON number (the legacy flags field) or a
+// decimal string (the flags_new field), so the same type backs both.
+func (f *ApplicationFlags) UnmarshalJSON(data []byte) error {
+	if len(data) > 0 && data[0] == '"' {
+		var s string
+		if err := json.Unmarshal(data, &s); err != nil {
+			return err
+		}
+		if s == "" {
+			*f = 0
+			return nil
+		}
+		n, err := strconv.ParseUint(s, 10, 64)
+		if err != nil {
+			return err
+		}
+		*f = ApplicationFlags(n)
+		return nil
+	}
+	var n uint64
+	if err := json.Unmarshal(data, &n); err != nil {
+		return err
+	}
+	*f = ApplicationFlags(n)
+	return nil
+}
 
 const (
 	ApplicationFlagApplicationAutoModerationRuleCreateBadge ApplicationFlags = 1 << 6
@@ -205,12 +238,20 @@ const (
 	ApplicationFlagApplicationCommandBadge                  ApplicationFlags = 1 << 23
 )
 
-// FlagBits returns the application's capability flags as a FlagBits.
+// FlagBits returns the application's capability flags as a FlagBits. It prefers
+// the complete flags_new value (which can carry bits beyond bit 30) and falls
+// back to the legacy flags field when flags_new is absent.
 func (a *Application) FlagBits() FlagBits[ApplicationFlags] {
-	if a == nil || a.Flags == nil {
+	if a == nil {
 		return FlagBits[ApplicationFlags]{}
 	}
-	return NewFlagBits(*a.Flags)
+	if a.FlagsNew != nil {
+		return NewFlagBits(*a.FlagsNew)
+	}
+	if a.Flags != nil {
+		return NewFlagBits(*a.Flags)
+	}
+	return FlagBits[ApplicationFlags]{}
 }
 
 // ── Per-entity accessors for the already-typed bitfields ───────────────────────

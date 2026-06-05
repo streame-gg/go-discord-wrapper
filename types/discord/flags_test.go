@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -105,4 +106,26 @@ func (s *flagsSuite) TestEntityAccessors() {
 	s.True((&Application{}).FlagBits().IsEmpty())
 	af := ApplicationFlagGatewayMessageContent
 	s.True((&Application{Flags: &af}).FlagBits().Has(ApplicationFlagGatewayMessageContent))
+	// flags_new takes precedence over the legacy flags field.
+	legacy := ApplicationFlagEmbedded
+	fresh := ApplicationFlagGatewayMessageContent
+	app := &Application{Flags: &legacy, FlagsNew: &fresh}
+	s.True(app.FlagBits().Has(ApplicationFlagGatewayMessageContent))
+	s.False(app.FlagBits().Has(ApplicationFlagEmbedded))
+}
+
+// TestApplicationFlagsUnmarshal verifies the legacy flags (number) and the new
+// flags_new (string) both decode into ApplicationFlags.
+func (s *flagsSuite) TestApplicationFlagsUnmarshal() {
+	var app Application
+	raw := `{"id":"123","name":"x","flags":131072,"flags_new":"131072"}`
+	s.Require().NoError(json.Unmarshal([]byte(raw), &app))
+	s.Require().NotNil(app.Flags)
+	s.Require().NotNil(app.FlagsNew)
+	s.Equal(ApplicationFlagEmbedded, *app.Flags)    // 1<<17 = 131072
+	s.Equal(ApplicationFlagEmbedded, *app.FlagsNew) // parsed from string
+	// Empty string decodes to zero rather than erroring.
+	var f ApplicationFlags
+	s.Require().NoError(json.Unmarshal([]byte(`""`), &f))
+	s.Zero(f)
 }

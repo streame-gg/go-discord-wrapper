@@ -44,7 +44,7 @@ func (su *apiErrorsSuite) TestAPIErrorAs() {
 	t := su.T()
 	original := &Error{
 		HTTPStatus: http.StatusNotFound,
-		Code:       discord.GatewayErrorCode(10003),
+		Code:       discord.JSONErrorCode(10003),
 		Message:    "Unknown Channel",
 	}
 
@@ -53,7 +53,7 @@ func (su *apiErrorsSuite) TestAPIErrorAs() {
 	var apiErr *Error
 	require.True(t, errors.As(wrapped, &apiErr), "errors.As should unwrap *APIError")
 	assert.Equal(t, http.StatusNotFound, apiErr.HTTPStatus)
-	assert.Equal(t, discord.GatewayErrorCode(10003), apiErr.Code)
+	assert.Equal(t, discord.JSONErrorCode(10003), apiErr.Code)
 	assert.Equal(t, "Unknown Channel", apiErr.Message)
 }
 
@@ -62,7 +62,7 @@ func (su *apiErrorsSuite) TestAPIErrorString() {
 	t.Run("with discord code", func(t *testing.T) {
 		err := &Error{
 			HTTPStatus: http.StatusNotFound,
-			Code:       discord.GatewayErrorCode(10003),
+			Code:       discord.JSONErrorCode(10003),
 			Message:    "Unknown Channel",
 		}
 		s := err.Error()

@@ -668,7 +668,7 @@ func decodeGatewayErrorFromBytes(buf []byte, resp *http.Response) error {
 	_ = json.Unmarshal(buf, &body)
 	return &Error{
 		HTTPStatus: resp.StatusCode,
-		Code:       discord.GatewayErrorCode(body.Code),
+		Code:       discord.JSONErrorCode(body.Code),
 		Message:    body.Message,
 		Errors:     body.Errors,
 	}

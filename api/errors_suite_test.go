@@ -25,7 +25,7 @@ func (s *errorsSuite) TestDiscordCodeErrorString() {
 	// ErrUnknownChannel is a *discordCodeError; its Error() embeds the numeric code.
 	var ce *discordCodeError
 	s.Require().ErrorAs(ErrUnknownChannel, &ce)
-	s.Equal(int(discord.GatewayErrorCodeUnknownChannel), int(ce.code))
+	s.Equal(int(discord.JSONErrorCodeUnknownChannel), int(ce.code))
 	s.Contains(ce.Error(), "error code")
 }
 
@@ -46,7 +46,7 @@ func (s *errorsSuite) TestErrorIsStatusSentinels() {
 }
 
 func (s *errorsSuite) TestErrorIsTypedCodeSentinels() {
-	err := &Error{HTTPStatus: 403, Code: discord.GatewayErrorCodeMissingPermissions}
+	err := &Error{HTTPStatus: 403, Code: discord.JSONErrorCodeMissingPermissions}
 	s.True(errors.Is(err, ErrMissingPermissions))
 	s.False(errors.Is(err, ErrUnknownChannel))
 }
