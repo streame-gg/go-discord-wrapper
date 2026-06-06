@@ -2,6 +2,7 @@ package discord
 
 import "time"
 
+// https://docs.discord.com/developers/resources/invite#invite-object-invite-target-types
 type InviteTargetUserType int
 
 const (
@@ -9,12 +10,14 @@ const (
 	InviteTargetUserTypeEmbeddedApplication InviteTargetUserType = 2
 )
 
+// https://docs.discord.com/developers/resources/invite#invite-object-invite-flags
 type InviteFlags int
 
 const (
 	IsGuestInvite InviteFlags = 1 << 0
 )
 
+// https://docs.discord.com/developers/resources/invite#invite-object
 type Invite struct {
 	hClient                  EntityClient
 	Code                     string                `json:"code"`

@@ -10,6 +10,7 @@ var errEmojiNoGuildID = errors.New("discord: Emoji.GuildID is not set — ensure
 // ── Options ───────────────────────────────────────────────────────────────────
 
 // EmojiCreateOptions configures Guild.CreateEmoji.
+// https://docs.discord.com/developers/resources/emoji#create-guild-emoji
 type EmojiCreateOptions struct {
 	Name string
 	// Image is a base64-encoded image data URI (e.g. "data:image/png;base64,...").
@@ -19,6 +20,7 @@ type EmojiCreateOptions struct {
 }
 
 // EmojiEditOptions configures Emoji.Edit.
+// https://docs.discord.com/developers/resources/emoji#modify-guild-emoji
 type EmojiEditOptions struct {
 	Name           *string
 	Roles          []Snowflake

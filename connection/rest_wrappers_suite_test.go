@@ -189,7 +189,10 @@ func (s *restWrappersSuite) TestSliceWrappers() {
 	s.setBody(`[{"id":"175928847299117063","channel_id":"175928847299117063","content":"hi","name":"x"}]`)
 
 	mustNoErr(c.ListChannelMessagesRaw(ctx, id, api.GetMessagesParams{}))
+	// ListPinnedMessages now walks the paginated Get Channel Pins object.
+	s.setBody(`{"items":[],"has_more":false}`)
 	mustNoErr(c.ListPinnedMessages(ctx, id))
+	s.setBody(`[{"id":"175928847299117063","channel_id":"175928847299117063","content":"hi","name":"x"}]`)
 	mustNoErr(c.ListReactions(ctx, id, id, "👍", api.GetReactionsParams{}))
 	mustNoErr(c.ListChannelInvites(ctx, id))
 	mustNoErr(c.ListGuildChannels(ctx, id))

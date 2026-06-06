@@ -10,6 +10,7 @@ var errSoundNoGuildID = errors.New("discord: SoundboardSound.GuildID is not set 
 // ── Options ───────────────────────────────────────────────────────────────────
 
 // SoundEditOptions configures SoundboardSound.Edit.
+// https://docs.discord.com/developers/resources/soundboard#modify-guild-soundboard-sound
 type SoundEditOptions struct {
 	Name           *string
 	Volume         *float64

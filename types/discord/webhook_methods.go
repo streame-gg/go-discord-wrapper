@@ -5,6 +5,7 @@ import "context"
 // ── Options ───────────────────────────────────────────────────────────────────
 
 // WebhookEditOptions configures Webhook.Edit.
+// https://docs.discord.com/developers/resources/webhook#modify-webhook
 type WebhookEditOptions struct {
 	Name           *string
 	Avatar         *string
@@ -13,6 +14,7 @@ type WebhookEditOptions struct {
 }
 
 // WebhookExecuteOptions configures Webhook.Execute.
+// https://docs.discord.com/developers/resources/webhook#execute-webhook
 type WebhookExecuteOptions struct {
 	Content         string
 	Username        *string

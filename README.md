@@ -11,7 +11,7 @@ A Go library for the Discord gateway and REST API.
 ## Features
 
 - Gateway (WebSocket) client with automatic reconnection and resume
-- Full REST API coverage for guilds, channels, messages, roles, interactions, webhooks, and more
+- Near-complete REST API coverage for guilds, channels, messages, roles, interactions, webhooks, and more (~224 endpoints; see [known gaps](docs/COVERAGE_GAPS.md))
 - Proactive rate limiter — respects per-route and global Discord rate limits before sending
 - In-process memory cache (guild, channel, member, message, role, voice state, emoji, sticker, …) with TTL and LRU eviction
 - Pluggable cache backends (Redis and MongoDB drivers included)
@@ -20,22 +20,26 @@ A Go library for the Discord gateway and REST API.
 - Horizontal sharding with a built-in shard coordinator
 - Middleware support for event handlers
 
+Also see Features in the documentation: [docs/README.md](docs/README.md).
+
 ## Project status & v1.0 scope
 
-> ### ⚠️ Voice connections are **out of scope** for v1.0 — and will stay that way.
->
-> This library tracks voice **state and server events** (`VOICE_STATE_UPDATE`,
-> `VOICE_SERVER_UPDATE`, etc.) and exposes the voice REST endpoints, **but it does
-> not — and for v1.0 will not — establish voice connections.** There is no UDP
-> transport, no Opus encoding/decoding, and no sending or receiving of audio.
->
-> If you need to play or receive audio, run
-> [bwmarrin/discordgo](https://github.com/bwmarrin/discordgo) alongside this
-> library for voice operations only. Voice connectivity is not on the v1.0
-> roadmap; do not file it as a v1.0 blocker.
+**v1.0 — first stable release.** The public API is frozen and follows
+[semantic versioning](https://semver.org/): no breaking changes within the v1
+line. That said, this is a young library — expect to hit bugs in less-travelled
+corners. Please [open an issue](https://github.com/streame-gg/go-discord-wrapper/issues)
+when you do; reports against v1.0 are very welcome.
 
-Everything else in the [feature list](#features) above is in scope and covered by
-the test suite. See [COVERAGE.md](COVERAGE.md) for current per-package coverage.
+### How this library was built
+
+The original foundation of this library was written by hand. Most of the surface
+area beyond that — the breadth of REST endpoints, event handling, and supporting
+code — was built with substantial AI assistance and has **not yet been reviewed
+line-by-line by a human**. Correctness is instead guarded by an extensive
+automated test suite (see [COVERAGE.md](COVERAGE.md)); the tests, not a manual
+read-through, are the primary correctness guarantee today. We're being upfront
+about this so you can weigh it for your use case. Human review is ongoing, and —
+as above — bug reports are the fastest way to harden the library.
 
 ## Installation
 
@@ -313,6 +317,7 @@ bot.OnGuildStickerRemove(func(c *connection.Client, ev *events.GuildStickerRemov
 | Guild Ban Remove | `events.EventGuildBanRemove` |
 | Guild Emojis Update | `events.EventGuildEmojisUpdate` |
 | Guild Stickers Update | `events.EventGuildStickersUpdate` |
+| Guild Integrations Update | `events.EventGuildIntegrationsUpdate` |
 | Guild Member Add | `events.EventGuildMemberAdd` |
 | Guild Member Update | `events.EventGuildMemberUpdate` |
 | Guild Member Remove | `events.EventGuildMemberRemove` |
@@ -361,6 +366,12 @@ bot.OnGuildStickerRemove(func(c *connection.Client, ev *events.GuildStickerRemov
 | Voice Channel Start Time Update | `events.EventVoiceChannelStartTimeUpdate` |
 | Voice Channel Effect Send | `events.EventVoiceChannelEffectSend` |
 | Webhooks Update | `events.EventWebhooksUpdate` |
+
+> **Voice channel status ≠ channel update.** When a voice channel's *status*
+> text changes, Discord sends a dedicated `VOICE_CHANNEL_STATUS_UPDATE` — **not**
+> `CHANNEL_UPDATE`. Subscribe with `OnVoiceChannelStatusUpdate`, not
+> `OnChannelUpdate`. (When the cache is enabled, the wrapper also patches the
+> cached channel's `Status` field for you.)
 
 ## Documentation
 

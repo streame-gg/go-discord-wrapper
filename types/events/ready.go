@@ -7,6 +7,7 @@ import (
 )
 
 // ReadyShard carries the shard identity from the READY payload.
+// https://docs.discord.com/developers/events/gateway-events#ready
 type ReadyShard struct {
 	ShardID   int
 	NumShards int
@@ -27,11 +28,13 @@ func (s *ReadyShard) UnmarshalJSON(data []byte) error {
 }
 
 // ReadyApplication carries the application identity from the READY payload.
+// https://docs.discord.com/developers/events/gateway-events#ready
 type ReadyApplication struct {
 	ID    discord.Snowflake `json:"id"`
 	Flags int               `json:"flags"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#ready
 type ReadyEvent struct {
 	User             discord.User     `json:"user"`
 	Application      ReadyApplication `json:"application"`
@@ -43,6 +46,7 @@ type ReadyEvent struct {
 }
 
 // ResumedEvent is dispatched when a session is successfully resumed.
+// https://docs.discord.com/developers/events/gateway-events#resumed
 type ResumedEvent struct{}
 
 func init() {

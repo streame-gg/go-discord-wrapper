@@ -1,5 +1,6 @@
 package discord
 
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-interaction-type
 type InteractionType int
 
 const (
@@ -10,6 +11,7 @@ const (
 	InteractionTypeModalSubmit                    InteractionType = 5
 )
 
+// https://docs.discord.com/developers/resources/application#application-object-application-integration-types
 type InteractionApplicationIntegrationType int
 
 const (
@@ -17,6 +19,7 @@ const (
 	InteractionApplicationIntegrationTypeUserInstall  InteractionApplicationIntegrationType = 1
 )
 
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-interaction-context-types
 type InteractionContextType int
 
 const (
@@ -25,6 +28,7 @@ const (
 	InteractionContextTypePrivateChannel InteractionContextType = 2
 )
 
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-response-object-interaction-callback-type
 type InteractionCallbackType int
 
 const (
@@ -38,6 +42,7 @@ const (
 	InteractionCallbackTypeLaunchActivity                       InteractionCallbackType = 12
 )
 
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-interaction-data
 type InteractionDataType int
 
 const (
@@ -48,10 +53,12 @@ const (
 	InteractionDataTypeModalSubmit                    InteractionDataType = 5
 )
 
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-interaction-data
 type InteractionData interface {
 	GetType() InteractionDataType
 }
 
+// https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-types
 type ApplicationCommandType int
 
 const (
@@ -61,6 +68,7 @@ const (
 	ApplicationCommandTypePrimaryEndpoint ApplicationCommandType = 4
 )
 
+// https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-option-type
 type ApplicationCommandOptionType int
 
 const (

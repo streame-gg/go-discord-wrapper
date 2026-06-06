@@ -465,6 +465,226 @@ func (su *paginationSuite) TestFetchAllScheduledEventUsersMultiplePages() {
 	assert.Equal(t, lastID1, secondAfter)
 }
 
+func (su *paginationSuite) TestFetchAllReactionsMultiplePages() {
+	t := su.T()
+	page1 := make([]*discord.User, 100)
+	for i := range page1 {
+		page1[i] = &discord.User{ID: discord.Snowflake(uint64(i + 1))}
+	}
+	last1 := page1[99].ID
+	page2 := []*discord.User{{ID: discord.Snowflake(200)}}
+
+	var n int32
+	var after2 string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := atomic.AddInt32(&n, 1)
+		q, _ := url.ParseQuery(r.URL.RawQuery)
+		w.Header().Set("Content-Type", "application/json")
+		if c == 1 {
+			_ = json.NewEncoder(w).Encode(page1)
+		} else {
+			after2 = q.Get("after")
+			_ = json.NewEncoder(w).Encode(page2)
+		}
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	users, err := client.FetchAllReactions(context.Background(), discord.Snowflake(1234567890123456789), discord.Snowflake(1234567890123456789), "👍", GetReactionsParams{})
+	require.NoError(t, err)
+	assert.Len(t, users, 101)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&n))
+	assert.Equal(t, last1.String(), after2)
+}
+
+func (su *paginationSuite) TestFetchAllPollAnswerVotersMultiplePages() {
+	t := su.T()
+	page1 := make([]*discord.User, 100)
+	for i := range page1 {
+		page1[i] = &discord.User{ID: discord.Snowflake(uint64(i + 1))}
+	}
+	last1 := page1[99].ID
+
+	var n int32
+	var after2 string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := atomic.AddInt32(&n, 1)
+		q, _ := url.ParseQuery(r.URL.RawQuery)
+		w.Header().Set("Content-Type", "application/json")
+		if c == 1 {
+			_ = json.NewEncoder(w).Encode(GetPollAnswerVotersResponse{Users: page1})
+		} else {
+			after2 = q.Get("after")
+			_ = json.NewEncoder(w).Encode(GetPollAnswerVotersResponse{Users: []*discord.User{{ID: discord.Snowflake(200)}}})
+		}
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	users, err := client.FetchAllPollAnswerVoters(context.Background(), discord.Snowflake(1234567890123456789), discord.Snowflake(1234567890123456789), 0)
+	require.NoError(t, err)
+	assert.Len(t, users, 101)
+	assert.Equal(t, last1.String(), after2)
+}
+
+func (su *paginationSuite) TestFetchAllCurrentUserGuildsMultiplePages() {
+	t := su.T()
+	page1 := make([]*discord.CurrentUserGuild, 200)
+	for i := range page1 {
+		page1[i] = &discord.CurrentUserGuild{ID: discord.Snowflake(uint64(i + 1)), Name: "g"}
+	}
+	last1 := page1[199].ID
+
+	var n int32
+	var after2 string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := atomic.AddInt32(&n, 1)
+		q, _ := url.ParseQuery(r.URL.RawQuery)
+		w.Header().Set("Content-Type", "application/json")
+		if c == 1 {
+			_ = json.NewEncoder(w).Encode(page1)
+		} else {
+			after2 = q.Get("after")
+			_ = json.NewEncoder(w).Encode([]*discord.CurrentUserGuild{{ID: discord.Snowflake(500), Name: "g"}})
+		}
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	guilds, err := client.FetchAllCurrentUserGuilds(context.Background(), GetCurrentUserGuildsParams{})
+	require.NoError(t, err)
+	assert.Len(t, guilds, 201)
+	assert.Equal(t, last1.String(), after2)
+}
+
+func (su *paginationSuite) TestFetchAllThreadMembersMultiplePages() {
+	t := su.T()
+	mk := func(n, start int) []*discord.ThreadMember {
+		out := make([]*discord.ThreadMember, n)
+		for i := range out {
+			id := discord.Snowflake(uint64(start + i))
+			out[i] = &discord.ThreadMember{UserID: &id}
+		}
+		return out
+	}
+	page1 := mk(100, 1)
+	last1 := *page1[99].UserID
+
+	var n int32
+	var after2, withMember string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := atomic.AddInt32(&n, 1)
+		q, _ := url.ParseQuery(r.URL.RawQuery)
+		withMember = q.Get("with_member")
+		w.Header().Set("Content-Type", "application/json")
+		if c == 1 {
+			_ = json.NewEncoder(w).Encode(page1)
+		} else {
+			after2 = q.Get("after")
+			_ = json.NewEncoder(w).Encode(mk(2, 200))
+		}
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	members, err := client.FetchAllThreadMembers(context.Background(), discord.Snowflake(1234567890123456789))
+	require.NoError(t, err)
+	assert.Len(t, members, 102)
+	assert.Equal(t, last1.String(), after2)
+	assert.Equal(t, "true", withMember, "FetchAllThreadMembers must request with_member to paginate")
+}
+
+func (su *paginationSuite) TestFetchAllSKUSubscriptionsMultiplePages() {
+	t := su.T()
+	page1 := make([]*discord.Subscription, 100)
+	for i := range page1 {
+		page1[i] = &discord.Subscription{ID: discord.Snowflake(uint64(i + 1))}
+	}
+	last1 := page1[99].ID
+
+	var n int32
+	var after2 string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := atomic.AddInt32(&n, 1)
+		q, _ := url.ParseQuery(r.URL.RawQuery)
+		w.Header().Set("Content-Type", "application/json")
+		if c == 1 {
+			_ = json.NewEncoder(w).Encode(page1)
+		} else {
+			after2 = q.Get("after")
+			_ = json.NewEncoder(w).Encode([]*discord.Subscription{{ID: discord.Snowflake(200)}})
+		}
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	subs, err := client.FetchAllSKUSubscriptions(context.Background(), discord.Snowflake(1234567890123456789), ListSKUSubscriptionsParams{})
+	require.NoError(t, err)
+	assert.Len(t, subs, 101)
+	assert.Equal(t, last1.String(), after2)
+}
+
+func (su *paginationSuite) TestFetchAllGuildJoinRequestsMultiplePages() {
+	t := su.T()
+	page1 := make([]*discord.GuildJoinRequest, 100)
+	for i := range page1 {
+		page1[i] = &discord.GuildJoinRequest{ID: discord.Snowflake(uint64(i + 1))}
+	}
+	last1 := page1[99].ID
+
+	var n int32
+	var after2 string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := atomic.AddInt32(&n, 1)
+		q, _ := url.ParseQuery(r.URL.RawQuery)
+		w.Header().Set("Content-Type", "application/json")
+		if c == 1 {
+			_ = json.NewEncoder(w).Encode(GuildJoinRequestsResponse{Total: 101, GuildJoinRequests: page1})
+		} else {
+			after2 = q.Get("after")
+			_ = json.NewEncoder(w).Encode(GuildJoinRequestsResponse{Total: 101, GuildJoinRequests: []*discord.GuildJoinRequest{{ID: discord.Snowflake(200)}}})
+		}
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	reqs, err := client.FetchAllGuildJoinRequests(context.Background(), discord.Snowflake(1234567890123456789), GetGuildJoinRequestsParams{})
+	require.NoError(t, err)
+	assert.Len(t, reqs, 101)
+	assert.Equal(t, last1.String(), after2)
+}
+
+func (su *paginationSuite) TestFetchAllPublicArchivedThreadsMultiplePages() {
+	t := su.T()
+	page1 := `{"threads":[{"id":"1234567890123456001","thread_metadata":{"archived":true,"archive_timestamp":"2026-06-06T10:00:00Z"}},{"id":"1234567890123456002","thread_metadata":{"archived":true,"archive_timestamp":"2026-06-05T12:00:00Z"}}],"has_more":true}`
+	page2 := `{"threads":[{"id":"1234567890123456003","thread_metadata":{"archived":true,"archive_timestamp":"2026-06-01T09:00:00Z"}}],"has_more":false}`
+
+	var n int32
+	var before2 string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := atomic.AddInt32(&n, 1)
+		q, _ := url.ParseQuery(r.URL.RawQuery)
+		w.Header().Set("Content-Type", "application/json")
+		if c == 1 {
+			_, _ = w.Write([]byte(page1))
+		} else {
+			before2 = q.Get("before")
+			_, _ = w.Write([]byte(page2))
+		}
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	threads, err := client.FetchAllPublicArchivedThreads(context.Background(), discord.Snowflake(1234567890123456789))
+	require.NoError(t, err)
+	assert.Len(t, threads, 3)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&n))
+	// Cursor advances by the last thread's archive_timestamp from page 1.
+	parsed, perr := time.Parse(time.RFC3339, before2)
+	require.NoError(t, perr)
+	assert.Equal(t, "2026-06-05T12:00:00Z", parsed.UTC().Format(time.RFC3339))
+}
+
 type paginationSuite struct{ suite.Suite }
 
 func TestPaginationSuite(t *testing.T) { suite.Run(t, new(paginationSuite)) }

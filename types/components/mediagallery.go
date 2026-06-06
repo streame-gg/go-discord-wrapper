@@ -5,6 +5,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#media-gallery
 type MediaGalleryComponent struct {
 	Type  discord.ComponentType `json:"type"`
 	ID    *int                  `json:"id,omitempty"`
@@ -47,6 +48,7 @@ func (m *MediaGalleryComponent) IsAnyContainerComponent() {
 
 }
 
+// https://docs.discord.com/developers/components/reference#media-gallery-media-gallery-item-structure
 type MediaGalleryItem struct {
 	Media       *UnfurledMediaItem `json:"media"`
 	Description string             `json:"description,omitempty"`

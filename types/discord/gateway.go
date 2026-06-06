@@ -5,6 +5,7 @@ import (
 	"strconv"
 )
 
+// https://docs.discord.com/developers/reference#api-versioning-api-versions
 type APIVersion uint8
 
 func (a APIVersion) ToString() string {
@@ -27,6 +28,7 @@ var (
 	APIVersion9  APIVersion = 9
 )
 
+// https://docs.discord.com/developers/events/gateway-events#payload-structure
 type Payload struct {
 	Op PayloadOpCode   `json:"op"`
 	D  json.RawMessage `json:"d"`
@@ -34,10 +36,12 @@ type Payload struct {
 	S  *int            `json:"s,omitempty"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#hello-hello-structure
 type HelloPayloadData struct {
 	HeartbeatInterval float64 `json:"heartbeat_interval"`
 }
 
+// https://docs.discord.com/developers/topics/opcodes-and-status-codes#gateway-gateway-opcodes
 type PayloadOpCode int
 
 const (
@@ -55,6 +59,7 @@ const (
 	PayloadRequestSoundboardSounds   PayloadOpCode = 31
 )
 
+// https://docs.discord.com/developers/events/gateway#gateway-intents
 type Intent uint64
 
 const (
@@ -103,10 +108,12 @@ const (
 		IntentGuildModerationExecution | IntentMessagePolls
 )
 
+// https://docs.discord.com/developers/events/gateway#get-gateway
 type GatewayResponse struct {
 	URL string `json:"url"`
 }
 
+// https://docs.discord.com/developers/events/gateway#session-start-limit-object
 type SessionStartLimit struct {
 	MaxConcurrency int `json:"max_concurrency"`
 	Total          int `json:"total"`
@@ -114,12 +121,14 @@ type SessionStartLimit struct {
 	ResetAfter     int `json:"reset_after"`
 }
 
+// https://docs.discord.com/developers/events/gateway#get-gateway-bot
 type BotRegisterResponse struct {
 	URL               string            `json:"url"`
 	Shards            int               `json:"shards"`
 	SessionStartLimit SessionStartLimit `json:"session_start_limit"`
 }
 
+// https://docs.discord.com/developers/topics/opcodes-and-status-codes#json
 type GatewayError struct {
 	Code    int                    `json:"code"`
 	Errors  map[string]interface{} `json:"errors"`

@@ -271,8 +271,36 @@ func (d *Client) OnIntegrationUpdate(h func(*Client, *events.IntegrationUpdateEv
 func (d *Client) OnIntegrationDelete(h func(*Client, *events.IntegrationDeleteEvent)) {
 	_ = d.OnEvent(events.EventIntegrationDelete, h)
 }
+
+// OnGuildIntegrationsUpdate fires when any of a guild's integrations change.
+// The event carries only the guild ID; for the specific integration use
+// OnIntegrationCreate / OnIntegrationUpdate / OnIntegrationDelete, which Discord
+// dispatches alongside it under the same IntentGuildIntegrations intent.
+func (d *Client) OnGuildIntegrationsUpdate(h func(*Client, *events.GuildIntegrationsUpdateEvent)) {
+	_ = d.OnEvent(events.EventGuildIntegrationsUpdate, h)
+}
 func (d *Client) OnWebhooksUpdate(h func(*Client, *events.WebhooksUpdateEvent)) {
 	_ = d.OnEvent(events.EventWebhooksUpdate, h)
+}
+
+// OnWebhookCreate fires when a webhook is added to a channel. This is a
+// wrapper-synthesized event: registering any On­Webhook{Create,Update,Delete}
+// handler makes the wrapper fetch and diff the channel's webhooks on each
+// WEBHOOKS_UPDATE. The first update for a channel only seeds the snapshot (no
+// events). Requires the bot to have permission to view webhooks (MANAGE_WEBHOOKS).
+func (d *Client) OnWebhookCreate(h func(*Client, *events.WebhookCreateEvent)) {
+	_ = d.OnEvent(events.EventWrapperWebhookCreate, h)
+}
+
+// OnWebhookUpdate fires when a webhook's name, avatar, or channel changes.
+// The event carries both the old (cached) and new webhook. See OnWebhookCreate.
+func (d *Client) OnWebhookUpdate(h func(*Client, *events.WebhookUpdateEvent)) {
+	_ = d.OnEvent(events.EventWrapperWebhookUpdate, h)
+}
+
+// OnWebhookDelete fires when a webhook is removed from a channel. See OnWebhookCreate.
+func (d *Client) OnWebhookDelete(h func(*Client, *events.WebhookDeleteEvent)) {
+	_ = d.OnEvent(events.EventWrapperWebhookDelete, h)
 }
 func (d *Client) OnAutoModerationRuleCreate(h func(*Client, *events.AutoModerationRuleCreateEvent)) {
 	_ = d.OnEvent(events.EventAutoModerationRuleCreate, h)

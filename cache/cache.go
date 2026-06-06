@@ -232,6 +232,7 @@ type Options struct {
 // ── Entity store interfaces ───────────────────────────────────────────────────
 
 // GuildStore is a thread-safe cache for [discord.Guild] objects, keyed by guild ID.
+// https://docs.discord.com/developers/resources/guild#guild-object
 type GuildStore interface {
 	Set(guild *discord.Guild)
 	Get(id discord.Snowflake) (*discord.Guild, bool)
@@ -242,6 +243,7 @@ type GuildStore interface {
 }
 
 // ChannelStore is a thread-safe cache for [discord.Channel] objects, keyed by channel ID.
+// https://docs.discord.com/developers/resources/channel#channel-object
 type ChannelStore interface {
 	Set(channel *discord.Channel)
 	Get(id discord.Snowflake) (*discord.Channel, bool)
@@ -252,6 +254,7 @@ type ChannelStore interface {
 }
 
 // UserStore is a thread-safe cache for [discord.User] objects, keyed by user ID.
+// https://docs.discord.com/developers/resources/user#user-object
 type UserStore interface {
 	Set(user *discord.User)
 	Get(id discord.Snowflake) (*discord.User, bool)
@@ -263,6 +266,7 @@ type UserStore interface {
 
 // MemberStore is a thread-safe cache for [discord.GuildMember] objects,
 // keyed by the composite (guildID, userID) pair.
+// https://docs.discord.com/developers/resources/guild#guild-member-object
 type MemberStore interface {
 	Set(guildID discord.Snowflake, member *discord.GuildMember)
 	Get(guildID, userID discord.Snowflake) (*discord.GuildMember, bool)
@@ -277,6 +281,7 @@ type MemberStore interface {
 
 // RoleStore is a thread-safe cache for [discord.Role] objects, keyed by role ID.
 // Roles can also be looked up or deleted by guild ID.
+// https://docs.discord.com/developers/topics/permissions#role-object
 type RoleStore interface {
 	Set(guildID discord.Snowflake, role *discord.Role)
 	Get(roleID discord.Snowflake) (*discord.Role, bool)
@@ -294,6 +299,7 @@ type RoleStore interface {
 
 // MessageStore caches per-channel message history in bounded ring buffers.
 // Each channel is bounded by Options.Messages.MaxPerChannel.
+// https://docs.discord.com/developers/resources/message#message-object
 type MessageStore interface {
 	Add(msg *discord.Message)
 	Get(channelID, messageID discord.Snowflake) (*discord.Message, bool)
@@ -315,6 +321,7 @@ type MessageStore interface {
 
 // VoiceStateStore is a thread-safe cache for [discord.VoiceState] objects,
 // keyed by the composite (guildID, userID) pair.
+// https://docs.discord.com/developers/resources/voice#voice-state-object
 type VoiceStateStore interface {
 	Set(guildID discord.Snowflake, state *discord.VoiceState)
 	Get(guildID, userID discord.Snowflake) (*discord.VoiceState, bool)
@@ -328,6 +335,7 @@ type VoiceStateStore interface {
 }
 
 // SoundboardStore is a thread-safe cache for [discord.SoundboardSound] objects.
+// https://docs.discord.com/developers/resources/soundboard#soundboard-sound-object
 type SoundboardStore interface {
 	Set(guildID discord.Snowflake, sound *discord.SoundboardSound)
 	Get(soundID discord.Snowflake) (*discord.SoundboardSound, bool)
@@ -342,6 +350,7 @@ type SoundboardStore interface {
 }
 
 // ScheduledEventStore is a thread-safe cache for [discord.GuildScheduledEvent] objects.
+// https://docs.discord.com/developers/resources/guild-scheduled-event#guild-scheduled-event-object
 type ScheduledEventStore interface {
 	Set(event *discord.GuildScheduledEvent)
 	Get(eventID discord.Snowflake) (*discord.GuildScheduledEvent, bool)
@@ -355,6 +364,7 @@ type ScheduledEventStore interface {
 }
 
 // StageInstanceStore is a thread-safe cache for [discord.StageInstance] objects.
+// https://docs.discord.com/developers/resources/stage-instance#stage-instance-object
 type StageInstanceStore interface {
 	Set(instance *discord.StageInstance)
 	Get(instanceID discord.Snowflake) (*discord.StageInstance, bool)
@@ -368,6 +378,7 @@ type StageInstanceStore interface {
 }
 
 // EmojiStore is a thread-safe cache for [discord.Emoji] objects.
+// https://docs.discord.com/developers/resources/emoji#emoji-object
 type EmojiStore interface {
 	Set(guildID discord.Snowflake, emoji *discord.Emoji)
 	Get(emojiID discord.Snowflake) (*discord.Emoji, bool)
@@ -382,6 +393,7 @@ type EmojiStore interface {
 }
 
 // StickerStore is a thread-safe cache for [discord.Sticker] objects.
+// https://docs.discord.com/developers/resources/sticker#sticker-object
 type StickerStore interface {
 	Set(guildID discord.Snowflake, sticker *discord.Sticker)
 	Get(stickerID discord.Snowflake) (*discord.Sticker, bool)
@@ -396,6 +408,7 @@ type StickerStore interface {
 }
 
 // PresenceStore is a thread-safe cache for [discord.Presence] objects.
+// https://docs.discord.com/developers/events/gateway-events#presence-update
 type PresenceStore interface {
 	Set(presence *discord.Presence)
 	Get(guildID, userID discord.Snowflake) (*discord.Presence, bool)
@@ -410,6 +423,7 @@ type PresenceStore interface {
 
 // BanStore is a thread-safe cache for [discord.Ban] objects,
 // keyed by the composite (guildID, userID) pair.
+// https://docs.discord.com/developers/resources/guild#ban-object
 type BanStore interface {
 	Set(guildID discord.Snowflake, ban *discord.Ban)
 	Get(guildID, userID discord.Snowflake) (*discord.Ban, bool)
@@ -423,6 +437,7 @@ type BanStore interface {
 }
 
 // AutoModerationRuleStore is a thread-safe cache for [discord.AutoModerationRule] objects.
+// https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-rule-object
 type AutoModerationRuleStore interface {
 	Set(guildID discord.Snowflake, rule *discord.AutoModerationRule)
 	Get(ruleID discord.Snowflake) (*discord.AutoModerationRule, bool)
@@ -436,6 +451,7 @@ type AutoModerationRuleStore interface {
 }
 
 // InviteStore is a thread-safe cache for [discord.Invite] objects, keyed by invite code.
+// https://docs.discord.com/developers/resources/invite#invite-object
 type InviteStore interface {
 	Set(invite *discord.Invite)
 	// SetWithGuild stores an invite and associates it with the given guild ID,
@@ -454,6 +470,7 @@ type InviteStore interface {
 // Cache is the top-level caching interface for Discord entities.
 // All methods and the stores they return are safe for concurrent use.
 // Close stops background goroutines; the cache must not be used after it returns.
+// https://docs.discord.com/developers/events/gateway-events#receive-events
 type Cache interface {
 	Guilds() GuildStore
 	Channels() ChannelStore

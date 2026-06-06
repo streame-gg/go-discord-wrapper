@@ -4,35 +4,42 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#what-is-a-component
 type AnyContainerComponent interface {
 	MarshalJSON() ([]byte, error)
 	GetType() discord.ComponentType
 	IsAnyContainerComponent()
 }
 
+// https://docs.discord.com/developers/components/reference#what-is-a-component
 type AnyChildComponent interface {
 	IsAnyLabelComponent()
 }
 
+// https://docs.discord.com/developers/components/reference#what-is-a-component
 type AnyComponentInteractionResponse interface {
 	IsInteractionResponseDataComponent()
 	MarshalJSON() ([]byte, error)
 	UnmarshalJSON([]byte) error
 }
 
+// https://docs.discord.com/developers/components/reference#section
 type AnySectionComponent interface {
 	IsAnySectionComponent()
 }
 
+// https://docs.discord.com/developers/components/reference#section
 type AnySectionAccessory interface {
 	IsAnySectionAccessory()
 }
 
+// https://docs.discord.com/developers/components/reference#user-select-select-default-value-structure
 type SelectDefaultValue struct {
 	ID   discord.Snowflake      `json:"id"`
 	Type SelectDefaultValueType `json:"type"`
 }
 
+// https://docs.discord.com/developers/components/reference#user-select-select-default-value-structure
 type SelectDefaultValueType string
 
 const (
@@ -41,6 +48,7 @@ const (
 	SelectDefaultValueTypeChannel SelectDefaultValueType = "channel"
 )
 
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-application-command-interaction-data-option-structure
 type ApplicationCommandInteractionOptionType int
 
 const (
@@ -57,6 +65,7 @@ const (
 	ApplicationCommandInteractionOptionTypeAttachment      ApplicationCommandInteractionOptionType = 11
 )
 
+// https://docs.discord.com/developers/components/reference#unfurled-media-item-structure
 type UnfurledMediaItem struct {
 	URL          string             `json:"url"`
 	ProxyURL     string             `json:"proxy_url,omitempty"`

@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#channel-pins-update
 type ChannelPinsUpdateEvent struct {
 	GuildID          *discord.Snowflake `json:"guild_id,omitempty"`
 	ChannelID        discord.Snowflake  `json:"channel_id"`

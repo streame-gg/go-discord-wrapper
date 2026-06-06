@@ -21,6 +21,8 @@ var (
 )
 
 // discordCodeError is a sentinel value for checking a specific Discord JSON error code.
+//
+// https://docs.discord.com/developers/topics/opcodes-and-status-codes#json
 type discordCodeError struct {
 	code discord.JSONErrorCode
 }
@@ -65,6 +67,8 @@ var (
 //	if errors.As(err, &apiErr) {
 //	    log.Printf("discord code %d: %s", apiErr.Code, apiErr.Message)
 //	}
+//
+// https://docs.discord.com/developers/topics/opcodes-and-status-codes#json
 type Error struct {
 	// HTTPStatus is the HTTP response status code (e.g. 403, 404).
 	HTTPStatus int
@@ -85,6 +89,16 @@ func (e *Error) Error() string {
 	}
 	return fmt.Sprintf("discord api error: http %d", e.HTTPStatus)
 }
+
+// JSONErrorCode implements discord.JSONErrorCarrier, letting the helpers in the
+// discord package (discord.IsErrorCode, discord.ErrorCodeOf) inspect this error
+// without importing the api package. It returns the same value as the Code field.
+func (e *Error) JSONErrorCode() discord.JSONErrorCode {
+	return e.Code
+}
+
+// Compile-time guarantee that *Error participates in discord.IsErrorCode / ErrorCodeOf.
+var _ discord.JSONErrorCarrier = (*Error)(nil)
 
 // Is maps sentinel errors to HTTP status codes and Discord JSON error codes
 // so callers can use errors.Is.
@@ -111,6 +125,8 @@ func (e *Error) Is(target error) bool {
 // the offending field (e.g. "embeds.0.fields.2.value"), empty for a top-level
 // error; Code is Discord's machine-readable reason (e.g. "BASE_TYPE_REQUIRED")
 // and Message the human-readable text.
+//
+// https://docs.discord.com/developers/topics/opcodes-and-status-codes#json-json-error-codes
 type FieldError struct {
 	Path    string
 	Code    string
@@ -137,7 +153,7 @@ func (f FieldError) String() string {
 // FieldErrors flattens the nested Errors map (Discord's "errors" object, with
 // its per-field "_errors" arrays) into a sorted, ready-to-use slice. It returns
 // nil when there are no field-level errors. See
-// https://discord.com/developers/docs/reference#error-messages.
+// https://docs.discord.com/developers/reference#error-messages.
 func (e *Error) FieldErrors() []FieldError {
 	if e == nil || len(e.Errors) == 0 {
 		return nil

@@ -10,6 +10,7 @@ import (
 )
 
 // UpdateRoleConnectionParams holds params for updating the user's application role connection.
+// https://docs.discord.com/developers/resources/user#update-current-user-application-role-connection
 type UpdateRoleConnectionParams struct {
 	PlatformName     *string           `json:"platform_name,omitempty"`
 	PlatformUsername *string           `json:"platform_username,omitempty"`

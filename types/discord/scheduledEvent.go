@@ -4,10 +4,12 @@ import (
 	"time"
 )
 
+// https://docs.discord.com/developers/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-privacy-level
 type GuildScheduledEventPrivacyLevel int
 
 const GuildScheduledEventPrivacyLevelGuildOnly GuildScheduledEventPrivacyLevel = 2
 
+// https://docs.discord.com/developers/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-status
 type GuildScheduledEventStatus int
 
 const (
@@ -17,6 +19,7 @@ const (
 	GuildScheduledEventStatusCanceled  GuildScheduledEventStatus = 4
 )
 
+// https://docs.discord.com/developers/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-entity-types
 type GuildScheduledEventEntityType int
 
 const (
@@ -25,10 +28,12 @@ const (
 	GuildScheduledEventEntityTypeExternal      GuildScheduledEventEntityType = 3
 )
 
+// https://docs.discord.com/developers/resources/guild-scheduled-event#guild-scheduled-event-entity-metadata
 type GuildScheduledEventEntityMetadata struct {
 	Location *string `json:"location,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild-scheduled-event#guild-scheduled-event-object
 type GuildScheduledEvent struct {
 	hClient            EntityClient
 	ID                 Snowflake                          `json:"id"`
@@ -50,6 +55,8 @@ type GuildScheduledEvent struct {
 }
 
 // GuildScheduledEventUser is an entry in the list returned by ListGuildScheduledEventUsers.
+//
+// https://docs.discord.com/developers/resources/guild-scheduled-event#guild-scheduled-event-user-object
 type GuildScheduledEventUser struct {
 	GuildScheduledEventID Snowflake    `json:"guild_scheduled_event_id"`
 	User                  User         `json:"user"`

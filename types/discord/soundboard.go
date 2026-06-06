@@ -1,6 +1,7 @@
 package discord
 
 // SoundboardSound represents a sound in a guild's soundboard or the default Discord soundboard.
+// https://docs.discord.com/developers/resources/soundboard#soundboard-sound-object
 type SoundboardSound struct {
 	hClient   EntityClient
 	Name      string     `json:"name"`

@@ -9,6 +9,7 @@ import "strings"
 //
 // Note that some toggles share a control character: '*' is escaped when Bold or
 // Italic is set, and '_' is escaped when Italic or Underline is set.
+// https://docs.discord.com/developers/reference#message-formatting
 type EscapeMarkdownOptions struct {
 	Escape        bool // backslash itself
 	Bold          bool // **

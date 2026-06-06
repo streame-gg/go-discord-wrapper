@@ -10,6 +10,7 @@ import (
 
 const Epoch uint64 = 1420070400000
 
+// https://docs.discord.com/developers/reference#snowflakes
 type Snowflake uint64
 
 func (s *Snowflake) UnmarshalJSON(data []byte) error {

@@ -7,6 +7,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/interactions/application-commands#application-command-object
 type ApplicationCommand struct {
 	ID                       discord.Snowflake                               `json:"id,omitempty"`
 	Type                     discord.ApplicationCommandType                  `json:"type"`

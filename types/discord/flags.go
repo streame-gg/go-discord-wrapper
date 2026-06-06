@@ -16,6 +16,7 @@ import (
 // FlagBits works on it too if you want the generic surface.
 
 // BitFlag constrains the integer-based named types Discord uses for bitfields.
+// Example bitfield: https://docs.discord.com/developers/resources/message#message-object-message-flags
 type BitFlag interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 |
 		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64
@@ -24,6 +25,7 @@ type BitFlag interface {
 // FlagBits is an immutable view over an integer bitfield of type T. The zero
 // value is a valid empty bitfield. Add/Remove/Toggle return a new FlagBits
 // rather than mutating, so a FlagBits is safe to copy and share.
+// Example bitfield: https://docs.discord.com/developers/resources/message#message-object-message-flags
 type FlagBits[T BitFlag] struct {
 	bits T
 }
@@ -126,6 +128,8 @@ func (f FlagBits[T]) Decompose() []T {
 // ── User flags (badges) ───────────────────────────────────────────────────────
 
 // UserFlags is the bitfield of account badges on a user's public_flags/flags.
+//
+// https://docs.discord.com/developers/resources/user#user-object-user-flags
 type UserFlags uint64
 
 const (
@@ -168,6 +172,8 @@ func (u *User) FlagBits() FlagBits[UserFlags] {
 // ── Guild member flags ─────────────────────────────────────────────────────────
 
 // GuildMemberFlags is the bitfield of per-guild member state flags.
+//
+// https://docs.discord.com/developers/resources/guild#guild-member-object-guild-member-flags
 type GuildMemberFlags int
 
 const (
@@ -196,6 +202,8 @@ func (m *GuildMember) FlagBits() FlagBits[GuildMemberFlags] {
 // ApplicationFlags is the bitfield of capabilities/gateway intents declared by
 // an application. It is uint64-backed so it can hold flag bits beyond bit 30,
 // which Discord transmits via the string-serialized flags_new field.
+//
+// https://docs.discord.com/developers/resources/application#application-object-application-flags
 type ApplicationFlags uint64
 
 // UnmarshalJSON accepts either a JSON number (the legacy flags field) or a

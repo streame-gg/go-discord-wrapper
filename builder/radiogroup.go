@@ -7,6 +7,8 @@ import "github.com/streame-gg/go-discord-wrapper/types/components"
 // RadioGroupOptionBuilder builds a single RadioGroupComponentOption.
 //
 //	opt := builder.NewRadioGroupOption("Yes", "yes").SetDescription("Confirm").Build()
+//
+// https://docs.discord.com/developers/components/reference#radio-group
 type RadioGroupOptionBuilder struct {
 	opt components.RadioGroupComponentOption
 }
@@ -38,6 +40,8 @@ func (b *RadioGroupOptionBuilder) Build() components.RadioGroupComponentOption {
 //	    ).
 //	    SetRequired(true).
 //	    Build()
+//
+// https://docs.discord.com/developers/components/reference#radio-group
 type RadioGroupBuilder struct {
 	rg components.RadioGroupComponent
 }
@@ -71,6 +75,8 @@ func (b *RadioGroupBuilder) Build() *components.RadioGroupComponent {
 // CheckboxGroupOptionBuilder builds a single CheckboxGroupComponentOption.
 //
 //	opt := builder.NewCheckboxGroupOption("Notifications", "notif").SetDefault(true).Build()
+//
+// https://docs.discord.com/developers/components/reference#checkbox-group
 type CheckboxGroupOptionBuilder struct {
 	opt components.CheckboxGroupComponentOption
 }
@@ -103,6 +109,8 @@ func (b *CheckboxGroupOptionBuilder) Build() components.CheckboxGroupComponentOp
 //	    SetMinValues(1).
 //	    SetMaxValues(2).
 //	    Build()
+//
+// https://docs.discord.com/developers/components/reference#checkbox-group
 type CheckboxGroupBuilder struct {
 	cg components.CheckboxGroupComponent
 }
@@ -146,6 +154,8 @@ func (b *CheckboxGroupBuilder) Build() *components.CheckboxGroupComponent {
 // CheckboxBuilder builds a CheckboxComponent using a fluent API.
 //
 //	cb := builder.NewCheckbox("agree").SetDefault(false).Build()
+//
+// https://docs.discord.com/developers/components/reference#checkbox
 type CheckboxBuilder struct {
 	cb components.CheckboxComponent
 }

@@ -11,6 +11,7 @@ import (
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/soundboard#create-guild-soundboard-sound
 type CreateGuildSoundboardSoundParams struct {
 	Name      string             `json:"name"`
 	Sound     string             `json:"sound"` // base64 data URI
@@ -19,10 +20,12 @@ type CreateGuildSoundboardSoundParams struct {
 	EmojiName *string            `json:"emoji_name,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/soundboard#create-guild-soundboard-sound
 type CreateGuildSoundboardSoundOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/soundboard#modify-guild-soundboard-sound
 type ModifyGuildSoundboardSoundParams struct {
 	Name      *string            `json:"name,omitempty"`
 	Volume    *float64           `json:"volume,omitempty"`
@@ -30,14 +33,17 @@ type ModifyGuildSoundboardSoundParams struct {
 	EmojiName *string            `json:"emoji_name,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/soundboard#modify-guild-soundboard-sound
 type ModifyGuildSoundboardSoundOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/soundboard#delete-guild-soundboard-sound
 type DeleteGuildSoundboardSoundOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/soundboard#send-soundboard-sound
 type SendSoundboardSoundParams struct {
 	SoundID       discord.Snowflake  `json:"sound_id"`
 	SourceGuildID *discord.Snowflake `json:"source_guild_id,omitempty"`
@@ -57,6 +63,7 @@ func (c *RestClient) ListDefaultSoundboardSounds(ctx context.Context) ([]*discor
 	})
 }
 
+// https://docs.discord.com/developers/resources/soundboard#list-guild-soundboard-sounds
 type ListGuildSoundboardSoundsResponse struct {
 	Items []*discord.SoundboardSound `json:"items"`
 }

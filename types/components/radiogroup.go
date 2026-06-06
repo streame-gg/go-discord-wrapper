@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#radio-group
 type RadioGroupComponent struct {
 	Type     discord.ComponentType        `json:"type"`
 	ID       *int                         `json:"id,omitempty"`
@@ -14,6 +15,7 @@ type RadioGroupComponent struct {
 	Required *bool                        `json:"required,omitempty"`
 }
 
+// https://docs.discord.com/developers/components/reference#radio-group
 type RadioGroupComponentOption struct {
 	Value       string  `json:"value"`
 	Label       string  `json:"label"`
@@ -57,6 +59,7 @@ func (r *RadioGroupComponent) IsAnyLabelComponent() {
 
 }
 
+// https://docs.discord.com/developers/components/reference#radio-group
 type RadioGroupComponentInteractionResponse struct {
 	Type     discord.ComponentType `json:"type"`
 	ID       *int                  `json:"id,omitempty"`

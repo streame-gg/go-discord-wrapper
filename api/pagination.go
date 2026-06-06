@@ -200,3 +200,247 @@ func (c *RestClient) FetchAllScheduledEventUsers(ctx context.Context, guildID, e
 		params.After = &last.User.ID
 	}
 }
+
+// FetchAllReactions fetches every user who reacted to a message with the given
+// emoji, paginating forward by user ID (max 100 per request). The filter's Type
+// (normal vs burst) is preserved; it's After/Limit are managed internally.
+func (c *RestClient) FetchAllReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, filter GetReactionsParams) ([]*discord.User, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+	if err := messageID.Validate(); err != nil {
+		return nil, err
+	}
+
+	const pageSize = 100
+
+	filter.Limit = util.PointerOf(pageSize)
+	filter.After = nil
+
+	var all []*discord.User
+
+	for {
+		page, err := c.ListReactions(ctx, channelID, messageID, emoji, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		all = append(all, page...)
+
+		if len(page) < pageSize {
+			return all, nil
+		}
+
+		filter.After = &page[len(page)-1].ID
+	}
+}
+
+// FetchAllPollAnswerVoters fetches every user who voted for a poll answer,
+// paginating forward by user ID (max 100 per request).
+func (c *RestClient) FetchAllPollAnswerVoters(ctx context.Context, channelID, messageID discord.Snowflake, answerID int) ([]*discord.User, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+	if err := messageID.Validate(); err != nil {
+		return nil, err
+	}
+
+	const pageSize = 100
+
+	params := GetPollAnswerVotersParams{Limit: util.PointerOf(pageSize)}
+
+	var all []*discord.User
+
+	for {
+		resp, err := c.GetPollAnswerVoters(ctx, channelID, messageID, answerID, params)
+		if err != nil {
+			return nil, err
+		}
+
+		all = append(all, resp.Users...)
+
+		if len(resp.Users) < pageSize {
+			return all, nil
+		}
+
+		params.After = &resp.Users[len(resp.Users)-1].ID
+	}
+}
+
+// FetchAllCurrentUserGuilds fetches every guild the current user/bot is in,
+// paginating forward by guild ID (max 200 per request). WithCounts and
+// UserToken from the filter are preserved; Before/After/Limit are managed
+// internally.
+func (c *RestClient) FetchAllCurrentUserGuilds(ctx context.Context, filter GetCurrentUserGuildsParams) ([]*discord.CurrentUserGuild, error) {
+	const pageSize = 200
+
+	filter.Limit = util.PointerOf(pageSize)
+	filter.Before = nil
+	filter.After = nil
+
+	var all []*discord.CurrentUserGuild
+
+	for {
+		page, err := c.ListCurrentUserGuilds(ctx, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		all = append(all, page...)
+
+		if len(page) < pageSize {
+			return all, nil
+		}
+
+		filter.After = &page[len(page)-1].ID
+	}
+}
+
+// FetchAllThreadMembers fetches every member of a thread, paginating forward by
+// user ID (max 100 per request). It always requests the full member object,
+// which is what makes the endpoint paginate.
+func (c *RestClient) FetchAllThreadMembers(ctx context.Context, channelID discord.Snowflake) ([]*discord.ThreadMember, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
+	const pageSize = 100
+
+	params := ListThreadMembersParams{
+		WithMember: util.PointerOf(true),
+		Limit:      util.PointerOf(pageSize),
+	}
+
+	var all []*discord.ThreadMember
+
+	for {
+		page, err := c.ListThreadMembers(ctx, channelID, params)
+		if err != nil {
+			return nil, err
+		}
+
+		all = append(all, page...)
+
+		if len(page) < pageSize {
+			return all, nil
+		}
+
+		last := page[len(page)-1]
+		if last.UserID == nil {
+			return nil, fmt.Errorf("go-discord-wrapper: thread member returned by API has nil UserID; cannot paginate")
+		}
+		params.After = last.UserID
+	}
+}
+
+// FetchAllSKUSubscriptions fetches every subscription for an SKU, paginating
+// forward by subscription ID (max 100 per request). The UserID filter is
+// preserved; Before/After/Limit are managed internally.
+func (c *RestClient) FetchAllSKUSubscriptions(ctx context.Context, skuID discord.Snowflake, filter ListSKUSubscriptionsParams) ([]*discord.Subscription, error) {
+	if err := skuID.Validate(); err != nil {
+		return nil, err
+	}
+
+	const pageSize = 100
+
+	filter.Limit = util.PointerOf(pageSize)
+	filter.Before = nil
+	filter.After = nil
+
+	var all []*discord.Subscription
+
+	for {
+		page, err := c.ListSKUSubscriptions(ctx, skuID, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		all = append(all, page...)
+
+		if len(page) < pageSize {
+			return all, nil
+		}
+
+		filter.After = &page[len(page)-1].ID
+	}
+}
+
+// FetchAllGuildJoinRequests fetches every join request for a guild, paginating
+// forward by request ID (max 100 per request). The Status filter is preserved;
+// Before/After/Limit are managed internally.
+func (c *RestClient) FetchAllGuildJoinRequests(ctx context.Context, guildID discord.Snowflake, filter GetGuildJoinRequestsParams) ([]*discord.GuildJoinRequest, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+
+	const pageSize = 100
+
+	filter.Limit = util.PointerOf(pageSize)
+	filter.Before = nil
+	filter.After = nil
+
+	var all []*discord.GuildJoinRequest
+
+	for {
+		resp, err := c.GetGuildJoinRequests(ctx, guildID, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		all = append(all, resp.GuildJoinRequests...)
+
+		if len(resp.GuildJoinRequests) < pageSize {
+			return all, nil
+		}
+
+		filter.After = &resp.GuildJoinRequests[len(resp.GuildJoinRequests)-1].ID
+	}
+}
+
+// FetchAllPublicArchivedThreads fetches every public archived thread in a
+// channel, paginating backwards by archive timestamp until has_more is false.
+func (c *RestClient) FetchAllPublicArchivedThreads(ctx context.Context, channelID discord.Snowflake) ([]*discord.Channel, error) {
+	return c.fetchAllArchivedThreads(ctx, channelID, c.ListPublicArchivedThreads)
+}
+
+// FetchAllPrivateArchivedThreads fetches every private archived thread in a
+// channel, paginating backwards by archive timestamp until has_more is false.
+func (c *RestClient) FetchAllPrivateArchivedThreads(ctx context.Context, channelID discord.Snowflake) ([]*discord.Channel, error) {
+	return c.fetchAllArchivedThreads(ctx, channelID, c.ListPrivateArchivedThreads)
+}
+
+// fetchAllArchivedThreads walks the archive-timestamp cursor shared by the
+// public and private archived-thread listings. (Joined private archived threads
+// paginate by thread ID, which the current time-based params can't express, so
+// they have no FetchAll helper yet.)
+func (c *RestClient) fetchAllArchivedThreads(ctx context.Context, channelID discord.Snowflake, list func(context.Context, discord.Snowflake, ListArchivedThreadsParams) (*ArchivedThreadsResponse, error)) ([]*discord.Channel, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
+	const pageSize = 100
+
+	params := ListArchivedThreadsParams{Limit: util.PointerOf(pageSize)}
+
+	var all []*discord.Channel
+
+	for {
+		page, err := list(ctx, channelID, params)
+		if err != nil {
+			return nil, err
+		}
+
+		all = append(all, page.Threads...)
+
+		if !page.HasMore || len(page.Threads) == 0 {
+			return all, nil
+		}
+
+		last := page.Threads[len(page.Threads)-1]
+		if last.ThreadMetadata == nil {
+			return nil, fmt.Errorf("go-discord-wrapper: archived thread returned by API has nil ThreadMetadata; cannot paginate")
+		}
+		ts := last.ThreadMetadata.ArchiveTimestamp
+		params.Before = &ts
+	}
+}

@@ -14,16 +14,19 @@ import (
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/sticker#modify-guild-sticker
 type ModifyGuildStickerParams struct {
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Tags        *string `json:"tags,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/sticker#modify-guild-sticker
 type ModifyGuildStickerOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/sticker#create-guild-sticker
 type CreateGuildStickerParams struct {
 	Name        string
 	Description string
@@ -32,10 +35,12 @@ type CreateGuildStickerParams struct {
 	ContentType string
 }
 
+// https://docs.discord.com/developers/resources/sticker#create-guild-sticker
 type CreateGuildStickerOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/sticker#delete-guild-sticker
 type DeleteGuildStickerOptions struct {
 	Reason string
 }
@@ -58,6 +63,7 @@ func (c *RestClient) GetSticker(ctx context.Context, stickerID discord.Snowflake
 	})
 }
 
+// https://docs.discord.com/developers/resources/sticker#list-sticker-packs
 type ListStickerPacksResponse struct {
 	StickerPacks []*discord.StickerPack `json:"sticker_packs"`
 }

@@ -6,10 +6,12 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#entitlement-create
 type EntitlementCreateEvent struct {
 	discord.Entitlement
 }
 
+// https://docs.discord.com/developers/events/gateway-events#entitlement-update
 type EntitlementUpdateEvent struct {
 	NewEntitlement discord.Entitlement `json:"-"`
 	// OldEntitlement is the state before the update, populated by the gateway
@@ -26,6 +28,7 @@ func (e EntitlementUpdateEvent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&e.NewEntitlement)
 }
 
+// https://docs.discord.com/developers/events/gateway-events#entitlement-delete
 type EntitlementDeleteEvent struct {
 	discord.Entitlement
 }

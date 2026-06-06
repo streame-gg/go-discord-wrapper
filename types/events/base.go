@@ -26,11 +26,15 @@ func GetEventFactory(t EventType) (func() Event, bool) {
 }
 
 // Event values are shared across concurrent handlers and must not be mutated.
+// Each concrete event corresponds to a Discord gateway dispatch payload.
+// https://docs.discord.com/developers/events/gateway-events#receive-events
 type Event interface {
 	Event() EventType
 	DesiredEventType() Event
 }
 
+// EventType is the gateway dispatch event name (the "t" field of an Opcode 0 payload).
+// https://docs.discord.com/developers/events/gateway-events#receive-events
 type EventType string
 
 const (
@@ -85,6 +89,7 @@ const (
 	EventIntegrationCreate             EventType = "INTEGRATION_CREATE"
 	EventIntegrationUpdate             EventType = "INTEGRATION_UPDATE"
 	EventIntegrationDelete             EventType = "INTEGRATION_DELETE"
+	EventGuildIntegrationsUpdate       EventType = "GUILD_INTEGRATIONS_UPDATE"
 	EventWebhooksUpdate                EventType = "WEBHOOKS_UPDATE"
 	EventAutoModerationRuleCreate      EventType = "AUTO_MODERATION_RULE_CREATE"
 	EventAutoModerationRuleUpdate      EventType = "AUTO_MODERATION_RULE_UPDATE"
@@ -127,4 +132,8 @@ const (
 	EventWrapperGuildStickerAdd    EventType = "WRAPPER_GUILD_STICKER_ADD"
 	EventWrapperGuildStickerRemove EventType = "WRAPPER_GUILD_STICKER_REMOVE"
 	EventWrapperGuildStickerUpdate EventType = "WRAPPER_GUILD_STICKER_UPDATE"
+
+	EventWrapperWebhookCreate EventType = "WRAPPER_WEBHOOK_CREATE"
+	EventWrapperWebhookUpdate EventType = "WRAPPER_WEBHOOK_UPDATE"
+	EventWrapperWebhookDelete EventType = "WRAPPER_WEBHOOK_DELETE"
 )

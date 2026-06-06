@@ -6,11 +6,13 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#integration-create
 type IntegrationCreateEvent struct {
 	discord.Integration
 	GuildID discord.Snowflake `json:"guild_id"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#integration-update
 type IntegrationUpdateEvent struct {
 	GuildID        discord.Snowflake   `json:"-"`
 	NewIntegration discord.Integration `json:"-"`
@@ -38,6 +40,7 @@ func (e IntegrationUpdateEvent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(wire{e.NewIntegration, e.GuildID})
 }
 
+// https://docs.discord.com/developers/events/gateway-events#integration-delete
 type IntegrationDeleteEvent struct {
 	ID            discord.Snowflake  `json:"id"`
 	GuildID       discord.Snowflake  `json:"guild_id"`

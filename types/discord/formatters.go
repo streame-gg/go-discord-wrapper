@@ -60,6 +60,8 @@ func Hyperlink(text, url string) string { return "[" + text + "](" + url + ")" }
 func HideLinkEmbed(url string) string { return "<" + url + ">" }
 
 // Heading levels for the Heading helper. Discord supports H1–H3.
+//
+// https://docs.discord.com/developers/reference#message-formatting
 type HeadingLevel int
 
 const (
@@ -150,6 +152,7 @@ func MessageLink(channelID, messageID Snowflake, guildID *Snowflake) string {
 // ── Timestamps ────────────────────────────────────────────────────────────────
 
 // TimestampStyle selects how Discord renders a timestamp mention.
+// https://docs.discord.com/developers/reference#message-formatting-timestamp-styles
 type TimestampStyle string
 
 const (

@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// https://docs.discord.com/developers/resources/entitlement#entitlement-object
 type Entitlement struct {
 	ID            Snowflake       `json:"id"`
 	SkuID         Snowflake       `json:"sku_id"`
@@ -17,6 +18,7 @@ type Entitlement struct {
 	Consumed      bool            `json:"consumed,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/entitlement#entitlement-object-entitlement-types
 type EntitlementType int
 
 const (

@@ -8,12 +8,14 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/guild#modify-guild
 type ModifyGuildParams struct {
 	Name                        *string                                  `json:"name,omitempty"`
 	VerificationLevel           *discord.GuildVerificationLevel          `json:"verification_level,omitempty"`
@@ -37,10 +39,12 @@ type ModifyGuildParams struct {
 	SafetyAlertsChannelID       *discord.Snowflake                       `json:"safety_alerts_channel_id,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild
 type ModifyGuildOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#create-guild-channel
 type CreateGuildChannelParams struct {
 	Name                          string                               `json:"name"`
 	Type                          *discord.ChannelType                 `json:"type,omitempty"`
@@ -62,14 +66,17 @@ type CreateGuildChannelParams struct {
 	DefaultThreadRateLimitPerUser *int                                 `json:"default_thread_rate_limit_per_user,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#create-guild-channel
 type CreateGuildChannelOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild-channel-positions
 type ModifyGuildChannelPositionsOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild-channel-positions
 type ModifyGuildChannelPositionsEntry struct {
 	ID              discord.Snowflake  `json:"id"`
 	Position        *int               `json:"position,omitempty"`
@@ -77,6 +84,7 @@ type ModifyGuildChannelPositionsEntry struct {
 	ParentID        *discord.Snowflake `json:"parent_id,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#create-guild-role
 type CreateGuildRoleParams struct {
 	Name         *string             `json:"name,omitempty"`
 	Permissions  *discord.Permission `json:"permissions,omitempty"`
@@ -87,10 +95,12 @@ type CreateGuildRoleParams struct {
 	Mentionable  *bool               `json:"mentionable,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#create-guild-role
 type CreateGuildRoleOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild-role
 type ModifyGuildRoleParams struct {
 	Name         *string             `json:"name,omitempty"`
 	Permissions  *discord.Permission `json:"permissions,omitempty"`
@@ -101,23 +111,28 @@ type ModifyGuildRoleParams struct {
 	Mentionable  *bool               `json:"mentionable,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild-role
 type ModifyGuildRoleOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild-role-positions
 type ModifyGuildRolePositionsEntry struct {
 	ID       discord.Snowflake `json:"id"`
 	Position *int              `json:"position,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild-role-positions
 type ModifyGuildRolePositionsOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#delete-guild-role
 type DeleteGuildRoleOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#get-guild-bans
 type GetGuildBansParams struct {
 	Before *discord.Snowflake
 	After  *discord.Snowflake
@@ -141,18 +156,22 @@ func (p GetGuildBansParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
+// https://docs.discord.com/developers/resources/guild#create-guild-ban
 type CreateGuildBanParams struct {
 	DeleteMessageSeconds *int `json:"delete_message_seconds,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#create-guild-ban
 type CreateGuildBanOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#remove-guild-ban
 type RemoveGuildBanOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#get-guild-prune-count
 type GetGuildPruneCountParams struct {
 	Days         *int
 	IncludeRoles []discord.Snowflake
@@ -176,16 +195,19 @@ func (p GetGuildPruneCountParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
+// https://docs.discord.com/developers/resources/guild#begin-guild-prune
 type BeginGuildPruneParams struct {
 	Days              *int                `json:"days,omitempty"`
 	ComputePruneCount *bool               `json:"compute_prune_count,omitempty"`
 	IncludeRoles      []discord.Snowflake `json:"include_roles,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#begin-guild-prune
 type BeginGuildPruneOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/audit-log#get-guild-audit-log
 type GetGuildAuditLogParams struct {
 	UserID     *discord.Snowflake
 	ActionType *discord.AuditLogActionType
@@ -217,21 +239,25 @@ func (p GetGuildAuditLogParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild-widget
 type ModifyGuildWidgetParams struct {
 	Enabled   *bool              `json:"enabled,omitempty"`
 	ChannelID *discord.Snowflake `json:"channel_id,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild-welcome-screen
 type ModifyGuildWelcomeScreenParams struct {
 	Enabled         *bool                               `json:"enabled,omitempty"`
 	WelcomeChannels []discord.GuildWelcomeScreenChannel `json:"welcome_channels,omitempty"`
 	Description     *string                             `json:"description,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild-welcome-screen
 type ModifyGuildWelcomeScreenOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild-onboarding
 type ModifyGuildOnboardingParams struct {
 	Prompts           []discord.OnboardingPrompt `json:"prompts"`
 	DefaultChannelIDs []discord.Snowflake        `json:"default_channel_ids"`
@@ -239,6 +265,7 @@ type ModifyGuildOnboardingParams struct {
 	Mode              discord.OnboardingMode     `json:"mode"`
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild-onboarding
 type ModifyGuildOnboardingOptions struct {
 	Reason string
 }
@@ -964,6 +991,7 @@ func (c *RestClient) ModifyGuildOnboarding(ctx context.Context, guildID discord.
 // ── Additional guild endpoints ─────────────────────────────────────────────────
 
 // CreateGuildParams holds params for creating a new guild.
+// https://docs.discord.com/developers/resources/guild#create-guild
 type CreateGuildParams struct {
 	Name                        string             `json:"name"`
 	Icon                        *string            `json:"icon,omitempty"`
@@ -979,6 +1007,7 @@ type CreateGuildParams struct {
 }
 
 // AddGuildMemberParams holds params for adding a member to a guild via OAuth2.
+// https://docs.discord.com/developers/resources/guild#add-guild-member
 type AddGuildMemberParams struct {
 	AccessToken string              `json:"access_token"`
 	Nick        *string             `json:"nick,omitempty"`
@@ -988,20 +1017,24 @@ type AddGuildMemberParams struct {
 }
 
 // BulkBanParams holds params for bulk banning guild members.
+// https://docs.discord.com/developers/resources/guild#bulk-guild-ban
 type BulkBanParams struct {
 	UserIDs              []discord.Snowflake `json:"user_ids"`
 	DeleteMessageSeconds *int                `json:"delete_message_seconds,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#bulk-guild-ban
 type BulkBanOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#delete-guild-integration
 type DeleteGuildIntegrationOptions struct {
 	Reason string
 }
 
 // BulkBanResult is the result of a bulk ban operation.
+// https://docs.discord.com/developers/resources/guild#bulk-guild-ban
 type BulkBanResult struct {
 	BannedUsers []discord.Snowflake `json:"banned_users"`
 	FailedUsers []discord.Snowflake `json:"failed_users"`
@@ -1058,6 +1091,7 @@ func (c *RestClient) BulkBanGuildMembers(ctx context.Context, guildID discord.Sn
 
 // ── Join requests ─────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/guild
 type GetGuildJoinRequestsParams struct {
 	Status *discord.GuildJoinRequestApplicationStatus
 	Limit  *int
@@ -1085,11 +1119,13 @@ func (p GetGuildJoinRequestsParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
+// https://docs.discord.com/developers/resources/guild
 type GuildJoinRequestsResponse struct {
 	Total             int                         `json:"total"`
 	GuildJoinRequests []*discord.GuildJoinRequest `json:"guild_join_requests"`
 }
 
+// https://docs.discord.com/developers/resources/guild
 type ActionGuildJoinRequestParams struct {
 	Action          discord.GuildJoinRequestApplicationStatus `json:"action"`
 	RejectionReason *string                                   `json:"rejection_reason,omitempty"`
@@ -1198,4 +1234,52 @@ func (c *RestClient) DeleteGuildIntegration(ctx context.Context, guildID, integr
 	}
 
 	return doRequestWithoutResponse(c, req)
+}
+
+// ModifyGuildIncidentActionsOptions configures Modify Guild Incident Actions.
+// Each field is a timestamp up to 24 hours in the future, or nil to clear that
+// pause. Because the endpoint replaces the guild's incident actions, a nil
+// field is sent explicitly as JSON null (re-enabling invites or DMs).
+// https://docs.discord.com/developers/resources/guild#modify-guild-incident-actions
+type ModifyGuildIncidentActionsOptions struct {
+	// InvitesDisabledUntil pauses invites until this time, or nil to re-enable invites.
+	InvitesDisabledUntil *time.Time
+	// DMsDisabledUntil pauses DMs from non-friends until this time, or nil to re-enable them.
+	DMsDisabledUntil *time.Time
+}
+
+// ModifyGuildIncidentActions sets the guild's incident actions — temporarily
+// pausing invites and/or DMs (each at most 24 hours out). Requires MANAGE_GUILD.
+// A nil field clears the corresponding pause. Returns the updated incidents data.
+//
+// See https://docs.discord.com/developers/resources/guild#modify-guild-incident-actions.
+func (c *RestClient) ModifyGuildIncidentActions(ctx context.Context, guildID discord.Snowflake, opts *ModifyGuildIncidentActionsOptions) (*discord.GuildIncidentsData, error) {
+	if err := guildID.Validate(); err != nil {
+		return nil, err
+	}
+	if opts == nil {
+		opts = &ModifyGuildIncidentActionsOptions{}
+	}
+
+	// PUT replaces the incident actions, so nil fields are sent as null rather
+	// than omitted (omitting would be indistinguishable from clearing here).
+	body, err := json.Marshal(struct {
+		InvitesDisabledUntil *time.Time `json:"invites_disabled_until"`
+		DMsDisabledUntil     *time.Time `json:"dms_disabled_until"`
+	}{
+		InvitesDisabledUntil: opts.InvitesDisabledUntil,
+		DMsDisabledUntil:     opts.DMsDisabledUntil,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := c.generateRequest(ctx, http.MethodPut, "/guilds/"+guildID.String()+"/incident-actions", bytes.NewReader(body), c.WithBotAuthorization())
+	if err != nil {
+		return nil, err
+	}
+
+	return doRequest[discord.GuildIncidentsData](c, req, map[int]bool{
+		http.StatusOK: true,
+	})
 }

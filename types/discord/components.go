@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 )
 
+// https://docs.discord.com/developers/components/reference#component-object-component-types
 type ComponentType int
 
 const (
@@ -49,12 +50,14 @@ func (c ComponentType) IsAnySelectMenu() bool {
 		c == ComponentTypeChannelSelect
 }
 
+// https://docs.discord.com/developers/components/reference#component-object
 type AnyComponent interface {
 	GetType() ComponentType
 	MarshalJSON() ([]byte, error)
 	UnmarshalJSON([]byte) error
 }
 
+// https://docs.discord.com/developers/components/reference#component-object
 type ComponentWrapper struct {
 	Component AnyComponent
 }
@@ -83,6 +86,7 @@ func (c *ComponentWrapper) MarshalJSON() ([]byte, error) {
 	return c.Component.MarshalJSON()
 }
 
+// https://docs.discord.com/developers/components/reference#component-object
 type RawComponent struct {
 	Type ComponentType
 	Data json.RawMessage

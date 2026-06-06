@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#user-select
 type UserSelectMenuComponent struct {
 	Type          discord.ComponentType `json:"type"`
 	ID            *int                  `json:"id,omitempty"`
@@ -57,6 +58,7 @@ func (u *UserSelectMenuComponent) GetType() discord.ComponentType {
 func (u *UserSelectMenuComponent) IsAnyLabelComponent() {
 }
 
+// https://docs.discord.com/developers/components/reference#user-select
 type UserSelectComponentInteractionResponse struct {
 	Type          discord.ComponentType `json:"type"`
 	Values        []discord.Snowflake   `json:"values"`

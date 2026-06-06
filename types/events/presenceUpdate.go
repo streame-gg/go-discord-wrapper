@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#presence-update
 type PresenceUpdateEvent struct {
 	NewPresence discord.Presence  `json:"-"`
 	OldPresence *discord.Presence `json:"-"`

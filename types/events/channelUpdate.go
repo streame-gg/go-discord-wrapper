@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#channel-update
 type ChannelUpdateEvent struct {
 	NewChannel discord.Channel  `json:"-"`
 	OldChannel *discord.Channel `json:"-"`

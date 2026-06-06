@@ -7,6 +7,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#label
 type LabelComponent struct {
 	Type        discord.ComponentType `json:"type"`
 	ID          *int                  `json:"id,omitempty"`
@@ -183,6 +184,7 @@ func (l *LabelComponentInteractionResponse) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// https://docs.discord.com/developers/components/reference#label
 type ComponentLabelComponent struct {
 	Type        discord.ComponentType           `json:"type"`
 	ID          *int                            `json:"id,omitempty"`

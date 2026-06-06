@@ -159,6 +159,14 @@ type Client struct {
 	// so that EntitlementUpdateEvent can carry OldEntitlement alongside the new one.
 	entitlements sync.Map // map[string]*discord.Entitlement
 
+	// webhookSnapshots caches the last-known set of webhooks per channel (keyed by
+	// channel ID string) so WEBHOOKS_UPDATE can be diffed into synthetic
+	// WebhookCreate/Update/Delete events carrying the old version. Populated lazily
+	// by REST fetch, only while a webhook handler is registered.
+	webhookSnapshots sync.Map // map[string][]*discord.Webhook
+	// webhookWg tracks in-flight webhook fetch/diff goroutines for graceful shutdown.
+	webhookWg sync.WaitGroup
+
 	// Client lifecycle event handlers.
 	onConnect      []func(*Client)
 	onDisconnect   []func(*Client, error)
@@ -1949,6 +1957,13 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 			}
 		}
+	case events.EventWebhooksUpdate:
+		if ev, ok := event.(*events.WebhooksUpdateEvent); ok {
+			// Discord's WEBHOOKS_UPDATE only carries the channel; derive granular
+			// synthetic events by fetching + diffing off the reader goroutine.
+			d.deriveWebhookSyntheticEventsAsync(ev)
+		}
+
 	case events.EventEntitlementCreate:
 		if ev, ok := event.(*events.EntitlementCreateEvent); ok {
 			e := ev.Entitlement
@@ -2065,6 +2080,11 @@ func (d *Client) Shutdown() error {
 				errs = append(errs, err)
 			}
 		}
+
+		// Drain webhook fetch/diff goroutines first: they abort their REST call on
+		// shutdownCh and may enqueue synthetic events, so they must finish before
+		// the event/handler waiters below so those enqueues are accounted for.
+		d.webhookWg.Wait()
 
 		// Worker-pool mode: shutdownCh (already closed above) signals workers to
 		// drain their queue and exit.  Wait for them before dispatchWg.Wait()

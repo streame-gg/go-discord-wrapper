@@ -280,6 +280,21 @@ func (d *Client) CrosspostMessage(ctx context.Context, channelID, messageID disc
 	return msg, err
 }
 
+// GetChannelPins returns one page of a channel's pins. Hydrated messages are
+// cached. See api.RestClient.GetChannelPins.
+func (d *Client) GetChannelPins(ctx context.Context, channelID discord.Snowflake, params api.GetChannelPinsParams) (*discord.ChannelPins, error) {
+	pins, err := d.RestClient.GetChannelPins(ctx, channelID, params)
+	if err == nil && pins != nil {
+		for _, pin := range pins.Items {
+			if pin.Message != nil {
+				pin.Message.Hydrate(d)
+				d.cacheMessage(pin.Message)
+			}
+		}
+	}
+	return pins, err
+}
+
 func (d *Client) ListPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
 	msgs, err := d.RestClient.ListPinnedMessages(ctx, channelID)
 	if err == nil {
@@ -814,6 +829,7 @@ func (d *Client) FetchAllGuildMembers(ctx context.Context, guildID discord.Snowf
 
 // RequestGuildMembersParams controls what the OP 8 Request Guild Members
 // gateway command fetches.
+// https://docs.discord.com/developers/events/gateway-events#request-guild-members
 type RequestGuildMembersParams struct {
 	// Query is a username prefix. Use "" to request all members (requires the
 	// GUILD_MEMBERS privileged intent).
@@ -864,6 +880,7 @@ func (d *Client) RequestGuildMembers(guildID discord.Snowflake, params RequestGu
 }
 
 // UpdatePresenceParams controls the bot's displayed presence in Discord.
+// https://docs.discord.com/developers/events/gateway-events#update-presence
 type UpdatePresenceParams struct {
 	// Since is the unix time (in milliseconds) of when the client went idle.
 	// Set to nil if the client is not idle.
@@ -1223,6 +1240,12 @@ func (d *Client) DeleteGuildIntegration(ctx context.Context, guildID, integratio
 		opts = &api.DeleteGuildIntegrationOptions{Reason: *reason}
 	}
 	return d.RestClient.DeleteGuildIntegration(ctx, guildID, integrationID, opts)
+}
+
+// ModifyGuildIncidentActions pauses or re-enables a guild's invites and/or DMs.
+// See api.RestClient.ModifyGuildIncidentActions for details.
+func (d *Client) ModifyGuildIncidentActions(ctx context.Context, guildID discord.Snowflake, opts *api.ModifyGuildIncidentActionsOptions) (*discord.GuildIncidentsData, error) {
+	return d.RestClient.ModifyGuildIncidentActions(ctx, guildID, opts)
 }
 
 // ── Additional voice methods ──────────────────────────────────────────────────

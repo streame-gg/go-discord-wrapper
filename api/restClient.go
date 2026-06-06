@@ -29,8 +29,10 @@ import (
 // the request lifecycle so the rate limiter can key on it without re-parsing the URL.
 type routePathKey struct{}
 
+// https://docs.discord.com/developers/reference
 type RestEventType string
 
+// https://docs.discord.com/developers/reference
 type NoReturnData struct{}
 
 const (
@@ -41,6 +43,7 @@ const (
 	RestEventError     RestEventType = "ERROR"
 )
 
+// https://docs.discord.com/developers/reference
 type RestEvent struct {
 	Type       RestEventType
 	Request    *http.Request
@@ -50,8 +53,10 @@ type RestEvent struct {
 	Err        error
 }
 
+// https://docs.discord.com/developers/reference
 type RestEventHandler func(*RestClient, RestEvent)
 
+// https://docs.discord.com/developers/reference
 type RestClient struct {
 	// BaseURL is the root of the Discord REST API (default: "https://discord.com/api").
 	// It is read by buildURL on every request without a lock. If you need to

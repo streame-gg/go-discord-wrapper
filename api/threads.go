@@ -14,16 +14,19 @@ import (
 
 // ── Param / response types ────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/channel#start-thread-from-message
 type CreateThreadFromMessageParams struct {
 	Name                string `json:"name"`
 	AutoArchiveDuration *int   `json:"auto_archive_duration,omitempty"`
 	RateLimitPerUser    *int   `json:"rate_limit_per_user,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/channel#start-thread-from-message
 type CreateThreadFromMessageOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/channel#start-thread-without-message
 type CreateThreadParams struct {
 	Name                string               `json:"name"`
 	AutoArchiveDuration *int                 `json:"auto_archive_duration,omitempty"`
@@ -32,11 +35,13 @@ type CreateThreadParams struct {
 	RateLimitPerUser    *int                 `json:"rate_limit_per_user,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/channel#start-thread-without-message
 type CreateThreadOptions struct {
 	Reason string
 }
 
 // CreateForumThreadParams is used to start a thread in a forum or media channel.
+// https://docs.discord.com/developers/resources/channel#start-thread-in-forum-or-media-channel
 type CreateForumThreadParams struct {
 	Name                string              `json:"name"`
 	AutoArchiveDuration *int                `json:"auto_archive_duration,omitempty"`
@@ -45,10 +50,12 @@ type CreateForumThreadParams struct {
 	AppliedTags         []discord.Snowflake `json:"applied_tags,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/channel#start-thread-in-forum-or-media-channel
 type CreateForumThreadOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/channel#list-thread-members
 type ListThreadMembersParams struct {
 	WithMember *bool
 	After      *discord.Snowflake
@@ -72,6 +79,7 @@ func (p ListThreadMembersParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
+// https://docs.discord.com/developers/resources/channel#list-public-archived-threads
 type ListArchivedThreadsParams struct {
 	Before *time.Time
 	Limit  *int
@@ -92,6 +100,7 @@ func (p ListArchivedThreadsParams) toQuery() string {
 }
 
 // ArchivedThreadsResponse is returned by the list-archived-threads endpoints.
+// https://docs.discord.com/developers/resources/channel#list-public-archived-threads
 type ArchivedThreadsResponse struct {
 	Threads []*discord.Channel      `json:"threads"`
 	Members []*discord.ThreadMember `json:"members"`
@@ -99,6 +108,7 @@ type ArchivedThreadsResponse struct {
 }
 
 // ActiveThreadsResponse is returned by ListActiveGuildThreads.
+// https://docs.discord.com/developers/resources/guild#list-active-guild-threads
 type ActiveThreadsResponse struct {
 	Threads []*discord.Channel      `json:"threads"`
 	Members []*discord.ThreadMember `json:"members"`
@@ -372,6 +382,7 @@ func (c *RestClient) ListJoinedPrivateArchivedThreads(ctx context.Context, chann
 }
 
 // SearchThreadsParams holds the query parameters for searching threads in a channel.
+// https://docs.discord.com/developers/resources/channel
 type SearchThreadsParams struct {
 	Name     *string
 	Archived *bool

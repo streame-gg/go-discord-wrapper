@@ -11,6 +11,7 @@ import (
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/subscription#list-sku-subscriptions
 type ListSKUSubscriptionsParams struct {
 	Before *discord.Snowflake
 	After  *discord.Snowflake

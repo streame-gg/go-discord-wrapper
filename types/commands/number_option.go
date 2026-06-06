@@ -5,6 +5,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-option-structure
 type ApplicationCommandOptionNumber struct {
 	Type                     discord.ApplicationCommandOptionType      `json:"type"`
 	Name                     string                                    `json:"name"`

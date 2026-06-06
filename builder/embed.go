@@ -17,6 +17,8 @@ import (
 //	    SetDescription("World").
 //	    SetColor(0x5865F2).
 //	    Build()
+//
+// https://docs.discord.com/developers/resources/message#embed-object
 type EmbedBuilder struct {
 	embed discord.Embed
 }

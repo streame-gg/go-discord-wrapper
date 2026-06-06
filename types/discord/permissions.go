@@ -5,6 +5,7 @@ import (
 	"strconv"
 )
 
+// https://docs.discord.com/developers/resources/channel#overwrite-object
 type PermissionOverwriteType int
 
 const (
@@ -15,6 +16,8 @@ const (
 // Permission is a bitmask of Discord permission flags. Discord transmits
 // permissions as a decimal string (e.g. "2147483647") to avoid JavaScript
 // integer-precision loss on bits ≥ 53; use uint64 so all 64 bits are safe.
+//
+// https://docs.discord.com/developers/topics/permissions#permissions-bitwise-permission-flags
 type Permission uint64
 
 // MarshalJSON encodes the permission bitmask as a decimal string, matching
@@ -50,6 +53,8 @@ func (p *Permission) UnmarshalJSON(data []byte) error {
 // as the presence of a null field (true) vs. absence of the field (false).
 // Use with json:"field_name,omitempty": a zero NullFlag is omitted; a true
 // NullFlag marshals to JSON null.
+//
+// https://docs.discord.com/developers/topics/permissions#role-object-role-tags-structure
 type NullFlag bool
 
 func (f *NullFlag) UnmarshalJSON(_ []byte) error {

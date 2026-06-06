@@ -5,6 +5,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#text-display
 type TextDisplayComponent struct {
 	Type    discord.ComponentType `json:"type"`
 	ID      *int                  `json:"id,omitempty"`
@@ -47,6 +48,7 @@ func (t *TextDisplayComponent) MarshalJSON() ([]byte, error) {
 
 func (t *TextDisplayComponent) IsAnySectionComponent() {}
 
+// https://docs.discord.com/developers/components/reference#text-display
 type TextDisplayComponentInteractionResponse struct {
 	Type discord.ComponentType `json:"type"`
 	ID   *int                  `json:"id,omitempty"`

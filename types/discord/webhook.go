@@ -1,5 +1,6 @@
 package discord
 
+// https://docs.discord.com/developers/resources/webhook#webhook-object-webhook-types
 type WebhookType int
 
 const (
@@ -8,6 +9,7 @@ const (
 	WebhookTypeApplication     WebhookType = 3
 )
 
+// https://docs.discord.com/developers/resources/webhook#webhook-object
 type Webhook struct {
 	hClient       EntityClient
 	ID            Snowflake   `json:"id"`

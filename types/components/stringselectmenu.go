@@ -5,6 +5,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#string-select
 type StringSelectMenuComponent struct {
 	Type        discord.ComponentType              `json:"type"`
 	ID          *int                               `json:"id,omitempty"`
@@ -53,6 +54,7 @@ func (s *StringSelectMenuComponent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// https://docs.discord.com/developers/components/reference#string-select-select-option-structure
 type StringSelectMenuComponentOption struct {
 	Label       string         `json:"label"`
 	Value       string         `json:"value"`
@@ -65,6 +67,7 @@ func (s *StringSelectMenuComponent) IsAnyLabelComponent() {
 
 }
 
+// https://docs.discord.com/developers/components/reference#string-select
 type StringSelectComponentInteractionResponse struct {
 	Type          discord.ComponentType `json:"type"`
 	Values        []string              `json:"values"`

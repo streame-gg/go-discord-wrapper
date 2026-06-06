@@ -7,6 +7,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-application-command-interaction-data-option-structure
 type ApplicationCommandInteractionDataOption[T string | int | bool | interface{}] struct {
 	Name    string                                                 `json:"name"`
 	Type    discord.ApplicationCommandOptionType                   `json:"type"`

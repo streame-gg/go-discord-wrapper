@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// https://docs.discord.com/developers/resources/channel#channel-object-channel-types
 type ChannelType int
 
 const (
@@ -22,6 +23,7 @@ const (
 	ChannelTypeGuildMedia         ChannelType = 16
 )
 
+// https://docs.discord.com/developers/resources/channel#channel-object-video-quality-modes
 type VideoQualityMode int
 
 const (
@@ -29,6 +31,7 @@ const (
 	VideoQualityModeFull VideoQualityMode = 2
 )
 
+// https://docs.discord.com/developers/resources/channel#forum-tag-object
 type ChannelTag struct {
 	ID        Snowflake  `json:"id"`
 	Name      string     `json:"name"`
@@ -37,6 +40,7 @@ type ChannelTag struct {
 	EmojiName *string    `json:"emoji_name,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/channel#channel-object
 type Channel struct {
 	hClient EntityClient
 
@@ -81,6 +85,7 @@ type Channel struct {
 	Status                        *string                      `json:"status,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/channel#overwrite-object
 type ChannelPermissionOverwrite struct {
 	ID    Snowflake               `json:"id"`
 	Type  PermissionOverwriteType `json:"type"`
@@ -88,6 +93,7 @@ type ChannelPermissionOverwrite struct {
 	Deny  string                  `json:"deny"`
 }
 
+// https://docs.discord.com/developers/resources/channel#channel-object-channel-flags
 type ChannelFlags int
 
 const (
@@ -96,6 +102,7 @@ const (
 	ChannelFlagHideMediaDownloadOptions ChannelFlags = 1 << 15
 )
 
+// https://docs.discord.com/developers/resources/channel#channel-object-sort-order-types
 type DefaultSortOrder int
 
 const (
@@ -103,6 +110,7 @@ const (
 	DefaultSortOrderCreationDate   DefaultSortOrder = 1
 )
 
+// https://docs.discord.com/developers/resources/channel#channel-object-forum-layout-types
 type ChannelForumLayoutType int
 
 const (
@@ -111,11 +119,13 @@ const (
 	ChannelForumLayoutTypeGalleryView ChannelForumLayoutType = 2
 )
 
+// https://docs.discord.com/developers/resources/channel#default-reaction-object
 type DefaultReactionEmoji struct {
 	EmojiID   *Snowflake `json:"emoji_id,omitempty"`
 	EmojiName *string    `json:"emoji_name,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/channel#thread-metadata-object
 type ThreadMetadata struct {
 	Archived            bool       `json:"archived"`
 	AutoArchiveDuration *int       `json:"auto_archive_duration,omitempty"`
@@ -162,6 +172,8 @@ func (c *Channel) IsDMBased() bool {
 }
 
 // FollowedChannel is returned when following an announcement channel.
+//
+// https://docs.discord.com/developers/resources/channel#followed-channel-object
 type FollowedChannel struct {
 	ChannelID Snowflake `json:"channel_id"`
 	WebhookID Snowflake `json:"webhook_id"`

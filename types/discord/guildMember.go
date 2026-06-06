@@ -5,6 +5,8 @@ import (
 )
 
 // GuildMember.User is nil on MESSAGE_CREATE and MESSAGE_UPDATE gateway events.
+//
+// https://docs.discord.com/developers/resources/guild#guild-member-object
 type GuildMember struct {
 	hClient                    EntityClient
 	GuildID                    Snowflake        `json:"-"`
@@ -39,6 +41,7 @@ func (m *GuildMember) DisplayName() string {
 	return ""
 }
 
+// https://docs.discord.com/developers/resources/channel#thread-member-object
 type ThreadMember struct {
 	ID            *Snowflake   `json:"id,omitempty"`
 	UserID        *Snowflake   `json:"user_id,omitempty"`

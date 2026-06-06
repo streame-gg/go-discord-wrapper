@@ -11,6 +11,7 @@ import (
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/poll#get-answer-voters
 type GetPollAnswerVotersParams struct {
 	After *discord.Snowflake
 	Limit *int
@@ -43,6 +44,7 @@ func (c *RestClient) CreatePoll(ctx context.Context, channelID discord.Snowflake
 	})
 }
 
+// https://docs.discord.com/developers/resources/poll#get-answer-voters
 type GetPollAnswerVotersResponse struct {
 	Users []*discord.User `json:"users"`
 }

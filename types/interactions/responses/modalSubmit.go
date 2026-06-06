@@ -5,6 +5,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-modal-submit-data-structure
 type InteractionDataModalSubmit struct {
 	CustomID   string                                `json:"custom_id"`
 	Resolved   *discord.ResolvedData                 `json:"resolved,omitempty"`

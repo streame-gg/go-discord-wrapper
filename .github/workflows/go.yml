@@ -59,7 +59,20 @@ jobs:
       - name: Build
         run: go build -v ./...
 
+      # The mongocache integration suite uses testcontainers-go, which needs a
+      # reachable Docker daemon. ubuntu-latest ships one, but pulling the image
+      # here (a) fails loudly if Docker is somehow unavailable instead of letting
+      # the suite skip and commit a misleading 5% number, and (b) warms the image
+      # cache so the container start inside the test doesn't race its wait timeout.
+      - name: Pre-pull MongoDB image for testcontainers
+        run: docker pull mongo:7
+
       - name: Test with race detector and coverage
+        # TESTCONTAINERS_RYUK_DISABLED skips the reaper container; the job is
+        # ephemeral so leftover containers die with the runner, and dropping Ryuk
+        # avoids its occasional startup flakiness on hosted runners.
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: "true"
         run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Coverage report

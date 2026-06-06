@@ -2,12 +2,14 @@ package discord
 
 import "time"
 
+// https://docs.discord.com/developers/resources/user#avatar-decoration-data-object
 type AvatarDecorationData struct {
 	Asset     string `json:"asset"`
 	ExpiresAt int64  `json:"expires_at"`
 	SkuID     string `json:"sku_id"`
 }
 
+// https://docs.discord.com/developers/resources/user#user-object
 type Clan struct {
 	Badge           string `json:"badge"`
 	IdentityEnabled bool   `json:"identity_enabled"`
@@ -15,6 +17,7 @@ type Clan struct {
 	Tag             string `json:"tag"`
 }
 
+// https://docs.discord.com/developers/resources/user#user-object
 type User struct {
 	hClient              EntityClient
 	AccentColor          *int                  `json:"accent_color,omitempty"`
@@ -46,6 +49,8 @@ func (u *User) CreatedAt() time.Time {
 }
 
 // UserConnection represents an external account linked to a Discord user.
+//
+// https://docs.discord.com/developers/resources/user#connection-object
 type UserConnection struct {
 	ID           string         `json:"id"`
 	Name         string         `json:"name"`
@@ -60,6 +65,8 @@ type UserConnection struct {
 }
 
 // OAuth2Authorization represents the current OAuth2 authorization info for a bearer token.
+//
+// https://docs.discord.com/developers/topics/oauth2#get-current-authorization-information
 type OAuth2Authorization struct {
 	Application Application `json:"application"`
 	Expires     string      `json:"expires"`
@@ -68,6 +75,8 @@ type OAuth2Authorization struct {
 }
 
 // ApplicationRoleConnection represents the user's role connection for an application.
+//
+// https://docs.discord.com/developers/resources/user#application-role-connection-object
 type ApplicationRoleConnection struct {
 	PlatformName     *string           `json:"platform_name,omitempty"`
 	PlatformUsername *string           `json:"platform_username,omitempty"`

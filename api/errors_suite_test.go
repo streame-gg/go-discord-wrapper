@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -49,4 +50,32 @@ func (s *errorsSuite) TestErrorIsTypedCodeSentinels() {
 	err := &Error{HTTPStatus: 403, Code: discord.JSONErrorCodeMissingPermissions}
 	s.True(errors.Is(err, ErrMissingPermissions))
 	s.False(errors.Is(err, ErrUnknownChannel))
+}
+
+// TestJSONErrorCarrier guards the wiring that lets the discord package's
+// IsErrorCode / ErrorCodeOf helpers match an *api.Error. Without the
+// JSONErrorCode() method, these helpers silently return false for every
+// real API error.
+func (s *errorsSuite) TestJSONErrorCarrier() {
+	err := &Error{HTTPStatus: 403, Code: discord.JSONErrorCodeMissingPermissions}
+
+	// Direct: *Error satisfies the carrier interface.
+	s.Equal(discord.JSONErrorCodeMissingPermissions, err.JSONErrorCode())
+
+	// discord.IsErrorCode matches by code.
+	s.True(discord.IsErrorCode(err, discord.JSONErrorCodeMissingPermissions))
+	s.False(discord.IsErrorCode(err, discord.JSONErrorCodeUnknownChannel))
+
+	// And it still matches once the error is wrapped.
+	wrapped := fmt.Errorf("doing thing: %w", err)
+	s.True(discord.IsErrorCode(wrapped, discord.JSONErrorCodeMissingPermissions))
+
+	code, ok := discord.ErrorCodeOf(wrapped)
+	s.True(ok)
+	s.Equal(discord.JSONErrorCodeMissingPermissions, code)
+
+	// Non-API errors carry no code.
+	_, ok = discord.ErrorCodeOf(errors.New("plain"))
+	s.False(ok)
+	s.False(discord.IsErrorCode(nil, discord.JSONErrorCodeMissingPermissions))
 }

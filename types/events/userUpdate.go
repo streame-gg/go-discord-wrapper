@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#user-update
 type UserUpdateEvent struct {
 	NewUser discord.User `json:"-"`
 }

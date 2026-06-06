@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#mentionable-select
 type MentionableSelectMenuComponent struct {
 	Type          discord.ComponentType `json:"type"`
 	ID            *int                  `json:"id,omitempty"`
@@ -58,6 +59,7 @@ func (m *MentionableSelectMenuComponent) GetType() discord.ComponentType {
 	return discord.ComponentTypeMentionableSelect
 }
 
+// https://docs.discord.com/developers/components/reference#mentionable-select
 type MentionableComponentInteractionResponse struct {
 	Type          discord.ComponentType `json:"type"`
 	Values        []discord.Snowflake   `json:"values"`

@@ -8,6 +8,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#guild-member-add
 type GuildMemberAddEvent struct {
 	discord.GuildMember
 	GuildID discord.Snowflake `json:"guild_id"`
@@ -22,6 +23,7 @@ func init() {
 func (e GuildMemberAddEvent) DesiredEventType() Event { return &GuildMemberAddEvent{} }
 func (e GuildMemberAddEvent) Event() EventType        { return EventGuildMemberAdd }
 
+// https://docs.discord.com/developers/events/gateway-events#guild-member-remove
 type GuildMemberRemoveEvent struct {
 	GuildID discord.Snowflake `json:"guild_id"`
 	User    discord.User      `json:"user"`
@@ -30,6 +32,7 @@ type GuildMemberRemoveEvent struct {
 func (e GuildMemberRemoveEvent) DesiredEventType() Event { return &GuildMemberRemoveEvent{} }
 func (e GuildMemberRemoveEvent) Event() EventType        { return EventGuildMemberRemove }
 
+// https://docs.discord.com/developers/events/gateway-events#guild-member-update
 type GuildMemberUpdateEvent struct {
 	GuildID   discord.Snowflake    `json:"-"`
 	NewMember discord.GuildMember  `json:"-"`

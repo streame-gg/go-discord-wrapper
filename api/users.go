@@ -13,12 +13,14 @@ import (
 
 // ── Param / response types ────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/user#modify-current-user
 type ModifyCurrentUserParams struct {
 	Username *string `json:"username,omitempty"`
 	// Avatar is a base64-encoded image data URI (e.g. "data:image/png;base64,...").
 	Avatar *string `json:"avatar,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/user#get-current-user-guilds
 type GetCurrentUserGuildsParams struct {
 	Before     *discord.Snowflake
 	After      *discord.Snowflake
@@ -185,6 +187,7 @@ func (c *RestClient) CreateDM(ctx context.Context, recipientID discord.Snowflake
 }
 
 // CreateGroupDMParams holds params for creating a Group DM.
+// https://docs.discord.com/developers/resources/user#create-group-dm
 type CreateGroupDMParams struct {
 	AccessTokens []string          `json:"access_tokens"`
 	Nicks        map[string]string `json:"nicks"`

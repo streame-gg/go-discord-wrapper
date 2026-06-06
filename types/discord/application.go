@@ -1,5 +1,6 @@
 package discord
 
+// https://docs.discord.com/developers/resources/application#application-object-application-event-webhook-status
 type ApplicationEventWebhookStatus int
 
 const (
@@ -8,6 +9,7 @@ const (
 	ApplicationEventWebhookStatusDisabledBy ApplicationEventWebhookStatus = 2
 )
 
+// https://docs.discord.com/developers/topics/teams#data-models-membership-state-enum
 type ApplicationTeamMemberMembershipState int
 
 const (
@@ -15,6 +17,7 @@ const (
 	ApplicationTeamMemberMembershipStateAccepted ApplicationTeamMemberMembershipState = 2
 )
 
+// https://docs.discord.com/developers/topics/teams#data-models-team-member-object
 type ApplicationTeamMember struct {
 	MembershipState ApplicationTeamMemberMembershipState `json:"membership_state"`
 	TeamID          *Snowflake                           `json:"team_id,omitempty"`
@@ -22,6 +25,7 @@ type ApplicationTeamMember struct {
 	Role            string                               `json:"role"`
 }
 
+// https://docs.discord.com/developers/topics/teams#data-models-team-object
 type ApplicationTeam struct {
 	IconHash    *string                 `json:"icon,omitempty"`
 	ID          Snowflake               `json:"id"`
@@ -30,11 +34,13 @@ type ApplicationTeam struct {
 	OwnerUserID Snowflake               `json:"owner_user_id"`
 }
 
+// https://docs.discord.com/developers/resources/application#install-params-object
 type ApplicationInstallParams struct {
 	Scopes      []string `json:"scopes"`
 	Permissions string   `json:"permissions"`
 }
 
+// https://docs.discord.com/developers/resources/application-role-connection-metadata#application-role-connection-metadata-object-application-role-connection-metadata-type
 type ApplicationRoleConnectionsMetadataType int
 
 const (
@@ -48,6 +54,7 @@ const (
 	ApplicationRoleConnectionsMetadataTypeBooleanNotEqual            ApplicationRoleConnectionsMetadataType = 8
 )
 
+// https://docs.discord.com/developers/resources/application-role-connection-metadata#application-role-connection-metadata-object
 type ApplicationRoleConnectionsMetadata struct {
 	Type                     ApplicationRoleConnectionsMetadataType `json:"type"`
 	Key                      string                                 `json:"key"`
@@ -57,6 +64,7 @@ type ApplicationRoleConnectionsMetadata struct {
 	DescriptionLocalizations map[string]string                      `json:"description_localizations,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/application#application-object
 type Application struct {
 	ID                                Snowflake                     `json:"id"`
 	Name                              string                        `json:"name"`
@@ -76,6 +84,7 @@ type Application struct {
 	Slug                              *string                       `json:"slug,omitempty"`
 	CoverImage                        *string                       `json:"cover_image,omitempty"`
 	Flags                             *ApplicationFlags             `json:"flags,omitempty"`
+	FlagsNew                          *ApplicationFlags             `json:"flags_new,omitempty"`
 	ApproximateGuildCount             *int                          `json:"approximate_guild_count,omitempty"`
 	ApproximateUserInstallCount       *int                          `json:"approximate_user_install_count,omitempty"`
 	ApproximateUserAuthorizationCount *int                          `json:"approximate_user_authorization_count,omitempty"`

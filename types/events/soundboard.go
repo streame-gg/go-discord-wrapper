@@ -7,11 +7,13 @@ import (
 )
 
 // GuildSoundboardSoundCreateEvent is dispatched when a soundboard sound is created in a guild.
+// https://docs.discord.com/developers/events/gateway-events#guild-soundboard-sound-create
 type GuildSoundboardSoundCreateEvent struct {
 	discord.SoundboardSound
 }
 
 // GuildSoundboardSoundUpdateEvent is dispatched when a soundboard sound is updated.
+// https://docs.discord.com/developers/events/gateway-events#guild-soundboard-sound-update
 type GuildSoundboardSoundUpdateEvent struct {
 	NewSound discord.SoundboardSound  `json:"-"`
 	OldSound *discord.SoundboardSound `json:"-"`
@@ -30,12 +32,14 @@ func (e GuildSoundboardSoundUpdateEvent) MarshalJSON() ([]byte, error) {
 }
 
 // GuildSoundboardSoundDeleteEvent is dispatched when a soundboard sound is deleted.
+// https://docs.discord.com/developers/events/gateway-events#guild-soundboard-sound-delete
 type GuildSoundboardSoundDeleteEvent struct {
 	SoundID discord.Snowflake `json:"sound_id"`
 	GuildID discord.Snowflake `json:"guild_id"`
 }
 
 // GuildSoundboardSoundsUpdateEvent is dispatched when multiple guild soundboard sounds are updated.
+// https://docs.discord.com/developers/events/gateway-events#guild-soundboard-sound-update
 type GuildSoundboardSoundsUpdateEvent struct {
 	GuildID             discord.Snowflake          `json:"-"`
 	NewSoundboardSounds []*discord.SoundboardSound `json:"-"`

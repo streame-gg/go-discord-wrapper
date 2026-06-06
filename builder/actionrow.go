@@ -10,6 +10,8 @@ import (
 //	row := builder.NewActionRow().
 //	    AddComponents(btn1, btn2).
 //	    Build()
+//
+// https://docs.discord.com/developers/components/reference#action-row
 type ActionRowBuilder struct {
 	row components.ActionRow
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#message-update
 type MessageUpdateEvent struct {
 	NewMessage discord.Message      `json:"-"`
 	OldMessage *discord.Message     `json:"-"`

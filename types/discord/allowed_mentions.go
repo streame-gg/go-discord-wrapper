@@ -1,5 +1,6 @@
 package discord
 
+// https://docs.discord.com/developers/resources/message#allowed-mentions-object-allowed-mention-types
 type AllowedMentionsType string
 
 const (
@@ -8,6 +9,7 @@ const (
 	AllowedMentionsTypeEveryone AllowedMentionsType = "everyone"
 )
 
+// https://docs.discord.com/developers/resources/message#allowed-mentions-object
 type AllowedMentions struct {
 	// Parse is intentionally a pointer-to-slice, not a plain slice.
 	// Discord distinguishes between three states:

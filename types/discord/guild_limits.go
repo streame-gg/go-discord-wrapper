@@ -6,7 +6,7 @@ import "strings"
 // with the boost (premium) tier, and a few features (e.g. MORE_STICKERS,
 // VIP_REGIONS) override the tier baseline. These mirror discord.js' maximumX
 // getters so callers can validate uploads or surface "X / max" counters without
-// hard-coding the tables. See https://discord.com/developers/docs/resources/guild.
+// hard-coding the tables. See https://docs.discord.com/developers/resources/guild.
 
 // MaxEmojis returns the maximum number of custom emoji this guild may have for
 // each of the static and animated buckets. Guilds with the MORE_EMOJI feature

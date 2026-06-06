@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-resolved-data-structure
 type ResolvedData struct {
 	Users       map[Snowflake]*User        `json:"users"`
 	Members     map[Snowflake]*GuildMember `json:"members,omitempty"`
@@ -16,6 +17,27 @@ type ResolvedData struct {
 	Attachments map[Snowflake]*Attachment  `json:"attachments,omitempty"`
 }
 
+// MessagePin is one entry returned by Get Channel Pins: a pinned message and
+// when it was pinned. See
+// https://docs.discord.com/developers/resources/message#message-pin-object.
+type MessagePin struct {
+	// PinnedAt is when the message was pinned.
+	PinnedAt time.Time `json:"pinned_at"`
+	// Message is the pinned message.
+	Message *Message `json:"message"`
+}
+
+// ChannelPins is the paginated response from Get Channel Pins. Items are ordered
+// newest-pin-first; HasMore reports whether older pins remain (fetch them with a
+// before cursor set to the last item's PinnedAt).
+//
+// https://docs.discord.com/developers/resources/message#get-channel-pins
+type ChannelPins struct {
+	Items   []*MessagePin `json:"items"`
+	HasMore bool          `json:"has_more"`
+}
+
+// https://docs.discord.com/developers/resources/message#message-object
 type Message struct {
 	hClient              EntityClient
 	Activity             *Activity                   `json:"activity,omitempty"`
@@ -91,6 +113,7 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// https://docs.discord.com/developers/resources/message#message-object-message-flags
 type MessageFlag uint64
 
 const (
@@ -109,6 +132,7 @@ const (
 	MessageFlagIsComponentsV2                   MessageFlag = 1 << 15
 )
 
+// https://docs.discord.com/developers/resources/message#message-object-message-types
 type MessageType uint64
 
 const (
@@ -151,11 +175,13 @@ const (
 	MessageTypePollResult                              MessageType = 46
 )
 
+// https://docs.discord.com/developers/resources/message#message-call-object
 type Call struct {
 	Participants   []Snowflake `json:"participants"`
 	EndedTimestamp *time.Time  `json:"ended_timestamp,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/message#channel-mention-object
 type MessageChannelMention struct {
 	ID      string `json:"id"`
 	GuildID string `json:"guild_id"`
@@ -163,6 +189,7 @@ type MessageChannelMention struct {
 	Name    string `json:"name"`
 }
 
+// https://docs.discord.com/developers/resources/sticker#sticker-object-sticker-format-types
 type MessageStickerItemFormatType int
 
 const (
@@ -172,16 +199,19 @@ const (
 	MessageStickerItemFormatTypeGIF    MessageStickerItemFormatType = 4
 )
 
+// https://docs.discord.com/developers/resources/sticker#sticker-item-object
 type MessageStickerItem struct {
 	ID         Snowflake                    `json:"id"`
 	Name       string                       `json:"name"`
 	FormatType MessageStickerItemFormatType `json:"format_type"`
 }
 
+// https://docs.discord.com/developers/resources/message#message-snapshot-object
 type MessageMessageSnapshot struct {
 	Message PartialMessage `json:"message,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/message#message-reference-types
 type MessageMessageReferenceType int
 
 const (
@@ -189,6 +219,7 @@ const (
 	MessageMessageReferenceTypeForward MessageMessageReferenceType = 1
 )
 
+// https://docs.discord.com/developers/resources/message#message-snapshot-object-message-snapshot-structure
 type PartialMessage struct {
 	Type            MessageType          `json:"type"`
 	Content         string               `json:"content"`
@@ -238,6 +269,7 @@ func (p *PartialMessage) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// https://docs.discord.com/developers/resources/message#message-reference-structure
 type MessageMessageReference struct {
 	Type            *MessageMessageReferenceType `json:"type,omitempty"`
 	MessageID       *Snowflake                   `json:"message_id,omitempty"`
@@ -246,6 +278,7 @@ type MessageMessageReference struct {
 	FailIfNotExists *bool                        `json:"fail_if_not_exists,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/message#message-interaction-metadata-object-application-command-interaction-metadata-structure
 type MessageInteractionMetadataApplicationCommand struct {
 	ID                           Snowflake                                             `json:"id"`
 	Type                         InteractionType                                       `json:"type"`
@@ -256,6 +289,7 @@ type MessageInteractionMetadataApplicationCommand struct {
 	TargetMessageID              *Snowflake                                            `json:"target_message_id,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/message#message-interaction-metadata-object-message-component-interaction-metadata-structure
 type MessageInteractionMetadataMessageComponent struct {
 	ID                           Snowflake                                             `json:"id"`
 	Type                         InteractionType                                       `json:"type"`
@@ -265,14 +299,18 @@ type MessageInteractionMetadataMessageComponent struct {
 	InteractedMessageID          *Snowflake                                            `json:"interacted_message_id,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/message#message-interaction-metadata-object
 type AnyMessageInteractionMetadata interface{}
 
+// https://docs.discord.com/developers/resources/message#message-interaction-metadata-object
 type MessageInteractionMetadata struct {
 	Value AnyMessageInteractionMetadata
 }
 
+// https://docs.discord.com/developers/resources/message#message-interaction-metadata-object
 type AnyMessageInteractionMetadataModalSubmitTriggeringInteractionMetadata interface{}
 
+// https://docs.discord.com/developers/resources/message#message-interaction-metadata-object
 type MessageInteractionMetadataModalSubmitTriggering struct {
 	AnyMessageInteractionMetadataModalSubmitTriggeringInteractionMetadata
 }
@@ -320,6 +358,7 @@ func (d *MessageInteractionMetadata) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("unknown MessageInteractionMetadata: %s", string(data))
 }
 
+// https://docs.discord.com/developers/resources/message#message-interaction-metadata-object-modal-submit-interaction-metadata-structure
 type MessageInteractionMetadataModalSubmit struct {
 	ID                            Snowflake                                             `json:"id"`
 	Type                          InteractionType                                       `json:"type"`
@@ -351,6 +390,8 @@ const (
 
 // GuildSearchResponse is returned by the guild message search endpoint.
 // Messages is a list of context windows; each window is a list of adjacent messages.
+//
+// https://docs.discord.com/developers/resources/message#search-guild-messages
 type GuildSearchResponse struct {
 	Messages                 [][]*Message   `json:"messages"`
 	DoingDeepHistoricalIndex bool           `json:"doing_deep_historical_index"`
@@ -361,6 +402,8 @@ type GuildSearchResponse struct {
 }
 
 // ThreadSearchResponse is returned by the thread search endpoint.
+//
+// https://docs.discord.com/developers/resources/channel#list-public-archived-threads
 type ThreadSearchResponse struct {
 	Threads       []*Channel      `json:"threads"`
 	Members       []*ThreadMember `json:"members"`

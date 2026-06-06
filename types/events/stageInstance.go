@@ -6,10 +6,12 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#stage-instance-create
 type StageInstanceCreateEvent struct {
 	discord.StageInstance
 }
 
+// https://docs.discord.com/developers/events/gateway-events#stage-instance-update
 type StageInstanceUpdateEvent struct {
 	NewInstance discord.StageInstance  `json:"-"`
 	OldInstance *discord.StageInstance `json:"-"`
@@ -27,6 +29,7 @@ func (e StageInstanceUpdateEvent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(wire{e.NewInstance, e.OldInstance})
 }
 
+// https://docs.discord.com/developers/events/gateway-events#stage-instance-delete
 type StageInstanceDeleteEvent struct {
 	discord.StageInstance
 }

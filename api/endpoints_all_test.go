@@ -180,6 +180,9 @@ func (s *endpointSuite) TestGuildEndpoints() {
 		{name: "DeleteGuildIntegration", method: "DELETE", path: "/guilds/" + g + "/integrations/" + testIntegrationID.String(), call: func() error {
 			return s.client.DeleteGuildIntegration(ctx, testGuildID, testIntegrationID, nil)
 		}},
+		{name: "ModifyGuildIncidentActions", method: "PUT", path: "/guilds/" + g + "/incident-actions", body: "{}", call: func() error {
+			return drop(s.client.ModifyGuildIncidentActions(ctx, testGuildID, nil))
+		}},
 	})
 }
 
@@ -425,13 +428,16 @@ func (s *endpointSuite) TestMessageEndpoints() {
 		{name: "CrosspostMessage", method: "POST", path: "/channels/" + ch + "/messages/" + msg + "/crosspost", call: func() error {
 			return drop(s.client.CrosspostMessage(ctx, testChanID, testMsgID))
 		}},
-		{name: "ListPinnedMessages", method: "GET", path: "/channels/" + ch + "/pins", body: "[]", call: func() error {
+		{name: "GetChannelPins", method: "GET", path: "/channels/" + ch + "/messages/pins", body: `{"items":[],"has_more":false}`, call: func() error {
+			return drop(s.client.GetChannelPins(ctx, testChanID, GetChannelPinsParams{}))
+		}},
+		{name: "ListPinnedMessages", method: "GET", path: "/channels/" + ch + "/messages/pins", body: `{"items":[],"has_more":false}`, call: func() error {
 			return drop(s.client.ListPinnedMessages(ctx, testChanID))
 		}},
-		{name: "PinMessage", method: "PUT", path: "/channels/" + ch + "/pins/" + msg, call: func() error {
+		{name: "PinMessage", method: "PUT", path: "/channels/" + ch + "/messages/pins/" + msg, call: func() error {
 			return s.client.PinMessage(ctx, testChanID, testMsgID, nil)
 		}},
-		{name: "UnpinMessage", method: "DELETE", path: "/channels/" + ch + "/pins/" + msg, call: func() error {
+		{name: "UnpinMessage", method: "DELETE", path: "/channels/" + ch + "/messages/pins/" + msg, call: func() error {
 			return s.client.UnpinMessage(ctx, testChanID, testMsgID, nil)
 		}},
 		{name: "AddReaction", method: "PUT", path: "/channels/" + ch + "/messages/" + msg + "/reactions/fire/@me", call: func() error {
@@ -601,10 +607,10 @@ func (s *endpointSuite) TestAuditReasonForwarding() {
 		{name: "DeleteMessage", method: "DELETE", path: "/channels/" + ch + "/messages/" + testMsgID.String(), wantReason: r, call: func() error {
 			return s.client.DeleteMessage(ctx, testChanID, testMsgID, &DeleteMessageOptions{Reason: r})
 		}},
-		{name: "PinMessage", method: "PUT", path: "/channels/" + ch + "/pins/" + testMsgID.String(), wantReason: r, call: func() error {
+		{name: "PinMessage", method: "PUT", path: "/channels/" + ch + "/messages/pins/" + testMsgID.String(), wantReason: r, call: func() error {
 			return s.client.PinMessage(ctx, testChanID, testMsgID, &PinMessageOptions{Reason: r})
 		}},
-		{name: "UnpinMessage", method: "DELETE", path: "/channels/" + ch + "/pins/" + testMsgID.String(), wantReason: r, call: func() error {
+		{name: "UnpinMessage", method: "DELETE", path: "/channels/" + ch + "/messages/pins/" + testMsgID.String(), wantReason: r, call: func() error {
 			return s.client.UnpinMessage(ctx, testChanID, testMsgID, &UnpinMessageOptions{Reason: r})
 		}},
 		{name: "BulkDeleteMessages", method: "POST", path: "/channels/" + ch + "/messages/bulk-delete", wantReason: r, call: func() error {

@@ -10,6 +10,7 @@ var errStickerNoGuildID = errors.New("discord: Sticker.GuildID is not set — en
 // ── Options ───────────────────────────────────────────────────────────────────
 
 // StickerCreateOptions configures Guild.CreateSticker.
+// https://docs.discord.com/developers/resources/sticker#create-guild-sticker
 type StickerCreateOptions struct {
 	Name        string
 	Description string
@@ -21,6 +22,7 @@ type StickerCreateOptions struct {
 }
 
 // StickerEditOptions configures Sticker.Edit.
+// https://docs.discord.com/developers/resources/sticker#modify-guild-sticker
 type StickerEditOptions struct {
 	Name           *string
 	Description    *string

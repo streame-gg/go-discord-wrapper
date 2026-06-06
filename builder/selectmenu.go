@@ -8,6 +8,8 @@ import (
 // SelectOptionBuilder builds a single StringSelectMenuComponentOption.
 //
 //	opt := builder.NewSelectOption("Red", "red").SetDescription("The colour red").Build()
+//
+// https://docs.discord.com/developers/components/reference#string-select-select-option-structure
 type SelectOptionBuilder struct {
 	opt components.StringSelectMenuComponentOption
 }
@@ -47,6 +49,8 @@ func (b *SelectOptionBuilder) Build() components.StringSelectMenuComponentOption
 //	        builder.NewSelectOption("Blue", "blue").Build(),
 //	    ).
 //	    Build()
+//
+// https://docs.discord.com/developers/components/reference#string-select
 type StringSelectMenuBuilder struct {
 	menu components.StringSelectMenuComponent
 }
@@ -93,6 +97,7 @@ func (b *StringSelectMenuBuilder) Build() *components.StringSelectMenuComponent 
 // ── User select ───────────────────────────────────────────────────────────────
 
 // UserSelectMenuBuilder builds a UserSelectMenuComponent using a fluent API.
+// https://docs.discord.com/developers/components/reference#user-select
 type UserSelectMenuBuilder struct {
 	menu components.UserSelectMenuComponent
 }
@@ -140,6 +145,7 @@ func (b *UserSelectMenuBuilder) Build() *components.UserSelectMenuComponent {
 // ── Role select ───────────────────────────────────────────────────────────────
 
 // RoleSelectMenuBuilder builds a RoleSelectMenuComponent using a fluent API.
+// https://docs.discord.com/developers/components/reference#role-select
 type RoleSelectMenuBuilder struct {
 	menu components.RoleSelectMenuComponent
 }
@@ -187,6 +193,7 @@ func (b *RoleSelectMenuBuilder) Build() *components.RoleSelectMenuComponent {
 // ── Channel select ────────────────────────────────────────────────────────────
 
 // ChannelSelectMenuBuilder builds a ChannelSelectMenuComponent using a fluent API.
+// https://docs.discord.com/developers/components/reference#channel-select
 type ChannelSelectMenuBuilder struct {
 	menu components.ChannelSelectMenuComponent
 }
@@ -234,6 +241,7 @@ func (b *ChannelSelectMenuBuilder) Build() *components.ChannelSelectMenuComponen
 // ── Mentionable select ────────────────────────────────────────────────────────
 
 // MentionableSelectMenuBuilder builds a MentionableSelectMenuComponent using a fluent API.
+// https://docs.discord.com/developers/components/reference#mentionable-select
 type MentionableSelectMenuBuilder struct {
 	menu components.MentionableSelectMenuComponent
 }

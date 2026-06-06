@@ -40,6 +40,10 @@ func TestMain(m *testing.M) {
 		os.Exit(m.Run())
 	}
 
+	// No Docker fallback: if the container can't start, the suite fails rather
+	// than skipping. A skipped integration suite still reports as a pass and
+	// silently drops coverage to ~5%, which is worse than a clear failure that
+	// says MongoDB wasn't reachable. Set MONGO_TEST_URI to run without Docker.
 	container, err := tc.GenericContainer(ctx, tc.GenericContainerRequest{
 		ContainerRequest: tc.ContainerRequest{
 			Image:        "mongo:7",
@@ -49,14 +53,7 @@ func TestMain(m *testing.M) {
 		Started: true,
 	})
 	if err != nil {
-		if isDockerUnavailable(err) {
-			// Docker isn't available (e.g. CI without a Docker daemon). Run the
-			// suite anyway so the Docker-free pkg tests still execute; the
-			// container-backed tests skip themselves when mongoClient is nil.
-			log.Printf("Docker is not available — skipping MongoDB integration tests: %v", err)
-			os.Exit(m.Run())
-		}
-		log.Fatalf("failed to start MongoDB container: %v", err)
+		log.Fatalf("failed to start MongoDB container (set MONGO_TEST_URI to use an external MongoDB): %v", err)
 	}
 	defer container.Terminate(ctx) //nolint:errcheck
 
@@ -77,11 +74,6 @@ func TestMain(m *testing.M) {
 	defer mongoClient.Disconnect(ctx) //nolint:errcheck
 
 	os.Exit(m.Run())
-}
-
-func isDockerUnavailable(err error) bool {
-	s := strings.ToLower(err.Error())
-	return strings.Contains(s, "provider") || strings.Contains(s, "docker host")
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -121,7 +113,7 @@ func mustSnowflake(s string) discord.Snowflake {
 func newCache(t *testing.T, opts cache.Options) *mongocache.MongoDBCache {
 	t.Helper()
 	if mongoClient == nil {
-		t.Skip("MongoDB container unavailable (Docker not running)")
+		t.Fatal("MongoDB client not initialised — TestMain should have failed first")
 	}
 	db := mongoClient.Database(uniqueDBName(t.Name()))
 	t.Cleanup(func() {

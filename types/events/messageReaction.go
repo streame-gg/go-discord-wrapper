@@ -4,6 +4,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/resources/message#get-reactions-reaction-types
 type ReactionType int
 
 const (
@@ -11,6 +12,7 @@ const (
 	ReactionTypeBurst  ReactionType = 1
 )
 
+// https://docs.discord.com/developers/events/gateway-events#message-reaction-add
 type MessageReactionAddEvent struct {
 	UserID          discord.Snowflake    `json:"user_id"`
 	ChannelID       discord.Snowflake    `json:"channel_id"`
@@ -24,6 +26,7 @@ type MessageReactionAddEvent struct {
 	Type            ReactionType         `json:"type"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#message-reaction-remove
 type MessageReactionRemoveEvent struct {
 	UserID    discord.Snowflake  `json:"user_id"`
 	ChannelID discord.Snowflake  `json:"channel_id"`
@@ -34,12 +37,14 @@ type MessageReactionRemoveEvent struct {
 	Type      ReactionType       `json:"type"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#message-reaction-remove-all
 type MessageReactionRemoveAllEvent struct {
 	ChannelID discord.Snowflake  `json:"channel_id"`
 	MessageID discord.Snowflake  `json:"message_id"`
 	GuildID   *discord.Snowflake `json:"guild_id,omitempty"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#message-reaction-remove-emoji
 type MessageReactionRemoveEmojiEvent struct {
 	ChannelID discord.Snowflake  `json:"channel_id"`
 	GuildID   *discord.Snowflake `json:"guild_id,omitempty"`

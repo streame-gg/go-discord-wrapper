@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#file-upload
 type FileUploadComponent struct {
 	Type      discord.ComponentType `json:"type"`
 	ID        *int                  `json:"id,omitempty"`
@@ -51,6 +52,7 @@ func (f *FileUploadComponent) IsAnyLabelComponent() {
 
 }
 
+// https://docs.discord.com/developers/components/reference#file-upload
 type FileUploadComponentInteractionResponse struct {
 	Type     discord.ComponentType `json:"type"`
 	ID       *int                  `json:"id,omitempty"`

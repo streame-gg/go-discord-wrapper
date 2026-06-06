@@ -3,6 +3,7 @@ package discord
 import "io"
 
 // MessageFile is a binary file attachment included in a message or webhook.
+// https://docs.discord.com/developers/reference#uploading-files
 type MessageFile struct {
 	// Name is the filename Discord will display (e.g. "image.png").
 	Name string

@@ -10,6 +10,7 @@ var errRoleNoGuildID = errors.New("discord: Role.GuildID is not set — ensure t
 // ── Options ───────────────────────────────────────────────────────────────────
 
 // RoleCreateOptions configures Guild.CreateRole.
+// https://docs.discord.com/developers/resources/guild#create-guild-role
 type RoleCreateOptions struct {
 	Name           *string
 	Permissions    *Permission
@@ -22,6 +23,7 @@ type RoleCreateOptions struct {
 }
 
 // RoleEditOptions configures Role.Edit.
+// https://docs.discord.com/developers/resources/guild#modify-guild-role
 type RoleEditOptions struct {
 	Name           *string
 	Permissions    *Permission
@@ -34,12 +36,14 @@ type RoleEditOptions struct {
 }
 
 // RolePositionEntry is a single role position change.
+// https://docs.discord.com/developers/resources/guild#modify-guild-role-positions
 type RolePositionEntry struct {
 	ID       Snowflake
 	Position *int
 }
 
 // RolePositionOptions configures Role.SetPosition.
+// https://docs.discord.com/developers/resources/guild#modify-guild-role-positions
 type RolePositionOptions struct {
 	Entries        []RolePositionEntry
 	AuditLogReason *string

@@ -7,6 +7,7 @@ import (
 )
 
 // AutocompleteChoice is a single option shown in an autocomplete dropdown.
+// https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-option-choice-structure
 type AutocompleteChoice struct {
 	Name              string                    `json:"name"`
 	NameLocalizations map[discord.Locale]string `json:"name_localizations,omitempty"`
@@ -14,6 +15,7 @@ type AutocompleteChoice struct {
 }
 
 // InteractionResponseDataAutocomplete is the response data for an autocomplete callback.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#autocomplete
 type InteractionResponseDataAutocomplete struct {
 	Choices []AutocompleteChoice `json:"choices"`
 }
@@ -25,6 +27,7 @@ func (d *InteractionResponseDataAutocomplete) MarshalJSON() ([]byte, error) {
 	return json.Marshal((*Alias)(d))
 }
 
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-application-command-data
 type InteractionDataAutocomplete struct {
 	ID          discord.Snowflake                                       `json:"id"`
 	CommandName string                                                  `json:"name"`

@@ -7,6 +7,7 @@ import "errors"
 // this package inspect API errors without importing the api package (which would
 // be an import cycle). Custom error types may implement it to participate in
 // IsErrorCode / ErrorCodeOf.
+// https://docs.discord.com/developers/topics/opcodes-and-status-codes#json
 type JSONErrorCarrier interface {
 	JSONErrorCode() JSONErrorCode
 }

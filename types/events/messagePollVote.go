@@ -4,6 +4,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#message-poll-vote-add
 type MessagePollVoteAddEvent struct {
 	UserID    discord.Snowflake  `json:"user_id"`
 	ChannelID discord.Snowflake  `json:"channel_id"`
@@ -12,6 +13,7 @@ type MessagePollVoteAddEvent struct {
 	AnswerID  int                `json:"answer_id"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#message-poll-vote-remove
 type MessagePollVoteRemoveEvent struct {
 	UserID    discord.Snowflake  `json:"user_id"`
 	ChannelID discord.Snowflake  `json:"channel_id"`

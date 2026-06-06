@@ -10,6 +10,7 @@ import (
 )
 
 // ModifyCurrentApplicationParams holds the fields that can be updated on the current application.
+// https://docs.discord.com/developers/resources/application#edit-current-application
 type ModifyCurrentApplicationParams struct {
 	Description                    *string                                `json:"description,omitempty"`
 	Icon                           *string                                `json:"icon,omitempty"`

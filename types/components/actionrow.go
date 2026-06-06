@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#action-row
 type ActionRow struct {
 	Type       discord.ComponentType  `json:"type"`
 	ID         *int                   `json:"id,omitempty"`

@@ -13,6 +13,8 @@ const (
 )
 
 // ImageFormat is a CDN image file extension.
+//
+// https://docs.discord.com/developers/reference#image-formatting
 type ImageFormat string
 
 const (
@@ -24,6 +26,7 @@ const (
 
 // ImageOptions tweaks a generated CDN URL. A nil *ImageOptions selects the
 // defaults: WebP (or GIF for animated assets) at Discord's default size.
+// https://docs.discord.com/developers/reference#image-formatting
 type ImageOptions struct {
 	// Format overrides the file extension. When empty the helper uses GIF for
 	// animated assets and WebP otherwise.

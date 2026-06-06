@@ -29,7 +29,7 @@ func TestMongoStoresSuite(t *testing.T) { suite.Run(t, new(mongoStoresSuite)) }
 func (s *mongoStoresSuite) cache(opts cache.Options) *mongocache.MongoDBCache {
 	t := s.T()
 	if mongoClient == nil {
-		t.Skip("MongoDB container unavailable (Docker not running)")
+		t.Fatal("MongoDB client not initialised — TestMain should have failed first")
 	}
 	db := mongoClient.Database(uniqueDBName(t.Name()))
 	s.db = db
@@ -44,7 +44,7 @@ func (s *mongoStoresSuite) cache(opts cache.Options) *mongocache.MongoDBCache {
 func (s *mongoStoresSuite) asyncCache(opts cache.Options) *mongocache.MongoDBCache {
 	t := s.T()
 	if mongoClient == nil {
-		t.Skip("MongoDB container unavailable (Docker not running)")
+		t.Fatal("MongoDB client not initialised — TestMain should have failed first")
 	}
 	db := mongoClient.Database(uniqueDBName(t.Name()))
 	s.db = db

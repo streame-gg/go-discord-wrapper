@@ -27,6 +27,7 @@ func (c *RestClient) GetChannel(ctx context.Context, channelID discord.Snowflake
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/channel#modify-channel
 type ModifyChannelParams struct {
 	Name                          *string                              `json:"name,omitempty"`
 	Type                          *discord.ChannelType                 `json:"type,omitempty"`
@@ -49,20 +50,24 @@ type ModifyChannelParams struct {
 	DefaultForumLayout            *discord.ChannelForumLayoutType      `json:"default_forum_layout,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/channel#modify-channel
 type ModifyChannelOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/channel#edit-channel-permissions
 type EditChannelPermissionsParams struct {
 	Allow *string                         `json:"allow,omitempty"`
 	Deny  *string                         `json:"deny,omitempty"`
 	Type  discord.PermissionOverwriteType `json:"type"`
 }
 
+// https://docs.discord.com/developers/resources/channel#edit-channel-permissions
 type EditChannelPermissionsOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/channel#create-channel-invite
 type CreateChannelInviteParams struct {
 	MaxAge              *int               `json:"max_age,omitempty"`
 	MaxUses             *int               `json:"max_uses,omitempty"`
@@ -73,26 +78,32 @@ type CreateChannelInviteParams struct {
 	TargetApplicationID *discord.Snowflake `json:"target_application_id,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/channel#create-channel-invite
 type CreateChannelInviteOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/channel#deleteclose-channel
 type DeleteChannelOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/channel#delete-channel-permission
 type DeleteChannelPermissionOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/channel#follow-announcement-channel
 type FollowAnnouncementChannelOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/channel#pin-message
 type PinMessageOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/channel#unpin-message
 type UnpinMessageOptions struct {
 	Reason string
 }
@@ -284,6 +295,7 @@ func (c *RestClient) TriggerTypingIndicator(ctx context.Context, channelID disco
 // ── Additional channel endpoints ──────────────────────────────────────────────
 
 // AddGroupDMRecipientParams holds params for adding a user to a Group DM.
+// https://docs.discord.com/developers/resources/channel#group-dm-add-recipient
 type AddGroupDMRecipientParams struct {
 	AccessToken string `json:"access_token"`
 	Nick        string `json:"nick"`

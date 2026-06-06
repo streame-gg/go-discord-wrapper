@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#guild-emojis-update
 type GuildEmojisUpdateEvent struct {
 	GuildID   discord.Snowflake `json:"-"`
 	NewEmojis []*discord.Emoji  `json:"-"`
@@ -35,6 +36,7 @@ func (e GuildEmojisUpdateEvent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(wire{e.GuildID, e.NewEmojis, e.OldEmojis})
 }
 
+// https://docs.discord.com/developers/events/gateway-events#guild-stickers-update
 type GuildStickersUpdateEvent struct {
 	GuildID     discord.Snowflake  `json:"-"`
 	NewStickers []*discord.Sticker `json:"-"`

@@ -12,16 +12,19 @@ import (
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/guild-template#create-guild-template
 type CreateGuildTemplateParams struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild-template#modify-guild-template
 type ModifyGuildTemplateParams struct {
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild-template#create-guild-from-guild-template
 type CreateGuildFromTemplateParams struct {
 	Name string  `json:"name"`
 	Icon *string `json:"icon,omitempty"`

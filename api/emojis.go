@@ -11,6 +11,7 @@ import (
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/emoji#create-guild-emoji
 type CreateGuildEmojiParams struct {
 	Name string `json:"name"`
 	// Image is a base64-encoded image data URI (e.g. "data:image/png;base64,...").
@@ -18,19 +19,23 @@ type CreateGuildEmojiParams struct {
 	Roles []discord.Snowflake `json:"roles,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/emoji#create-guild-emoji
 type CreateGuildEmojiOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/emoji#modify-guild-emoji
 type ModifyGuildEmojiParams struct {
 	Name  *string             `json:"name,omitempty"`
 	Roles []discord.Snowflake `json:"roles,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/emoji#modify-guild-emoji
 type ModifyGuildEmojiOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/emoji#delete-guild-emoji
 type DeleteGuildEmojiOptions struct {
 	Reason string
 }
@@ -174,16 +179,19 @@ func (c *RestClient) DeleteGuildEmoji(ctx context.Context, guildID, emojiID disc
 // ── Application emoji endpoints ───────────────────────────────────────────────
 
 // CreateEmojiParams holds params for creating an application emoji.
+// https://docs.discord.com/developers/resources/emoji#create-application-emoji
 type CreateEmojiParams struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
 }
 
 // ModifyEmojiParams holds params for modifying an application emoji.
+// https://docs.discord.com/developers/resources/emoji#modify-application-emoji
 type ModifyEmojiParams struct {
 	Name *string `json:"name,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/emoji#list-application-emojis
 type ListApplicationEmojisResponse struct {
 	Items []*discord.Emoji `json:"items"`
 }

@@ -3,7 +3,7 @@ package discord
 // JSONErrorCode is a Discord JSON error code returned in REST API responses
 // (the numeric "code" field of an error body). These are distinct from gateway
 // close codes (4000–4014). The full list lives at
-// https://discord.com/developers/docs/topics/opcodes-and-status-codes#json.
+// https://docs.discord.com/developers/topics/opcodes-and-status-codes#json.
 type JSONErrorCode int
 
 // GatewayErrorCode is the former name of JSONErrorCode, kept as an alias for
@@ -11,6 +11,8 @@ type JSONErrorCode int
 //
 // Deprecated: these are REST/JSON error codes, not gateway codes — use
 // JSONErrorCode.
+//
+// https://docs.discord.com/developers/topics/opcodes-and-status-codes#json
 type GatewayErrorCode = JSONErrorCode
 
 const (

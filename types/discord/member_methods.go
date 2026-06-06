@@ -15,6 +15,7 @@ var errMemberNoUserID = errors.New("discord: GuildMember.UserID is not set — e
 // ── Options ───────────────────────────────────────────────────────────────────
 
 // MemberEditOptions configures GuildMember.Edit.
+// https://docs.discord.com/developers/resources/guild#modify-guild-member
 type MemberEditOptions struct {
 	Nick                       *string
 	Roles                      *[]Snowflake
@@ -27,6 +28,7 @@ type MemberEditOptions struct {
 }
 
 // BanOptions configures GuildMember.Ban.
+// https://docs.discord.com/developers/resources/guild#create-guild-ban
 type BanOptions struct {
 	DeleteMessageSeconds *int
 	AuditLogReason       *string

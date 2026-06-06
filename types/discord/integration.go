@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// https://docs.discord.com/developers/resources/guild#integration-object
 type IntegrationType string
 
 const (
@@ -13,6 +14,7 @@ const (
 	IntegrationTypeGuildSubscription IntegrationType = "guild_subscription"
 )
 
+// https://docs.discord.com/developers/resources/guild#integration-object-integration-expire-behaviors
 type IntegrationExpireBehavior int
 
 const (
@@ -20,11 +22,13 @@ const (
 	IntegrationExpireBehaviorKick       IntegrationExpireBehavior = 1
 )
 
+// https://docs.discord.com/developers/resources/guild#integration-account-object
 type IntegrationAccount struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
+// https://docs.discord.com/developers/resources/guild#integration-application-object
 type IntegrationApplication struct {
 	ID          Snowflake `json:"id"`
 	Name        string    `json:"name"`
@@ -33,6 +37,7 @@ type IntegrationApplication struct {
 	Bot         *User     `json:"bot,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#integration-object
 type Integration struct {
 	hClient           EntityClient
 	GuildID           Snowflake                  `json:"-"`

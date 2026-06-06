@@ -20,6 +20,7 @@ import (
 // It shares the same request pipeline as RestClient (proactive rate limiting,
 // retries, lifecycle events). Call Close when finished to release the
 // rate-limiter's background goroutine.
+// https://docs.discord.com/developers/resources/webhook#webhook-object
 type WebhookClient struct {
 	rest  *RestClient
 	id    discord.Snowflake

@@ -36,6 +36,12 @@ New here? Start with [GETTING_STARTED.md](GETTING_STARTED.md), then copy
 | [CACHE.md](CACHE.md) | What is cached, when, and how to work with incomplete member caches |
 | [SHARDING.md](SHARDING.md) | `ShardManager`, the local coordinator, and cross-shard messaging |
 | [REST.md](REST.md) | Using the REST client standalone and handling typed errors |
+| [COVERAGE_GAPS.md](COVERAGE_GAPS.md) | Known gaps vs. the full Discord API surface (events, REST endpoints, features) |
+
+### Contributing
+| Guide | What it covers |
+|-------|----------------|
+| [TESTING_EVENT_DISPATCH.md](TESTING_EVENT_DISPATCH.md) | The in-process gateway harness for testing event dispatch, cache side-effects, and synthetic events end-to-end (no live token) |
 
 ## Runnable examples
 

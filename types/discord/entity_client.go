@@ -14,6 +14,7 @@ import (
 //
 // Entity methods accept ctx per call; the entity itself does not store a
 // context (unlike Interaction which captures the dispatch context).
+// Wraps the Discord REST API: https://docs.discord.com/developers/reference
 type EntityClient interface {
 	// ── Message ───────────────────────────────────────────────────────────
 	EditMessage(ctx context.Context, channelID, messageID Snowflake, opts MessageEditOptions) (*Message, error)

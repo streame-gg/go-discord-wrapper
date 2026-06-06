@@ -11,6 +11,8 @@ import "encoding/json"
 //	if err := json.Unmarshal(auditLog.ApplicationCommands[i], &cmd); err != nil { ... }
 //
 // A direct reference is not possible because types/commands imports types/discord.
+//
+// https://docs.discord.com/developers/resources/audit-log#audit-log-object
 type AuditLog struct {
 	ApplicationCommands  []json.RawMessage     `json:"application_commands"`
 	AuditLogEntries      []AuditLogEntry       `json:"audit_log_entries"`
@@ -33,6 +35,7 @@ type AuditLogEntry struct {
 	Reason     *string               `json:"reason,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/audit-log#audit-log-change-object
 type AuditLogEntryChange struct {
 	Key      string `json:"key"`
 	NewValue any    `json:"new_value,omitempty"`

@@ -21,6 +21,7 @@ import (
 // path — equivalent to checking Get and calling Fetch on a miss.
 
 // MemberManager manages guild members for a single guild.
+// https://docs.discord.com/developers/resources/guild#guild-member-object
 type MemberManager interface {
 	Cache() *collection.Collection[Snowflake, *GuildMember]
 	Get(userID Snowflake) (*GuildMember, bool)
@@ -32,6 +33,7 @@ type MemberManager interface {
 }
 
 // RoleManager manages roles for a single guild.
+// https://docs.discord.com/developers/topics/permissions#role-object
 type RoleManager interface {
 	Cache() *collection.Collection[Snowflake, *Role]
 	Get(roleID Snowflake) (*Role, bool)
@@ -44,6 +46,7 @@ type RoleManager interface {
 }
 
 // GuildChannelManager manages channels for a single guild.
+// https://docs.discord.com/developers/resources/channel#channel-object
 type GuildChannelManager interface {
 	Cache() *collection.Collection[Snowflake, *Channel]
 	Get(channelID Snowflake) (*Channel, bool)
@@ -56,6 +59,7 @@ type GuildChannelManager interface {
 }
 
 // EmojiManager manages emojis for a single guild.
+// https://docs.discord.com/developers/resources/emoji#emoji-object
 type EmojiManager interface {
 	Cache() *collection.Collection[Snowflake, *Emoji]
 	Get(emojiID Snowflake) (*Emoji, bool)
@@ -68,6 +72,7 @@ type EmojiManager interface {
 }
 
 // StickerManager manages stickers for a single guild.
+// https://docs.discord.com/developers/resources/sticker#sticker-object
 type StickerManager interface {
 	Cache() *collection.Collection[Snowflake, *Sticker]
 	Get(stickerID Snowflake) (*Sticker, bool)
@@ -80,6 +85,7 @@ type StickerManager interface {
 }
 
 // BanManager manages bans for a single guild. Bans are not cached.
+// https://docs.discord.com/developers/resources/guild#ban-object
 type BanManager interface {
 	Fetch(ctx context.Context, userID Snowflake) (*Ban, error)
 	FetchAll(ctx context.Context, opts FetchBansOptions) ([]*Ban, error)
@@ -88,6 +94,7 @@ type BanManager interface {
 }
 
 // ScheduledEventManager manages scheduled events for a single guild.
+// https://docs.discord.com/developers/resources/guild-scheduled-event#guild-scheduled-event-object
 type ScheduledEventManager interface {
 	Cache() *collection.Collection[Snowflake, *GuildScheduledEvent]
 	Get(eventID Snowflake) (*GuildScheduledEvent, bool)
@@ -102,6 +109,7 @@ type ScheduledEventManager interface {
 // StageInstanceManager manages stage instances for a single guild.
 // Note: Discord has no REST endpoint to list all stage instances for a guild;
 // use Cache() (populated from gateway events) or Fetch(ctx, channelID).
+// https://docs.discord.com/developers/resources/stage-instance#stage-instance-object
 type StageInstanceManager interface {
 	Cache() *collection.Collection[Snowflake, *StageInstance]
 	Get(instanceID Snowflake) (*StageInstance, bool)
@@ -112,6 +120,7 @@ type StageInstanceManager interface {
 }
 
 // SoundboardManager manages soundboard sounds for a single guild.
+// https://docs.discord.com/developers/resources/soundboard#soundboard-sound-object
 type SoundboardManager interface {
 	Cache() *collection.Collection[Snowflake, *SoundboardSound]
 	Get(soundID Snowflake) (*SoundboardSound, bool)
@@ -123,12 +132,14 @@ type SoundboardManager interface {
 }
 
 // GuildInviteManager manages invites for a single guild. Invites are not cached.
+// https://docs.discord.com/developers/resources/invite#invite-object
 type GuildInviteManager interface {
 	FetchAll(ctx context.Context) ([]*Invite, error)
 }
 
 // VoiceStateManager manages voice states for a single guild.
 // Voice states are gateway-only; there is no REST fetch endpoint.
+// https://docs.discord.com/developers/resources/voice#voice-state-object
 type VoiceStateManager interface {
 	Cache() *collection.Collection[Snowflake, *VoiceState]
 	Get(userID Snowflake) (*VoiceState, bool)
@@ -138,6 +149,7 @@ type VoiceStateManager interface {
 
 // AutoModRuleManager manages auto moderation rules for a single guild.
 // Rules are not cached.
+// https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-rule-object
 type AutoModRuleManager interface {
 	Fetch(ctx context.Context, ruleID Snowflake) (*AutoModerationRule, error)
 	FetchAll(ctx context.Context) ([]*AutoModerationRule, error)
@@ -145,11 +157,13 @@ type AutoModRuleManager interface {
 }
 
 // GuildWebhookManager manages webhooks for a single guild. Webhooks are not cached.
+// https://docs.discord.com/developers/resources/webhook#webhook-object
 type GuildWebhookManager interface {
 	FetchAll(ctx context.Context) ([]*Webhook, error)
 }
 
 // IntegrationManager manages integrations for a single guild. Integrations are not cached.
+// https://docs.discord.com/developers/resources/guild#integration-object
 type IntegrationManager interface {
 	FetchAll(ctx context.Context) ([]*Integration, error)
 	Remove(ctx context.Context, integrationID Snowflake, reason *string) error
@@ -158,6 +172,7 @@ type IntegrationManager interface {
 // ── Channel sub-manager interfaces ────────────────────────────────────────────
 
 // MessageManager manages messages for a single channel.
+// https://docs.discord.com/developers/resources/message#message-object
 type MessageManager interface {
 	Cache() *collection.Collection[Snowflake, *Message]
 	Get(messageID Snowflake) (*Message, bool)
@@ -172,6 +187,7 @@ type MessageManager interface {
 // ThreadManager manages threads for a single channel.
 // Threads are channels cached in the channel store; there is no REST endpoint
 // to list all threads for a channel without additional filtering.
+// https://docs.discord.com/developers/resources/channel#thread-metadata-object
 type ThreadManager interface {
 	Cache() *collection.Collection[Snowflake, *Channel]
 	Get(threadID Snowflake) (*Channel, bool)
@@ -184,6 +200,7 @@ type ThreadManager interface {
 // ── Client-level manager interfaces ──────────────────────────────────────────
 
 // GuildManager is the client-level manager for guilds.
+// https://docs.discord.com/developers/resources/guild#guild-object
 type GuildManager interface {
 	Cache() *collection.Collection[Snowflake, *Guild]
 	Get(guildID Snowflake) (*Guild, bool)
@@ -194,6 +211,7 @@ type GuildManager interface {
 }
 
 // UserManager is the client-level manager for users.
+// https://docs.discord.com/developers/resources/user#user-object
 type UserManager interface {
 	Cache() *collection.Collection[Snowflake, *User]
 	Get(userID Snowflake) (*User, bool)
@@ -204,6 +222,7 @@ type UserManager interface {
 }
 
 // ChannelManager is the client-level manager for channels.
+// https://docs.discord.com/developers/resources/channel#channel-object
 type ChannelManager interface {
 	Cache() *collection.Collection[Snowflake, *Channel]
 	Get(channelID Snowflake) (*Channel, bool)

@@ -11,29 +11,35 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/resources/webhook#create-webhook
 type CreateWebhookParams struct {
 	Name   string  `json:"name"`
 	Avatar *string `json:"avatar,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/webhook#create-webhook
 type CreateWebhookOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/webhook#modify-webhook
 type ModifyWebhookParams struct {
 	Name      *string            `json:"name,omitempty"`
 	Avatar    *string            `json:"avatar,omitempty"`
 	ChannelID *discord.Snowflake `json:"channel_id,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/webhook#modify-webhook
 type ModifyWebhookOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/webhook#delete-webhook
 type DeleteWebhookOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/webhook#execute-webhook
 type ExecuteWebhookParams struct {
 	Content         string                   `json:"content,omitempty"`
 	Username        *string                  `json:"username,omitempty"`
@@ -60,6 +66,7 @@ func (p ExecuteWebhookParams) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// https://docs.discord.com/developers/resources/webhook#execute-webhook
 type ExecuteWebhookQueryParams struct {
 	Wait     *bool
 	ThreadID *discord.Snowflake

@@ -12,6 +12,8 @@ import (
 //	    SetPlaceholder("Your name").
 //	    SetRequired(true).
 //	    Build()
+//
+// https://docs.discord.com/developers/components/reference#text-input
 type TextInputBuilder struct {
 	input components.TextInputComponent
 }
@@ -68,6 +70,8 @@ func (b *TextInputBuilder) Build() *components.TextInputComponent {
 //	    SetDescription("Enter your full name").
 //	    SetComponent(builder.NewTextInput().SetCustomID("name").SetStyle(components.TextInputStyleShort).Build()).
 //	    Build()
+//
+// https://docs.discord.com/developers/components/reference#label
 type LabelBuilder struct {
 	lbl components.LabelComponent
 }

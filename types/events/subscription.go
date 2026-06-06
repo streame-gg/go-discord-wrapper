@@ -2,14 +2,17 @@ package events
 
 import "github.com/streame-gg/go-discord-wrapper/types/discord"
 
+// https://docs.discord.com/developers/events/gateway-events#subscription-create
 type SubscriptionCreateEvent struct {
 	discord.Subscription
 }
 
+// https://docs.discord.com/developers/events/gateway-events#subscription-update
 type SubscriptionUpdateEvent struct {
 	discord.Subscription
 }
 
+// https://docs.discord.com/developers/events/gateway-events#subscription-delete
 type SubscriptionDeleteEvent struct {
 	discord.Subscription
 }

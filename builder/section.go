@@ -8,6 +8,8 @@ import "github.com/streame-gg/go-discord-wrapper/types/components"
 //	    AddComponents(builder.NewTextDisplay().SetContent("Hello").Build()).
 //	    SetAccessory(builder.NewThumbnail().SetURL("https://example.com/img.png").Build()).
 //	    Build()
+//
+// https://docs.discord.com/developers/components/reference#section
 type SectionBuilder struct {
 	s components.Section
 }
@@ -39,6 +41,8 @@ func (b *SectionBuilder) Build() *components.Section {
 // ThumbnailBuilder builds a ThumbnailComponent (Components v2 section accessory).
 //
 //	thumb := builder.NewThumbnail().SetURL("https://example.com/img.png").Build()
+//
+// https://docs.discord.com/developers/components/reference#thumbnail
 type ThumbnailBuilder struct {
 	t components.ThumbnailComponent
 }

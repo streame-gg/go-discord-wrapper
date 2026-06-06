@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#activity-object-activity-types
 type ActivityType int
 
 const (
@@ -18,6 +19,8 @@ const (
 
 // ActivityTimestamps holds the start and end times for an activity.
 // Discord sends these as Unix milliseconds; they are exposed as time.Time.
+//
+// https://docs.discord.com/developers/events/gateway-events#activity-object-activity-timestamps
 type ActivityTimestamps struct {
 	Start *time.Time
 	End   *time.Time
@@ -58,11 +61,13 @@ func (a ActivityTimestamps) MarshalJSON() ([]byte, error) {
 	return json.Marshal(raw)
 }
 
+// https://docs.discord.com/developers/events/gateway-events#activity-object-activity-party
 type ActivityParty struct {
 	ID   *string `json:"id,omitempty"`
 	Size *[2]int `json:"size,omitempty"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#activity-object-activity-assets
 type ActivityAssets struct {
 	LargeImage *string `json:"large_image,omitempty"`
 	LargeText  *string `json:"large_text,omitempty"`
@@ -70,23 +75,27 @@ type ActivityAssets struct {
 	SmallText  *string `json:"small_text,omitempty"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#activity-object-activity-secrets
 type ActivitySecrets struct {
 	Join     *string `json:"join,omitempty"`
 	Spectate *string `json:"spectate,omitempty"`
 	Match    *string `json:"match,omitempty"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#activity-object-activity-buttons
 type ActivityButton struct {
 	Label string `json:"label"`
 	URL   string `json:"url"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#activity-object-activity-emoji
 type ActivityEmoji struct {
 	Name     string     `json:"name"`
 	ID       *Snowflake `json:"id,omitempty"`
 	Animated *bool      `json:"animated,omitempty"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#activity-object-activity-flags
 type ActivityFlags int
 
 const (
@@ -103,6 +112,8 @@ const (
 
 // FullActivity represents a rich presence activity.
 // CreatedAt is the activity creation time; Discord sends it as Unix milliseconds.
+//
+// https://docs.discord.com/developers/events/gateway-events#activity-object
 type FullActivity struct {
 	Name          string              `json:"name"`
 	Type          ActivityType        `json:"type"`
@@ -146,12 +157,14 @@ func (f FullActivity) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// https://docs.discord.com/developers/events/gateway-events#client-status-object
 type ClientStatus struct {
 	Desktop *PresenceStatus `json:"desktop,omitempty"`
 	Mobile  *PresenceStatus `json:"mobile,omitempty"`
 	Web     *PresenceStatus `json:"web,omitempty"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#update-presence-status-types
 type PresenceStatus string
 
 const (
@@ -162,6 +175,7 @@ const (
 	PresenceStatusInvisible PresenceStatus = "invisible"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#presence-update
 type PartialPresenceUser struct {
 	ID            Snowflake `json:"id"`
 	Username      *string   `json:"username,omitempty"`
@@ -174,6 +188,8 @@ type PartialPresenceUser struct {
 
 // Presence is the cached form of a user's presence in a guild.
 // Populated from GUILD_CREATE (initial state) and PRESENCE_UPDATE events.
+//
+// https://docs.discord.com/developers/events/gateway-events#presence-update-presence-update-event-fields
 type Presence struct {
 	User         PartialPresenceUser `json:"user"`
 	GuildID      Snowflake           `json:"guild_id"`

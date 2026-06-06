@@ -5,6 +5,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#checkbox
 type CheckboxComponent struct {
 	Type     discord.ComponentType `json:"type"`
 	ID       *int                  `json:"id,omitempty"`
@@ -48,6 +49,7 @@ func (c *CheckboxComponent) IsAnyLabelComponent() {
 
 }
 
+// https://docs.discord.com/developers/components/reference#checkbox
 type CheckboxComponentInteractionResponse struct {
 	Type     discord.ComponentType `json:"type"`
 	Value    bool                  `json:"value"`
