@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -683,6 +684,37 @@ func (su *paginationSuite) TestFetchAllPublicArchivedThreadsMultiplePages() {
 	parsed, perr := time.Parse(time.RFC3339, before2)
 	require.NoError(t, perr)
 	assert.Equal(t, "2026-06-05T12:00:00Z", parsed.UTC().Format(time.RFC3339))
+}
+
+func (su *paginationSuite) TestFetchAllJoinedPrivateArchivedThreadsMultiplePages() {
+	t := su.T()
+	page1 := `{"threads":[{"id":"1234567890123456001","thread_metadata":{"archived":true,"archive_timestamp":"2026-06-06T10:00:00Z"}},{"id":"1234567890123456002","thread_metadata":{"archived":true,"archive_timestamp":"2026-06-05T12:00:00Z"}}],"has_more":true}`
+	page2 := `{"threads":[{"id":"1234567890123456003","thread_metadata":{"archived":true,"archive_timestamp":"2026-06-01T09:00:00Z"}}],"has_more":false}`
+
+	var n int32
+	var before2, path string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c := atomic.AddInt32(&n, 1)
+		q, _ := url.ParseQuery(r.URL.RawQuery)
+		w.Header().Set("Content-Type", "application/json")
+		if c == 1 {
+			path = r.URL.Path
+			_, _ = w.Write([]byte(page1))
+		} else {
+			before2 = q.Get("before")
+			_, _ = w.Write([]byte(page2))
+		}
+	}))
+	defer ts.Close()
+
+	client := newPaginationClient(ts)
+	threads, err := client.FetchAllJoinedPrivateArchivedThreads(context.Background(), discord.Snowflake(1234567890123456789))
+	require.NoError(t, err)
+	assert.Len(t, threads, 3)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&n))
+	assert.True(t, strings.HasSuffix(path, "/channels/1234567890123456789/users/@me/threads/archived/private"), "path: %s", path)
+	// Cursor advances by the last thread's ID (snowflake) from page 1, not a timestamp.
+	assert.Equal(t, "1234567890123456002", before2)
 }
 
 type paginationSuite struct{ suite.Suite }

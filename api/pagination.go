@@ -409,10 +409,41 @@ func (c *RestClient) FetchAllPrivateArchivedThreads(ctx context.Context, channel
 	return c.fetchAllArchivedThreads(ctx, channelID, c.ListPrivateArchivedThreads)
 }
 
+// FetchAllJoinedPrivateArchivedThreads fetches every private archived thread the
+// current user has joined in a channel. Unlike the public/private listings, this
+// endpoint paginates backwards by thread ID (snowflake), so it cursors on
+// ListArchivedThreadsParams.BeforeID rather than the archive timestamp.
+func (c *RestClient) FetchAllJoinedPrivateArchivedThreads(ctx context.Context, channelID discord.Snowflake) ([]*discord.Channel, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
+	const pageSize = 100
+
+	params := ListArchivedThreadsParams{Limit: util.PointerOf(pageSize)}
+
+	var all []*discord.Channel
+
+	for {
+		page, err := c.ListJoinedPrivateArchivedThreads(ctx, channelID, params)
+		if err != nil {
+			return nil, err
+		}
+
+		all = append(all, page.Threads...)
+
+		if !page.HasMore || len(page.Threads) == 0 {
+			return all, nil
+		}
+
+		last := page.Threads[len(page.Threads)-1]
+		params.BeforeID = &last.ID
+	}
+}
+
 // fetchAllArchivedThreads walks the archive-timestamp cursor shared by the
-// public and private archived-thread listings. (Joined private archived threads
-// paginate by thread ID, which the current time-based params can't express, so
-// they have no FetchAll helper yet.)
+// public and private archived-thread listings. Joined private archived threads
+// paginate by thread ID instead; see FetchAllJoinedPrivateArchivedThreads.
 func (c *RestClient) fetchAllArchivedThreads(ctx context.Context, channelID discord.Snowflake, list func(context.Context, discord.Snowflake, ListArchivedThreadsParams) (*ArchivedThreadsResponse, error)) ([]*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err

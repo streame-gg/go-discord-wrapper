@@ -81,14 +81,23 @@ func (p ListThreadMembersParams) toQuery() string {
 
 // https://docs.discord.com/developers/resources/channel#list-public-archived-threads
 type ListArchivedThreadsParams struct {
+	// Before paginates the public and private archived-thread listings, which
+	// cursor on the threads' archive timestamp.
 	Before *time.Time
-	Limit  *int
+	// BeforeID paginates ListJoinedPrivateArchivedThreads, which Discord cursors
+	// on thread ID (snowflake) rather than archive timestamp. When set it takes
+	// precedence over Before. https://docs.discord.com/developers/resources/channel#list-joined-private-archived-threads
+	BeforeID *discord.Snowflake
+	Limit    *int
 }
 
 func (p ListArchivedThreadsParams) toQuery() string {
 	q := url.Values{}
 	if p.Before != nil {
 		q.Set("before", p.Before.Format(time.RFC3339))
+	}
+	if p.BeforeID != nil {
+		q.Set("before", p.BeforeID.String())
 	}
 	if p.Limit != nil {
 		q.Set("limit", strconv.Itoa(*p.Limit))
