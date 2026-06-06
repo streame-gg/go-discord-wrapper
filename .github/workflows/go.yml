@@ -40,8 +40,17 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    # Allow this job to push the regenerated coverage report back to the branch
+    # (master or the PR head branch).
+    permissions:
+      contents: write
     steps:
+      # Check out the real branch tip (the PR head branch on pull_request, the
+      # pushed branch on push) rather than the detached merge ref, so the
+      # refreshed coverage report can be committed straight back to it.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
 
       - uses: actions/setup-go@v5
         with:
@@ -50,11 +59,49 @@ jobs:
       - name: Build
         run: go build -v ./...
 
+      # The mongocache integration suite uses testcontainers-go, which needs a
+      # reachable Docker daemon. ubuntu-latest ships one, but pulling the image
+      # here (a) fails loudly if Docker is somehow unavailable instead of letting
+      # the suite skip and commit a misleading 5% number, and (b) warms the image
+      # cache so the container start inside the test doesn't race its wait timeout.
+      - name: Pre-pull MongoDB image for testcontainers
+        run: docker pull mongo:7
+
       - name: Test with race detector and coverage
+        # TESTCONTAINERS_RYUK_DISABLED skips the reaper container; the job is
+        # ephemeral so leftover containers die with the runner, and dropping Ryuk
+        # avoids its occasional startup flakiness on hosted runners.
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: "true"
         run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Coverage report
         run: go tool cover -func=coverage.out
+
+      - name: Generate COVERAGE.md and coverage badge
+        run: bash scripts/coverage-report.sh coverage.out COVERAGE.md
+
+      # Commit the refreshed report on pushes to master and on every same-repo PR
+      # push (forks can't be pushed to with the built-in token, so they're
+      # skipped). GITHUB_TOKEN pushes do not retrigger workflows, and "[skip ci]"
+      # is a second safeguard against loops.
+      - name: Commit coverage report
+        if: >
+          github.event_name == 'push' ||
+          (github.event_name == 'pull_request' &&
+           github.event.pull_request.head.repo.full_name == github.repository)
+        env:
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add COVERAGE.md .github/badges/coverage.json
+          if git diff --staged --quiet; then
+            echo "Coverage report is up to date."
+          else
+            git commit -m "chore: update coverage report [skip ci]"
+            git push origin "HEAD:${TARGET_BRANCH}"
+          fi
 
   security:
     name: Security

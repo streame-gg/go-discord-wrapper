@@ -14,6 +14,7 @@ import (
 
 // ── Param / response types ────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/entitlement#list-entitlements
 type ListEntitlementsParams struct {
 	UserID       *discord.Snowflake
 	SkuIDs       []discord.Snowflake
@@ -57,6 +58,7 @@ func (p ListEntitlementsParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
+// https://docs.discord.com/developers/resources/entitlement#create-test-entitlement
 type CreateTestEntitlementParams struct {
 	SkuID     discord.Snowflake `json:"sku_id"`
 	OwnerID   discord.Snowflake `json:"owner_id"`
@@ -140,6 +142,7 @@ func (c *RestClient) ConsumeEntitlement(ctx context.Context, appID, entitlementI
 	return doRequestWithoutResponse(c, req)
 }
 
+// https://docs.discord.com/developers/resources/entitlement#list-entitlements
 type GetCurrentUserApplicationEntitlementsParams struct {
 	SkuIDs          []discord.Snowflake
 	ExcludeConsumed *bool
@@ -163,9 +166,9 @@ func (p GetCurrentUserApplicationEntitlementsParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
-// GetCurrentUserApplicationEntitlements returns entitlements for the current user for the given
+// ListCurrentUserApplicationEntitlements returns entitlements for the current user for the given
 // application. Requires an OAuth2 bearer token.
-func (c *RestClient) GetCurrentUserApplicationEntitlements(ctx context.Context, appID discord.Snowflake, params GetCurrentUserApplicationEntitlementsParams, userToken string) ([]*discord.Entitlement, error) {
+func (c *RestClient) ListCurrentUserApplicationEntitlements(ctx context.Context, appID discord.Snowflake, params GetCurrentUserApplicationEntitlementsParams, userToken string) ([]*discord.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}

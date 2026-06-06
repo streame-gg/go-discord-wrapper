@@ -17,12 +17,7 @@ func NewGuildChannelManager(guildID discord.Snowflake, c discord.EntityClient) d
 }
 
 func (m *guildChannelManager) Cache() *collection.Collection[discord.Snowflake, *discord.Channel] {
-	if c := m.client.ClientCache(); c != nil {
-		return c.Channels().All().Filter(func(ch *discord.Channel) bool {
-			return ch.GuildID != nil && *ch.GuildID == m.guildID
-		})
-	}
-	return collection.New[discord.Snowflake, *discord.Channel]()
+	return m.client.ChannelsForGuild(m.guildID)
 }
 
 func (m *guildChannelManager) Get(channelID discord.Snowflake) (*discord.Channel, bool) {
@@ -41,7 +36,7 @@ func (m *guildChannelManager) Fetch(ctx context.Context, channelID discord.Snowf
 }
 
 func (m *guildChannelManager) FetchAll(ctx context.Context) (*collection.Collection[discord.Snowflake, *discord.Channel], error) {
-	channels, err := m.client.GetGuildChannels(ctx, m.guildID)
+	channels, err := m.client.ListGuildChannels(ctx, m.guildID)
 	if err != nil {
 		return nil, err
 	}

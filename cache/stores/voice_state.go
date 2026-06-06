@@ -15,10 +15,12 @@ type MemVoiceStateStore struct {
 
 // NewVoiceStateStore creates a MemVoiceStateStore with the given options.
 func NewVoiceStateStore(opts StoreOptions) *MemVoiceStateStore {
-	return &MemVoiceStateStore{
+	s := &MemVoiceStateStore{
 		base:  NewBaseStore[VoiceStateKey, *discord.VoiceState](opts),
 		index: newCompositeGuildIndex(),
 	}
+	s.base.onEvict = func(k VoiceStateKey) { s.index.remove(k.GuildID, k.UserID) }
+	return s
 }
 
 // Set stores the voice state. guildID is passed explicitly because

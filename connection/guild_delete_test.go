@@ -39,7 +39,8 @@ func dispatchGuildDelete(t *testing.T, c *Client, guildID discord.Snowflake) {
 
 // TestGuildDelete_CleansCacheChannels verifies that channels belonging to the
 // deleted guild are removed from the channel cache.
-func TestGuildDelete_CleansCacheChannels(t *testing.T) {
+func (cs *ConnectionSuite) TestGuildDelete_CleansCacheChannels() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(111000111000111)
@@ -62,7 +63,8 @@ func TestGuildDelete_CleansCacheChannels(t *testing.T) {
 
 // TestGuildDelete_CleansChannelIndex verifies that both sides of the
 // bidirectional channelsByGuild / guildByChannel index are removed.
-func TestGuildDelete_CleansChannelIndex(t *testing.T) {
+func (cs *ConnectionSuite) TestGuildDelete_CleansChannelIndex() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(333000333000333)
@@ -90,7 +92,8 @@ func TestGuildDelete_CleansChannelIndex(t *testing.T) {
 
 // TestGuildDelete_CleansMessageCache verifies that messages cached for guild
 // channels are removed when the guild is deleted.
-func TestGuildDelete_CleansMessageCache(t *testing.T) {
+func (cs *ConnectionSuite) TestGuildDelete_CleansMessageCache() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(666000666000666)
@@ -112,7 +115,8 @@ func TestGuildDelete_CleansMessageCache(t *testing.T) {
 
 // TestGuildDelete_CleansGuildAndMembers verifies that the guild itself plus
 // its members are removed from the cache.
-func TestGuildDelete_CleansGuildAndMembers(t *testing.T) {
+func (cs *ConnectionSuite) TestGuildDelete_CleansGuildAndMembers() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(999000999000999)
@@ -137,7 +141,8 @@ func TestGuildDelete_CleansGuildAndMembers(t *testing.T) {
 
 // TestGuildDelete_UnavailableIsNoop verifies that a GUILD_DELETE with
 // unavailable=true does NOT evict the cache (temporary outage, not a removal).
-func TestGuildDelete_UnavailableIsNoop(t *testing.T) {
+func (cs *ConnectionSuite) TestGuildDelete_UnavailableIsNoop() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(121212121212121)
@@ -158,7 +163,8 @@ func TestGuildDelete_UnavailableIsNoop(t *testing.T) {
 // with unavailable=true returns true (dispatch to user handlers) so bots can
 // react to a guild going offline.  A second identical event should return false
 // (deduplicated).
-func TestGuildDelete_UnavailableDispatches(t *testing.T) {
+func (cs *ConnectionSuite) TestGuildDelete_UnavailableDispatches() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(131313131313131)

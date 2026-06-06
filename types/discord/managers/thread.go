@@ -17,12 +17,7 @@ func NewThreadManager(channelID discord.Snowflake, c discord.EntityClient) disco
 }
 
 func (m *threadManager) Cache() *collection.Collection[discord.Snowflake, *discord.Channel] {
-	if c := m.client.ClientCache(); c != nil {
-		return c.Channels().All().Filter(func(ch *discord.Channel) bool {
-			return ch.ParentID != nil && *ch.ParentID == m.channelID && isThread(ch)
-		})
-	}
-	return collection.New[discord.Snowflake, *discord.Channel]()
+	return m.client.ThreadsForParent(m.channelID)
 }
 
 func (m *threadManager) Get(threadID discord.Snowflake) (*discord.Channel, bool) {
@@ -63,7 +58,5 @@ func (m *threadManager) Size() int {
 }
 
 func isThread(ch *discord.Channel) bool {
-	return ch.Type == discord.ChannelTypeAnnouncementThread ||
-		ch.Type == discord.ChannelTypePublicThread ||
-		ch.Type == discord.ChannelTypePrivateThread
+	return ch.IsThread()
 }

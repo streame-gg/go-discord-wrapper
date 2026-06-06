@@ -27,7 +27,7 @@ Open an issue on GitHub. Include:
 
 - Unit tests go in `*_test.go` files alongside the code they test.
 - Integration tests that need a running service (Redis, MongoDB) use [testcontainers-go](https://golang.testcontainers.org/) — see `cache/rediscache` and `cache/mongocache` for examples.
-- Gateway behaviour is harder to test without a live token; focus on unit-testable logic (serialization, cache operations, rate limiting).
+- Gateway behaviour is tested end-to-end without a live token using the in-process gateway harness in the `connection` package — see [docs/TESTING_EVENT_DISPATCH.md](docs/TESTING_EVENT_DISPATCH.md). It drives events through the real decode/dispatch pipeline and covers cache side-effects and synthetic events.
 
 ## Adding a new gateway event
 
@@ -35,6 +35,7 @@ Open an issue on GitHub. Include:
 2. If the event should update the cache, add a `case events.EventXxx` block in `connection/gateway.go` `internalEventHandler`.
 3. Add the new `EventType` constant to `types/events/base.go` if it is not already there.
 4. Update the supported events table in `README.md`.
+5. Add a dispatch integration test proving handlers fire end-to-end (and any cache side-effect or synthetic event) — see [docs/TESTING_EVENT_DISPATCH.md](docs/TESTING_EVENT_DISPATCH.md).
 
 ## Adding a new REST endpoint
 

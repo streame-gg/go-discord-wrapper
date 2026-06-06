@@ -47,7 +47,8 @@ func mockGatewayNoReady(t *testing.T) (wsURL string, closeFn func()) {
 
 // Bug 1: When the context is cancelled before a READY event arrives, Login
 // must return ctx.Err() instead of blocking forever.
-func TestBug1_LoginReturnsOnContextCancel(t *testing.T) {
+func (cs *ConnectionSuite) TestBug1_LoginReturnsOnContextCancel() {
+	t := cs.T()
 	wsURL, closeWS := mockGatewayNoReady(t)
 	defer closeWS()
 
@@ -70,7 +71,7 @@ func TestBug1_LoginReturnsOnContextCancel(t *testing.T) {
 	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
-	// Point the client's internal HTTP client at our gateway stub so that
+	// Point the client's pkg HTTP client at our gateway stub so that
 	// initializeGatewayConnection hits it instead of Discord's real API.
 	c.httpClient = gatewayStub.Client()
 	// Repoint the gateway URL: we monkey-patch the http transport to redirect.
@@ -111,7 +112,8 @@ func (t *gatewayStubTransport) RoundTrip(req *http.Request) (*http.Response, err
 // Bug 2: SessionID and ReconnectURL must be written under wsMu.Lock so that
 // concurrent reads (as in reconnect()) are race-free. This test verifies the
 // race detector reports no data race.
-func TestBug2_SessionIDWriteUnderLock(t *testing.T) {
+func (cs *ConnectionSuite) TestBug2_SessionIDWriteUnderLock() {
+	t := cs.T()
 	wsURL, closeServer := mockGateway(t)
 	defer closeServer()
 
@@ -126,8 +128,8 @@ func TestBug2_SessionIDWriteUnderLock(t *testing.T) {
 		defer close(done)
 		for i := 0; i < 500; i++ {
 			c.wsMu.RLock()
-			_ = c.Websocket.SessionID
-			_ = c.Websocket.ReconnectURL
+			_ = c.wsConn.SessionID
+			_ = c.wsConn.ReconnectURL
 			c.wsMu.RUnlock()
 		}
 	}()

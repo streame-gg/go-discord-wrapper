@@ -7,6 +7,7 @@ package stores
 
 import (
 	"encoding/json"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -169,6 +170,11 @@ type BaseStore[K comparable, V any] struct {
 	options    StoreOptions
 	totalBytes atomic.Int64 // non-zero only when options.TrackBytes is true
 
+	// onEvict, if set, is called after any eviction or sweep removes an entry.
+	// It is always invoked outside s.mu to avoid lock-order inversion with
+	// external indexes (e.g. compositeGuildIndex) that may also hold locks.
+	onEvict func(K)
+
 	stopCh    chan struct{}
 	closeOnce sync.Once
 	wg        sync.WaitGroup
@@ -205,10 +211,10 @@ func (s *BaseStore[K, V]) Get(key K) (V, bool) {
 
 	// Full write lock: we may delete an expired entry or update access metadata.
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	e, ok := s.items.Get(key)
 	if !ok {
+		s.mu.Unlock()
 		var zero V
 		return zero, false
 	}
@@ -216,6 +222,15 @@ func (s *BaseStore[K, V]) Get(key K) (V, bool) {
 	now := time.Now()
 	if !e.expiresAt.IsZero() && now.After(e.expiresAt) {
 		s.items.Delete(key)
+		s.totalBytes.Add(-e.sizeBytes)
+		s.mu.Unlock()
+		// Lazy expiry must honour the onEvict contract too, otherwise stores with
+		// a secondary index leak entries for items first observed as expired here
+		// (rather than by the background sweeper). Called after unlocking, like
+		// the sweep/evict paths.
+		if s.onEvict != nil {
+			s.onEvict(key)
+		}
 		var zero V
 		return zero, false
 	}
@@ -225,8 +240,9 @@ func (s *BaseStore[K, V]) Get(key K) (V, bool) {
 	if s.options.RefreshOnAccess && s.options.TTL > 0 {
 		e.expiresAt = now.Add(s.options.TTL)
 	}
-
-	return e.value, true
+	v := e.value
+	s.mu.Unlock()
+	return v, true
 }
 
 // Set inserts or replaces the value for key.
@@ -275,6 +291,9 @@ func (s *BaseStore[K, V]) Set(key K, value V) {
 
 // Delete removes the entry for key. Returns true if the entry was present.
 func (s *BaseStore[K, V]) Delete(key K) bool {
+	if s.options.Disabled {
+		return false
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if e, ok := s.items.Get(key); ok && s.options.TrackBytes {
@@ -359,13 +378,22 @@ func (s *BaseStore[K, V]) ReplaceKeys(del []K, add map[K]V) {
 		var sz int64
 		if s.options.TrackBytes {
 			sz = estimateSize(v)
-			s.totalBytes.Add(sz)
 		}
 		e := &entry[V]{
 			value:      v,
 			insertedAt: now,
 			accessedAt: now,
 			sizeBytes:  sz,
+		}
+		if old, ok := s.items.Get(k); ok {
+			e.insertedAt = old.insertedAt
+			e.hitCount = old.hitCount
+			if s.options.TrackBytes {
+				s.totalBytes.Add(-old.sizeBytes)
+			}
+		}
+		if s.options.TrackBytes {
+			s.totalBytes.Add(sz)
 		}
 		if s.options.TTL > 0 {
 			e.expiresAt = now.Add(s.options.TTL)
@@ -383,21 +411,59 @@ func (s *BaseStore[K, V]) ReplaceKeys(del []K, add map[K]V) {
 // SweepExpired removes entries whose TTL has elapsed. When unusedWindow > 0,
 // entries not accessed within that window are also removed.
 // Called by MemoryCache's background cleaner; safe for concurrent use.
+//
+// Uses a two-phase approach: scan under a read lock to collect candidates,
+// then delete under a write lock. This keeps the write-lock hold time
+// proportional to the number of expired entries rather than the total store
+// size, so concurrent reads are blocked only during actual deletions.
 func (s *BaseStore[K, V]) SweepExpired(unusedWindow time.Duration) {
 	if s.options.Disabled {
 		return
 	}
 	now := time.Now()
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.items.Sweep(func(e *entry[V]) bool {
+
+	// Phase 1: identify expired keys under a read lock.
+	s.mu.RLock()
+	var candidates []K
+	s.items.Each(func(k K, e *entry[V]) {
 		expired := !e.expiresAt.IsZero() && now.After(e.expiresAt)
 		idle := unusedWindow > 0 && now.Sub(e.accessedAt) > unusedWindow
-		if (expired || idle) && s.options.TrackBytes {
-			s.totalBytes.Add(-e.sizeBytes)
+		if expired || idle {
+			candidates = append(candidates, k)
 		}
-		return expired || idle
 	})
+	s.mu.RUnlock()
+
+	if len(candidates) == 0 {
+		return
+	}
+
+	// Phase 2: delete confirmed-expired entries under a write lock.
+	// Re-verify each entry: it may have been refreshed between the two phases.
+	s.mu.Lock()
+	evicted := make([]K, 0, len(candidates))
+	for _, k := range candidates {
+		e, ok := s.items.Get(k)
+		if !ok {
+			continue
+		}
+		expired := !e.expiresAt.IsZero() && now.After(e.expiresAt)
+		idle := unusedWindow > 0 && now.Sub(e.accessedAt) > unusedWindow
+		if expired || idle {
+			if s.options.TrackBytes {
+				s.totalBytes.Add(-e.sizeBytes)
+			}
+			s.items.Delete(k)
+			evicted = append(evicted, k)
+		}
+	}
+	s.mu.Unlock()
+
+	if s.onEvict != nil {
+		for _, k := range evicted {
+			s.onEvict(k)
+		}
+	}
 }
 
 // Close stops all sweeper goroutines and waits for them to exit.
@@ -413,7 +479,6 @@ func (s *BaseStore[K, V]) Close() {
 // Acquires its own lock; must NOT be called while s.mu is held.
 func (s *BaseStore[K, V]) evictOne() {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	var victimKey K
 	var victimEntry *entry[V]
@@ -436,18 +501,54 @@ func (s *BaseStore[K, V]) evictOne() {
 		}
 		s.items.Delete(victimKey)
 	}
+	s.mu.Unlock()
+
+	if !first && s.onEvict != nil {
+		s.onEvict(victimKey)
+	}
 }
 
-// evictToCount calls evictOne until Len() <= target.
+// evictToCount removes entries until Len() <= target in a single lock
+// acquisition (O(n log n)), avoiding the O(n²) cost of repeated evictOne calls.
+// Must NOT be called while s.mu is held.
 func (s *BaseStore[K, V]) evictToCount(target int) {
-	for {
-		s.mu.RLock()
-		n := s.items.Len()
-		s.mu.RUnlock()
-		if n <= target {
-			return
+	s.mu.Lock()
+
+	n := s.items.Len()
+	if n <= target {
+		s.mu.Unlock()
+		return
+	}
+	toEvict := n - target
+
+	type kv struct {
+		key K
+		e   *entry[V]
+	}
+	all := make([]kv, 0, n)
+	s.items.Each(func(k K, e *entry[V]) {
+		all = append(all, kv{k, e})
+	})
+
+	sort.Slice(all, func(i, j int) bool {
+		return s.isBetterVictim(all[i].e, all[j].e)
+	})
+
+	count := min(toEvict, len(all))
+	evicted := make([]K, 0, count)
+	for i := 0; i < count; i++ {
+		if s.options.TrackBytes {
+			s.totalBytes.Add(-all[i].e.sizeBytes)
 		}
-		s.evictOne()
+		s.items.Delete(all[i].key)
+		evicted = append(evicted, all[i].key)
+	}
+	s.mu.Unlock()
+
+	if s.onEvict != nil {
+		for _, k := range evicted {
+			s.onEvict(k)
+		}
 	}
 }
 
@@ -488,12 +589,18 @@ func (s *BaseStore[K, V]) startSweeper(sw Sweeper) {
 // lock for the full iteration.
 func (s *BaseStore[K, V]) runSweeper(sw Sweeper) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.items.Sweep(func(e *entry[V]) bool {
+	evicted := s.items.SweepKeys(func(e *entry[V]) bool {
 		remove := sw.Filter(e.value)
 		if remove && s.options.TrackBytes {
 			s.totalBytes.Add(-e.sizeBytes)
 		}
 		return remove
 	})
+	s.mu.Unlock()
+
+	if s.onEvict != nil {
+		for _, k := range evicted {
+			s.onEvict(k)
+		}
+	}
 }

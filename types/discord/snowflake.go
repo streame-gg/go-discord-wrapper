@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 const Epoch uint64 = 1420070400000
 
+// https://docs.discord.com/developers/reference#snowflakes
 type Snowflake uint64
 
 func (s *Snowflake) UnmarshalJSON(data []byte) error {
@@ -33,6 +35,15 @@ func (s *Snowflake) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Time returns the creation time encoded in the Snowflake.
+// Uses a value receiver so it can be called on non-addressable values
+// (e.g. discord.Snowflake(0).Time(), range-loop variables, function returns),
+// mirroring String; it does not mutate the value.
+func (s Snowflake) Time() time.Time {
+	ms := (uint64(s) >> 22) + Epoch
+	return time.UnixMilli(int64(ms)).UTC()
+}
+
 func (s *Snowflake) MarshalJSON() ([]byte, error) {
 	if s == nil {
 		return nil, errors.New("cannot marshal Snowflake as nil")
@@ -40,11 +51,11 @@ func (s *Snowflake) MarshalJSON() ([]byte, error) {
 	return json.Marshal(strconv.FormatUint(uint64(*s), 10))
 }
 
-func (s *Snowflake) String() string {
-	if s == nil {
-		return ""
-	}
-	return strconv.FormatUint(uint64(*s), 10)
+// String returns the decimal string representation of the Snowflake.
+// Uses a value receiver so it can be called on non-addressable values
+// (e.g. range-loop variables, function return values).
+func (s Snowflake) String() string {
+	return strconv.FormatUint(uint64(s), 10)
 }
 
 func (s *Snowflake) IsEmpty() bool {

@@ -1,6 +1,7 @@
 package collection_test
 
 import (
+	"github.com/stretchr/testify/suite"
 	"strings"
 	"testing"
 
@@ -19,7 +20,8 @@ func newABC() *collection.Collection[int, string] {
 
 // --- Constructors ---
 
-func TestNew(t *testing.T) {
+func (su *collectionSuite) TestNew() {
+	t := su.T()
 	c := collection.New[int, string]()
 	if c.Len() != 0 {
 		t.Fatalf("expected 0, got %d", c.Len())
@@ -29,7 +31,8 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestNewWithCapacity(t *testing.T) {
+func (su *collectionSuite) TestNewWithCapacity() {
+	t := su.T()
 	c := collection.NewWithCapacity[int, string](10)
 	if c.Len() != 0 {
 		t.Fatalf("expected 0, got %d", c.Len())
@@ -40,7 +43,8 @@ func TestNewWithCapacity(t *testing.T) {
 	}
 }
 
-func TestFrom(t *testing.T) {
+func (su *collectionSuite) TestFrom() {
+	t := su.T()
 	m := map[int]string{1: "a", 2: "b"}
 	c := collection.From(m)
 	if c.Len() != 2 {
@@ -57,7 +61,8 @@ func TestFrom(t *testing.T) {
 	}
 }
 
-func TestFromSlice(t *testing.T) {
+func (su *collectionSuite) TestFromSlice() {
+	t := su.T()
 	type item struct {
 		ID  int
 		Val string
@@ -73,7 +78,8 @@ func TestFromSlice(t *testing.T) {
 	}
 }
 
-func TestFromEntries(t *testing.T) {
+func (su *collectionSuite) TestFromEntries() {
+	t := su.T()
 	entries := []collection.Entry[int, string]{
 		{Key: 3, Value: "gamma"},
 		{Key: 1, Value: "alpha"},
@@ -90,7 +96,8 @@ func TestFromEntries(t *testing.T) {
 
 // --- Basic Methods ---
 
-func TestGetMissing(t *testing.T) {
+func (su *collectionSuite) TestGetMissing() {
+	t := su.T()
 	c := collection.New[int, string]()
 	v, ok := c.Get(99)
 	if ok {
@@ -101,7 +108,8 @@ func TestGetMissing(t *testing.T) {
 	}
 }
 
-func TestGetOr(t *testing.T) {
+func (su *collectionSuite) TestGetOr() {
+	t := su.T()
 	c := collection.New[int, string]()
 	c.Set(1, "a")
 	if got := c.GetOr(1, "fallback"); got != "a" {
@@ -112,7 +120,8 @@ func TestGetOr(t *testing.T) {
 	}
 }
 
-func TestSetChaining(t *testing.T) {
+func (su *collectionSuite) TestSetChaining() {
+	t := su.T()
 	c := collection.New[int, string]()
 	ret := c.Set(1, "a").Set(2, "b")
 	if ret != c {
@@ -123,7 +132,8 @@ func TestSetChaining(t *testing.T) {
 	}
 }
 
-func TestSetExistingKeyPreservesOrder(t *testing.T) {
+func (su *collectionSuite) TestSetExistingKeyPreservesOrder() {
+	t := su.T()
 	c := newABC()
 	c.Set(1, "ALPHA") // existing key, value replaced, order unchanged
 	keys := c.Keys()
@@ -136,7 +146,8 @@ func TestSetExistingKeyPreservesOrder(t *testing.T) {
 	}
 }
 
-func TestHas(t *testing.T) {
+func (su *collectionSuite) TestHas() {
+	t := su.T()
 	c := collection.New[int, string]()
 	c.Set(1, "a")
 	if !c.Has(1) {
@@ -147,7 +158,8 @@ func TestHas(t *testing.T) {
 	}
 }
 
-func TestDelete(t *testing.T) {
+func (su *collectionSuite) TestDelete() {
+	t := su.T()
 	c := newABC()
 	ok := c.Delete(1)
 	if !ok {
@@ -170,7 +182,8 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestLenIsEmpty(t *testing.T) {
+func (su *collectionSuite) TestLenIsEmpty() {
+	t := su.T()
 	c := collection.New[int, string]()
 	if c.Len() != 0 || !c.IsEmpty() {
 		t.Error("new collection should be empty")
@@ -181,7 +194,8 @@ func TestLenIsEmpty(t *testing.T) {
 	}
 }
 
-func TestClear(t *testing.T) {
+func (su *collectionSuite) TestClear() {
+	t := su.T()
 	c := newABC()
 	c.Clear()
 	if c.Len() != 0 || !c.IsEmpty() {
@@ -192,7 +206,8 @@ func TestClear(t *testing.T) {
 	}
 }
 
-func TestCloneShallow(t *testing.T) {
+func (su *collectionSuite) TestCloneShallow() {
+	t := su.T()
 	type val struct{ X int }
 	c := collection.New[int, *val]()
 	v := &val{X: 1}
@@ -218,7 +233,8 @@ func TestCloneShallow(t *testing.T) {
 	}
 }
 
-func TestInsertionOrderPreserved(t *testing.T) {
+func (su *collectionSuite) TestInsertionOrderPreserved() {
+	t := su.T()
 	c := newABC() // inserted 3, 1, 2
 	keys := c.Keys()
 	if len(keys) != 3 || keys[0] != 3 || keys[1] != 1 || keys[2] != 2 {
@@ -232,7 +248,8 @@ func TestInsertionOrderPreserved(t *testing.T) {
 
 // --- Search / Test ---
 
-func TestFindEmpty(t *testing.T) {
+func (su *collectionSuite) TestFindEmpty() {
+	t := su.T()
 	c := collection.New[int, string]()
 	v, ok := c.Find(func(s string) bool { return true })
 	if ok || v != "" {
@@ -240,7 +257,8 @@ func TestFindEmpty(t *testing.T) {
 	}
 }
 
-func TestFind(t *testing.T) {
+func (su *collectionSuite) TestFind() {
+	t := su.T()
 	c := newABC()
 	v, ok := c.Find(func(s string) bool { return strings.HasPrefix(s, "a") })
 	if !ok || v != "alpha" {
@@ -252,7 +270,8 @@ func TestFind(t *testing.T) {
 	}
 }
 
-func TestFindKey(t *testing.T) {
+func (su *collectionSuite) TestFindKey() {
+	t := su.T()
 	c := newABC()
 	k, ok := c.FindKey(func(s string) bool { return s == "beta" })
 	if !ok || k != 2 {
@@ -260,7 +279,8 @@ func TestFindKey(t *testing.T) {
 	}
 }
 
-func TestFindKeyEmpty(t *testing.T) {
+func (su *collectionSuite) TestFindKeyEmpty() {
+	t := su.T()
 	c := collection.New[int, string]()
 	k, ok := c.FindKey(func(s string) bool { return true })
 	if ok || k != 0 {
@@ -268,7 +288,8 @@ func TestFindKeyEmpty(t *testing.T) {
 	}
 }
 
-func TestFindLast(t *testing.T) {
+func (su *collectionSuite) TestFindLast() {
+	t := su.T()
 	c := collection.New[int, string]()
 	c.Set(1, "alpha")
 	c.Set(2, "apple")
@@ -279,7 +300,8 @@ func TestFindLast(t *testing.T) {
 	}
 }
 
-func TestFindLastEmpty(t *testing.T) {
+func (su *collectionSuite) TestFindLastEmpty() {
+	t := su.T()
 	c := collection.New[int, string]()
 	v, ok := c.FindLast(func(s string) bool { return true })
 	if ok || v != "" {
@@ -287,7 +309,8 @@ func TestFindLastEmpty(t *testing.T) {
 	}
 }
 
-func TestFindLastKey(t *testing.T) {
+func (su *collectionSuite) TestFindLastKey() {
+	t := su.T()
 	c := collection.New[int, string]()
 	c.Set(1, "alpha")
 	c.Set(2, "apple")
@@ -298,7 +321,8 @@ func TestFindLastKey(t *testing.T) {
 	}
 }
 
-func TestFindLastKeyEmpty(t *testing.T) {
+func (su *collectionSuite) TestFindLastKeyEmpty() {
+	t := su.T()
 	c := collection.New[int, string]()
 	k, ok := c.FindLastKey(func(s string) bool { return true })
 	if ok || k != 0 {
@@ -306,7 +330,8 @@ func TestFindLastKeyEmpty(t *testing.T) {
 	}
 }
 
-func TestSome(t *testing.T) {
+func (su *collectionSuite) TestSome() {
+	t := su.T()
 	c := newABC()
 	if !c.Some(func(s string) bool { return s == "alpha" }) {
 		t.Error("Some should be true when element matches")
@@ -316,14 +341,16 @@ func TestSome(t *testing.T) {
 	}
 }
 
-func TestSomeEmpty(t *testing.T) {
+func (su *collectionSuite) TestSomeEmpty() {
+	t := su.T()
 	c := collection.New[int, string]()
 	if c.Some(func(s string) bool { return true }) {
 		t.Error("Some on empty should be false")
 	}
 }
 
-func TestEvery(t *testing.T) {
+func (su *collectionSuite) TestEvery() {
+	t := su.T()
 	c := newABC()
 	if !c.Every(func(s string) bool { return len(s) > 3 }) {
 		t.Error("Every should be true when all match")
@@ -333,14 +360,16 @@ func TestEvery(t *testing.T) {
 	}
 }
 
-func TestEveryEmpty(t *testing.T) {
+func (su *collectionSuite) TestEveryEmpty() {
+	t := su.T()
 	c := collection.New[int, string]()
 	if !c.Every(func(s string) bool { return false }) {
 		t.Error("Every on empty should be true (vacuous truth)")
 	}
 }
 
-func TestEquals(t *testing.T) {
+func (su *collectionSuite) TestEquals() {
+	t := su.T()
 	a := collection.New[int, string]()
 	a.Set(1, "a").Set(2, "b")
 	b := collection.New[int, string]()
@@ -355,7 +384,8 @@ func TestEquals(t *testing.T) {
 	}
 }
 
-func TestEqualsPointers(t *testing.T) {
+func (su *collectionSuite) TestEqualsPointers() {
+	t := su.T()
 	type val struct{ X int }
 	v1 := &val{1}
 	v2 := &val{1} // same content, different pointer
@@ -376,7 +406,8 @@ func TestEqualsPointers(t *testing.T) {
 
 // --- Filter / Partition ---
 
-func TestFilter(t *testing.T) {
+func (su *collectionSuite) TestFilter() {
+	t := su.T()
 	c := newABC()
 	result := c.Filter(func(v string) bool { return strings.HasPrefix(v, "a") })
 	if result.Len() != 1 {
@@ -388,7 +419,8 @@ func TestFilter(t *testing.T) {
 	}
 }
 
-func TestFilterEmpty(t *testing.T) {
+func (su *collectionSuite) TestFilterEmpty() {
+	t := su.T()
 	c := collection.New[int, string]()
 	result := c.Filter(func(v string) bool { return true })
 	if result.Len() != 0 {
@@ -396,7 +428,8 @@ func TestFilterEmpty(t *testing.T) {
 	}
 }
 
-func TestFilterPreservesOrder(t *testing.T) {
+func (su *collectionSuite) TestFilterPreservesOrder() {
+	t := su.T()
 	c := newABC()
 	result := c.Filter(func(v string) bool { return v != "gamma" })
 	keys := result.Keys()
@@ -405,7 +438,8 @@ func TestFilterPreservesOrder(t *testing.T) {
 	}
 }
 
-func TestPartition(t *testing.T) {
+func (su *collectionSuite) TestPartition() {
+	t := su.T()
 	c := newABC()
 	matched, rest := c.Partition(func(v string) bool { return strings.HasPrefix(v, "a") })
 	if matched.Len() != 1 {
@@ -420,7 +454,8 @@ func TestPartition(t *testing.T) {
 	}
 }
 
-func TestPartitionEmpty(t *testing.T) {
+func (su *collectionSuite) TestPartitionEmpty() {
+	t := su.T()
 	c := collection.New[int, string]()
 	matched, rest := c.Partition(func(v string) bool { return true })
 	if matched.Len() != 0 || rest.Len() != 0 {
@@ -430,7 +465,8 @@ func TestPartitionEmpty(t *testing.T) {
 
 // --- Index / Position ---
 
-func TestFirstLastSingleElement(t *testing.T) {
+func (su *collectionSuite) TestFirstLastSingleElement() {
+	t := su.T()
 	c := collection.New[int, string]()
 	c.Set(42, "only")
 
@@ -452,7 +488,8 @@ func TestFirstLastSingleElement(t *testing.T) {
 	}
 }
 
-func TestFirstEmpty(t *testing.T) {
+func (su *collectionSuite) TestFirstEmpty() {
+	t := su.T()
 	c := collection.New[int, string]()
 	v, ok := c.First()
 	if ok || v != "" {
@@ -464,7 +501,8 @@ func TestFirstEmpty(t *testing.T) {
 	}
 }
 
-func TestLastEmpty(t *testing.T) {
+func (su *collectionSuite) TestLastEmpty() {
+	t := su.T()
 	c := collection.New[int, string]()
 	v, ok := c.Last()
 	if ok || v != "" {
@@ -476,7 +514,8 @@ func TestLastEmpty(t *testing.T) {
 	}
 }
 
-func TestFirstN(t *testing.T) {
+func (su *collectionSuite) TestFirstN() {
+	t := su.T()
 	c := newABC()
 	got := c.FirstN(2)
 	if len(got) != 2 || got[0] != "gamma" || got[1] != "alpha" {
@@ -492,7 +531,8 @@ func TestFirstN(t *testing.T) {
 	}
 }
 
-func TestLastN(t *testing.T) {
+func (su *collectionSuite) TestLastN() {
+	t := su.T()
 	c := newABC() // [gamma, alpha, beta]
 	got := c.LastN(2)
 	if len(got) != 2 || got[0] != "alpha" || got[1] != "beta" {
@@ -504,7 +544,8 @@ func TestLastN(t *testing.T) {
 	}
 }
 
-func TestAt(t *testing.T) {
+func (su *collectionSuite) TestAt() {
+	t := su.T()
 	c := newABC() // [gamma, alpha, beta]
 	tests := []struct {
 		index int
@@ -529,7 +570,8 @@ func TestAt(t *testing.T) {
 	}
 }
 
-func TestKeyAt(t *testing.T) {
+func (su *collectionSuite) TestKeyAt() {
+	t := su.T()
 	c := newABC() // keys: [3, 1, 2]
 	tests := []struct {
 		index int
@@ -553,7 +595,8 @@ func TestKeyAt(t *testing.T) {
 	}
 }
 
-func TestRandomEmpty(t *testing.T) {
+func (su *collectionSuite) TestRandomEmpty() {
+	t := su.T()
 	c := collection.New[int, string]()
 	v, ok := c.Random()
 	if ok || v != "" {
@@ -568,7 +611,8 @@ func TestRandomEmpty(t *testing.T) {
 	}
 }
 
-func TestRandom(t *testing.T) {
+func (su *collectionSuite) TestRandom() {
+	t := su.T()
 	c := newABC()
 	_, ok := c.Random()
 	if !ok {
@@ -591,7 +635,8 @@ func TestRandom(t *testing.T) {
 
 // --- Transform ---
 
-func TestEach(t *testing.T) {
+func (su *collectionSuite) TestEach() {
+	t := su.T()
 	c := newABC()
 	var keys []int
 	var vals []string
@@ -610,7 +655,8 @@ func TestEach(t *testing.T) {
 	}
 }
 
-func TestSort(t *testing.T) {
+func (su *collectionSuite) TestSort() {
+	t := su.T()
 	c := newABC()
 	ret := c.Sort(func(a, b string) bool { return a < b })
 	if ret != c {
@@ -623,7 +669,8 @@ func TestSort(t *testing.T) {
 	}
 }
 
-func TestSortStability(t *testing.T) {
+func (su *collectionSuite) TestSortStability() {
+	t := su.T()
 	// Two values that are equal under the less function — original order preserved.
 	c := collection.New[int, int]()
 	c.Set(10, 5)
@@ -636,7 +683,8 @@ func TestSortStability(t *testing.T) {
 	}
 }
 
-func TestSorted(t *testing.T) {
+func (su *collectionSuite) TestSorted() {
+	t := su.T()
 	c := newABC()
 	sorted := c.Sorted(func(a, b string) bool { return a < b })
 	// Original unchanged
@@ -651,7 +699,8 @@ func TestSorted(t *testing.T) {
 	}
 }
 
-func TestReverse(t *testing.T) {
+func (su *collectionSuite) TestReverse() {
+	t := su.T()
 	c := newABC() // [3, 1, 2]
 	ret := c.Reverse()
 	if ret != c {
@@ -663,7 +712,8 @@ func TestReverse(t *testing.T) {
 	}
 }
 
-func TestMapValues(t *testing.T) {
+func (su *collectionSuite) TestMapValues() {
+	t := su.T()
 	c := newABC()
 	ret := c.MapValues(strings.ToUpper)
 	if ret != c {
@@ -675,7 +725,8 @@ func TestMapValues(t *testing.T) {
 	}
 }
 
-func TestSweep(t *testing.T) {
+func (su *collectionSuite) TestSweep() {
+	t := su.T()
 	c := newABC()
 	removed := c.Sweep(func(v string) bool { return strings.HasPrefix(v, "a") })
 	if removed != 1 {
@@ -693,7 +744,8 @@ func TestSweep(t *testing.T) {
 	}
 }
 
-func TestSweepAll(t *testing.T) {
+func (su *collectionSuite) TestSweepAll() {
+	t := su.T()
 	c := newABC()
 	removed := c.Sweep(func(v string) bool { return true })
 	if removed != 3 || c.Len() != 0 {
@@ -701,7 +753,8 @@ func TestSweepAll(t *testing.T) {
 	}
 }
 
-func TestSweepNone(t *testing.T) {
+func (su *collectionSuite) TestSweepNone() {
+	t := su.T()
 	c := newABC()
 	removed := c.Sweep(func(v string) bool { return false })
 	if removed != 0 || c.Len() != 3 {
@@ -711,7 +764,8 @@ func TestSweepNone(t *testing.T) {
 
 // --- Set Operations ---
 
-func TestConcat(t *testing.T) {
+func (su *collectionSuite) TestConcat() {
+	t := su.T()
 	a := collection.New[int, string]()
 	a.Set(1, "a").Set(2, "b")
 	b := collection.New[int, string]()
@@ -731,7 +785,8 @@ func TestConcat(t *testing.T) {
 	}
 }
 
-func TestConcatEmpty(t *testing.T) {
+func (su *collectionSuite) TestConcatEmpty() {
+	t := su.T()
 	a := newABC()
 	empty := collection.New[int, string]()
 	result := a.Concat(empty)
@@ -744,7 +799,8 @@ func TestConcatEmpty(t *testing.T) {
 	}
 }
 
-func TestMergeAlias(t *testing.T) {
+func (su *collectionSuite) TestMergeAlias() {
+	t := su.T()
 	a := collection.New[int, string]()
 	a.Set(1, "a")
 	b := collection.New[int, string]()
@@ -756,7 +812,8 @@ func TestMergeAlias(t *testing.T) {
 	}
 }
 
-func TestDifference(t *testing.T) {
+func (su *collectionSuite) TestDifference() {
+	t := su.T()
 	a := newABC()
 	b := collection.New[int, string]()
 	b.Set(1, "x").Set(3, "y")
@@ -770,7 +827,8 @@ func TestDifference(t *testing.T) {
 	}
 }
 
-func TestDifferenceEmpty(t *testing.T) {
+func (su *collectionSuite) TestDifferenceEmpty() {
+	t := su.T()
 	a := newABC()
 	empty := collection.New[int, string]()
 	diff := a.Difference(empty)
@@ -783,7 +841,8 @@ func TestDifferenceEmpty(t *testing.T) {
 	}
 }
 
-func TestIntersection(t *testing.T) {
+func (su *collectionSuite) TestIntersection() {
+	t := su.T()
 	a := newABC()
 	b := collection.New[int, string]()
 	b.Set(1, "x").Set(4, "y")
@@ -797,7 +856,8 @@ func TestIntersection(t *testing.T) {
 	}
 }
 
-func TestIntersectionEmpty(t *testing.T) {
+func (su *collectionSuite) TestIntersectionEmpty() {
+	t := su.T()
 	a := newABC()
 	empty := collection.New[int, string]()
 	inter := a.Intersection(empty)
@@ -806,7 +866,8 @@ func TestIntersectionEmpty(t *testing.T) {
 	}
 }
 
-func TestSymmetricDifference(t *testing.T) {
+func (su *collectionSuite) TestSymmetricDifference() {
+	t := su.T()
 	a := collection.New[int, string]()
 	a.Set(1, "a").Set(2, "b").Set(3, "c")
 	b := collection.New[int, string]()
@@ -821,7 +882,8 @@ func TestSymmetricDifference(t *testing.T) {
 	}
 }
 
-func TestSymmetricDifferenceEmpty(t *testing.T) {
+func (su *collectionSuite) TestSymmetricDifferenceEmpty() {
+	t := su.T()
 	a := newABC()
 	empty := collection.New[int, string]()
 	sym := a.SymmetricDifference(empty)
@@ -832,7 +894,8 @@ func TestSymmetricDifferenceEmpty(t *testing.T) {
 
 // --- Iteration / Conversion ---
 
-func TestKeys(t *testing.T) {
+func (su *collectionSuite) TestKeys() {
+	t := su.T()
 	c := newABC()
 	keys := c.Keys()
 	if len(keys) != 3 || keys[0] != 3 || keys[1] != 1 || keys[2] != 2 {
@@ -845,7 +908,8 @@ func TestKeys(t *testing.T) {
 	}
 }
 
-func TestValues(t *testing.T) {
+func (su *collectionSuite) TestValues() {
+	t := su.T()
 	c := newABC()
 	vals := c.Values()
 	if vals[0] != "gamma" || vals[1] != "alpha" || vals[2] != "beta" {
@@ -853,7 +917,8 @@ func TestValues(t *testing.T) {
 	}
 }
 
-func TestEntries(t *testing.T) {
+func (su *collectionSuite) TestEntries() {
+	t := su.T()
 	c := newABC()
 	entries := c.Entries()
 	if len(entries) != 3 {
@@ -867,7 +932,8 @@ func TestEntries(t *testing.T) {
 	}
 }
 
-func TestToMap(t *testing.T) {
+func (su *collectionSuite) TestToMap() {
+	t := su.T()
 	c := newABC()
 	m := c.ToMap()
 	if len(m) != 3 {
@@ -883,7 +949,8 @@ func TestToMap(t *testing.T) {
 	}
 }
 
-func TestAll(t *testing.T) {
+func (su *collectionSuite) TestAll() {
+	t := su.T()
 	c := newABC()
 	var keys []int
 	var vals []string
@@ -899,7 +966,8 @@ func TestAll(t *testing.T) {
 	}
 }
 
-func TestAllBreak(t *testing.T) {
+func (su *collectionSuite) TestAllBreak() {
+	t := su.T()
 	c := newABC()
 	count := 0
 	for range c.All() {
@@ -911,7 +979,8 @@ func TestAllBreak(t *testing.T) {
 	}
 }
 
-func TestKeysIter(t *testing.T) {
+func (su *collectionSuite) TestKeysIter() {
+	t := su.T()
 	c := newABC()
 	var keys []int
 	for k := range c.KeysIter() {
@@ -922,7 +991,8 @@ func TestKeysIter(t *testing.T) {
 	}
 }
 
-func TestValuesIter(t *testing.T) {
+func (su *collectionSuite) TestValuesIter() {
+	t := su.T()
 	c := newABC()
 	var vals []string
 	for v := range c.ValuesIter() {
@@ -935,7 +1005,8 @@ func TestValuesIter(t *testing.T) {
 
 // --- Top-Level Functions ---
 
-func TestMap(t *testing.T) {
+func (su *collectionSuite) TestMap() {
+	t := su.T()
 	c := newABC()
 	lengths := collection.Map(c, func(v string) int { return len(v) })
 	if len(lengths) != 3 {
@@ -947,7 +1018,8 @@ func TestMap(t *testing.T) {
 	}
 }
 
-func TestMapToCollection(t *testing.T) {
+func (su *collectionSuite) TestMapToCollection() {
+	t := su.T()
 	c := newABC()
 	upper := collection.MapToCollection(c, strings.ToUpper)
 	if upper.Len() != 3 {
@@ -969,7 +1041,8 @@ func TestMapToCollection(t *testing.T) {
 	}
 }
 
-func TestFlatMap(t *testing.T) {
+func (su *collectionSuite) TestFlatMap() {
+	t := su.T()
 	c := collection.New[int, string]()
 	c.Set(1, "ab")
 	c.Set(2, "cd")
@@ -988,7 +1061,8 @@ func TestFlatMap(t *testing.T) {
 	}
 }
 
-func TestGroupBy(t *testing.T) {
+func (su *collectionSuite) TestGroupBy() {
+	t := su.T()
 	c := collection.New[int, string]()
 	c.Set(1, "apple")
 	c.Set(2, "apricot")
@@ -1006,7 +1080,8 @@ func TestGroupBy(t *testing.T) {
 	}
 }
 
-func TestReduce(t *testing.T) {
+func (su *collectionSuite) TestReduce() {
+	t := su.T()
 	c := newABC()
 	total := collection.Reduce(c, 0, func(acc int, v string) int { return acc + len(v) })
 	// gamma=5, alpha=5, beta=4
@@ -1015,7 +1090,8 @@ func TestReduce(t *testing.T) {
 	}
 }
 
-func TestReduceEmpty(t *testing.T) {
+func (su *collectionSuite) TestReduceEmpty() {
+	t := su.T()
 	c := collection.New[int, string]()
 	total := collection.Reduce(c, 42, func(acc int, v string) int { return acc + 1 })
 	if total != 42 {
@@ -1025,7 +1101,8 @@ func TestReduceEmpty(t *testing.T) {
 
 // --- Pointer-value reflection ---
 
-func TestPointerValueReflected(t *testing.T) {
+func (su *collectionSuite) TestPointerValueReflected() {
+	t := su.T()
 	type user struct{ Name string }
 	c := collection.New[int, *user]()
 	u := &user{Name: "alice"}
@@ -1036,3 +1113,7 @@ func TestPointerValueReflected(t *testing.T) {
 		t.Errorf("pointer mutation should be reflected in Get: got %s", got.Name)
 	}
 }
+
+type collectionSuite struct{ suite.Suite }
+
+func TestCollectionSuite(t *testing.T) { suite.Run(t, new(collectionSuite)) }

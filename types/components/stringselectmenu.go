@@ -5,6 +5,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#string-select
 type StringSelectMenuComponent struct {
 	Type        discord.ComponentType              `json:"type"`
 	ID          *int                               `json:"id,omitempty"`
@@ -22,12 +23,13 @@ func (s *StringSelectMenuComponent) IsAnyContainerAccessory() bool {
 }
 
 func (s *StringSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	s.Type = discord.ComponentTypeStringSelect
 	type Alias StringSelectMenuComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(s),
+		Alias: Alias(*s),
+		Type:  discord.ComponentTypeStringSelect,
 	})
 }
 
@@ -52,6 +54,7 @@ func (s *StringSelectMenuComponent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// https://docs.discord.com/developers/components/reference#string-select-select-option-structure
 type StringSelectMenuComponentOption struct {
 	Label       string         `json:"label"`
 	Value       string         `json:"value"`
@@ -64,6 +67,7 @@ func (s *StringSelectMenuComponent) IsAnyLabelComponent() {
 
 }
 
+// https://docs.discord.com/developers/components/reference#string-select
 type StringSelectComponentInteractionResponse struct {
 	Type          discord.ComponentType `json:"type"`
 	Values        []string              `json:"values"`
@@ -77,15 +81,15 @@ func (s *StringSelectComponentInteractionResponse) IsInteractionResponseDataComp
 }
 
 func (s *StringSelectComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	s.ComponentType = discord.ComponentTypeStringSelect
-	s.Type = discord.ComponentTypeStringSelect
-
 	type Alias StringSelectComponentInteractionResponse
-
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type          discord.ComponentType `json:"type"`
+		ComponentType discord.ComponentType `json:"component_type"`
 	}{
-		Alias: (*Alias)(s),
+		Alias:         Alias(*s),
+		Type:          discord.ComponentTypeStringSelect,
+		ComponentType: discord.ComponentTypeStringSelect,
 	})
 }
 

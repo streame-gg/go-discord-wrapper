@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#file-upload
 type FileUploadComponent struct {
 	Type      discord.ComponentType `json:"type"`
 	ID        *int                  `json:"id,omitempty"`
@@ -16,12 +17,13 @@ type FileUploadComponent struct {
 }
 
 func (f *FileUploadComponent) MarshalJSON() ([]byte, error) {
-	f.Type = discord.ComponentTypeFileUpload
 	type Alias FileUploadComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(f),
+		Alias: Alias(*f),
+		Type:  discord.ComponentTypeFileUpload,
 	})
 }
 
@@ -50,6 +52,7 @@ func (f *FileUploadComponent) IsAnyLabelComponent() {
 
 }
 
+// https://docs.discord.com/developers/components/reference#file-upload
 type FileUploadComponentInteractionResponse struct {
 	Type     discord.ComponentType `json:"type"`
 	ID       *int                  `json:"id,omitempty"`
@@ -62,14 +65,13 @@ func (f *FileUploadComponentInteractionResponse) IsInteractionResponseDataCompon
 }
 
 func (f *FileUploadComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	f.Type = discord.ComponentTypeFileUpload
-
 	type Alias FileUploadComponentInteractionResponse
-
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(f),
+		Alias: Alias(*f),
+		Type:  discord.ComponentTypeFileUpload,
 	})
 }
 

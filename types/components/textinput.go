@@ -5,6 +5,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#text-input-text-input-styles
 type TextInputStyle int
 
 const (
@@ -12,6 +13,7 @@ const (
 	TextInputStyleParagraph TextInputStyle = 2
 )
 
+// https://docs.discord.com/developers/components/reference#text-input
 type TextInputComponent struct {
 	Type        discord.ComponentType `json:"type"`
 	ID          *int                  `json:"id,omitempty"`
@@ -25,12 +27,13 @@ type TextInputComponent struct {
 }
 
 func (t *TextInputComponent) MarshalJSON() ([]byte, error) {
-	t.Type = discord.ComponentTypeTextInput
 	type Alias TextInputComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(t),
+		Alias: Alias(*t),
+		Type:  discord.ComponentTypeTextInput,
 	})
 }
 
@@ -63,6 +66,7 @@ func (t *TextInputComponent) IsAnyLabelComponent() {
 
 }
 
+// https://docs.discord.com/developers/components/reference#text-input
 type TextInputComponentInteractionResponse struct {
 	Type     discord.ComponentType `json:"type"`
 	Value    string                `json:"value"`
@@ -75,14 +79,13 @@ func (t *TextInputComponentInteractionResponse) IsInteractionResponseDataCompone
 }
 
 func (t *TextInputComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	t.Type = discord.ComponentTypeTextInput
-
 	type Alias TextInputComponentInteractionResponse
-
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(t),
+		Alias: Alias(*t),
+		Type:  discord.ComponentTypeTextInput,
 	})
 }
 

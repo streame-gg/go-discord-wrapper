@@ -1,6 +1,8 @@
 package discord
 
 // OnboardingMode controls whether prompts are shown during onboarding and member screening.
+//
+// https://docs.discord.com/developers/resources/guild#guild-onboarding-object-onboarding-mode
 type OnboardingMode int
 
 const (
@@ -9,6 +11,8 @@ const (
 )
 
 // OnboardingPromptType is the display type of an onboarding prompt.
+//
+// https://docs.discord.com/developers/resources/guild#guild-onboarding-object-prompt-types
 type OnboardingPromptType int
 
 const (
@@ -17,6 +21,8 @@ const (
 )
 
 // PromptOption is a selectable option within a guild onboarding prompt.
+//
+// https://docs.discord.com/developers/resources/guild#guild-onboarding-object-prompt-option-structure
 type PromptOption struct {
 	ID            Snowflake   `json:"id"`
 	ChannelIDs    []Snowflake `json:"channel_ids"`
@@ -30,6 +36,8 @@ type PromptOption struct {
 }
 
 // OnboardingPrompt is a prompt shown to new members during guild onboarding.
+//
+// https://docs.discord.com/developers/resources/guild#guild-onboarding-object-onboarding-prompt-structure
 type OnboardingPrompt struct {
 	ID           Snowflake            `json:"id"`
 	Type         OnboardingPromptType `json:"type"`
@@ -41,6 +49,8 @@ type OnboardingPrompt struct {
 }
 
 // GuildOnboarding holds the onboarding configuration for a guild.
+//
+// https://docs.discord.com/developers/resources/guild#guild-onboarding-object
 type GuildOnboarding struct {
 	GuildID           Snowflake          `json:"guild_id"`
 	Prompts           []OnboardingPrompt `json:"prompts"`

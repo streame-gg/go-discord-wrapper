@@ -9,11 +9,13 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/resources/invite#get-invite
 type GetInviteParams struct {
 	WithCounts            *bool
 	GuildScheduledEventID *discord.Snowflake
 }
 
+// https://docs.discord.com/developers/resources/invite#delete-invite
 type DeleteInviteOptions struct {
 	Reason string
 }

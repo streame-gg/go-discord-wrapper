@@ -2,12 +2,14 @@ package discord
 
 import "time"
 
+// https://docs.discord.com/developers/resources/message#embed-object-embed-footer-structure
 type EmbedFooter struct {
 	Text         string `json:"text,omitempty"`
 	IconURL      string `json:"icon_url,omitempty"`
 	ProxyIconURL string `json:"proxy_icon_url,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/message#embed-object-embed-image-structure
 type EmbedImage struct {
 	URL      string `json:"url"`
 	ProxyURL string `json:"proxy_url,omitempty"`
@@ -15,6 +17,7 @@ type EmbedImage struct {
 	Width    *int   `json:"width,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/message#embed-object-embed-thumbnail-structure
 type EmbedThumbnail struct {
 	URL      string `json:"url"`
 	ProxyURL string `json:"proxy_url,omitempty"`
@@ -22,6 +25,7 @@ type EmbedThumbnail struct {
 	Width    *int   `json:"width,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/message#embed-object-embed-video-structure
 type EmbedVideo struct {
 	URL      string `json:"url"`
 	ProxyURL string `json:"proxy_url,omitempty"`
@@ -29,11 +33,13 @@ type EmbedVideo struct {
 	Width    *int   `json:"width,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/message#embed-object-embed-provider-structure
 type EmbedProvider struct {
 	Name *string `json:"name,omitempty"`
 	URL  *string `json:"url,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/message#embed-object-embed-author-structure
 type EmbedAuthor struct {
 	Name         string  `json:"name"`
 	URL          *string `json:"url,omitempty"`
@@ -41,12 +47,14 @@ type EmbedAuthor struct {
 	ProxyIconURL *string `json:"proxy_icon_url,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/message#embed-object-embed-field-structure
 type EmbedFields struct {
 	Name   string `json:"name"`
 	Value  string `json:"value"`
 	Inline *bool  `json:"inline,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/message#embed-object-embed-types
 type EmbedType string
 
 const (
@@ -59,6 +67,7 @@ const (
 	EmbedTypePollResult EmbedType = "poll_result"
 )
 
+// https://docs.discord.com/developers/resources/message#embed-object
 type Embed struct {
 	Title       *string         `json:"title,omitempty"`
 	Type        *EmbedType      `json:"type,omitempty"`

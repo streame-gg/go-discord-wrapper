@@ -5,6 +5,8 @@ import (
 )
 
 // GuildTemplate represents a code that when used, creates a guild based on a snapshot of an existing guild.
+//
+// https://docs.discord.com/developers/resources/guild-template#guild-template-object
 type GuildTemplate struct {
 	Code                  string    `json:"code"`
 	Name                  string    `json:"name"`

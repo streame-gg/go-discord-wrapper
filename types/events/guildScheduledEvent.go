@@ -6,10 +6,12 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#guild-scheduled-event-create
 type GuildScheduledEventCreateEvent struct {
 	discord.GuildScheduledEvent
 }
 
+// https://docs.discord.com/developers/events/gateway-events#guild-scheduled-event-update
 type GuildScheduledEventUpdateEvent struct {
 	NewEvent discord.GuildScheduledEvent  `json:"-"`
 	OldEvent *discord.GuildScheduledEvent `json:"-"`
@@ -27,16 +29,19 @@ func (e GuildScheduledEventUpdateEvent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(wire{e.NewEvent, e.OldEvent})
 }
 
+// https://docs.discord.com/developers/events/gateway-events#guild-scheduled-event-delete
 type GuildScheduledEventDeleteEvent struct {
 	discord.GuildScheduledEvent
 }
 
+// https://docs.discord.com/developers/events/gateway-events#guild-scheduled-event-user-add
 type GuildScheduledEventUserAddEvent struct {
 	GuildScheduledEventID discord.Snowflake `json:"guild_scheduled_event_id"`
 	UserID                discord.Snowflake `json:"user_id"`
 	GuildID               discord.Snowflake `json:"guild_id"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#guild-scheduled-event-user-remove
 type GuildScheduledEventUserRemoveEvent struct {
 	GuildScheduledEventID discord.Snowflake `json:"guild_scheduled_event_id"`
 	UserID                discord.Snowflake `json:"user_id"`

@@ -4,22 +4,25 @@ import (
 	"time"
 )
 
+// GuildMember.User is nil on MESSAGE_CREATE and MESSAGE_UPDATE gateway events.
+//
+// https://docs.discord.com/developers/resources/guild#guild-member-object
 type GuildMember struct {
 	hClient                    EntityClient
-	GuildID                    Snowflake   `json:"-"`
-	UserID                     Snowflake   `json:"-"`
-	AvatarHash                 *string     `json:"avatar,omitempty"`
-	BannerHash                 *string     `json:"banner,omitempty"`
-	CommunicationDisabledUntil *string     `json:"communication_disabled_until,omitempty"`
-	Deaf                       bool        `json:"deaf"`
-	Flags                      int         `json:"flags"`
-	JoinedAt                   time.Time   `json:"joined_at"`
-	Mute                       bool        `json:"mute"`
-	Nick                       *string     `json:"nick,omitempty"`
-	Pending                    bool        `json:"pending,omitempty"`
-	PremiumSince               *time.Time  `json:"premium_since,omitempty"`
-	Roles                      []Snowflake `json:"roles"`
-	User                       *User       `json:"user,omitempty"`
+	GuildID                    Snowflake        `json:"-"`
+	UserID                     Snowflake        `json:"-"`
+	AvatarHash                 *string          `json:"avatar,omitempty"`
+	BannerHash                 *string          `json:"banner,omitempty"`
+	CommunicationDisabledUntil *time.Time       `json:"communication_disabled_until,omitempty"`
+	Deaf                       *bool            `json:"deaf,omitempty"`
+	Flags                      GuildMemberFlags `json:"flags"`
+	JoinedAt                   time.Time        `json:"joined_at"`
+	Mute                       *bool            `json:"mute,omitempty"`
+	Nick                       *string          `json:"nick,omitempty"`
+	Pending                    bool             `json:"pending,omitempty"`
+	PremiumSince               *time.Time       `json:"premium_since,omitempty"`
+	Roles                      []Snowflake      `json:"roles"`
+	User                       *User            `json:"user,omitempty"`
 }
 
 func (m *GuildMember) DisplayName() string {
@@ -38,6 +41,7 @@ func (m *GuildMember) DisplayName() string {
 	return ""
 }
 
+// https://docs.discord.com/developers/resources/channel#thread-member-object
 type ThreadMember struct {
 	ID            *Snowflake   `json:"id,omitempty"`
 	UserID        *Snowflake   `json:"user_id,omitempty"`

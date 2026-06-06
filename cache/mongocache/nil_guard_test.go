@@ -1,10 +1,6 @@
 package mongocache
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -22,24 +18,25 @@ func nilMongoCache() *MongoDBCache {
 
 // TestMongoNilGuards verifies that all Set/Add methods on the MongoDB stores
 // return without panicking when called with a nil entity argument (Issue 9).
-func TestMongoNilGuards(t *testing.T) {
+func (s *mongoHelpersSuite) TestMongoNilGuards() {
 	c := nilMongoCache()
 	guildID := discord.Snowflake(1)
+	r := s.Require()
 
-	require.NotPanics(t, func() { (&mongoGuildStore{c}).Set(nil) }, "Guilds.Set(nil)")
-	require.NotPanics(t, func() { (&mongoChannelStore{c}).Set(nil) }, "Channels.Set(nil)")
-	require.NotPanics(t, func() { (&mongoUserStore{c}).Set(nil) }, "Users.Set(nil)")
-	require.NotPanics(t, func() { (&mongoMemberStore{c}).Set(guildID, nil) }, "Members.Set(guildID, nil)")
-	require.NotPanics(t, func() { (&mongoRoleStore{c}).Set(guildID, nil) }, "Roles.Set(guildID, nil)")
-	require.NotPanics(t, func() { (&mongoVoiceStateStore{c}).Set(guildID, nil) }, "VoiceStates.Set(guildID, nil)")
-	require.NotPanics(t, func() { (&mongoSoundboardStore{c}).Set(guildID, nil) }, "Soundboard.Set(guildID, nil)")
-	require.NotPanics(t, func() { (&mongoScheduledEventStore{c}).Set(nil) }, "ScheduledEvents.Set(nil)")
-	require.NotPanics(t, func() { (&mongoStageInstanceStore{c}).Set(nil) }, "StageInstances.Set(nil)")
-	require.NotPanics(t, func() { (&mongoEmojiStore{c}).Set(guildID, nil) }, "Emojis.Set(guildID, nil)")
-	require.NotPanics(t, func() { (&mongoStickerStore{c}).Set(guildID, nil) }, "Stickers.Set(guildID, nil)")
-	require.NotPanics(t, func() { (&mongoPresenceStore{c}).Set(nil) }, "Presences.Set(nil)")
-	require.NotPanics(t, func() {
+	r.NotPanics(func() { (&mongoGuildStore{c}).Set(nil) }, "Guilds.Set(nil)")
+	r.NotPanics(func() { (&mongoChannelStore{c}).Set(nil) }, "Channels.Set(nil)")
+	r.NotPanics(func() { (&mongoUserStore{c}).Set(nil) }, "Users.Set(nil)")
+	r.NotPanics(func() { (&mongoMemberStore{c}).Set(guildID, nil) }, "Members.Set(guildID, nil)")
+	r.NotPanics(func() { (&mongoRoleStore{c}).Set(guildID, nil) }, "Roles.Set(guildID, nil)")
+	r.NotPanics(func() { (&mongoVoiceStateStore{c}).Set(guildID, nil) }, "VoiceStates.Set(guildID, nil)")
+	r.NotPanics(func() { (&mongoSoundboardStore{c}).Set(guildID, nil) }, "Soundboard.Set(guildID, nil)")
+	r.NotPanics(func() { (&mongoScheduledEventStore{c}).Set(nil) }, "ScheduledEvents.Set(nil)")
+	r.NotPanics(func() { (&mongoStageInstanceStore{c}).Set(nil) }, "StageInstances.Set(nil)")
+	r.NotPanics(func() { (&mongoEmojiStore{c}).Set(guildID, nil) }, "Emojis.Set(guildID, nil)")
+	r.NotPanics(func() { (&mongoStickerStore{c}).Set(guildID, nil) }, "Stickers.Set(guildID, nil)")
+	r.NotPanics(func() { (&mongoPresenceStore{c}).Set(nil) }, "Presences.Set(nil)")
+	r.NotPanics(func() {
 		(&mongoPresenceStore{c}).Set(&discord.Presence{}) // User.ID == 0 → no-op
 	}, "Presences.Set(zeroUserID)")
-	require.NotPanics(t, func() { (&mongoMessageStore{c: c}).Add(nil) }, "Messages.Add(nil)")
+	r.NotPanics(func() { (&mongoMessageStore{c: c}).Add(nil) }, "Messages.Add(nil)")
 }

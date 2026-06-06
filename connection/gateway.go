@@ -15,13 +15,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper"
 	"github.com/streame-gg/go-discord-wrapper/api"
 	"github.com/streame-gg/go-discord-wrapper/cache"
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions"
-	"github.com/streame-gg/go-discord-wrapper/util"
 
 	"github.com/gorilla/websocket"
 )
@@ -37,7 +38,7 @@ type Client struct {
 
 	Intents *discord.Intent
 
-	Websocket *Websocket
+	wsConn *wsConn
 
 	// httpClient is the shared HTTP client used for REST calls inside the
 	// gateway package (e.g. GET /gateway/bot). Reusing it avoids allocating a
@@ -48,7 +49,7 @@ type Client struct {
 
 	mu sync.RWMutex
 
-	// wsMu protects concurrent reads and writes of the Websocket pointer.
+	// wsMu protects concurrent reads and writes of the wsConn pointer.
 	wsMu sync.RWMutex
 
 	// dispatchWg tracks in-flight user event handler goroutines for graceful shutdown.
@@ -74,8 +75,8 @@ type Client struct {
 	shutdownOnce sync.Once
 
 	// readyCh is closed exactly once when the first READY event is received.
-	// Unlike Websocket.Ready, it lives on the Client and survives reconnects,
-	// so Login() can safely wait on it without racing against d.Websocket being
+	// Unlike wsConn.Ready, it lives on the Client and survives reconnects,
+	// so Login() can safely wait on it without racing against d.wsConn being
 	// replaced by a concurrent reconnect.
 	readyCh   chan struct{}
 	readyOnce sync.Once
@@ -90,6 +91,10 @@ type Client struct {
 	// cacheAutoPopulate mirrors options.Config.CacheStores, zero disables auto-population.
 	cacheAutoPopulate cache.OverflowCategory
 
+	// UnavailableGuilds tracks guild IDs that arrived as unavailable in READY
+	// or via GUILD_DELETE with unavailable=true. All pkg accesses are
+	// protected by the Client's mu lock. Direct external reads race with
+	// gateway events — use IsGuildUnavailable instead.
 	UnavailableGuilds map[discord.Snowflake]struct{}
 
 	// user is the bot's own user object received in the READY payload.
@@ -97,16 +102,31 @@ type Client struct {
 	user   *discord.User
 	userMu sync.RWMutex
 
+	// appID is the application ID from the READY payload. For bot tokens this
+	// equals the bot user's ID, but it is stored separately so that applicationID()
+	// returns the authoritative value rather than approximating via the user ID.
+	appID   *discord.Snowflake
+	appIDMu sync.RWMutex
+
+	// Sharding holds the shard identity (ShardID / TotalShards) when the
+	// client was started with sharding enabled. Read-only after NewClient;
+	// do not mutate at runtime.
 	Sharding *options.Sharding
 
+	// RestClient is the underlying REST client. It is set once during
+	// NewClient and is read-only after that point. Setting it to nil at
+	// runtime will cause nil-pointer panics in any code path that calls
+	// REST methods.
 	RestClient *api.RestClient
 
 	// Coordinator handles inter-shard message routing.
 	// Nil when sharding is not configured or no coordinator was provided.
+	// Setting it to nil after Login races with concurrent shard traffic.
 	Coordinator options.ShardCoordinator
 
 	// Cache stores Discord entities populated automatically from gateway events.
 	// Nil when no cache was configured via options.WithCache.
+	// Setting it to nil after Login races with concurrent cache writes.
 	Cache cache.Cache
 
 	// channelIndexMu protects channelsByGuild and guildByChannel.
@@ -134,6 +154,18 @@ type Client struct {
 	// VoiceStateUpdateEvent can carry OldState alongside the new state.
 	voiceStates   map[string]*discord.VoiceState
 	voiceStatesMu sync.RWMutex
+
+	// entitlements caches the latest known entitlement by ID (as a string key)
+	// so that EntitlementUpdateEvent can carry OldEntitlement alongside the new one.
+	entitlements sync.Map // map[string]*discord.Entitlement
+
+	// webhookSnapshots caches the last-known set of webhooks per channel (keyed by
+	// channel ID string) so WEBHOOKS_UPDATE can be diffed into synthetic
+	// WebhookCreate/Update/Delete events carrying the old version. Populated lazily
+	// by REST fetch, only while a webhook handler is registered.
+	webhookSnapshots sync.Map // map[string][]*discord.Webhook
+	// webhookWg tracks in-flight webhook fetch/diff goroutines for graceful shutdown.
+	webhookWg sync.WaitGroup
 
 	// Client lifecycle event handlers.
 	onConnect      []func(*Client)
@@ -185,6 +217,27 @@ func NewClient(token string, intents discord.Intent, opts ...options.Option) (*C
 		cacheStores = 0
 	}
 
+	// Resolve the logger first so even the early token advisory respects it.
+	// Silent by default (DiscardHandler); opt in via WithLogger or WithLogLevel.
+	var logger *slog.Logger
+	switch {
+	case cfg.Logger != nil:
+		logger = cfg.Logger
+	case cfg.LogLevel != nil:
+		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: *cfg.LogLevel}))
+	default:
+		logger = slog.New(slog.DiscardHandler)
+	}
+
+	if parts := strings.SplitN(token, " ", 2); strings.ToLower(parts[0]) == "bot" {
+		logger.Info("NewClient: token appears to be a bot token with 'Bot' prefix; the library will add this prefix automatically, so you should pass the raw token without 'Bot '")
+		if len(parts) == 2 {
+			token = strings.TrimSpace(parts[1])
+		} else {
+			token = ""
+		}
+	}
+
 	c := &Client{
 		token:               &token,
 		APIVersion:          util.PointerOf(cfg.APIVersion),
@@ -224,14 +277,7 @@ func NewClient(token string, intents discord.Intent, opts ...options.Option) (*C
 		}
 	}
 
-	switch {
-	case cfg.Logger != nil:
-		c.Logger = cfg.Logger
-	case cfg.LogLevel != nil:
-		c.Logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: *cfg.LogLevel}))
-	default:
-		c.Logger = slog.Default()
-	}
+	c.Logger = logger
 
 	// Register this shard with the coordinator so messages can arrive.
 	if c.Coordinator != nil && c.Sharding != nil {
@@ -244,7 +290,7 @@ func NewClient(token string, intents discord.Intent, opts ...options.Option) (*C
 }
 
 // Ready returns a channel that is closed once the first READY event is
-// received from the Discord gateway.  Unlike Websocket.Ready, this channel
+// received from the Discord gateway.  Unlike wsConn.Ready, this channel
 // lives on the Client and is never replaced, so it is safe to use across
 // reconnects.
 func (d *Client) Ready() <-chan struct{} {
@@ -253,6 +299,10 @@ func (d *Client) Ready() <-chan struct{} {
 
 // BotUser returns the bot's own User object as received in the READY event.
 // Returns nil before the first READY. Safe for concurrent use.
+//
+// The returned pointer is the library's pkg copy; do not mutate the
+// struct it points to, as changes would be visible to any concurrent caller.
+// Copy the value (*user = *client.BotUser()) if you need a mutable snapshot.
 func (d *Client) BotUser() *discord.User {
 	d.userMu.RLock()
 	defer d.userMu.RUnlock()
@@ -324,19 +374,17 @@ func (d *Client) enqueueOrDispatch(event events.Event) bool {
 		}
 		return false
 	}
+	// Add before checking shutdown to eliminate the race window where Shutdown()
+	// could call eventWg.Wait() after the check but before Add(1).
+	d.eventWg.Add(1)
 	select {
 	case <-d.shutdownCh:
+		d.eventWg.Done()
 		return true
 	default:
 	}
-	d.eventWg.Add(1)
 	go func() {
 		defer d.eventWg.Done()
-		select {
-		case <-d.shutdownCh:
-			return
-		default:
-		}
 		d.processEvent(job)
 	}()
 	return false
@@ -424,12 +472,27 @@ func (d *Client) ReplyToShard(original options.ShardMessage, responseType string
 // This is a low-level building block used by sharding.RequestAll. Prefer that
 // helper unless you need custom aggregation logic.
 func (d *Client) SubscribeShardResponse(responseType, corrID string) (<-chan options.ShardMessage, func()) {
-	ch := make(chan options.ShardMessage, d.Coordinator.TotalShards())
+	bufSize := 1
+	if d.Coordinator != nil {
+		bufSize = d.Coordinator.TotalShards()
+	}
+	ch := make(chan options.ShardMessage, bufSize)
 	key := responseType + ":" + corrID
 
 	d.pendingShardReqsMu.Lock()
 	if d.pendingShardReqs == nil {
 		d.pendingShardReqs = make(map[string]chan options.ShardMessage)
+	}
+	if _, exists := d.pendingShardReqs[key]; exists {
+		// A subscription for this key is already active; don't overwrite it.
+		// The returned channel will never receive messages — the caller used a
+		// duplicate corrID, which is a programming error.
+		d.pendingShardReqsMu.Unlock()
+		d.Logger.Warn("SubscribeShardResponse: duplicate corrID — returned channel will never receive messages",
+			slog.String("responseType", responseType),
+			slog.String("corrID", corrID),
+		)
+		return ch, func() {}
 	}
 	d.pendingShardReqs[key] = ch
 	d.pendingShardReqsMu.Unlock()
@@ -532,7 +595,7 @@ func (d *Client) dispatchShardMessage(msg options.ShardMessage) {
 // ── Gateway connection ───────────────────────────────────────────────────────
 
 func (d *Client) initializeGatewayConnection(ctx context.Context) (*discord.BotRegisterResponse, error) {
-	const userAgent = "DiscordBot (https://github.com/streame-gg/go-discord-wrapper, alpha)"
+	userAgent := "DiscordBot (" + go_discord_wrapper.RepositoryURL + ", " + go_discord_wrapper.RepositoryVersion + ")"
 
 	for {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://discord.com"+discord.APIBaseString(*d.APIVersion)+"gateway/bot", nil)
@@ -670,7 +733,7 @@ func (d *Client) Login(ctx context.Context) error {
 			}
 
 			d.wsMu.RLock()
-			wsAlive := d.Websocket != nil
+			wsAlive := d.wsConn != nil
 			d.wsMu.RUnlock()
 			if wsAlive {
 				d.Logger.Debug("Restarting websocket listener")
@@ -704,7 +767,6 @@ func (d *Client) dispatch(event events.Event) {
 		// MaxConcurrentEvents is the number of workers, so it is the true upper
 		// bound on concurrent handler execution.
 		for _, h := range handlers {
-			h := h
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -720,7 +782,6 @@ func (d *Client) dispatch(event events.Event) {
 	// Unlimited mode: each handler gets its own goroutine.
 	// dispatchWg tracks in-flight handlers so Shutdown can drain them.
 	for _, h := range handlers {
-		h := h
 		d.dispatchWg.Add(1)
 		go func() {
 			defer d.dispatchWg.Done()
@@ -753,13 +814,17 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			}
 
 			d.wsMu.Lock()
-			d.Websocket.SessionID = &readyEvent.SessionID
-			d.Websocket.ReconnectURL = &readyEvent.ResumeGatewayURL
+			d.wsConn.SessionID = &readyEvent.SessionID
+			d.wsConn.ReconnectURL = &readyEvent.ResumeGatewayURL
 			d.wsMu.Unlock()
 			d.setBotUser(&readyEvent.User)
+			d.appIDMu.Lock()
+			appID := readyEvent.Application.ID
+			d.appID = &appID
+			d.appIDMu.Unlock()
 
-			if len(readyEvent.Shard) >= 2 {
-				d.Logger.Debug("Connected to shard", slog.Int("shard", readyEvent.Shard[0]+1), slog.Int("total", readyEvent.Shard[1]))
+			if readyEvent.Shard != nil {
+				d.Logger.Debug("Connected to shard", slog.Int("shard", readyEvent.Shard.ShardID+1), slog.Int("total", readyEvent.Shard.NumShards))
 			}
 
 			// Build the set of guilds the bot currently belongs to.
@@ -796,7 +861,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 			}
 
-			d.Websocket.readyOnce.Do(func() { close(d.Websocket.Ready) })
+			d.wsConn.readyOnce.Do(func() { close(d.wsConn.Ready) })
 			d.readyOnce.Do(func() { close(d.readyCh) })
 
 			return true
@@ -1104,10 +1169,11 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryPresences) {
+				presence := ev.NewPresence
 				if old, exists := d.Cache.Presences().Get(ev.NewPresence.GuildID, ev.NewPresence.User.ID); exists {
 					ev.OldPresence = old
+					presence = util.MergePartialJSON(*old, presence, msg)
 				}
-				presence := ev.NewPresence
 				d.Cache.Presences().Set(&presence)
 			}
 		}
@@ -1174,6 +1240,109 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				d.Cache.Stickers().SetAll(ev.GuildID, ev.NewStickers)
 			}
 		}
+	case events.EventAutoModerationRuleCreate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryAutoModRules) {
+				var ev events.AutoModerationRuleCreateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal AUTO_MODERATION_RULE_CREATE event", slog.Any("err", err))
+					return false
+				}
+				rule := ev.AutoModerationRule
+				d.cacheAutoModRule(rule.GuildID, &rule)
+			}
+		}
+	case events.EventAutoModerationRuleUpdate:
+		{
+			ev, ok := event.(*events.AutoModerationRuleUpdateEvent)
+			if !ok {
+				return false
+			}
+			if d.cacheStoreEnabled(cache.CategoryAutoModRules) {
+				if old, exists := d.Cache.AutoModRules().Get(ev.NewRule.ID); exists {
+					ev.OldRule = old
+				}
+				rule := ev.NewRule
+				d.cacheAutoModRule(rule.GuildID, &rule)
+			}
+		}
+	case events.EventAutoModerationRuleDelete:
+		{
+			if d.cacheStoreEnabled(cache.CategoryAutoModRules) {
+				var ev events.AutoModerationRuleDeleteEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal AUTO_MODERATION_RULE_DELETE event", slog.Any("err", err))
+					return false
+				}
+				d.Cache.AutoModRules().Delete(ev.ID)
+			}
+		}
+	case events.EventInviteCreate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryInvites) {
+				var ev events.InviteCreateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal INVITE_CREATE event", slog.Any("err", err))
+					return false
+				}
+				invite := discord.Invite{
+					Code:      ev.Code,
+					Inviter:   ev.Inviter,
+					MaxAge:    ev.MaxAge,
+					MaxUses:   ev.MaxUses,
+					Temporary: &ev.Temporary,
+					CreatedAt: &ev.CreatedAt,
+					ExpiresAt: ev.ExpiresAt,
+				}
+				if ev.GuildID != nil {
+					d.Cache.Invites().SetWithGuild(*ev.GuildID, &invite)
+				} else {
+					d.Cache.Invites().Set(&invite)
+				}
+			}
+		}
+	case events.EventInviteDelete:
+		{
+			if d.cacheStoreEnabled(cache.CategoryInvites) {
+				var ev events.InviteDeleteEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal INVITE_DELETE event", slog.Any("err", err))
+					return false
+				}
+				d.Cache.Invites().Delete(ev.Code)
+			}
+		}
+	case events.EventGuildBanAdd:
+		{
+			needMembers := d.cacheStoreEnabled(cache.CategoryMembers)
+			needBans := d.cacheStoreEnabled(cache.CategoryBans)
+			needUsers := d.cacheStoreEnabled(cache.CategoryUsers)
+			if needMembers || needBans || needUsers {
+				var ev events.GuildBanAddEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_BAN_ADD event", slog.Any("err", err))
+					return false
+				}
+				if needMembers {
+					d.Cache.Members().Delete(ev.GuildID, ev.User.ID)
+				}
+				if needBans || needUsers {
+					ban := discord.Ban{User: ev.User}
+					d.cacheBan(ev.GuildID, &ban)
+				}
+			}
+		}
+	case events.EventGuildBanRemove:
+		{
+			if d.cacheStoreEnabled(cache.CategoryBans) {
+				var ev events.GuildBanRemoveEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_BAN_REMOVE event", slog.Any("err", err))
+					return false
+				}
+				d.Cache.Bans().Delete(ev.GuildID, ev.User.ID)
+			}
+		}
 	case events.EventGuildMemberAdd:
 		{
 			var ev events.GuildMemberAddEvent
@@ -1209,16 +1378,18 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryMembers) {
+				member := ev.NewMember
 				if existing, exists := d.Cache.Members().Get(ev.GuildID, ev.NewMember.UserID); exists {
 					ev.OldMember = existing
+					member = util.MergePartialJSON(*existing, member, msg)
 				}
-				m := ev.NewMember
-				m.GuildID = ev.GuildID
-				if m.User != nil {
-					m.UserID = m.User.ID
+				member.GuildID = ev.GuildID
+				if member.User != nil {
+					member.UserID = member.User.ID
 				}
-				m.Hydrate(d)
-				d.Cache.Members().Set(ev.GuildID, &m)
+
+				member.Hydrate(d)
+				d.Cache.Members().Set(ev.GuildID, &member)
 			}
 		}
 	case events.EventGuildRoleCreate:
@@ -1259,37 +1430,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal GUILD_ROLE_DELETE event", slog.Any("err", err))
 					return false
 				}
-				d.removeRoleFromCache(ev.RoleID)
-
-				// Purge the deleted role from every cached member's Roles slice.
-				// Discord may send GUILD_MEMBER_UPDATEs for affected members, but
-				// delivery is not guaranteed — removing here keeps the cache
-				// consistent immediately so permission checks cannot see stale roles.
-				if d.cacheStoreEnabled(cache.CategoryMembers) {
-					roleStr := ev.RoleID.String()
-					for _, m := range d.Cache.Members().AllInGuild(ev.GuildID).Values() {
-						found := false
-						for _, r := range m.Roles {
-							if r.String() == roleStr {
-								found = true
-								break
-							}
-						}
-						if !found {
-							continue
-						}
-						// Copy and filter — never mutate the cached pointer directly.
-						updated := *m
-						filtered := make([]discord.Snowflake, 0, len(m.Roles)-1)
-						for _, r := range m.Roles {
-							if r.String() != roleStr {
-								filtered = append(filtered, r)
-							}
-						}
-						updated.Roles = filtered
-						d.Cache.Members().Set(ev.GuildID, &updated)
-					}
-				}
+				d.removeRoleFromCache(ev.GuildID, ev.RoleID)
 			}
 		}
 	case events.EventGuildScheduledEventCreate:
@@ -1329,6 +1470,42 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				d.Cache.ScheduledEvents().Delete(ev.ID)
+			}
+		}
+	case events.EventGuildScheduledEventUserAdd:
+		{
+			// Bug 78: increment UserCount on the cached scheduled event.
+			if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
+				var ev events.GuildScheduledEventUserAddEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_SCHEDULED_EVENT_USER_ADD event", slog.Any("err", err))
+					return false
+				}
+				if se, ok := d.Cache.ScheduledEvents().Get(ev.GuildScheduledEventID); ok {
+					updated := *se
+					if updated.UserCount != nil {
+						count := *updated.UserCount + 1
+						updated.UserCount = &count
+					}
+					d.Cache.ScheduledEvents().Set(&updated)
+				}
+			}
+		}
+	case events.EventGuildScheduledEventUserRemove:
+		{
+			// Bug 78: decrement UserCount on the cached scheduled event.
+			if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
+				var ev events.GuildScheduledEventUserRemoveEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal GUILD_SCHEDULED_EVENT_USER_REMOVE event", slog.Any("err", err))
+					return false
+				}
+				if se, ok := d.Cache.ScheduledEvents().Get(ev.GuildScheduledEventID); ok && se.UserCount != nil && *se.UserCount > 0 {
+					updated := *se
+					count := *updated.UserCount - 1
+					updated.UserCount = &count
+					d.Cache.ScheduledEvents().Set(&updated)
+				}
 			}
 		}
 	case events.EventStageInstanceCreate:
@@ -1444,6 +1621,21 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				d.Cache.Soundboard().SetAll(ev.GuildID, sounds)
 			}
 		}
+	case events.EventChannelPinsUpdate:
+		{
+			if d.cacheStoreEnabled(cache.CategoryChannels) {
+				var ev events.ChannelPinsUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal CHANNEL_PINS_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				if ch, ok := d.Cache.Channels().Get(ev.ChannelID); ok {
+					updated := *ch
+					updated.LastPinTimestamp = ev.LastPinTimestamp
+					d.Cache.Channels().Set(&updated)
+				}
+			}
+		}
 	case events.EventChannelCreate:
 		{
 			if d.cacheStoreEnabled(cache.CategoryChannels) {
@@ -1497,18 +1689,26 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 	case events.EventThreadUpdate:
 		{
 			if d.cacheStoreEnabled(cache.CategoryChannels) {
-				var ch discord.Channel
-				if ev, ok := event.(*events.ThreadUpdateEvent); ok {
-					if old, exists := d.Cache.Channels().Get(ev.NewThread.ID); exists {
-						ev.OldThread = old
-					}
-					ch = ev.NewThread
-				} else {
-					var fallback events.ThreadUpdateEvent
-					if err := json.Unmarshal(msg, &fallback); err != nil {
+				// Bug 82: always populate OldThread from cache regardless of which
+				// path provides the parsed event.
+				ev, ok := event.(*events.ThreadUpdateEvent)
+				if !ok {
+					// Fallback for callers (e.g. tests) that pass nil as event.
+					var parsed events.ThreadUpdateEvent
+					if err := json.Unmarshal(msg, &parsed); err != nil {
 						return false
 					}
-					ch = fallback.NewThread
+					ev = &parsed
+				}
+				if old, exists := d.Cache.Channels().Get(ev.NewThread.ID); exists {
+					ev.OldThread = old
+				}
+				ch := ev.NewThread
+				// Bug 84: if the thread was reparented, remove from old parent's index.
+				if ev.OldThread != nil && ev.OldThread.ParentID != nil {
+					if ch.ParentID == nil || *ch.ParentID != *ev.OldThread.ParentID {
+						d.untrackThread(ch.ID, *ev.OldThread.ParentID)
+					}
 				}
 				d.cacheChannel(&ch)
 				d.trackThread(&ch)
@@ -1574,6 +1774,22 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 			}
 		}
+	case events.EventThreadMembersUpdate:
+		{
+			// Update the cached MemberCount of the affected thread channel.
+			if d.cacheStoreEnabled(cache.CategoryChannels) {
+				var ev events.ThreadMembersUpdateEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal THREAD_MEMBERS_UPDATE event", slog.Any("err", err))
+					return false
+				}
+				if ch, ok := d.Cache.Channels().Get(ev.ID); ok {
+					updated := *ch
+					updated.MemberCount = &ev.MemberCount
+					d.Cache.Channels().Set(&updated)
+				}
+			}
+		}
 	case events.EventMessageCreate:
 		{
 			if d.cacheStoreEnabled(cache.CategoryMessages) || d.cacheStoreEnabled(cache.CategoryUsers) {
@@ -1599,12 +1815,14 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryMessages) {
+				m := ev.NewMessage
 				if old, exists := d.Cache.Messages().Get(ev.NewMessage.ChannelID, ev.NewMessage.ID); exists {
 					ev.OldMessage = old
+					m = util.MergePartialJSON(*ev.OldMessage, ev.NewMessage, msg)
 				}
-				msg := ev.NewMessage
-				msg.Hydrate(d)
-				d.Cache.Messages().Update(&msg)
+
+				m.Hydrate(d)
+				d.Cache.Messages().Update(&m)
 			}
 		}
 	case events.EventMessageDelete:
@@ -1627,6 +1845,72 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					return false
 				}
 				d.Cache.Messages().DeleteBulk(ev.ChannelID, ev.IDs)
+			}
+		}
+	case events.EventMessageReactionAdd:
+		{
+			var ev events.MessageReactionAddEvent
+			if err := json.Unmarshal(msg, &ev); err != nil {
+				d.Logger.Error("Failed to unmarshal MESSAGE_REACTION_ADD event", slog.Any("err", err))
+				return false
+			}
+			if d.cacheStoreEnabled(cache.CategoryMessages) {
+				if m, ok := d.Cache.Messages().Get(ev.ChannelID, ev.MessageID); ok {
+					updated := *m
+					reactions := appendOrIncrementReaction(updated.Reactions, ev.Emoji)
+					updated.Reactions = &reactions
+					d.Cache.Messages().Update(&updated)
+				}
+			}
+			if d.cacheStoreEnabled(cache.CategoryMembers) && ev.Member != nil && ev.GuildID != nil {
+				d.cacheMember(*ev.GuildID, ev.Member)
+			}
+		}
+	case events.EventMessageReactionRemove:
+		{
+			if d.cacheStoreEnabled(cache.CategoryMessages) {
+				var ev events.MessageReactionRemoveEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal MESSAGE_REACTION_REMOVE event", slog.Any("err", err))
+					return false
+				}
+				if m, ok := d.Cache.Messages().Get(ev.ChannelID, ev.MessageID); ok {
+					updated := *m
+					reactions := decrementOrRemoveReaction(updated.Reactions, ev.Emoji)
+					updated.Reactions = &reactions
+					d.Cache.Messages().Update(&updated)
+				}
+			}
+		}
+	case events.EventMessageReactionRemoveAll:
+		{
+			if d.cacheStoreEnabled(cache.CategoryMessages) {
+				var ev events.MessageReactionRemoveAllEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal MESSAGE_REACTION_REMOVE_ALL event", slog.Any("err", err))
+					return false
+				}
+				if m, ok := d.Cache.Messages().Get(ev.ChannelID, ev.MessageID); ok {
+					updated := *m
+					updated.Reactions = nil
+					d.Cache.Messages().Update(&updated)
+				}
+			}
+		}
+	case events.EventMessageReactionRemoveEmoji:
+		{
+			if d.cacheStoreEnabled(cache.CategoryMessages) {
+				var ev events.MessageReactionRemoveEmojiEvent
+				if err := json.Unmarshal(msg, &ev); err != nil {
+					d.Logger.Error("Failed to unmarshal MESSAGE_REACTION_REMOVE_EMOJI event", slog.Any("err", err))
+					return false
+				}
+				if m, ok := d.Cache.Messages().Get(ev.ChannelID, ev.MessageID); ok {
+					updated := *m
+					reactions := removeEmojiReaction(updated.Reactions, ev.Emoji)
+					updated.Reactions = &reactions
+					d.Cache.Messages().Update(&updated)
+				}
 			}
 		}
 	case events.EventGuildMembersChunk:
@@ -1673,6 +1957,34 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 			}
 		}
+	case events.EventWebhooksUpdate:
+		if ev, ok := event.(*events.WebhooksUpdateEvent); ok {
+			// Discord's WEBHOOKS_UPDATE only carries the channel; derive granular
+			// synthetic events by fetching + diffing off the reader goroutine.
+			d.deriveWebhookSyntheticEventsAsync(ev)
+		}
+
+	case events.EventEntitlementCreate:
+		if ev, ok := event.(*events.EntitlementCreateEvent); ok {
+			e := ev.Entitlement
+			d.entitlements.Store(e.ID.String(), &e)
+		}
+
+	case events.EventEntitlementUpdate:
+		if ev, ok := event.(*events.EntitlementUpdateEvent); ok {
+			id := ev.NewEntitlement.ID.String()
+			if old, loaded := d.entitlements.Load(id); loaded {
+				ev.OldEntitlement = old.(*discord.Entitlement)
+			}
+			n := ev.NewEntitlement
+			d.entitlements.Store(id, &n)
+		}
+
+	case events.EventEntitlementDelete:
+		if ev, ok := event.(*events.EntitlementDeleteEvent); ok {
+			d.entitlements.Delete(ev.ID.String())
+		}
+
 	case events.EventInteractionCreate:
 		if ev, ok := event.(*events.InteractionCreateEvent); ok {
 			ev.Hydrate(d, context.Background())
@@ -1746,15 +2058,14 @@ func (d *Client) IsGuildUnavailable(id discord.Snowflake) bool {
 	return exists
 }
 
-// Close gracefully closes the gateway connection and the entity cache.
-// It implements io.Closer.
-func (d *Client) Close() error {
-	return d.Shutdown()
-}
-
 // Shutdown gracefully closes the gateway connection and the entity cache.
 // It waits for all in-flight event handlers to finish before returning.
 // Shutdown is idempotent: concurrent or repeated calls are safe.
+//
+// Shutdown does not close the shard Coordinator, which may be shared across
+// shard clients: the ShardManager closes the shared Coordinator once, after
+// shutting down every shard (see sharding.ShardManager.Shutdown). A standalone
+// client that owns a Coordinator should close it alongside calling Shutdown.
 func (d *Client) Shutdown() error {
 	var errs []error
 	d.shutdownOnce.Do(func() {
@@ -1762,13 +2073,18 @@ func (d *Client) Shutdown() error {
 		close(d.shutdownCh) // unblocks any eventCh senders still in listenWebsocket
 
 		d.wsMu.RLock()
-		ws := d.Websocket
+		ws := d.wsConn
 		d.wsMu.RUnlock()
 		if ws != nil {
 			if err := ws.close(); err != nil {
 				errs = append(errs, err)
 			}
 		}
+
+		// Drain webhook fetch/diff goroutines first: they abort their REST call on
+		// shutdownCh and may enqueue synthetic events, so they must finish before
+		// the event/handler waiters below so those enqueues are accounted for.
+		d.webhookWg.Wait()
 
 		// Worker-pool mode: shutdownCh (already closed above) signals workers to
 		// drain their queue and exit.  Wait for them before dispatchWg.Wait()
@@ -1901,7 +2217,16 @@ func (d *Client) emitConnect() {
 	copy(handlers, d.onConnect)
 	d.clientEventsMu.RUnlock()
 	for _, h := range handlers {
-		go h(d)
+		d.dispatchWg.Add(1)
+		go func() {
+			defer d.dispatchWg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					d.Logger.Error("panic in connect handler", slog.Any("recover", r))
+				}
+			}()
+			h(d)
+		}()
 	}
 }
 
@@ -1911,7 +2236,16 @@ func (d *Client) emitDisconnect(err error) {
 	copy(handlers, d.onDisconnect)
 	d.clientEventsMu.RUnlock()
 	for _, h := range handlers {
-		go h(d, err)
+		d.dispatchWg.Add(1)
+		go func() {
+			defer d.dispatchWg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					d.Logger.Error("panic in disconnect handler", slog.Any("recover", r))
+				}
+			}()
+			h(d, err)
+		}()
 	}
 }
 
@@ -1921,7 +2255,16 @@ func (d *Client) emitReconnect() {
 	copy(handlers, d.onReconnect)
 	d.clientEventsMu.RUnlock()
 	for _, h := range handlers {
-		go h(d)
+		d.dispatchWg.Add(1)
+		go func() {
+			defer d.dispatchWg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					d.Logger.Error("panic in reconnect handler", slog.Any("recover", r))
+				}
+			}()
+			h(d)
+		}()
 	}
 }
 
@@ -1931,6 +2274,15 @@ func (d *Client) emitPacketError(err error) {
 	copy(handlers, d.onPacketError)
 	d.clientEventsMu.RUnlock()
 	for _, h := range handlers {
-		go h(d, err)
+		d.dispatchWg.Add(1)
+		go func() {
+			defer d.dispatchWg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					d.Logger.Error("panic in packet-error handler", slog.Any("recover", r))
+				}
+			}()
+			h(d, err)
+		}()
 	}
 }

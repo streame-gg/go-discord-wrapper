@@ -15,7 +15,7 @@ import (
 
 // mockWSCloseAfterUpgrade starts a WebSocket server that upgrades the
 // connection and then immediately closes it, triggering the first error path
-// in NewWebsocket (ReadMessage fails).
+// in newWSConn (ReadMessage fails).
 func mockWSCloseAfterUpgrade(t *testing.T) (wsURL string, closeFn func()) {
 	t.Helper()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -28,13 +28,14 @@ func mockWSCloseAfterUpgrade(t *testing.T) (wsURL string, closeFn func()) {
 	return "ws" + ts.URL[len("http"):], ts.Close
 }
 
-// TestP0_3_NewWebsocketClosesConnOnError verifies that NewWebsocket closes
+// TestP0_3_NewWebsocketClosesConnOnError verifies that newWSConn closes
 // the underlying TCP connection when it encounters an error after a
 // successful dial (e.g. server closes without sending OP 10).
 //
 // Without the fix, the gorilla/websocket connection leaks because the four
-// early-return paths in NewWebsocket returned without calling c.Close().
-func TestP0_3_NewWebsocketClosesConnOnError(t *testing.T) {
+// early-return paths in newWSConn returned without calling c.Close().
+func (cs *ConnectionSuite) TestP0_3_NewWebsocketClosesConnOnError() {
+	t := cs.T()
 	wsURL, closeFn := mockWSCloseAfterUpgrade(t)
 	defer closeFn()
 
@@ -43,8 +44,8 @@ func TestP0_3_NewWebsocketClosesConnOnError(t *testing.T) {
 
 	before := runtime.NumGoroutine()
 
-	_, wsErr := NewWebsocket(c, wsURL, false, nil, nil)
-	assert.Error(t, wsErr, "NewWebsocket must return an error when server closes without Hello")
+	_, wsErr := newWSConn(c, wsURL, false, nil, nil)
+	assert.Error(t, wsErr, "newWSConn must return an error when server closes without Hello")
 
 	// Allow any cleanup goroutines spawned by the gorilla/websocket library
 	// to finish — they should exit quickly once the connection is closed.
@@ -54,5 +55,5 @@ func TestP0_3_NewWebsocketClosesConnOnError(t *testing.T) {
 	after := runtime.NumGoroutine()
 	// Goroutine count must not grow; allow a small margin for scheduler jitter.
 	assert.LessOrEqual(t, after, before+2,
-		"goroutine count must not grow after NewWebsocket error: before=%d after=%d", before, after)
+		"goroutine count must not grow after newWSConn error: before=%d after=%d", before, after)
 }

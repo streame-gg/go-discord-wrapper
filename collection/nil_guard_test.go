@@ -1,6 +1,7 @@
 package collection_test
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +12,8 @@ import (
 
 // TestCollectionNilGuards verifies that methods accepting a *Collection
 // argument do not panic when passed nil (Issue 28).
-func TestCollectionNilGuards(t *testing.T) {
+func (su *collectionNilGuardSuite) TestCollectionNilGuards() {
+	t := su.T()
 	eq := func(a, b string) bool { return a == b }
 
 	populated := collection.New[int, string]()
@@ -63,3 +65,7 @@ func TestCollectionNilGuards(t *testing.T) {
 		})
 	})
 }
+
+type collectionNilGuardSuite struct{ suite.Suite }
+
+func TestCollectionNilGuardSuite(t *testing.T) { suite.Run(t, new(collectionNilGuardSuite)) }

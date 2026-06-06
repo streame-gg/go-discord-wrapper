@@ -15,9 +15,10 @@ var errMemberNoUserID = errors.New("discord: GuildMember.UserID is not set — e
 // ── Options ───────────────────────────────────────────────────────────────────
 
 // MemberEditOptions configures GuildMember.Edit.
+// https://docs.discord.com/developers/resources/guild#modify-guild-member
 type MemberEditOptions struct {
 	Nick                       *string
-	Roles                      []Snowflake
+	Roles                      *[]Snowflake
 	Mute                       *bool
 	Deaf                       *bool
 	ChannelID                  *Snowflake
@@ -27,6 +28,7 @@ type MemberEditOptions struct {
 }
 
 // BanOptions configures GuildMember.Ban.
+// https://docs.discord.com/developers/resources/guild#create-guild-ban
 type BanOptions struct {
 	DeleteMessageSeconds *int
 	AuditLogReason       *string
@@ -139,9 +141,9 @@ func (m *GuildMember) RemoveRole(ctx context.Context, roleID Snowflake, reason *
 }
 
 // Timeout applies a communication timeout until the given time.
-// Pass a zero time.Time or the zero value to remove an active timeout.
+// Pass a zero time.Time (time.Time{}) to remove an active timeout.
 // Requires MODERATE_MEMBERS.
-func (m *GuildMember) Timeout(ctx context.Context, until *time.Time, reason *string) (*GuildMember, error) {
+func (m *GuildMember) Timeout(ctx context.Context, until time.Time, reason *string) (*GuildMember, error) {
 	c, err := ensureClient(m.hClient)
 	if err != nil {
 		return nil, err
@@ -151,7 +153,7 @@ func (m *GuildMember) Timeout(ctx context.Context, until *time.Time, reason *str
 		return nil, err
 	}
 	var disabledUntil *string
-	if until != nil && !until.IsZero() {
+	if !until.IsZero() {
 		s := until.UTC().Format(time.RFC3339)
 		disabledUntil = &s
 	} else {

@@ -78,6 +78,10 @@ func (d *Client) OnPacketError(handler func(*Client, error)) {
 
 // ── Typed Discord event helpers ───────────────────────────────────────────────
 
+// The helpers below wrap OnEvent with a statically-typed function signature,
+// so toEventHandler's reflection-based validation always succeeds.  The error
+// return from OnEvent is therefore safely discarded with `_ =`.
+
 func (d *Client) OnReady(h func(*Client, *events.ReadyEvent)) {
 	_ = d.OnEvent(events.EventReady, h)
 }
@@ -243,51 +247,6 @@ func (d *Client) OnGuildStickerRemove(h func(*Client, *events.GuildStickerRemove
 func (d *Client) OnGuildStickerUpdate(h func(*Client, *events.GuildStickerUpdateEvent)) {
 	_ = d.OnEvent(events.EventWrapperGuildStickerUpdate, h)
 }
-func (d *Client) OnGuildRolePermissionsChange(h func(*Client, *events.GuildRolePermissionsChangeEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildRolePermissionsChange, h)
-}
-func (d *Client) OnUserOnline(h func(*Client, *events.UserOnlineEvent)) {
-	_ = d.OnEvent(events.EventWrapperUserOnline, h)
-}
-func (d *Client) OnUserOffline(h func(*Client, *events.UserOfflineEvent)) {
-	_ = d.OnEvent(events.EventWrapperUserOffline, h)
-}
-func (d *Client) OnUserActivityChange(h func(*Client, *events.UserActivityChangeEvent)) {
-	_ = d.OnEvent(events.EventWrapperUserActivityChange, h)
-}
-func (d *Client) OnUserProfileUpdate(h func(*Client, *events.UserProfileUpdateEvent)) {
-	_ = d.OnEvent(events.EventWrapperUserUpdate, h)
-}
-func (d *Client) OnGuildMemberRoleAdd(h func(*Client, *events.GuildMemberRoleAddEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildMemberRoleAdd, h)
-}
-func (d *Client) OnGuildMemberRoleRemove(h func(*Client, *events.GuildMemberRoleRemoveEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildMemberRoleRemove, h)
-}
-func (d *Client) OnGuildMemberNickChange(h func(*Client, *events.GuildMemberNickChangeEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildMemberNickChange, h)
-}
-func (d *Client) OnGuildMemberTimeout(h func(*Client, *events.GuildMemberTimeoutEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildMemberTimeout, h)
-}
-func (d *Client) OnGuildMemberBoostStart(h func(*Client, *events.GuildMemberBoostStartEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildMemberBoostStart, h)
-}
-func (d *Client) OnGuildMemberBoostEnd(h func(*Client, *events.GuildMemberBoostEndEvent)) {
-	_ = d.OnEvent(events.EventWrapperGuildMemberBoostEnd, h)
-}
-func (d *Client) OnVoiceMemberJoin(h func(*Client, *events.VoiceMemberJoinEvent)) {
-	_ = d.OnEvent(events.EventWrapperVoiceMemberJoin, h)
-}
-func (d *Client) OnVoiceMemberLeave(h func(*Client, *events.VoiceMemberLeaveEvent)) {
-	_ = d.OnEvent(events.EventWrapperVoiceMemberLeave, h)
-}
-func (d *Client) OnVoiceMemberMove(h func(*Client, *events.VoiceMemberMoveEvent)) {
-	_ = d.OnEvent(events.EventWrapperVoiceMemberMove, h)
-}
-func (d *Client) OnVoiceMemberUpdate(h func(*Client, *events.VoiceMemberUpdateEvent)) {
-	_ = d.OnEvent(events.EventWrapperVoiceMemberUpdate, h)
-}
 func (d *Client) OnStageInstanceCreate(h func(*Client, *events.StageInstanceCreateEvent)) {
 	_ = d.OnEvent(events.EventStageInstanceCreate, h)
 }
@@ -312,8 +271,36 @@ func (d *Client) OnIntegrationUpdate(h func(*Client, *events.IntegrationUpdateEv
 func (d *Client) OnIntegrationDelete(h func(*Client, *events.IntegrationDeleteEvent)) {
 	_ = d.OnEvent(events.EventIntegrationDelete, h)
 }
+
+// OnGuildIntegrationsUpdate fires when any of a guild's integrations change.
+// The event carries only the guild ID; for the specific integration use
+// OnIntegrationCreate / OnIntegrationUpdate / OnIntegrationDelete, which Discord
+// dispatches alongside it under the same IntentGuildIntegrations intent.
+func (d *Client) OnGuildIntegrationsUpdate(h func(*Client, *events.GuildIntegrationsUpdateEvent)) {
+	_ = d.OnEvent(events.EventGuildIntegrationsUpdate, h)
+}
 func (d *Client) OnWebhooksUpdate(h func(*Client, *events.WebhooksUpdateEvent)) {
 	_ = d.OnEvent(events.EventWebhooksUpdate, h)
+}
+
+// OnWebhookCreate fires when a webhook is added to a channel. This is a
+// wrapper-synthesized event: registering any On­Webhook{Create,Update,Delete}
+// handler makes the wrapper fetch and diff the channel's webhooks on each
+// WEBHOOKS_UPDATE. The first update for a channel only seeds the snapshot (no
+// events). Requires the bot to have permission to view webhooks (MANAGE_WEBHOOKS).
+func (d *Client) OnWebhookCreate(h func(*Client, *events.WebhookCreateEvent)) {
+	_ = d.OnEvent(events.EventWrapperWebhookCreate, h)
+}
+
+// OnWebhookUpdate fires when a webhook's name, avatar, or channel changes.
+// The event carries both the old (cached) and new webhook. See OnWebhookCreate.
+func (d *Client) OnWebhookUpdate(h func(*Client, *events.WebhookUpdateEvent)) {
+	_ = d.OnEvent(events.EventWrapperWebhookUpdate, h)
+}
+
+// OnWebhookDelete fires when a webhook is removed from a channel. See OnWebhookCreate.
+func (d *Client) OnWebhookDelete(h func(*Client, *events.WebhookDeleteEvent)) {
+	_ = d.OnEvent(events.EventWrapperWebhookDelete, h)
 }
 func (d *Client) OnAutoModerationRuleCreate(h func(*Client, *events.AutoModerationRuleCreateEvent)) {
 	_ = d.OnEvent(events.EventAutoModerationRuleCreate, h)
@@ -384,7 +371,7 @@ func (d *Client) onRawEvent(
 // by callers — a wrong type means the handler will never be invoked.
 // Use the typed helpers (OnMessageCreate, OnInteractionCreate, etc.) for
 // compile-time-safe registration that cannot fail.
-func (d *Client) OnEvent(eventName events.EventType, handler interface{}) error {
+func (d *Client) OnEvent(eventName events.EventType, handler any) error {
 	wrapped, err := toEventHandler(handler, eventName)
 	if err != nil {
 		return err
@@ -419,9 +406,15 @@ func toEventHandler(handler interface{}, eventName events.EventType) (EventHandl
 	return func(session *Client, event events.Event) {
 		eventValue := reflect.ValueOf(event)
 		if !eventValue.IsValid() || !eventValue.Type().AssignableTo(eventType) {
+			// The handler's second argument type does not match the dispatched
+			// event. This can only happen if the handler was registered via the
+			// raw OnEvent API with a mismatched type. The handler is silently
+			// skipped; a warning is logged so the caller can diagnose the issue.
 			session.Logger.Warn(
-				"Failed to cast event to expected type for event",
+				"handler skipped: event type mismatch",
 				slog.Any("event", event), slog.Any("eventName", eventName),
+				slog.String("want", eventType.String()),
+				slog.String("got", reflect.TypeOf(event).String()),
 			)
 			return
 		}

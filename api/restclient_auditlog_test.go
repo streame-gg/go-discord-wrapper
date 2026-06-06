@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/stretchr/testify/suite"
 	"net/http"
 	"strings"
 	"testing"
@@ -14,7 +15,8 @@ func applyReason(reason string) *http.Request {
 	return req
 }
 
-func TestWithAuditLogReason(t *testing.T) {
+func (su *restclientAuditlogSuite) TestWithAuditLogReason() {
+	t := su.T()
 	t.Run("short reason sets header", func(t *testing.T) {
 		req := applyReason("ban evasion")
 		assert.NotEmpty(t, req.Header.Get("X-Audit-Log-Reason"))
@@ -48,3 +50,7 @@ func TestWithAuditLogReason(t *testing.T) {
 		assert.Contains(t, got, "%", "emoji should be percent-encoded")
 	})
 }
+
+type restclientAuditlogSuite struct{ suite.Suite }
+
+func TestRestclientAuditlogSuite(t *testing.T) { suite.Run(t, new(restclientAuditlogSuite)) }

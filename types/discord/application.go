@@ -1,5 +1,6 @@
 package discord
 
+// https://docs.discord.com/developers/resources/application#application-object-application-event-webhook-status
 type ApplicationEventWebhookStatus int
 
 const (
@@ -8,6 +9,7 @@ const (
 	ApplicationEventWebhookStatusDisabledBy ApplicationEventWebhookStatus = 2
 )
 
+// https://docs.discord.com/developers/topics/teams#data-models-membership-state-enum
 type ApplicationTeamMemberMembershipState int
 
 const (
@@ -15,13 +17,15 @@ const (
 	ApplicationTeamMemberMembershipStateAccepted ApplicationTeamMemberMembershipState = 2
 )
 
+// https://docs.discord.com/developers/topics/teams#data-models-team-member-object
 type ApplicationTeamMember struct {
 	MembershipState ApplicationTeamMemberMembershipState `json:"membership_state"`
-	TeamID          *string                              `json:"team_id,omitempty"`
+	TeamID          *Snowflake                           `json:"team_id,omitempty"`
 	User            *User                                `json:"user,omitempty"`
 	Role            string                               `json:"role"`
 }
 
+// https://docs.discord.com/developers/topics/teams#data-models-team-object
 type ApplicationTeam struct {
 	IconHash    *string                 `json:"icon,omitempty"`
 	ID          Snowflake               `json:"id"`
@@ -30,11 +34,13 @@ type ApplicationTeam struct {
 	OwnerUserID Snowflake               `json:"owner_user_id"`
 }
 
+// https://docs.discord.com/developers/resources/application#install-params-object
 type ApplicationInstallParams struct {
 	Scopes      []string `json:"scopes"`
 	Permissions string   `json:"permissions"`
 }
 
+// https://docs.discord.com/developers/resources/application-role-connection-metadata#application-role-connection-metadata-object-application-role-connection-metadata-type
 type ApplicationRoleConnectionsMetadataType int
 
 const (
@@ -48,6 +54,7 @@ const (
 	ApplicationRoleConnectionsMetadataTypeBooleanNotEqual            ApplicationRoleConnectionsMetadataType = 8
 )
 
+// https://docs.discord.com/developers/resources/application-role-connection-metadata#application-role-connection-metadata-object
 type ApplicationRoleConnectionsMetadata struct {
 	Type                     ApplicationRoleConnectionsMetadataType `json:"type"`
 	Key                      string                                 `json:"key"`
@@ -57,6 +64,7 @@ type ApplicationRoleConnectionsMetadata struct {
 	DescriptionLocalizations map[string]string                      `json:"description_localizations,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/application#application-object
 type Application struct {
 	ID                                Snowflake                     `json:"id"`
 	Name                              string                        `json:"name"`
@@ -71,11 +79,12 @@ type Application struct {
 	VerifyKey                         *string                       `json:"verify_key,omitempty"`
 	Team                              *ApplicationTeam              `json:"team,omitempty"`
 	GuildID                           *Snowflake                    `json:"guild_id,omitempty"`
-	Guild                             Guild                         `json:"guild,omitempty"`
-	PrimarySKUID                      *string                       `json:"primary_sku_id,omitempty"`
+	Guild                             *Guild                        `json:"guild,omitempty"`
+	PrimarySKUID                      *Snowflake                    `json:"primary_sku_id,omitempty"`
 	Slug                              *string                       `json:"slug,omitempty"`
 	CoverImage                        *string                       `json:"cover_image,omitempty"`
-	Flags                             *int                          `json:"flags,omitempty"`
+	Flags                             *ApplicationFlags             `json:"flags,omitempty"`
+	FlagsNew                          *ApplicationFlags             `json:"flags_new,omitempty"`
 	ApproximateGuildCount             *int                          `json:"approximate_guild_count,omitempty"`
 	ApproximateUserInstallCount       *int                          `json:"approximate_user_install_count,omitempty"`
 	ApproximateUserAuthorizationCount *int                          `json:"approximate_user_authorization_count,omitempty"`
@@ -87,6 +96,6 @@ type Application struct {
 	EventWebhooksTypes                *[]string                     `json:"event_webhooks_types,omitempty"`
 	Tags                              *[]string                     `json:"tags,omitempty"`
 	InstallParams                     *ApplicationInstallParams     `json:"install_params,omitempty"`
-	IntegrationTypesConfig            *interface{}                  `json:"integration_types_config,omitempty"`
+	IntegrationTypesConfig            interface{}                   `json:"integration_types_config,omitempty"`
 	CustomInstallURL                  *string                       `json:"custom_install_url,omitempty"`
 }

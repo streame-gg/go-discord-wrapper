@@ -1,5 +1,6 @@
 package discord
 
+// https://docs.discord.com/developers/reference#locales
 type Locale string
 
 const (

@@ -10,6 +10,8 @@ import "github.com/streame-gg/go-discord-wrapper/types/components"
 //	        builder.NewMediaGalleryItem("https://example.com/b.png").Build(),
 //	    ).
 //	    Build()
+//
+// https://docs.discord.com/developers/components/reference#media-gallery
 type MediaGalleryBuilder struct {
 	mg components.MediaGalleryComponent
 }
@@ -31,6 +33,8 @@ func (b *MediaGalleryBuilder) Build() *components.MediaGalleryComponent {
 // MediaGalleryItemBuilder builds a single MediaGalleryItem.
 //
 //	item := builder.NewMediaGalleryItem("https://example.com/img.png").SetDescription("A photo").Build()
+//
+// https://docs.discord.com/developers/components/reference#media-gallery-media-gallery-item-structure
 type MediaGalleryItemBuilder struct {
 	item components.MediaGalleryItem
 }

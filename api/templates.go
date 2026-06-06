@@ -12,16 +12,19 @@ import (
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/guild-template#create-guild-template
 type CreateGuildTemplateParams struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild-template#modify-guild-template
 type ModifyGuildTemplateParams struct {
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild-template#create-guild-from-guild-template
 type CreateGuildFromTemplateParams struct {
 	Name string  `json:"name"`
 	Icon *string `json:"icon,omitempty"`
@@ -58,8 +61,8 @@ func (c *RestClient) CreateGuildFromTemplate(ctx context.Context, templateCode s
 	})
 }
 
-// GetGuildTemplates returns the templates for a guild. Requires MANAGE_GUILD.
-func (c *RestClient) GetGuildTemplates(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildTemplate, error) {
+// ListGuildTemplates returns the templates for a guild. Requires MANAGE_GUILD.
+func (c *RestClient) ListGuildTemplates(ctx context.Context, guildID discord.Snowflake) ([]*discord.GuildTemplate, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}

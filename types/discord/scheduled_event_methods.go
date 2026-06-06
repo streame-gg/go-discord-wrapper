@@ -8,6 +8,7 @@ import (
 // ── Options ───────────────────────────────────────────────────────────────────
 
 // ScheduledEventEditOptions configures GuildScheduledEvent.Edit.
+// https://docs.discord.com/developers/resources/guild-scheduled-event#modify-guild-scheduled-event
 type ScheduledEventEditOptions struct {
 	ChannelID          *Snowflake
 	EntityMetadata     *GuildScheduledEventEntityMetadata
@@ -22,6 +23,7 @@ type ScheduledEventEditOptions struct {
 }
 
 // FetchUsersOptions configures GuildScheduledEvent.FetchUsers.
+// https://docs.discord.com/developers/resources/guild-scheduled-event#get-guild-scheduled-event-users
 type FetchUsersOptions struct {
 	Limit      *int
 	WithMember *bool
@@ -75,5 +77,5 @@ func (e *GuildScheduledEvent) FetchUsers(ctx context.Context, opts FetchUsersOpt
 	if err != nil {
 		return nil, err
 	}
-	return c.GetGuildScheduledEventUsers(ctx, e.GuildID, e.ID, opts)
+	return c.ListGuildScheduledEventUsers(ctx, e.GuildID, e.ID, opts)
 }

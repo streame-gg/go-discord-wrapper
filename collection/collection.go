@@ -12,6 +12,13 @@ type Entry[K comparable, V any] struct {
 	Value V
 }
 
+// node is an element in the doubly-linked insertion-order list.
+type node[K comparable, V any] struct {
+	key        K
+	value      V
+	prev, next *node[K, V]
+}
+
 // Collection is a generic Map<K, V> with utility methods inspired by
 // @discordjs/collection. Unlike a plain map, Collection methods preserve
 // insertion order for iteration when meaningful, and provide a rich set
@@ -23,21 +30,19 @@ type Entry[K comparable, V any] struct {
 // returned from cache.All()-style methods receive an immutable snapshot
 // and don't need their own locking.
 type Collection[K comparable, V any] struct {
-	items map[K]V
-	keys  []K // insertion order, kept in sync with items
+	items map[K]*node[K, V]
+	head  *node[K, V]
+	tail  *node[K, V]
 }
 
 // New creates an empty Collection.
 func New[K comparable, V any]() *Collection[K, V] {
-	return &Collection[K, V]{items: make(map[K]V)}
+	return &Collection[K, V]{items: make(map[K]*node[K, V])}
 }
 
 // NewWithCapacity creates an empty Collection with hint for initial capacity.
 func NewWithCapacity[K comparable, V any](capacity int) *Collection[K, V] {
-	return &Collection[K, V]{
-		items: make(map[K]V, capacity),
-		keys:  make([]K, 0, capacity),
-	}
+	return &Collection[K, V]{items: make(map[K]*node[K, V], capacity)}
 }
 
 // From creates a Collection from a map. The map is copied; subsequent
@@ -80,14 +85,17 @@ func FromEntries[K comparable, V any](entries []Entry[K, V]) *Collection[K, V] {
 // Get returns the value for key. The second return value is false if the
 // key is not present.
 func (c *Collection[K, V]) Get(key K) (V, bool) {
-	v, ok := c.items[key]
-	return v, ok
+	if n, ok := c.items[key]; ok {
+		return n.value, true
+	}
+	var zero V
+	return zero, false
 }
 
 // GetOr returns the value for key, or fallback if the key is not present.
 func (c *Collection[K, V]) GetOr(key K, fallback V) V {
-	if v, ok := c.items[key]; ok {
-		return v
+	if n, ok := c.items[key]; ok {
+		return n.value
 	}
 	return fallback
 }
@@ -97,10 +105,18 @@ func (c *Collection[K, V]) GetOr(key K, fallback V) V {
 // If the key is new, it's appended to the insertion-order list.
 // If the key exists, the value is replaced but order is preserved.
 func (c *Collection[K, V]) Set(key K, value V) *Collection[K, V] {
-	if _, exists := c.items[key]; !exists {
-		c.keys = append(c.keys, key)
+	if n, ok := c.items[key]; ok {
+		n.value = value
+		return c
 	}
-	c.items[key] = value
+	n := &node[K, V]{key: key, value: value, prev: c.tail}
+	if c.tail != nil {
+		c.tail.next = n
+	} else {
+		c.head = n
+	}
+	c.tail = n
+	c.items[key] = n
 	return c
 }
 
@@ -111,18 +127,31 @@ func (c *Collection[K, V]) Has(key K) bool {
 }
 
 // Delete removes the key-value pair. Returns true if the key was present.
+// O(1).
 func (c *Collection[K, V]) Delete(key K) bool {
-	if _, ok := c.items[key]; !ok {
+	n, ok := c.items[key]
+	if !ok {
 		return false
 	}
+	c.unlink(n)
 	delete(c.items, key)
-	for i, k := range c.keys {
-		if k == key {
-			c.keys = slices.Delete(c.keys, i, i+1)
-			break
-		}
-	}
 	return true
+}
+
+// unlink removes n from the doubly-linked list without touching c.items.
+func (c *Collection[K, V]) unlink(n *node[K, V]) {
+	if n.prev != nil {
+		n.prev.next = n.next
+	} else {
+		c.head = n.next
+	}
+	if n.next != nil {
+		n.next.prev = n.prev
+	} else {
+		c.tail = n.prev
+	}
+	n.prev = nil
+	n.next = nil
 }
 
 // Len returns the number of items in the Collection.
@@ -137,18 +166,17 @@ func (c *Collection[K, V]) IsEmpty() bool {
 
 // Clear removes all items.
 func (c *Collection[K, V]) Clear() {
-	c.items = make(map[K]V)
-	c.keys = c.keys[:0]
+	c.items = make(map[K]*node[K, V])
+	c.head = nil
+	c.tail = nil
 }
 
 // Clone returns a shallow copy. Values are copied by reference; modifying
 // pointer-values affects both Collections.
 func (c *Collection[K, V]) Clone() *Collection[K, V] {
 	n := NewWithCapacity[K, V](len(c.items))
-	copy(n.keys[:cap(n.keys)], c.keys)
-	n.keys = n.keys[:len(c.keys)]
-	for k, v := range c.items {
-		n.items[k] = v
+	for cur := c.head; cur != nil; cur = cur.next {
+		n.Set(cur.key, cur.value)
 	}
 	return n
 }
@@ -156,10 +184,9 @@ func (c *Collection[K, V]) Clone() *Collection[K, V] {
 // Find returns the first value for which fn returns true, or zero-value
 // + false if none match. Iterates in insertion order.
 func (c *Collection[K, V]) Find(fn func(V) bool) (V, bool) {
-	for _, k := range c.keys {
-		v := c.items[k]
-		if fn(v) {
-			return v, true
+	for cur := c.head; cur != nil; cur = cur.next {
+		if fn(cur.value) {
+			return cur.value, true
 		}
 	}
 	var zero V
@@ -169,9 +196,9 @@ func (c *Collection[K, V]) Find(fn func(V) bool) (V, bool) {
 // FindKey returns the first key for which fn(value) returns true, or
 // zero-value + false.
 func (c *Collection[K, V]) FindKey(fn func(V) bool) (K, bool) {
-	for _, k := range c.keys {
-		if fn(c.items[k]) {
-			return k, true
+	for cur := c.head; cur != nil; cur = cur.next {
+		if fn(cur.value) {
+			return cur.key, true
 		}
 	}
 	var zero K
@@ -180,10 +207,9 @@ func (c *Collection[K, V]) FindKey(fn func(V) bool) (K, bool) {
 
 // FindLast returns the last value matching fn.
 func (c *Collection[K, V]) FindLast(fn func(V) bool) (V, bool) {
-	for i := len(c.keys) - 1; i >= 0; i-- {
-		v := c.items[c.keys[i]]
-		if fn(v) {
-			return v, true
+	for cur := c.tail; cur != nil; cur = cur.prev {
+		if fn(cur.value) {
+			return cur.value, true
 		}
 	}
 	var zero V
@@ -192,10 +218,9 @@ func (c *Collection[K, V]) FindLast(fn func(V) bool) (V, bool) {
 
 // FindLastKey returns the last key matching fn(value).
 func (c *Collection[K, V]) FindLastKey(fn func(V) bool) (K, bool) {
-	for i := len(c.keys) - 1; i >= 0; i-- {
-		k := c.keys[i]
-		if fn(c.items[k]) {
-			return k, true
+	for cur := c.tail; cur != nil; cur = cur.prev {
+		if fn(cur.value) {
+			return cur.key, true
 		}
 	}
 	var zero K
@@ -204,8 +229,8 @@ func (c *Collection[K, V]) FindLastKey(fn func(V) bool) (K, bool) {
 
 // Some returns true if fn returns true for any value.
 func (c *Collection[K, V]) Some(fn func(V) bool) bool {
-	for _, k := range c.keys {
-		if fn(c.items[k]) {
+	for cur := c.head; cur != nil; cur = cur.next {
+		if fn(cur.value) {
 			return true
 		}
 	}
@@ -215,8 +240,8 @@ func (c *Collection[K, V]) Some(fn func(V) bool) bool {
 // Every returns true if fn returns true for all values. Returns true for
 // empty Collections (vacuous truth, matches JS).
 func (c *Collection[K, V]) Every(fn func(V) bool) bool {
-	for _, k := range c.keys {
-		if !fn(c.items[k]) {
+	for cur := c.head; cur != nil; cur = cur.next {
+		if !fn(cur.value) {
 			return false
 		}
 	}
@@ -241,9 +266,9 @@ func (c *Collection[K, V]) Equals(other *Collection[K, V], eq func(V, V) bool) b
 	if len(c.items) != len(other.items) {
 		return false
 	}
-	for k, v := range c.items {
-		ov, ok := other.items[k]
-		if !ok || !eq(v, ov) {
+	for k, n := range c.items {
+		on, ok := other.items[k]
+		if !ok || !eq(n.value, on.value) {
 			return false
 		}
 	}
@@ -254,10 +279,9 @@ func (c *Collection[K, V]) Equals(other *Collection[K, V], eq func(V, V) bool) b
 // Insertion order is preserved.
 func (c *Collection[K, V]) Filter(fn func(V) bool) *Collection[K, V] {
 	n := New[K, V]()
-	for _, k := range c.keys {
-		v := c.items[k]
-		if fn(v) {
-			n.Set(k, v)
+	for cur := c.head; cur != nil; cur = cur.next {
+		if fn(cur.value) {
+			n.Set(cur.key, cur.value)
 		}
 	}
 	return n
@@ -270,12 +294,11 @@ func (c *Collection[K, V]) Filter(fn func(V) bool) *Collection[K, V] {
 func (c *Collection[K, V]) Partition(fn func(V) bool) (matched, rest *Collection[K, V]) {
 	matched = New[K, V]()
 	rest = New[K, V]()
-	for _, k := range c.keys {
-		v := c.items[k]
-		if fn(v) {
-			matched.Set(k, v)
+	for cur := c.head; cur != nil; cur = cur.next {
+		if fn(cur.value) {
+			matched.Set(cur.key, cur.value)
 		} else {
-			rest.Set(k, v)
+			rest.Set(cur.key, cur.value)
 		}
 	}
 	return matched, rest
@@ -284,11 +307,11 @@ func (c *Collection[K, V]) Partition(fn func(V) bool) (matched, rest *Collection
 // First returns the first value in insertion order, or zero-value + false
 // if empty.
 func (c *Collection[K, V]) First() (V, bool) {
-	if len(c.keys) == 0 {
+	if c.head == nil {
 		var zero V
 		return zero, false
 	}
-	return c.items[c.keys[0]], true
+	return c.head.value, true
 }
 
 // FirstN returns up to n first values in insertion order.
@@ -297,32 +320,29 @@ func (c *Collection[K, V]) FirstN(n int) []V {
 	if n <= 0 {
 		return nil
 	}
-	if n > len(c.keys) {
-		n = len(c.keys)
-	}
-	result := make([]V, n)
-	for i := range n {
-		result[i] = c.items[c.keys[i]]
+	result := make([]V, 0, min(n, len(c.items)))
+	for cur := c.head; cur != nil && len(result) < n; cur = cur.next {
+		result = append(result, cur.value)
 	}
 	return result
 }
 
 // FirstKey returns the first key.
 func (c *Collection[K, V]) FirstKey() (K, bool) {
-	if len(c.keys) == 0 {
+	if c.head == nil {
 		var zero K
 		return zero, false
 	}
-	return c.keys[0], true
+	return c.head.key, true
 }
 
 // Last returns the last value in insertion order.
 func (c *Collection[K, V]) Last() (V, bool) {
-	if len(c.keys) == 0 {
+	if c.tail == nil {
 		var zero V
 		return zero, false
 	}
-	return c.items[c.keys[len(c.keys)-1]], true
+	return c.tail.value, true
 }
 
 // LastN returns up to n last values in insertion order.
@@ -331,32 +351,33 @@ func (c *Collection[K, V]) LastN(n int) []V {
 	if n <= 0 {
 		return nil
 	}
-	total := len(c.keys)
+	total := len(c.items)
 	if n > total {
 		n = total
 	}
 	result := make([]V, n)
-	start := total - n
-	for i := range n {
-		result[i] = c.items[c.keys[start+i]]
+	i := n - 1
+	for cur := c.tail; cur != nil && i >= 0; cur = cur.prev {
+		result[i] = cur.value
+		i--
 	}
 	return result
 }
 
 // LastKey returns the last key.
 func (c *Collection[K, V]) LastKey() (K, bool) {
-	if len(c.keys) == 0 {
+	if c.tail == nil {
 		var zero K
 		return zero, false
 	}
-	return c.keys[len(c.keys)-1], true
+	return c.tail.key, true
 }
 
 // At returns the value at the given insertion-order index. Negative indices
 // count from the end (At(-1) == Last()). Returns zero-value + false if
 // the index is out of bounds.
 func (c *Collection[K, V]) At(index int) (V, bool) {
-	n := len(c.keys)
+	n := len(c.items)
 	if index < 0 {
 		index += n
 	}
@@ -364,13 +385,25 @@ func (c *Collection[K, V]) At(index int) (V, bool) {
 		var zero V
 		return zero, false
 	}
-	return c.items[c.keys[index]], true
+	// Walk from the nearer end.
+	if index <= n/2 {
+		cur := c.head
+		for i := 0; i < index; i++ {
+			cur = cur.next
+		}
+		return cur.value, true
+	}
+	cur := c.tail
+	for i := n - 1; i > index; i-- {
+		cur = cur.prev
+	}
+	return cur.value, true
 }
 
 // KeyAt returns the key at the given insertion-order index. Negative indices
 // count from the end. Returns zero-value + false if out of bounds.
 func (c *Collection[K, V]) KeyAt(index int) (K, bool) {
-	n := len(c.keys)
+	n := len(c.items)
 	if index < 0 {
 		index += n
 	}
@@ -378,17 +411,36 @@ func (c *Collection[K, V]) KeyAt(index int) (K, bool) {
 		var zero K
 		return zero, false
 	}
-	return c.keys[index], true
+	if index <= n/2 {
+		cur := c.head
+		for i := 0; i < index; i++ {
+			cur = cur.next
+		}
+		return cur.key, true
+	}
+	cur := c.tail
+	for i := n - 1; i > index; i-- {
+		cur = cur.prev
+	}
+	return cur.key, true
 }
 
 // Random returns a random value, or zero-value + false if empty.
 // Uses math/rand/v2.
 func (c *Collection[K, V]) Random() (V, bool) {
-	if len(c.keys) == 0 {
+	if len(c.items) == 0 {
 		var zero V
 		return zero, false
 	}
-	return c.items[c.keys[rand.IntN(len(c.keys))]], true
+	target := rand.IntN(len(c.items))
+	for _, n := range c.items {
+		if target == 0 {
+			return n.value, true
+		}
+		target--
+	}
+	var zero V
+	return zero, false
 }
 
 // RandomN returns up to n distinct random values.
@@ -397,27 +449,40 @@ func (c *Collection[K, V]) RandomN(n int) []V {
 	if n <= 0 {
 		return nil
 	}
-	total := len(c.keys)
+	total := len(c.items)
 	if n > total {
 		n = total
 	}
-	shuffled := make([]K, total)
-	copy(shuffled, c.keys)
-	rand.Shuffle(len(shuffled), func(i, j int) { shuffled[i], shuffled[j] = shuffled[j], shuffled[i] })
-	result := make([]V, n)
-	for i := range n {
-		result[i] = c.items[shuffled[i]]
+	if n == 1 {
+		if v, ok := c.Random(); ok {
+			return []V{v}
+		}
+		return nil
 	}
-	return result
+	// Collect all values in insertion order, then shuffle and take n.
+	all := make([]V, 0, total)
+	for cur := c.head; cur != nil; cur = cur.next {
+		all = append(all, cur.value)
+	}
+	rand.Shuffle(len(all), func(i, j int) { all[i], all[j] = all[j], all[i] })
+	return all[:n]
 }
 
 // RandomKey returns a random key, or zero-value + false if empty.
 func (c *Collection[K, V]) RandomKey() (K, bool) {
-	if len(c.keys) == 0 {
+	if len(c.items) == 0 {
 		var zero K
 		return zero, false
 	}
-	return c.keys[rand.IntN(len(c.keys))], true
+	target := rand.IntN(len(c.items))
+	for _, n := range c.items {
+		if target == 0 {
+			return n.key, true
+		}
+		target--
+	}
+	var zero K
+	return zero, false
 }
 
 // Each iterates over all (key, value) pairs in insertion order, calling
@@ -425,8 +490,8 @@ func (c *Collection[K, V]) RandomKey() (K, bool) {
 //
 //	users.Each(func(id Snowflake, u *User) { fmt.Println(u.Name) })
 func (c *Collection[K, V]) Each(fn func(K, V)) *Collection[K, V] {
-	for _, k := range c.keys {
-		fn(k, c.items[k])
+	for cur := c.head; cur != nil; cur = cur.next {
+		fn(cur.key, cur.value)
 	}
 	return c
 }
@@ -434,17 +499,38 @@ func (c *Collection[K, V]) Each(fn func(K, V)) *Collection[K, V] {
 // Sort sorts the Collection in-place by the less function. Sort is stable.
 // Returns the Collection for chaining.
 func (c *Collection[K, V]) Sort(less func(a, b V) bool) *Collection[K, V] {
-	items := c.items
-	slices.SortStableFunc(c.keys, func(a, b K) int {
-		va, vb := items[a], items[b]
-		if less(va, vb) {
+	if len(c.items) < 2 {
+		return c
+	}
+	// Collect nodes, sort by value, re-link in new order.
+	nodes := make([]*node[K, V], 0, len(c.items))
+	for cur := c.head; cur != nil; cur = cur.next {
+		nodes = append(nodes, cur)
+	}
+	slices.SortStableFunc(nodes, func(a, b *node[K, V]) int {
+		if less(a.value, b.value) {
 			return -1
 		}
-		if less(vb, va) {
+		if less(b.value, a.value) {
 			return 1
 		}
 		return 0
 	})
+	// Re-link.
+	c.head = nodes[0]
+	c.tail = nodes[len(nodes)-1]
+	for i, n := range nodes {
+		if i == 0 {
+			n.prev = nil
+		} else {
+			n.prev = nodes[i-1]
+		}
+		if i == len(nodes)-1 {
+			n.next = nil
+		} else {
+			n.next = nodes[i+1]
+		}
+	}
 	return c
 }
 
@@ -455,15 +541,23 @@ func (c *Collection[K, V]) Sorted(less func(a, b V) bool) *Collection[K, V] {
 
 // Reverse reverses the insertion order in place. Returns the Collection.
 func (c *Collection[K, V]) Reverse() *Collection[K, V] {
-	slices.Reverse(c.keys)
+	if len(c.items) < 2 {
+		return c
+	}
+	cur := c.head
+	for cur != nil {
+		cur.prev, cur.next = cur.next, cur.prev
+		cur = cur.prev // was .next before swap
+	}
+	c.head, c.tail = c.tail, c.head
 	return c
 }
 
 // MapValues transforms values in-place. For type-changing transforms, use
 // the top-level Map function.
 func (c *Collection[K, V]) MapValues(fn func(V) V) *Collection[K, V] {
-	for k, v := range c.items {
-		c.items[k] = fn(v)
+	for cur := c.head; cur != nil; cur = cur.next {
+		cur.value = fn(cur.value)
 	}
 	return c
 }
@@ -472,17 +566,34 @@ func (c *Collection[K, V]) MapValues(fn func(V) V) *Collection[K, V] {
 // removed. This is the inverse of Filter — modifies in place.
 func (c *Collection[K, V]) Sweep(fn func(V) bool) int {
 	removed := 0
-	newKeys := make([]K, 0, len(c.keys))
-	for _, k := range c.keys {
-		v := c.items[k]
-		if fn(v) {
-			delete(c.items, k)
+	cur := c.head
+	for cur != nil {
+		next := cur.next
+		if fn(cur.value) {
+			c.unlink(cur)
+			delete(c.items, cur.key)
 			removed++
-		} else {
-			newKeys = append(newKeys, k)
 		}
+		cur = next
 	}
-	c.keys = newKeys
+	return removed
+}
+
+// SweepKeys removes items where fn returns true. Returns the keys of removed
+// items. Use instead of Sweep when the caller needs to know which keys were
+// deleted (e.g. to update an external index).
+func (c *Collection[K, V]) SweepKeys(fn func(V) bool) []K {
+	var removed []K
+	cur := c.head
+	for cur != nil {
+		next := cur.next
+		if fn(cur.value) {
+			c.unlink(cur)
+			delete(c.items, cur.key)
+			removed = append(removed, cur.key)
+		}
+		cur = next
+	}
 	return removed
 }
 
@@ -494,8 +605,8 @@ func (c *Collection[K, V]) Concat(others ...*Collection[K, V]) *Collection[K, V]
 		if other == nil {
 			continue
 		}
-		for _, k := range other.keys {
-			n.Set(k, other.items[k])
+		for cur := other.head; cur != nil; cur = cur.next {
+			n.Set(cur.key, cur.value)
 		}
 	}
 	return n
@@ -512,9 +623,9 @@ func (c *Collection[K, V]) Difference(other *Collection[K, V]) *Collection[K, V]
 		return c.Clone()
 	}
 	n := New[K, V]()
-	for _, k := range c.keys {
-		if !other.Has(k) {
-			n.Set(k, c.items[k])
+	for cur := c.head; cur != nil; cur = cur.next {
+		if !other.Has(cur.key) {
+			n.Set(cur.key, cur.value)
 		}
 	}
 	return n
@@ -527,9 +638,9 @@ func (c *Collection[K, V]) Intersection(other *Collection[K, V]) *Collection[K, 
 		return New[K, V]()
 	}
 	n := New[K, V]()
-	for _, k := range c.keys {
-		if other.Has(k) {
-			n.Set(k, c.items[k])
+	for cur := c.head; cur != nil; cur = cur.next {
+		if other.Has(cur.key) {
+			n.Set(cur.key, cur.value)
 		}
 	}
 	return n
@@ -541,14 +652,14 @@ func (c *Collection[K, V]) SymmetricDifference(other *Collection[K, V]) *Collect
 		return c.Clone()
 	}
 	n := New[K, V]()
-	for _, k := range c.keys {
-		if !other.Has(k) {
-			n.Set(k, c.items[k])
+	for cur := c.head; cur != nil; cur = cur.next {
+		if !other.Has(cur.key) {
+			n.Set(cur.key, cur.value)
 		}
 	}
-	for _, k := range other.keys {
-		if !c.Has(k) {
-			n.Set(k, other.items[k])
+	for cur := other.head; cur != nil; cur = cur.next {
+		if !c.Has(cur.key) {
+			n.Set(cur.key, cur.value)
 		}
 	}
 	return n
@@ -556,25 +667,27 @@ func (c *Collection[K, V]) SymmetricDifference(other *Collection[K, V]) *Collect
 
 // Keys returns a snapshot slice of all keys in insertion order.
 func (c *Collection[K, V]) Keys() []K {
-	result := make([]K, len(c.keys))
-	copy(result, c.keys)
+	result := make([]K, 0, len(c.items))
+	for cur := c.head; cur != nil; cur = cur.next {
+		result = append(result, cur.key)
+	}
 	return result
 }
 
 // Values returns a snapshot slice of all values in insertion order.
 func (c *Collection[K, V]) Values() []V {
-	result := make([]V, len(c.keys))
-	for i, k := range c.keys {
-		result[i] = c.items[k]
+	result := make([]V, 0, len(c.items))
+	for cur := c.head; cur != nil; cur = cur.next {
+		result = append(result, cur.value)
 	}
 	return result
 }
 
 // Entries returns a snapshot slice of all key-value pairs in insertion order.
 func (c *Collection[K, V]) Entries() []Entry[K, V] {
-	result := make([]Entry[K, V], len(c.keys))
-	for i, k := range c.keys {
-		result[i] = Entry[K, V]{Key: k, Value: c.items[k]}
+	result := make([]Entry[K, V], 0, len(c.items))
+	for cur := c.head; cur != nil; cur = cur.next {
+		result = append(result, Entry[K, V]{Key: cur.key, Value: cur.value})
 	}
 	return result
 }
@@ -583,8 +696,8 @@ func (c *Collection[K, V]) Entries() []Entry[K, V] {
 // map don't affect the Collection.
 func (c *Collection[K, V]) ToMap() map[K]V {
 	m := make(map[K]V, len(c.items))
-	for k, v := range c.items {
-		m[k] = v
+	for k, n := range c.items {
+		m[k] = n.value
 	}
 	return m
 }
@@ -594,8 +707,8 @@ func (c *Collection[K, V]) ToMap() map[K]V {
 //	for k, v := range users.All() { ... }
 func (c *Collection[K, V]) All() iter.Seq2[K, V] {
 	return func(yield func(K, V) bool) {
-		for _, k := range c.keys {
-			if !yield(k, c.items[k]) {
+		for cur := c.head; cur != nil; cur = cur.next {
+			if !yield(cur.key, cur.value) {
 				return
 			}
 		}
@@ -605,8 +718,8 @@ func (c *Collection[K, V]) All() iter.Seq2[K, V] {
 // KeysIter returns iter.Seq[K] for range-over-func on keys only.
 func (c *Collection[K, V]) KeysIter() iter.Seq[K] {
 	return func(yield func(K) bool) {
-		for _, k := range c.keys {
-			if !yield(k) {
+		for cur := c.head; cur != nil; cur = cur.next {
+			if !yield(cur.key) {
 				return
 			}
 		}
@@ -616,8 +729,8 @@ func (c *Collection[K, V]) KeysIter() iter.Seq[K] {
 // ValuesIter returns iter.Seq[V] for range-over-func on values only.
 func (c *Collection[K, V]) ValuesIter() iter.Seq[V] {
 	return func(yield func(V) bool) {
-		for _, k := range c.keys {
-			if !yield(c.items[k]) {
+		for cur := c.head; cur != nil; cur = cur.next {
+			if !yield(cur.value) {
 				return
 			}
 		}
@@ -628,9 +741,9 @@ func (c *Collection[K, V]) ValuesIter() iter.Seq[V] {
 //
 //	names := collection.Map(users, func(u *User) string { return u.Username })
 func Map[K comparable, V any, R any](c *Collection[K, V], fn func(V) R) []R {
-	result := make([]R, len(c.keys))
-	for i, k := range c.keys {
-		result[i] = fn(c.items[k])
+	result := make([]R, 0, len(c.items))
+	for cur := c.head; cur != nil; cur = cur.next {
+		result = append(result, fn(cur.value))
 	}
 	return result
 }
@@ -638,9 +751,9 @@ func Map[K comparable, V any, R any](c *Collection[K, V], fn func(V) R) []R {
 // MapToCollection transforms a Collection[K, V] into a Collection[K, R]
 // preserving keys and insertion order.
 func MapToCollection[K comparable, V any, R any](c *Collection[K, V], fn func(V) R) *Collection[K, R] {
-	n := NewWithCapacity[K, R](len(c.keys))
-	for _, k := range c.keys {
-		n.Set(k, fn(c.items[k]))
+	n := NewWithCapacity[K, R](len(c.items))
+	for cur := c.head; cur != nil; cur = cur.next {
+		n.Set(cur.key, fn(cur.value))
 	}
 	return n
 }
@@ -649,8 +762,8 @@ func MapToCollection[K comparable, V any, R any](c *Collection[K, V], fn func(V)
 // single slice.
 func FlatMap[K comparable, V any, R any](c *Collection[K, V], fn func(V) []R) []R {
 	var result []R
-	for _, k := range c.keys {
-		result = append(result, fn(c.items[k])...)
+	for cur := c.head; cur != nil; cur = cur.next {
+		result = append(result, fn(cur.value)...)
 	}
 	return result
 }
@@ -661,13 +774,12 @@ func FlatMap[K comparable, V any, R any](c *Collection[K, V], fn func(V) []R) []
 //	// → map[bool]*Collection[Snowflake, *User]
 func GroupBy[K comparable, V any, G comparable](c *Collection[K, V], keyFn func(V) G) map[G]*Collection[K, V] {
 	result := make(map[G]*Collection[K, V])
-	for _, k := range c.keys {
-		v := c.items[k]
-		g := keyFn(v)
+	for cur := c.head; cur != nil; cur = cur.next {
+		g := keyFn(cur.value)
 		if _, ok := result[g]; !ok {
 			result[g] = New[K, V]()
 		}
-		result[g].Set(k, v)
+		result[g].Set(cur.key, cur.value)
 	}
 	return result
 }
@@ -679,8 +791,8 @@ func GroupBy[K comparable, V any, G comparable](c *Collection[K, V], keyFn func(
 //	})
 func Reduce[K comparable, V any, R any](c *Collection[K, V], initial R, fn func(R, V) R) R {
 	acc := initial
-	for _, k := range c.keys {
-		acc = fn(acc, c.items[k])
+	for cur := c.head; cur != nil; cur = cur.next {
+		acc = fn(acc, cur.value)
 	}
 	return acc
 }

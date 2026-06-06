@@ -6,11 +6,13 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#guild-role-create
 type GuildRoleCreateEvent struct {
 	GuildID discord.Snowflake `json:"guild_id"`
 	Role    discord.Role      `json:"role"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#guild-role-update
 type GuildRoleUpdateEvent struct {
 	GuildID discord.Snowflake `json:"-"`
 	NewRole discord.Role      `json:"-"`
@@ -40,6 +42,7 @@ func (e GuildRoleUpdateEvent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(wire{e.GuildID, e.NewRole, e.OldRole})
 }
 
+// https://docs.discord.com/developers/events/gateway-events#guild-role-delete
 type GuildRoleDeleteEvent struct {
 	GuildID discord.Snowflake `json:"guild_id"`
 	RoleID  discord.Snowflake `json:"role_id"`

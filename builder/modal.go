@@ -14,6 +14,8 @@ import "github.com/streame-gg/go-discord-wrapper/types/components"
 //	            Build(),
 //	    ).
 //	    Build()
+//
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-response-object-modal
 type ModalBuilder struct {
 	modal components.Modal
 }

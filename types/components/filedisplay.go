@@ -5,6 +5,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#file
 type FileComponent struct {
 	Type    discord.ComponentType `json:"type"`
 	ID      *int                  `json:"id,omitempty"`
@@ -32,12 +33,13 @@ func (f *FileComponent) UnmarshalJSON(data []byte) error {
 }
 
 func (f *FileComponent) MarshalJSON() ([]byte, error) {
-	f.Type = discord.ComponentTypeFileDisplay
 	type Alias FileComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(f),
+		Alias: Alias(*f),
+		Type:  discord.ComponentTypeFileDisplay,
 	})
 }
 

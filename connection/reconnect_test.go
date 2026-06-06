@@ -63,7 +63,8 @@ func mockGatewayThenClose(t *testing.T, closeCode int) (wsURL string, closeFn fu
 // codes 4004, 4010, 4011, 4012, 4013, 4014 cause listenWebsocket to return a
 // correctly-typed error, so the Login goroutine can classify them as terminal
 // rather than triggering a reconnect loop.
-func TestBug17NonRecoverableCloseCodesExitListenerLoop(t *testing.T) {
+func (cs *ConnectionSuite) TestBug17NonRecoverableCloseCodesExitListenerLoop() {
+	t := cs.T()
 	nonRecoverable := []int{4004, 4010, 4011, 4012, 4013, 4014}
 
 	for _, code := range nonRecoverable {
@@ -111,12 +112,13 @@ func TestBug17NonRecoverableCloseCodesExitListenerLoop(t *testing.T) {
 // TestBug18CorruptReadyPayloadDoesNotCloseReadyChan verifies that a corrupted
 // READY payload causes internalEventHandler to return false without closing
 // the Ready channel or modifying the cache.
-func TestBug18CorruptReadyPayloadDoesNotCloseReadyChan(t *testing.T) {
+func (cs *ConnectionSuite) TestBug18CorruptReadyPayloadDoesNotCloseReadyChan() {
+	t := cs.T()
 	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
 	// Construct a minimal websocket so we can call internalEventHandler directly.
-	c.Websocket = &Websocket{
+	c.wsConn = &wsConn{
 		Ready:  make(chan struct{}),
 		Closed: make(chan struct{}),
 	}
@@ -137,26 +139,27 @@ func TestBug18CorruptReadyPayloadDoesNotCloseReadyChan(t *testing.T) {
 
 // TestBug19RequestGuildMembersRaceSafe verifies that RequestGuildMembers and
 // UpdatePresence are safe to call concurrently with a reconnect that swaps
-// d.Websocket under the hood (race detector must pass).
-func TestBug19RequestGuildMembersRaceSafe(t *testing.T) {
+// d.wsConn under the hood (race detector must pass).
+func (cs *ConnectionSuite) TestBug19RequestGuildMembersRaceSafe() {
+	t := cs.T()
 	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
-	// Seed with a non-nil Websocket so the nil-check path is exercised.
+	// Seed with a non-nil wsConn so the nil-check path is exercised.
 	c.wsMu.Lock()
-	c.Websocket = &Websocket{Closed: make(chan struct{}), Ready: make(chan struct{})}
+	c.wsConn = &wsConn{Closed: make(chan struct{}), Ready: make(chan struct{})}
 	c.wsMu.Unlock()
 
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		for i := 0; i < 200; i++ {
-			// Simulate reconnect swapping the Websocket pointer.
+			// Simulate reconnect swapping the wsConn pointer.
 			c.wsMu.Lock()
-			c.Websocket = nil
+			c.wsConn = nil
 			c.wsMu.Unlock()
 			c.wsMu.Lock()
-			c.Websocket = &Websocket{Closed: make(chan struct{}), Ready: make(chan struct{})}
+			c.wsConn = &wsConn{Closed: make(chan struct{}), Ready: make(chan struct{})}
 			c.wsMu.Unlock()
 		}
 	}()
@@ -171,9 +174,10 @@ func TestBug19RequestGuildMembersRaceSafe(t *testing.T) {
 // TestBug16NoHeartbeatLeakOnWriteFailure verifies that if the Identify/Resume
 // write fails, no goroutine is left running. The heartbeat goroutine must not
 // start until after a successful write.
-func TestBug16NoHeartbeatLeakOnWriteFailure(t *testing.T) {
+func (cs *ConnectionSuite) TestBug16NoHeartbeatLeakOnWriteFailure() {
+	t := cs.T()
 	// Server: sends HELLO then immediately closes the connection before IDENTIFY
-	// can be written, so the WriteJSON in NewWebsocket will fail.
+	// can be written, so the WriteJSON in newWSConn will fail.
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := wsUpgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -196,7 +200,7 @@ func TestBug16NoHeartbeatLeakOnWriteFailure(t *testing.T) {
 
 	before := runtime.NumGoroutine()
 
-	// NewWebsocket (called inside connectWebsocket) should fail cleanly.
+	// newWSConn (called inside connectWebsocket) should fail cleanly.
 	_ = c.connectWebsocket(wsURL, false, nil, nil)
 
 	// Give any stray goroutines time to start (and then they shouldn't).
@@ -207,13 +211,14 @@ func TestBug16NoHeartbeatLeakOnWriteFailure(t *testing.T) {
 	// Allow a small tolerance for background goroutines from the test runtime.
 	const tolerance = 3
 	assert.LessOrEqual(t, after, before+tolerance,
-		"goroutine count grew by %d after failed NewWebsocket — heartbeat leak suspected", after-before)
+		"goroutine count grew by %d after failed newWSConn — heartbeat leak suspected", after-before)
 }
 
 // TestBug28APIVersionInWebSocketURL verifies that WithAPIVersion is respected
 // in the WebSocket dial URL so that a client configured with APIVersion9 dials
 // "?v=9&encoding=json" rather than the hardcoded "?v=10" (Bug 28).
-func TestBug28APIVersionInWebSocketURL(t *testing.T) {
+func (cs *ConnectionSuite) TestBug28APIVersionInWebSocketURL() {
+	t := cs.T()
 	const want = "v=9"
 
 	dialedURL := make(chan string, 1)
@@ -226,7 +231,7 @@ func TestBug28APIVersionInWebSocketURL(t *testing.T) {
 			return
 		}
 		defer conn.Close()
-		// Send HELLO so NewWebsocket can proceed.
+		// Send HELLO so newWSConn can proceed.
 		_ = conn.WriteJSON(map[string]interface{}{
 			"op": 10,
 			"d":  map[string]interface{}{"heartbeat_interval": 60000},
@@ -252,10 +257,11 @@ func TestBug28APIVersionInWebSocketURL(t *testing.T) {
 	}
 }
 
-// TestBug26ConcurrentCloseIsIdempotent verifies that calling Websocket.close()
+// TestBug26ConcurrentCloseIsIdempotent verifies that calling wsConn.close()
 // from many goroutines concurrently only calls Connection.Close() once and does
 // not panic by attempting to close the already-closed Closed channel (Bug 26).
-func TestBug26ConcurrentCloseIsIdempotent(t *testing.T) {
+func (cs *ConnectionSuite) TestBug26ConcurrentCloseIsIdempotent() {
+	t := cs.T()
 	wsURL, closeFn := mockGatewayThenClose(t, websocket.CloseNormalClosure)
 	defer closeFn()
 
@@ -265,7 +271,7 @@ func TestBug26ConcurrentCloseIsIdempotent(t *testing.T) {
 	err = c.connectWebsocket(wsURL, false, nil, nil)
 	require.NoError(t, err)
 
-	ws := c.Websocket
+	ws := c.wsConn
 	require.NotNil(t, ws, "websocket must be set after connectWebsocket")
 
 	// 100 concurrent close() calls must not panic or deadlock.
@@ -291,7 +297,8 @@ func TestBug26ConcurrentCloseIsIdempotent(t *testing.T) {
 
 // TestBug47ReconnectBackoffNoOverflow verifies that the reconnect back-off never
 // goes negative for iteration counts that would overflow 1<<uint(i-1) (Bug 47).
-func TestBug47ReconnectBackoffNoOverflow(t *testing.T) {
+func (cs *ConnectionSuite) TestBug47ReconnectBackoffNoOverflow() {
+	t := cs.T()
 	const maxBackoff = 30 * time.Second
 	for _, i := range []int{64, 100, 1000} {
 		shiftBy := uint(i - 1)
@@ -312,12 +319,13 @@ func TestBug47ReconnectBackoffNoOverflow(t *testing.T) {
 }
 
 // TestBug41DoubleReadyDoesNotPanic verifies that receiving a READY event twice
-// on the same Websocket does not panic from a double-close of the Ready channel.
-func TestBug41DoubleReadyDoesNotPanic(t *testing.T) {
+// on the same wsConn does not panic from a double-close of the Ready channel.
+func (cs *ConnectionSuite) TestBug41DoubleReadyDoesNotPanic() {
+	t := cs.T()
 	c, err := NewClient("Bot fake-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
-	c.Websocket = &Websocket{
+	c.wsConn = &wsConn{
 		Ready:  make(chan struct{}),
 		Closed: make(chan struct{}),
 	}

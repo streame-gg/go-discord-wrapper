@@ -5,6 +5,7 @@ import "context"
 // ── Options ───────────────────────────────────────────────────────────────────
 
 // ChannelEditOptions configures Channel.Edit.
+// https://docs.discord.com/developers/resources/channel#modify-channel
 type ChannelEditOptions struct {
 	Name                          *string
 	Type                          *ChannelType
@@ -29,6 +30,7 @@ type ChannelEditOptions struct {
 }
 
 // ChannelCreateOptions configures Guild.CreateChannel.
+// https://docs.discord.com/developers/resources/guild#create-guild-channel
 type ChannelCreateOptions struct {
 	Name                          string
 	Type                          *ChannelType
@@ -52,6 +54,7 @@ type ChannelCreateOptions struct {
 }
 
 // FetchMessagesOptions configures Channel.FetchMessages.
+// https://docs.discord.com/developers/resources/channel#get-channel-messages
 type FetchMessagesOptions struct {
 	Around *Snowflake
 	Before *Snowflake
@@ -60,6 +63,7 @@ type FetchMessagesOptions struct {
 }
 
 // InviteCreateOptions configures Channel.CreateInvite.
+// https://docs.discord.com/developers/resources/channel#create-channel-invite
 type InviteCreateOptions struct {
 	MaxAge              *int
 	MaxUses             *int
@@ -135,7 +139,7 @@ func (ch *Channel) FetchMessages(ctx context.Context, opts FetchMessagesOptions)
 	if err != nil {
 		return nil, err
 	}
-	return c.GetChannelMessages(ctx, ch.ID, opts)
+	return c.ListChannelMessages(ctx, ch.ID, opts)
 }
 
 // TriggerTyping posts a typing indicator for ~10 seconds.

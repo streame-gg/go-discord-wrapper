@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// https://docs.discord.com/developers/resources/subscription#subscription-object
 type Subscription struct {
 	ID                 Snowflake   `json:"id"`
 	UserID             Snowflake   `json:"user_id"`

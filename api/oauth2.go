@@ -10,6 +10,7 @@ import (
 )
 
 // UpdateRoleConnectionParams holds params for updating the user's application role connection.
+// https://docs.discord.com/developers/resources/user#update-current-user-application-role-connection
 type UpdateRoleConnectionParams struct {
 	PlatformName     *string           `json:"platform_name,omitempty"`
 	PlatformUsername *string           `json:"platform_username,omitempty"`
@@ -45,9 +46,9 @@ func (c *RestClient) DeleteCurrentUserApplicationRoleConnection(ctx context.Cont
 	return doRequestWithoutResponse(c, req)
 }
 
-// GetCurrentUserConnections returns the connections linked to the current user's account.
+// ListCurrentUserConnections returns the connections linked to the current user's account.
 // Requires an OAuth2 bearer token with the connections scope.
-func (c *RestClient) GetCurrentUserConnections(ctx context.Context, userToken string) ([]*discord.UserConnection, error) {
+func (c *RestClient) ListCurrentUserConnections(ctx context.Context, userToken string) ([]*discord.UserConnection, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/users/@me/connections", nil, WithUserAuthorization(userToken))
 	if err != nil {
 		return nil, err

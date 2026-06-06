@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"github.com/stretchr/testify/suite"
 	"io"
 	"mime"
 	"net/http"
@@ -21,7 +22,8 @@ import (
 //
 // Before the fix, CreateForumThread always used json.Marshal and ignored
 // params.Message.Files (which has json:"-"), so attachments were silently lost.
-func TestP0_10_CreateForumThreadWithFiles(t *testing.T) {
+func (su *apiThreadsSuite) TestP0_10_CreateForumThreadWithFiles() {
+	t := su.T()
 	var gotContentType string
 	var gotBody []byte
 
@@ -74,7 +76,8 @@ func TestP0_10_CreateForumThreadWithFiles(t *testing.T) {
 
 // TestP0_10_CreateForumThreadWithoutFiles verifies that CreateForumThread uses
 // plain JSON when no files are attached.
-func TestP0_10_CreateForumThreadWithoutFiles(t *testing.T) {
+func (su *apiThreadsSuite) TestP0_10_CreateForumThreadWithoutFiles() {
+	t := su.T()
 	var gotContentType string
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +112,8 @@ func TestP0_10_CreateForumThreadWithoutFiles(t *testing.T) {
 
 // TestP0_10_CreateForumThreadWithReason verifies that the X-Audit-Log-Reason
 // header is set when opts.Reason is provided, for both JSON and multipart paths.
-func TestP0_10_CreateForumThreadWithReason(t *testing.T) {
+func (su *apiThreadsSuite) TestP0_10_CreateForumThreadWithReason() {
+	t := su.T()
 	var gotReason string
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -140,3 +144,7 @@ func TestP0_10_CreateForumThreadWithReason(t *testing.T) {
 	assert.Equal(t, "automated%20thread%20creation", gotReason,
 		"X-Audit-Log-Reason header must be URL-encoded when opts.Reason is provided")
 }
+
+type apiThreadsSuite struct{ suite.Suite }
+
+func TestApiThreadsSuite(t *testing.T) { suite.Run(t, new(apiThreadsSuite)) }

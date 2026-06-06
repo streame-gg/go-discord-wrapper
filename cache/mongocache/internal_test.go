@@ -3,16 +3,24 @@ package mongocache
 import (
 	"strconv"
 	"sync"
-	"testing"
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// TestBug114_ExtractID_UnknownTypeReturnsError verifies that extractID returns
+// ok=false for any document type it does not recognise, so upsertByID can
+// return an error rather than panicking or silently writing an empty _id.
+func (s *mongoHelpersSuite) TestBug114_ExtractID_UnknownTypeReturnsError() {
+	type unknownDoc struct{ X string }
+	_, ok := extractID(unknownDoc{"hello"})
+	s.False(ok, "Bug114: extractID with unknown type should return ok=false")
+}
+
 // TestBug21MsgChannelMuCleanedOnDeleteChannel verifies that per-channel mutexes
 // are removed from msgChannelMu when DeleteChannel is called, preventing an
 // unbounded memory leak for bots with many short-lived channels.
-func TestBug21MsgChannelMuCleanedOnDeleteChannel(t *testing.T) {
+func (s *mongoHelpersSuite) TestBug21MsgChannelMuCleanedOnDeleteChannel() {
 	c := &MongoDBCache{
 		opts: cache.Options{
 			Messages: cache.MessageOptions{MaxPerChannel: 10},
@@ -38,7 +46,5 @@ func TestBug21MsgChannelMuCleanedOnDeleteChannel(t *testing.T) {
 	// After all DeleteChannel calls, the map must be empty.
 	count := 0
 	c.msgChannelMu.Range(func(_, _ any) bool { count++; return true })
-	if count != 0 {
-		t.Errorf("msgChannelMu has %d entries after DeleteChannel — mutex leak (Bug 21)", count)
-	}
+	s.Equal(0, count, "msgChannelMu entries remain after DeleteChannel — mutex leak (Bug 21)")
 }

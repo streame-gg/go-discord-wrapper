@@ -4,6 +4,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#message-delete
 type MessageDeleteEvent struct {
 	ID        discord.Snowflake  `json:"id"`
 	ChannelID discord.Snowflake  `json:"channel_id"`

@@ -8,6 +8,7 @@ import (
 )
 
 // ReplyOptions configures an immediate message response to an interaction.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-response-object-messages
 type ReplyOptions struct {
 	Content         string
 	Embeds          []discord.Embed
@@ -46,12 +47,14 @@ func (o ReplyOptions) toResponseData() *responses.InteractionResponseDataDefault
 }
 
 // DeferOptions configures an acknowledgement-only response (loading state).
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-response-object-interaction-callback-type
 type DeferOptions struct {
 	// Ephemeral makes the eventual follow-up visible only to the invoking user.
 	Ephemeral bool
 }
 
 // UpdateMessageOptions configures an in-place edit of the component message.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-response-object-interaction-callback-type
 type UpdateMessageOptions struct {
 	Content         string
 	Embeds          []discord.Embed
@@ -83,6 +86,7 @@ func (o UpdateMessageOptions) toResponseData() *responses.InteractionResponseDat
 
 // FollowUpOptions configures a follow-up message (usable up to 15 minutes
 // after the initial response).
+// https://docs.discord.com/developers/interactions/receiving-and-responding#create-followup-message
 type FollowUpOptions struct {
 	Content               string
 	Embeds                []discord.Embed
@@ -121,11 +125,13 @@ func (o FollowUpOptions) toCreateParams() api.CreateMessageParams {
 }
 
 // AutocompleteOptions holds the choices for an autocomplete response.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#autocomplete
 type AutocompleteOptions struct {
 	Choices []responses.AutocompleteChoice
 }
 
 // ModalOptions holds the modal to present in response to an interaction.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-response-object-modal
 type ModalOptions struct {
 	Modal *components.Modal
 }

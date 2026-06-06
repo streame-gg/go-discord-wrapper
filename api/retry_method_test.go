@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/stretchr/testify/suite"
 	"net/http"
 	"testing"
 
@@ -27,7 +28,8 @@ func newRetryClient(t *testing.T) *RestClient {
 
 // TestShouldRetryMethodFilter verifies that POST and PATCH are never retried
 // on 5xx responses, while idempotent methods (GET, PUT, DELETE) are (Issue 10).
-func TestShouldRetryMethodFilter(t *testing.T) {
+func (su *retryMethodSuite) TestShouldRetryMethodFilter() {
+	t := su.T()
 	c := newRetryClient(t)
 
 	cases := []struct {
@@ -45,3 +47,7 @@ func TestShouldRetryMethodFilter(t *testing.T) {
 			"shouldRetry(%d) = %v, want %v", tc.code, got, tc.wantRetry)
 	}
 }
+
+type retryMethodSuite struct{ suite.Suite }
+
+func TestRetryMethodSuite(t *testing.T) { suite.Run(t, new(retryMethodSuite)) }

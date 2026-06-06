@@ -4,6 +4,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#typing-start
 type TypingStartEvent struct {
 	ChannelID discord.Snowflake    `json:"channel_id"`
 	GuildID   *discord.Snowflake   `json:"guild_id,omitempty"`

@@ -11,6 +11,8 @@ import (
 
 // Client is the subset of *connection.Client needed by Interaction methods.
 // Pass the client received in your event handler — *connection.Client satisfies this interface.
+// Client is the subset of *connection.Client used to respond to interactions.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#responding-to-an-interaction
 type Client interface {
 	Reply(ctx context.Context, i *Interaction, data *responses.InteractionResponseDataDefault, withResponse bool, files ...discord.MessageFile) (*responses.InteractionCallbackResponse, error)
 	DeferReply(ctx context.Context, i *Interaction, ephemeral bool) error

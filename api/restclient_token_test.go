@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,7 +11,8 @@ import (
 // TestNewRestClient_TokenNormalization verifies that NewRestClient strips
 // "Bot " / "Bearer " prefixes and whitespace so the stored token is a raw
 // secret regardless of how the caller formatted it (P1-20).
-func TestNewRestClient_TokenNormalization(t *testing.T) {
+func (su *restclientTokenSuite) TestNewRestClient_TokenNormalization() {
+	t := su.T()
 	cases := []struct {
 		desc    string
 		input   string
@@ -19,7 +21,9 @@ func TestNewRestClient_TokenNormalization(t *testing.T) {
 	}{
 		{"bare token", "xyz", false, "xyz"},
 		{"Bot prefix", "Bot xyz", false, "xyz"},
-		{"Bearer prefix", "Bearer xyz", false, "xyz"},
+		{"bot prefix lowercase", "bot xyz", false, "xyz"},
+		{"BOT prefix uppercase", "BOT xyz", false, "xyz"},
+		{"Bearer prefix stored as-is", "Bearer xyz", false, "Bearer xyz"},
 		{"leading/trailing spaces", "  xyz  ", false, "xyz"},
 		{"empty string", "", true, ""},
 		{"only spaces", "   ", true, ""},
@@ -38,3 +42,7 @@ func TestNewRestClient_TokenNormalization(t *testing.T) {
 		})
 	}
 }
+
+type restclientTokenSuite struct{ suite.Suite }
+
+func TestRestclientTokenSuite(t *testing.T) { suite.Run(t, new(restclientTokenSuite)) }

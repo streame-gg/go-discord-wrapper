@@ -9,6 +9,8 @@ import "github.com/streame-gg/go-discord-wrapper/types/components"
 //	f := builder.NewFileDisplay("https://cdn.example.com/report.pdf").
 //	    SetSpoiler(true).
 //	    Build()
+//
+// https://docs.discord.com/developers/components/reference#file
 type FileDisplayBuilder struct {
 	f components.FileComponent
 }
@@ -39,6 +41,8 @@ func (b *FileDisplayBuilder) Build() *components.FileComponent {
 //	    SetRequired(true).
 //	    SetMaxValues(3).
 //	    Build()
+//
+// https://docs.discord.com/developers/components/reference#file-upload
 type FileUploadBuilder struct {
 	fu components.FileUploadComponent
 }

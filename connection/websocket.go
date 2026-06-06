@@ -11,27 +11,47 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 
 	"github.com/gorilla/websocket"
 )
 
-type Websocket struct {
+// wsConn wraps a single Discord gateway connection.
+// The exported fields below are read-only for external consumers; they are
+// written by the library under pkg locks and must not be mutated directly.
+// Use the typed accessors on Client (e.g. Client.BotUser, Client.IsGuildUnavailable)
+// for safe concurrent access to gateway state.
+type wsConn struct {
+	// Connection is the underlying gorilla/websocket connection. Read-only;
+	// mutated by the library under wsMu.
 	Connection *websocket.Conn
 
+	// HeartbeatInterval is set from the Hello payload. Read-only after init.
 	HeartbeatInterval time.Duration
 
+	// LastHeartBeat is updated under heartbeatMu on every ACK. Do not read
+	// without holding heartbeatMu if exact accuracy is required.
 	LastHeartBeat *time.Time
 
+	// SessionID is the Discord session ID received in the READY payload.
+	// Updated under the Client's mu lock; treated as read-only externally.
 	SessionID *string
 
+	// LastEventNum is the sequence number of the most recent gateway event.
+	// Safe for concurrent use (atomic).
 	LastEventNum atomic.Pointer[int]
 
+	// ReconnectURL is the resume gateway URL from READY/RESUMED. Updated
+	// under the Client's mu lock; treated as read-only externally.
 	ReconnectURL *string
 
+	// Closed is closed when this wsConn instance's reader goroutine exits.
 	Closed chan struct{}
 
+	// Ready is closed when the first READY payload is processed on this
+	// connection. For cross-reconnect readiness use Client.Ready() instead.
 	Ready chan struct{}
 
 	writeMu              sync.Mutex
@@ -48,7 +68,7 @@ type Websocket struct {
 	heartbeatRequest chan struct{}
 }
 
-func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int, sessionID *string) (*Websocket, error) {
+func newWSConn(bot *Client, host string, isReconnect bool, lastEventNum *int, sessionID *string) (*wsConn, error) {
 	if bot.token == nil {
 		return nil, errors.New("bot token is nil")
 	}
@@ -67,8 +87,8 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 		}
 	}()
 
-	_ = c.SetWriteDeadline(time.Time{})
-	c.SetReadLimit(4 * 1024 * 1024) // 4 MiB — protects against rogue/compromised endpoint flooding RAM
+	_ = c.SetReadDeadline(time.Now().Add(30 * time.Second)) // don't block forever waiting for the initial HELLO
+	c.SetReadLimit(4 * 1024 * 1024)                         // 4 MiB — protects against rogue/compromised endpoint flooding RAM
 
 	c.SetPongHandler(func(string) error {
 		bot.Logger.Debug("Received pong from Discord")
@@ -76,6 +96,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 	})
 
 	_, message, err := c.ReadMessage()
+	_ = c.SetReadDeadline(time.Time{}) // clear deadline; listenWebsocket manages it per-message from here
 	if err != nil {
 		return nil, err
 	}
@@ -84,13 +105,16 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 	if err := json.Unmarshal(message, &payload); err != nil {
 		return nil, err
 	}
+	if payload.Op != discord.PayloadOpCodeHello {
+		return nil, fmt.Errorf("expected HELLO payload after connecting to gateway, got %d", payload.Op)
+	}
 
 	var hello discord.HelloPayloadData
 	if err := json.Unmarshal(payload.D, &hello); err != nil {
 		return nil, err
 	}
 
-	ws := &Websocket{
+	ws := &wsConn{
 		Connection:        c,
 		HeartbeatInterval: time.Millisecond * time.Duration(hello.HeartbeatInterval),
 		Closed:            make(chan struct{}),
@@ -102,14 +126,14 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 	bot.Logger.Info("Connected to Discord gateway", slog.Float64("heartbeatIntervalMs", hello.HeartbeatInterval))
 
 	if isReconnect && lastEventNum != nil && sessionID != nil {
-		if err := ws.writeJSON(map[string]interface{}{
+		if err := ws.writeJSONDeadline(map[string]interface{}{
 			"op": 6,
 			"d": map[string]interface{}{
 				"token":      *bot.token,
 				"session_id": *sessionID,
 				"seq":        *lastEventNum,
 			},
-		}); err != nil {
+		}, 30*time.Second); err != nil {
 			return nil, err
 		}
 	} else {
@@ -120,8 +144,8 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 				"intents": *bot.Intents,
 				"properties": map[string]string{
 					"os":      runtime.GOOS,
-					"browser": "https://github.com/streame-gg/go-discord-wrapper@alpha",
-					"device":  "https://github.com/streame-gg/go-discord-wrapper@alpha",
+					"browser": go_discord_wrapper.RepositoryURL + "@" + go_discord_wrapper.RepositoryVersion,
+					"device":  go_discord_wrapper.RepositoryURL + "@" + go_discord_wrapper.RepositoryVersion,
 				},
 			},
 		}
@@ -130,7 +154,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 			data["d"].(map[string]interface{})["shard"] = []int{bot.Sharding.ShardID, bot.Sharding.TotalShards}
 		}
 
-		if err := ws.writeJSON(data); err != nil {
+		if err := ws.writeJSONDeadline(data, 30*time.Second); err != nil {
 			return nil, err
 		}
 	}
@@ -240,7 +264,7 @@ func NewWebsocket(bot *Client, host string, isReconnect bool, lastEventNum *int,
 }
 
 func (d *Client) connectWebsocket(url string, isReconnect bool, lastEventNum *int, sessionID *string) error {
-	ws, err := NewWebsocket(d, url, isReconnect, lastEventNum, sessionID)
+	ws, err := newWSConn(d, url, isReconnect, lastEventNum, sessionID)
 	if err != nil {
 		return err
 	}
@@ -248,10 +272,10 @@ func (d *Client) connectWebsocket(url string, isReconnect bool, lastEventNum *in
 	d.wsMu.Lock()
 	// Close any existing connection before replacing it so the old
 	// heartbeat goroutine exits and the underlying socket is released.
-	if d.Websocket != nil {
-		_ = d.Websocket.close()
+	if d.wsConn != nil {
+		_ = d.wsConn.close()
 	}
-	d.Websocket = ws
+	d.wsConn = ws
 	d.wsMu.Unlock()
 	return nil
 }
@@ -292,16 +316,16 @@ func (d *Client) reconnect(freshConnect bool) error {
 	var reconnectURL string
 
 	d.wsMu.Lock()
-	if d.Websocket != nil {
-		lastEventNum = d.Websocket.LastEventNum.Load()
-		sessionID = d.Websocket.SessionID
+	if d.wsConn != nil {
+		lastEventNum = d.wsConn.LastEventNum.Load()
+		sessionID = d.wsConn.SessionID
 
-		if !freshConnect && d.Websocket.ReconnectURL != nil {
-			reconnectURL = *d.Websocket.ReconnectURL
+		if !freshConnect && d.wsConn.ReconnectURL != nil {
+			reconnectURL = *d.wsConn.ReconnectURL
 		}
 
-		d.Websocket.close()
-		d.Websocket = nil
+		d.wsConn.close()
+		d.wsConn = nil
 	}
 	d.wsMu.Unlock()
 
@@ -358,9 +382,9 @@ func (d *Client) reconnect(freshConnect bool) error {
 			// Write lock required: SessionID is a pointer field mutation,
 			// not a read-only access.
 			d.wsMu.Lock()
-			if d.Websocket != nil && d.Websocket.SessionID == nil {
+			if d.wsConn != nil && d.wsConn.SessionID == nil {
 				// Only set if READY handler hasn't already written it.
-				d.Websocket.SessionID = sessionID
+				d.wsConn.SessionID = sessionID
 			}
 			d.wsMu.Unlock()
 		}
@@ -380,7 +404,7 @@ func (d *Client) reconnect(freshConnect bool) error {
 func (d *Client) listenWebsocket() error {
 	for {
 		d.wsMu.RLock()
-		ws := d.Websocket
+		ws := d.wsConn
 		d.wsMu.RUnlock()
 
 		if ws == nil {
@@ -489,7 +513,7 @@ func (d *Client) listenWebsocket() error {
 			canDispatch := func() (ok bool) {
 				defer func() {
 					if r := recover(); r != nil {
-						d.Logger.Error("panic in internal event handler", slog.Any("recover", r))
+						d.Logger.Error("panic in pkg event handler", slog.Any("recover", r))
 					}
 				}()
 				return d.internalEventHandler(payload.D, event.Event(), event)
@@ -510,13 +534,13 @@ func (d *Client) listenWebsocket() error {
 	}
 }
 
-func (ws *Websocket) writeJSON(v any) error {
+func (ws *wsConn) writeJSON(v any) error {
 	ws.writeMu.Lock()
 	defer ws.writeMu.Unlock()
 	return ws.Connection.WriteJSON(v)
 }
 
-func (ws *Websocket) writeJSONDeadline(v any, d time.Duration) error {
+func (ws *wsConn) writeJSONDeadline(v any, d time.Duration) error {
 	ws.writeMu.Lock()
 	defer ws.writeMu.Unlock()
 	if err := ws.Connection.SetWriteDeadline(time.Now().Add(d)); err != nil {
@@ -527,7 +551,7 @@ func (ws *Websocket) writeJSONDeadline(v any, d time.Duration) error {
 	return err
 }
 
-func (d *Websocket) close() error {
+func (d *wsConn) close() error {
 	if d == nil {
 		return nil
 	}

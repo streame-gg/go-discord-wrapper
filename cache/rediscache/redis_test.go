@@ -4,17 +4,15 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
-	"log"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/suite"
-	tc "github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/cache/rediscache"
@@ -24,8 +22,9 @@ import (
 type RedisCacheTestSuite struct {
 	suite.Suite
 
-	container tc.Container
+	mr        *miniredis.Miniredis
 	redisAddr string
+	stopClock chan struct{}
 }
 
 func TestRedisCacheTestSuite(t *testing.T) {
@@ -33,39 +32,46 @@ func TestRedisCacheTestSuite(t *testing.T) {
 }
 
 func (s *RedisCacheTestSuite) SetupSuite() {
-	ctx := context.Background()
+	mr, err := miniredis.Run()
+	s.Require().NoError(err, "start miniredis")
+	s.mr = mr
+	s.redisAddr = mr.Addr()
 
-	container, err := tc.GenericContainer(ctx, tc.GenericContainerRequest{
-		ContainerRequest: tc.ContainerRequest{
-			Image:        "redis:7-alpine",
-			ExposedPorts: []string{"6379/tcp"},
-			WaitingFor:   wait.ForListeningPort("6379/tcp"),
-		},
-		Started: true,
-	})
-	if err != nil {
-		log.Fatalf("failed to start MongoDB container: %v", err)
-	}
-
-	host, err := container.Host(ctx)
-	if err != nil {
-		log.Fatalf("container.Host: %v", err)
-	}
-	port, err := container.MappedPort(ctx, "6379")
-	if err != nil {
-		log.Fatalf("container.MappedPort: %v", err)
-	}
-
-	s.container = container
-	s.redisAddr = fmt.Sprintf("%s:%s", host, port.Port())
+	// miniredis keeps its own clock and never advances it on its own, so
+	// real-time key expiry (exercised by the *_TTL tests) would never fire.
+	// Advance the clock in lockstep with wall time so keys expire exactly as
+	// the production code expects against a real Redis server.
+	s.stopClock = make(chan struct{})
+	go func() {
+		const step = 5 * time.Millisecond
+		t := time.NewTicker(step)
+		defer t.Stop()
+		for {
+			select {
+			case <-s.stopClock:
+				return
+			case <-t.C:
+				mr.FastForward(step)
+			}
+		}
+	}()
 }
 
 func (s *RedisCacheTestSuite) TearDownSuite() {
-	if s.container == nil {
-		return
+	if s.stopClock != nil {
+		close(s.stopClock)
 	}
-	ctx := context.Background()
-	_ = s.container.Terminate(ctx)
+	if s.mr != nil {
+		s.mr.Close()
+	}
+}
+
+// SetupTest gives every test a clean keyspace so tests that share the default
+// "discord" prefix cannot observe each other's data.
+func (s *RedisCacheTestSuite) SetupTest() {
+	if s.mr != nil {
+		s.mr.FlushAll()
+	}
 }
 
 func (s *RedisCacheTestSuite) newCache(opts cache.Options) *rediscache.RedisCache {
@@ -73,6 +79,7 @@ func (s *RedisCacheTestSuite) newCache(opts cache.Options) *rediscache.RedisCach
 	client := redis.NewClient(&redis.Options{Addr: s.redisAddr})
 	s.T().Cleanup(func() { _ = client.Close() })
 	c := rediscache.NewRedisCache(client, opts).WithKeyPrefix("test:" + s.T().Name())
+	c.EnableSyncWrites()
 	s.T().Cleanup(func() { _ = c.Close() })
 	return c
 }
@@ -485,6 +492,8 @@ func (s *RedisCacheTestSuite) TestKeyPrefix_Isolation() {
 
 	c1 := rediscache.NewRedisCache(client, cache.Options{}).WithKeyPrefix("bot-a")
 	c2 := rediscache.NewRedisCache(client, cache.Options{}).WithKeyPrefix("bot-b")
+	c1.EnableSyncWrites()
+	c2.EnableSyncWrites()
 	s.T().Cleanup(func() { _ = c1.Close(); _ = c2.Close() })
 
 	c1.Guilds().Set(guild("42"))
@@ -554,6 +563,7 @@ func (s *RedisCacheTestSuite) TestBug6NetworkErrorDoesNotPruneIndex() {
 	defer client.Close()
 
 	c := rediscache.NewRedisCache(client, cache.Options{})
+	c.EnableSyncWrites()
 	defer c.Close()
 
 	// Seed a guild into the cache.
@@ -635,6 +645,7 @@ func (s *RedisCacheTestSuite) TestBug8AddIsAtomicParallelAddsRespectMaxPerChanne
 	c := rediscache.NewRedisCache(client, cache.Options{
 		Messages: cache.MessageOptions{MaxPerChannel: maxAmount},
 	})
+	c.EnableSyncWrites()
 	defer c.Close()
 
 	chAtomic := mustSnowflake("ch-atomic")
@@ -674,6 +685,34 @@ func (s *RedisCacheTestSuite) TestBug36MaxPerChannelZeroDisables() {
 
 	s.Require().Equal(0, c.Messages().Channel(mustSnowflake("ch1")).Len(), "MaxPerChannel=0 should disable caching (Bug 36)")
 	s.Require().Equal(0, c.Messages().Size(), "Size should be 0 when disabled (Bug 36)")
+}
+
+// TestEmojiSetAll_StoresValidEmojis verifies that SetAll actually persists emojis
+// whose IDs are valid (non-zero) Snowflakes.
+//
+// Root cause: the skip guard used emoji.ID.IsValid() — which returns true for a
+// valid non-zero ID — so every real emoji was skipped and only zero-ID emojis
+// (which don't exist in practice) were processed. Fix: use emoji.ID.IsEmpty().
+func (s *RedisCacheTestSuite) TestEmojiSetAll_StoresValidEmojis() {
+	c := s.newCache(cache.Options{})
+	guildID := mustSnowflake("g1")
+
+	emojis := []*discord.Emoji{
+		{ID: mustSnowflake("e1"), Name: "wave"},
+		{ID: mustSnowflake("e2"), Name: "fire"},
+		{ID: mustSnowflake("e3"), Name: "heart"},
+	}
+	c.Emojis().SetAll(guildID, emojis)
+
+	got := c.Emojis().GetByGuild(guildID)
+	s.Require().Equal(3, got.Len(),
+		"EmojiSetAll_StoresValidEmojis: SetAll should store all emojis with valid IDs (was skipping them due to IsValid→IsEmpty bug)")
+
+	for _, e := range emojis {
+		stored, ok := c.Emojis().Get(e.ID)
+		s.Require().True(ok, "emoji %v should be retrievable after SetAll", e.ID)
+		s.Require().Equal(e.Name, stored.Name)
+	}
 }
 
 // TestBug50SetAllIsAtomic verifies that readers always see either the complete
@@ -739,6 +778,7 @@ func (s *RedisCacheTestSuite) TestWithKeyPrefix_IndependentLifecycle() {
 	s.T().Cleanup(func() { _ = client.Close() })
 
 	base := rediscache.NewRedisCache(client, cache.Options{})
+	base.EnableSyncWrites()
 	s.T().Cleanup(func() { _ = base.Close() })
 
 	prefixed := base.WithKeyPrefix("p2-31-test")

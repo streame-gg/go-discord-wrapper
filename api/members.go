@@ -13,6 +13,7 @@ import (
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/guild#list-guild-members
 type GetGuildMembersParams struct {
 	After *discord.Snowflake
 	Limit *int
@@ -32,6 +33,7 @@ func (p GetGuildMembersParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
+// https://docs.discord.com/developers/resources/guild#search-guild-members
 type SearchGuildMembersParams struct {
 	Query string
 	Limit *int
@@ -46,32 +48,38 @@ func (p SearchGuildMembersParams) toQuery() string {
 	return "?" + q.Encode()
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild-member
 type ModifyGuildMemberParams struct {
-	Nick                       *string             `json:"nick,omitempty"`
-	Roles                      []discord.Snowflake `json:"roles,omitempty"`
-	Mute                       *bool               `json:"mute,omitempty"`
-	Deaf                       *bool               `json:"deaf,omitempty"`
-	ChannelID                  *discord.Snowflake  `json:"channel_id,omitempty"`
-	CommunicationDisabledUntil *string             `json:"communication_disabled_until,omitempty"`
-	Flags                      *int                `json:"flags,omitempty"`
+	Nick                       *string              `json:"nick,omitempty"`
+	Roles                      *[]discord.Snowflake `json:"roles,omitempty"`
+	Mute                       *bool                `json:"mute,omitempty"`
+	Deaf                       *bool                `json:"deaf,omitempty"`
+	ChannelID                  *discord.Snowflake   `json:"channel_id,omitempty"`
+	CommunicationDisabledUntil *string              `json:"communication_disabled_until,omitempty"`
+	Flags                      *int                 `json:"flags,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-guild-member
 type ModifyGuildMemberOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#remove-guild-member
 type KickGuildMemberOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#add-guild-member-role
 type AddGuildMemberRoleOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#remove-guild-member-role
 type RemoveGuildMemberRoleOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/guild#modify-current-member
 type ModifyCurrentMemberParams struct {
 	Nick *string `json:"nick,omitempty"`
 }

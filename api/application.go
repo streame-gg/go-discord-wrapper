@@ -10,6 +10,7 @@ import (
 )
 
 // ModifyCurrentApplicationParams holds the fields that can be updated on the current application.
+// https://docs.discord.com/developers/resources/application#edit-current-application
 type ModifyCurrentApplicationParams struct {
 	Description                    *string                                `json:"description,omitempty"`
 	Icon                           *string                                `json:"icon,omitempty"`
@@ -36,9 +37,9 @@ func (c *RestClient) GetCurrentApplication(ctx context.Context) (*discord.Applic
 	})
 }
 
-// GetApplicationRoleConnectionsMetadata returns the role connection metadata records for the
+// ListApplicationRoleConnectionsMetadata returns the role connection metadata records for the
 // given application. Returns up to 5 records.
-func (c *RestClient) GetApplicationRoleConnectionsMetadata(ctx context.Context, appID discord.Snowflake) ([]*discord.ApplicationRoleConnectionsMetadata, error) {
+func (c *RestClient) ListApplicationRoleConnectionsMetadata(ctx context.Context, appID discord.Snowflake) ([]*discord.ApplicationRoleConnectionsMetadata, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}

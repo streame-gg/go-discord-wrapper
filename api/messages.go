@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -20,6 +22,7 @@ import (
 
 // GetMessagesParams are query parameters for listing channel messages.
 // At most one of Around / Before / After may be set.
+// https://docs.discord.com/developers/resources/message#get-channel-messages
 type GetMessagesParams struct {
 	Around *discord.Snowflake
 	Before *discord.Snowflake
@@ -96,15 +99,24 @@ func buildMultipartMessage(payload []byte, files []discord.MessageFile) (*bytes.
 		if err != nil {
 			return nil, "", err
 		}
-		if _, err := part.Write(f.Data); err != nil {
-			return nil, "", err
+		if f.Reader != nil {
+			if _, err := io.Copy(part, f.Reader); err != nil {
+				return nil, "", err
+			}
+		} else {
+			if _, err := part.Write(f.Data); err != nil {
+				return nil, "", err
+			}
 		}
 	}
-	w.Close()
+	if err := w.Close(); err != nil {
+		return nil, "", err
+	}
 	return &buf, w.FormDataContentType(), nil
 }
 
 // CreateMessageParams are the parameters for sending a new message.
+// https://docs.discord.com/developers/resources/message#create-message
 type CreateMessageParams struct {
 	Content          string                           `json:"content,omitempty"`
 	TTS              bool                             `json:"tts,omitempty"`
@@ -138,6 +150,7 @@ func (p CreateMessageParams) MarshalJSON() ([]byte, error) {
 // EditMessageParams are the parameters for editing an existing message.
 // Nil pointer fields are omitted from the request body (the field is left unchanged).
 // Set Content to a pointer to "" to clear the message content.
+// https://docs.discord.com/developers/resources/message#edit-message
 type EditMessageParams struct {
 	Content         *string                  `json:"content,omitempty"`
 	Embeds          *[]discord.Embed         `json:"embeds,omitempty"`
@@ -164,6 +177,7 @@ func (p EditMessageParams) MarshalJSON() ([]byte, error) {
 }
 
 // GetReactionsParams are optional query parameters for listing reaction users.
+// https://docs.discord.com/developers/resources/message#get-reactions
 type GetReactionsParams struct {
 	After *discord.Snowflake
 	Limit *int // 1–100, default 25
@@ -195,8 +209,8 @@ func encodeEmoji(emoji string) string {
 
 // ── Message endpoints ─────────────────────────────────────────────────────────
 
-// GetMessages returns up to 100 messages from a channel.
-func (c *RestClient) GetMessages(ctx context.Context, channelID discord.Snowflake, params GetMessagesParams) ([]*discord.Message, error) {
+// ListMessages returns up to 100 messages from a channel.
+func (c *RestClient) ListMessages(ctx context.Context, channelID discord.Snowflake, params GetMessagesParams) ([]*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -402,33 +416,105 @@ func (c *RestClient) CrosspostMessage(ctx context.Context, channelID, messageID 
 
 // ── Options types ─────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/message#delete-message
 type DeleteMessageOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/message#bulk-delete-messages
 type BulkDeleteMessagesOptions struct {
 	Reason string
 }
 
 // ── Pin endpoints ─────────────────────────────────────────────────────────────
 
-// GetPinnedMessages returns all pinned messages in a channel (max 50).
-func (c *RestClient) GetPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
+// GetChannelPinsParams are query parameters for GetChannelPins.
+// https://docs.discord.com/developers/resources/channel#get-channel-pins
+type GetChannelPinsParams struct {
+	// Before returns only pins created before this time. Use the PinnedAt of the
+	// last item from the previous page to paginate backwards.
+	Before *time.Time
+	// Limit caps the number of pins returned (1–50, default 50).
+	Limit *int
+}
+
+func (p GetChannelPinsParams) toQuery() string {
+	q := url.Values{}
+	if p.Before != nil {
+		q.Set("before", p.Before.UTC().Format(time.RFC3339Nano))
+	}
+	if p.Limit != nil {
+		q.Set("limit", strconv.Itoa(*p.Limit))
+	}
+	if len(q) == 0 {
+		return ""
+	}
+	return "?" + q.Encode()
+}
+
+// GetChannelPins returns a single page of a channel's pinned messages, newest
+// pin first, alongside a HasMore flag. Requires VIEW_CHANNEL (pins are empty
+// without READ_MESSAGE_HISTORY). To page through every pin, prefer
+// ListPinnedMessages, or call repeatedly with Before set to the last item's
+// PinnedAt while HasMore is true.
+//
+// See https://docs.discord.com/developers/resources/message#get-channel-pins.
+func (c *RestClient) GetChannelPins(ctx context.Context, channelID discord.Snowflake, params GetChannelPinsParams) (*discord.ChannelPins, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodGet, "/channels/"+channelID.String()+"/pins", nil, c.WithBotAuthorization())
+	path := "/channels/" + channelID.String() + "/messages/pins" + params.toQuery()
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
 	if err != nil {
 		return nil, err
 	}
 
-	return doRequestSlice[discord.Message](c, req, map[int]bool{
+	return doRequest[discord.ChannelPins](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
-// PinMessage pins a message in a channel. Requires MANAGE_MESSAGES.
+// ListPinnedMessages returns every pinned message in a channel, walking the
+// paginated Get Channel Pins endpoint until all pins are collected. Messages are
+// ordered newest pin first. For pin timestamps or page-by-page control, use
+// GetChannelPins.
+func (c *RestClient) ListPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
+	if err := channelID.Validate(); err != nil {
+		return nil, err
+	}
+
+	const pageSize = 50
+
+	limit := pageSize
+	var all []*discord.Message
+	params := GetChannelPinsParams{Limit: &limit}
+
+	for {
+		page, err := c.GetChannelPins(ctx, channelID, params)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, pin := range page.Items {
+			if pin.Message != nil {
+				all = append(all, pin.Message)
+			}
+		}
+
+		if !page.HasMore || len(page.Items) == 0 {
+			return all, nil
+		}
+
+		// Walk backwards using the oldest pin on this page.
+		oldest := page.Items[len(page.Items)-1]
+		before := oldest.PinnedAt
+		params.Before = &before
+	}
+}
+
+// PinMessage pins a message in a channel. Requires the PIN_MESSAGES permission.
+// Fires a Channel Pins Update gateway event.
 func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID discord.Snowflake, opts *PinMessageOptions) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -438,7 +524,7 @@ func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID discor
 		return err
 	}
 
-	path := "/channels/" + channelID.String() + "/pins/" + messageID.String()
+	path := "/channels/" + channelID.String() + "/messages/pins/" + messageID.String()
 
 	if opts == nil {
 		req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization())
@@ -456,7 +542,8 @@ func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID discor
 	return doRequestWithoutResponse(c, req)
 }
 
-// UnpinMessage unpins a message from a channel. Requires MANAGE_MESSAGES.
+// UnpinMessage unpins a message from a channel. Requires the PIN_MESSAGES
+// permission. Fires a Channel Pins Update gateway event.
 func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID discord.Snowflake, opts *UnpinMessageOptions) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -466,7 +553,7 @@ func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID disc
 		return err
 	}
 
-	path := "/channels/" + channelID.String() + "/pins/" + messageID.String()
+	path := "/channels/" + channelID.String() + "/messages/pins/" + messageID.String()
 
 	if opts == nil {
 		req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
@@ -548,8 +635,8 @@ func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageI
 	return doRequestWithoutResponse(c, req)
 }
 
-// GetReactions returns the users who reacted to a message with the given emoji.
-func (c *RestClient) GetReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params GetReactionsParams) ([]*discord.User, error) {
+// ListReactions returns the users who reacted to a message with the given emoji.
+func (c *RestClient) ListReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params GetReactionsParams) ([]*discord.User, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -608,6 +695,7 @@ func (c *RestClient) DeleteAllReactionsForEmoji(ctx context.Context, channelID, 
 }
 
 // SearchGuildMessagesParams holds the query parameters for searching guild messages.
+// https://docs.discord.com/developers/resources/message
 type SearchGuildMessagesParams struct {
 	Content        *string
 	AuthorID       []discord.Snowflake

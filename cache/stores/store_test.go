@@ -1,6 +1,7 @@
 package stores
 
 import (
+	"github.com/stretchr/testify/suite"
 	"sync"
 	"testing"
 	"time"
@@ -8,7 +9,8 @@ import (
 
 // ── TestBaseStore_GetSet ──────────────────────────────────────────────────────
 
-func TestBaseStore_GetSet(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_GetSet() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -26,9 +28,55 @@ func TestBaseStore_GetSet(t *testing.T) {
 	}
 }
 
+func (su *storesStoreSuite) TestBaseStoreBug60_GetLazyRemoval() {
+	t := su.T()
+	s := NewBaseStore[string, int](StoreOptions{
+		TTL:        20 * time.Millisecond,
+		TrackBytes: true,
+	})
+	defer s.Close()
+
+	s.Set("a", 1)
+	s.Set("b", 2)
+
+	bytesAfterSet := s.totalBytes.Load()
+	if bytesAfterSet <= 0 {
+		t.Fatalf("expected totalBytes > 0 after two Set calls, got %d", bytesAfterSet)
+	}
+
+	time.Sleep(40 * time.Millisecond)
+
+	// Get on "a": entry is expired → lazy delete, totalBytes must shrink.
+	sizeA := estimateSize(1)
+	if _, ok := s.Get("a"); ok {
+		t.Fatal("entry a should have expired")
+	}
+
+	wantAfterA := bytesAfterSet - sizeA
+	if got := s.totalBytes.Load(); got != wantAfterA {
+		t.Fatalf("after lazy removal of a: totalBytes = %d, want %d", got, wantAfterA)
+	}
+
+	// Get on "b": same check.
+	sizeB := estimateSize(2)
+	if _, ok := s.Get("b"); ok {
+		t.Fatal("entry b should have expired")
+	}
+
+	wantAfterB := wantAfterA - sizeB
+	if got := s.totalBytes.Load(); got != wantAfterB {
+		t.Fatalf("after lazy removal of b: totalBytes = %d, want %d", got, wantAfterB)
+	}
+
+	if s.Len() != 0 {
+		t.Fatalf("expected Len=0 after both lazy removals, got %d", s.Len())
+	}
+}
+
 // ── TestBaseStore_Delete ──────────────────────────────────────────────────────
 
-func TestBaseStore_Delete(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Delete() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -46,7 +94,8 @@ func TestBaseStore_Delete(t *testing.T) {
 
 // ── TestBaseStore_Has ─────────────────────────────────────────────────────────
 
-func TestBaseStore_Has(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Has() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -72,7 +121,8 @@ func TestBaseStore_Has(t *testing.T) {
 
 // ── TestBaseStore_Len ─────────────────────────────────────────────────────────
 
-func TestBaseStore_Len(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Len() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -92,7 +142,8 @@ func TestBaseStore_Len(t *testing.T) {
 
 // ── TestBaseStore_Clear ───────────────────────────────────────────────────────
 
-func TestBaseStore_Clear(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Clear() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -107,7 +158,8 @@ func TestBaseStore_Clear(t *testing.T) {
 
 // ── TestBaseStore_TTL_Expiry ──────────────────────────────────────────────────
 
-func TestBaseStore_TTL_Expiry(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_TTL_Expiry() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{TTL: 20 * time.Millisecond})
 	defer s.Close()
 
@@ -130,7 +182,8 @@ func TestBaseStore_TTL_Expiry(t *testing.T) {
 
 // ── TestBaseStore_TTL_RefreshOnAccess ─────────────────────────────────────────
 
-func TestBaseStore_TTL_RefreshOnAccess(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_TTL_RefreshOnAccess() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		TTL:             40 * time.Millisecond,
 		RefreshOnAccess: true,
@@ -156,7 +209,8 @@ func TestBaseStore_TTL_RefreshOnAccess(t *testing.T) {
 
 // ── TestBaseStore_MaxItems_EvictLRU ───────────────────────────────────────────
 
-func TestBaseStore_MaxItems_EvictLRU(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_MaxItems_EvictLRU() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		MaxItems:         2,
 		EvictionStrategy: EvictLRU,
@@ -188,7 +242,8 @@ func TestBaseStore_MaxItems_EvictLRU(t *testing.T) {
 
 // ── TestBaseStore_MaxItems_EvictLFU ───────────────────────────────────────────
 
-func TestBaseStore_MaxItems_EvictLFU(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_MaxItems_EvictLFU() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		MaxItems:         2,
 		EvictionStrategy: EvictLFU,
@@ -218,7 +273,8 @@ func TestBaseStore_MaxItems_EvictLFU(t *testing.T) {
 
 // ── TestBaseStore_MaxItems_EvictFIFO ──────────────────────────────────────────
 
-func TestBaseStore_MaxItems_EvictFIFO(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_MaxItems_EvictFIFO() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		MaxItems:         2,
 		EvictionStrategy: EvictFIFO,
@@ -249,7 +305,8 @@ func TestBaseStore_MaxItems_EvictFIFO(t *testing.T) {
 
 // ── TestBaseStore_PreservesMetadataOnUpdate ───────────────────────────────────
 
-func TestBaseStore_PreservesMetadataOnUpdate(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_PreservesMetadataOnUpdate() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		MaxItems:         2,
 		EvictionStrategy: EvictLFU,
@@ -316,7 +373,8 @@ func TestBaseStore_PreservesMetadataOnUpdate(t *testing.T) {
 
 // ── TestBaseStore_Sweeper_Removes ─────────────────────────────────────────────
 
-func TestBaseStore_Sweeper_Removes(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Sweeper_Removes() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		Sweepers: []Sweeper{
 			{
@@ -349,7 +407,8 @@ func TestBaseStore_Sweeper_Removes(t *testing.T) {
 
 // ── TestBaseStore_Close_StopsSweepers ─────────────────────────────────────────
 
-func TestBaseStore_Close_StopsSweepers(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Close_StopsSweepers() {
+	t := su.T()
 	// Use a channel signal instead of a sleep+count so the test is reliable
 	// even under the race detector's slower goroutine scheduling.
 	ran := make(chan struct{}, 1)
@@ -398,7 +457,8 @@ func TestBaseStore_Close_StopsSweepers(t *testing.T) {
 
 // ── TestBaseStore_All_ReturnsSnapshot ─────────────────────────────────────────
 
-func TestBaseStore_All_ReturnsSnapshot(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_All_ReturnsSnapshot() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -423,7 +483,8 @@ func TestBaseStore_All_ReturnsSnapshot(t *testing.T) {
 
 // ── TestBaseStore_All_FiltersExpired ──────────────────────────────────────────
 
-func TestBaseStore_All_FiltersExpired(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_All_FiltersExpired() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{TTL: 20 * time.Millisecond})
 	defer s.Close()
 
@@ -442,7 +503,8 @@ func TestBaseStore_All_FiltersExpired(t *testing.T) {
 
 // ── TestBaseStore_ReplaceKeys ─────────────────────────────────────────────────
 
-func TestBaseStore_ReplaceKeys(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_ReplaceKeys() {
+	t := su.T()
 	s := NewBaseStore[string, int](Defaults())
 	defer s.Close()
 
@@ -472,7 +534,8 @@ func TestBaseStore_ReplaceKeys(t *testing.T) {
 	}
 }
 
-func TestBaseStore_ReplaceKeys_RespectsMaxItems(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_ReplaceKeys_RespectsMaxItems() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{
 		MaxItems:         2,
 		EvictionStrategy: EvictFIFO,
@@ -489,7 +552,8 @@ func TestBaseStore_ReplaceKeys_RespectsMaxItems(t *testing.T) {
 
 // ── TestBaseStore_Disabled ────────────────────────────────────────────────────
 
-func TestBaseStore_Disabled(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_Disabled() {
+	t := su.T()
 	s := NewBaseStore[string, int](StoreOptions{Disabled: true})
 	defer s.Close()
 
@@ -519,7 +583,7 @@ func TestBaseStore_Disabled(t *testing.T) {
 
 // ── TestBaseStore_ConcurrentSafe ──────────────────────────────────────────────
 
-func TestBaseStore_ConcurrentSafe(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_ConcurrentSafe() {
 	s := NewBaseStore[int, int](StoreOptions{
 		MaxItems: 50,
 		Sweepers: []Sweeper{
@@ -555,15 +619,198 @@ func TestBaseStore_ConcurrentSafe(t *testing.T) {
 }
 
 // J0-#12: Close must be idempotent; a second call must not panic.
-func TestBaseStore_CloseIdempotent(t *testing.T) {
+func (su *storesStoreSuite) TestBaseStore_CloseIdempotent() {
 	s := NewBaseStore[string, int](Defaults())
 	// Must not panic even when called twice.
 	s.Close()
 	s.Close()
 }
 
-func TestMemMessageStore_CloseIdempotent(t *testing.T) {
+func (su *storesStoreSuite) TestMemMessageStore_CloseIdempotent() {
 	s := NewMessageStore(MessageDefaults())
 	s.Close()
 	s.Close()
 }
+
+// ── Bug #94 ───────────────────────────────────────────────────────────────────
+
+// TestBug94_ReplaceKeys_PreservesEvictionMetadata verifies that ReplaceKeys
+// preserves hitCount and insertedAt for keys present in both the old and new sets.
+//
+// Root cause: ReplaceKeys always created fresh entries, resetting LFU/FIFO
+// eviction metadata. It also leaked totalBytes because the old entry's sizeBytes
+// was never subtracted before re-adding.
+func (su *storesStoreSuite) TestBug94_ReplaceKeys_PreservesEvictionMetadata() {
+	t := su.T()
+	t.Run("LFU: hitCount preserved", func(t *testing.T) {
+		s := NewBaseStore[string, int](StoreOptions{
+			MaxItems:         2,
+			EvictionStrategy: EvictLFU,
+		})
+		defer s.Close()
+
+		s.Set("a", 1)
+		s.Set("b", 2)
+		s.Get("a")
+		s.Get("a")
+		s.Get("a") // hitCount("a") = 3
+
+		// ReplaceKeys: update "a" (kept), remove "b".
+		s.ReplaceKeys([]string{"b"}, map[string]int{"a": 99})
+
+		e, ok := s.items.Get("a")
+		if !ok {
+			t.Fatal("a should still exist after ReplaceKeys")
+		}
+		if e.hitCount != 3 {
+			t.Fatalf("Bug94: hitCount should be preserved as 3, got %d (old code reset to 0)", e.hitCount)
+		}
+		if e.value != 99 {
+			t.Fatalf("value should be updated to 99, got %d", e.value)
+		}
+
+		// Add "c" — LFU must evict "c" (hitCount 0), not "a" (hitCount 3).
+		s.Set("c", 3)
+		if _, ok := s.Get("a"); !ok {
+			t.Fatal("Bug94: a (hitCount=3) should survive LFU eviction after ReplaceKeys")
+		}
+	})
+
+	t.Run("FIFO: insertedAt preserved", func(t *testing.T) {
+		s := NewBaseStore[string, int](StoreOptions{
+			MaxItems:         2,
+			EvictionStrategy: EvictFIFO,
+		})
+		defer s.Close()
+
+		s.Set("x", 1)
+		time.Sleep(time.Millisecond)
+		s.Set("y", 2)
+
+		orig, _ := s.items.Get("x")
+		origInsertedAt := orig.insertedAt
+
+		// ReplaceKeys updates both keys — insertedAt must not change.
+		s.ReplaceKeys(nil, map[string]int{"x": 10, "y": 20})
+
+		after, _ := s.items.Get("x")
+		if !after.insertedAt.Equal(origInsertedAt) {
+			t.Fatal("Bug94: insertedAt should be preserved through ReplaceKeys")
+		}
+
+		// FIFO: x (older) must be evicted when a third item is added.
+		time.Sleep(time.Millisecond)
+		s.Set("z", 30)
+		if _, ok := s.Get("x"); ok {
+			t.Fatal("Bug94: x should be evicted (FIFO: earliest insertedAt, preserved through ReplaceKeys)")
+		}
+	})
+
+	t.Run("TrackBytes: no byte leak on update", func(t *testing.T) {
+		s := NewBaseStore[string, int](StoreOptions{TrackBytes: true})
+		defer s.Close()
+
+		s.Set("a", 1)
+		bytesAfterSet := s.totalBytes.Load()
+
+		// ReplaceKeys with same key — totalBytes must not grow.
+		s.ReplaceKeys(nil, map[string]int{"a": 2})
+
+		if got := s.totalBytes.Load(); got != bytesAfterSet {
+			t.Fatalf("Bug94: totalBytes leaked: was %d, got %d after in-place update via ReplaceKeys", bytesAfterSet, got)
+		}
+	})
+}
+
+// ── Bug #116 ──────────────────────────────────────────────────────────────────
+
+// TestBug116_DeleteOnDisabledStore verifies that Delete on a Disabled store
+// returns false immediately without acquiring the write lock.
+//
+// Root cause: the Disabled check was missing in Delete, causing a needless
+// write-lock acquisition on every call even though the store is a no-op.
+func (su *storesStoreSuite) TestBug116_DeleteOnDisabledStore() {
+	t := su.T()
+	s := NewBaseStore[string, int](StoreOptions{Disabled: true, TrackBytes: true})
+	defer s.Close()
+
+	if got := s.Delete("nonexistent"); got {
+		t.Fatal("Bug116: Delete on disabled store should return false")
+	}
+	if s.totalBytes.Load() != 0 {
+		t.Fatal("Bug116: disabled store should never accumulate bytes")
+	}
+	// Second call must also be safe (no panic, correct return value).
+	if got := s.Delete("anything"); got {
+		t.Fatal("Bug116: Delete on disabled store should always return false")
+	}
+}
+
+// ── Bug #150 ──────────────────────────────────────────────────────────────────
+
+// TestBug150_EvictToCount_CorrectVictims verifies that evictToCount selects the
+// right victims when evicting multiple items in a single batch.
+//
+// Root cause: evictToCount called evictOne in a loop — O(n²) scans and N separate
+// lock acquisitions. The fix collects all entries once, sorts once (O(n log n)),
+// and deletes in one lock acquisition. This test verifies correctness, not
+// performance; correctness requires that the highest-priority victims are chosen.
+func (su *storesStoreSuite) TestBug150_EvictToCount_CorrectVictims() {
+	t := su.T()
+	t.Run("LFU: keeps highest hit counts across batch eviction", func(t *testing.T) {
+		s := NewBaseStore[string, int](StoreOptions{
+			MaxItems:         3,
+			EvictionStrategy: EvictLFU,
+		})
+		defer s.Close()
+
+		s.Set("low", 1)  // hitCount = 0
+		s.Set("mid", 2)  // hitCount = 1
+		s.Set("high", 3) // hitCount = 3
+		s.Get("mid")     // mid → 1
+		s.Get("high")
+		s.Get("high")
+		s.Get("high") // high → 3
+
+		// ReplaceKeys adds 3 new items (all hitCount=0), total=6 → evict down to 3.
+		// "high" (3) and "mid" (1) must survive; "low" (0) is a victim.
+		s.ReplaceKeys(nil, map[string]int{"a": 10, "b": 20, "c": 30})
+
+		if s.Len() != 3 {
+			t.Fatalf("Bug150: expected Len=3 after batch eviction, got %d", s.Len())
+		}
+		if _, ok := s.Get("high"); !ok {
+			t.Fatal("Bug150: 'high' (hitCount=3) must survive LFU batch eviction")
+		}
+		if _, ok := s.Get("mid"); !ok {
+			t.Fatal("Bug150: 'mid' (hitCount=1) must survive LFU batch eviction")
+		}
+	})
+
+	t.Run("FIFO: keeps newest insertions across batch eviction", func(t *testing.T) {
+		s := NewBaseStore[string, int](StoreOptions{
+			MaxItems:         2,
+			EvictionStrategy: EvictFIFO,
+		})
+		defer s.Close()
+
+		s.Set("oldest", 1)
+		time.Sleep(time.Millisecond)
+		s.Set("middle", 2)
+		time.Sleep(time.Millisecond)
+
+		// Add 2 new items (total=4) → evict down to 2; "oldest" must go first.
+		s.ReplaceKeys(nil, map[string]int{"newest1": 10, "newest2": 20})
+
+		if s.Len() != 2 {
+			t.Fatalf("Bug150: expected Len=2 after batch eviction, got %d", s.Len())
+		}
+		if _, ok := s.Get("oldest"); ok {
+			t.Fatal("Bug150: 'oldest' should be first victim of FIFO batch eviction")
+		}
+	})
+}
+
+type storesStoreSuite struct{ suite.Suite }
+
+func TestStoresStoreSuite(t *testing.T) { suite.Run(t, new(storesStoreSuite)) }

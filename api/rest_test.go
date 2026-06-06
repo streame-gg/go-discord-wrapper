@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/stretchr/testify/suite"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -35,7 +36,8 @@ func newTestClient(ts *httptest.Server) *RestClient {
 	return rc
 }
 
-func TestGetChannel(t *testing.T) {
+func (su *restSuite) TestGetChannel() {
+	t := su.T()
 	tests := []struct {
 		name       string
 		statusCode int
@@ -103,7 +105,8 @@ func TestGetChannel(t *testing.T) {
 	}
 }
 
-func TestCreateMessage(t *testing.T) {
+func (su *restSuite) TestCreateMessage() {
+	t := su.T()
 	t.Run("success with correct body", func(t *testing.T) {
 		var receivedBody []byte
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -158,7 +161,8 @@ func TestCreateMessage(t *testing.T) {
 	})
 }
 
-func TestGetGuild(t *testing.T) {
+func (su *restSuite) TestGetGuild() {
+	t := su.T()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := discord.Guild{
 			ID:   777888999,
@@ -179,7 +183,8 @@ func TestGetGuild(t *testing.T) {
 	assert.Equal(t, "Test Server", guild.Name)
 }
 
-func TestContextCancellation(t *testing.T) {
+func (su *restSuite) TestContextCancellation() {
+	t := su.T()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(200 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
@@ -199,7 +204,8 @@ func TestContextCancellation(t *testing.T) {
 	)
 }
 
-func TestRetryOn429(t *testing.T) {
+func (su *restSuite) TestRetryOn429() {
+	t := su.T()
 	var callCount int32
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		n := atomic.AddInt32(&callCount, 1)
@@ -234,13 +240,14 @@ func TestRetryOn429(t *testing.T) {
 	assert.Equal(t, int32(2), atomic.LoadInt32(&callCount), "expected exactly 2 requests")
 }
 
-func TestNoRetryWhenDisabled(t *testing.T) {
+func (su *restSuite) TestNoRetryWhenDisabled() {
+	t := su.T()
 	var callCount int32
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&callCount, 1)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(`{"code":0,"message":"internal server error"}`))
+		_, _ = w.Write([]byte(`{"code":0,"message":"pkg server error"}`))
 	}))
 	defer ts.Close()
 
@@ -260,7 +267,8 @@ func TestNoRetryWhenDisabled(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&callCount), "expected exactly 1 request")
 }
 
-func TestDecodeAPIError(t *testing.T) {
+func (su *restSuite) TestDecodeAPIError() {
+	t := su.T()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
@@ -284,7 +292,8 @@ func TestDecodeAPIError(t *testing.T) {
 // Bug 3a: an event handler that reads/closes resp.Body must not affect the
 // decoder.  After the fix, the handler and the decoder each get their own body
 // reader backed by the buffered bytes.
-func TestBug3a_EventHandlerBodyCloseDoesNotBreakDecode(t *testing.T) {
+func (su *restSuite) TestBug3a_EventHandlerBodyCloseDoesNotBreakDecode() {
+	t := su.T()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -310,7 +319,8 @@ func TestBug3a_EventHandlerBodyCloseDoesNotBreakDecode(t *testing.T) {
 
 // Bug 3b: a server that returns invalid JSON must produce a non-nil error;
 // before the fix the caller received (nil, nil).
-func TestBug3b_BadJSONReturnsError(t *testing.T) {
+func (su *restSuite) TestBug3b_BadJSONReturnsError() {
+	t := su.T()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -323,3 +333,7 @@ func TestBug3b_BadJSONReturnsError(t *testing.T) {
 	assert.Error(t, err, "invalid JSON body must return an error (Bug 3b)")
 	assert.Nil(t, ch)
 }
+
+type restSuite struct{ suite.Suite }
+
+func TestRestSuite(t *testing.T) { suite.Run(t, new(restSuite)) }

@@ -20,7 +20,7 @@ func (m *banManager) Fetch(ctx context.Context, userID discord.Snowflake) (*disc
 }
 
 func (m *banManager) FetchAll(ctx context.Context, opts discord.FetchBansOptions) ([]*discord.Ban, error) {
-	return m.client.GetGuildBans(ctx, m.guildID, opts)
+	return m.client.ListGuildBans(ctx, m.guildID, opts)
 }
 
 func (m *banManager) Create(ctx context.Context, userID discord.Snowflake, opts discord.BanOptions) error {

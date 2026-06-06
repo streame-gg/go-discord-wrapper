@@ -3,7 +3,6 @@ package connection
 import (
 	"encoding/json"
 	"strconv"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +14,8 @@ import (
 // TestReconnect_CleansStaleGuildMemberCount verifies that a READY event during
 // reconnect removes guilds from guildMemberCounts when the bot is no longer a
 // member, so GuildCount() does not return stale data (P1-16).
-func TestReconnect_CleansStaleGuildMemberCount(t *testing.T) {
+func (cs *ConnectionSuite) TestReconnect_CleansStaleGuildMemberCount() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guild1 := discord.Snowflake(111111111111111)
@@ -31,8 +31,8 @@ func TestReconnect_CleansStaleGuildMemberCount(t *testing.T) {
 
 	require.Equal(t, 2, c.GuildCount(), "setup: expected 2 guilds before reconnect")
 
-	// The READY handler writes to d.Websocket — init a minimal stub.
-	c.Websocket = &Websocket{
+	// The READY handler writes to d.wsConn — init a minimal stub.
+	c.wsConn = &wsConn{
 		Closed: make(chan struct{}),
 		Ready:  make(chan struct{}),
 	}
@@ -54,7 +54,8 @@ func TestReconnect_CleansStaleGuildMemberCount(t *testing.T) {
 
 // TestReconnect_CleansStaleGuildMemberCount_NoCache verifies stale reconnect
 // state is pruned from guildMemberCounts even when cache is disabled.
-func TestReconnect_CleansStaleGuildMemberCount_NoCache(t *testing.T) {
+func (cs *ConnectionSuite) TestReconnect_CleansStaleGuildMemberCount_NoCache() {
+	t := cs.T()
 	c, err := NewClient("test-token", discord.IntentGuilds)
 	require.NoError(t, err)
 
@@ -68,8 +69,8 @@ func TestReconnect_CleansStaleGuildMemberCount_NoCache(t *testing.T) {
 
 	require.Equal(t, 2, c.GuildCount(), "setup: expected 2 guilds before reconnect")
 
-	// The READY handler writes to d.Websocket — init a minimal stub.
-	c.Websocket = &Websocket{
+	// The READY handler writes to d.wsConn — init a minimal stub.
+	c.wsConn = &wsConn{
 		Closed: make(chan struct{}),
 		Ready:  make(chan struct{}),
 	}
@@ -91,7 +92,8 @@ func TestReconnect_CleansStaleGuildMemberCount_NoCache(t *testing.T) {
 
 // TestGuildDelete_CleansGuildMemberCount verifies that a GUILD_DELETE kick
 // removes the entry from guildMemberCounts so GuildCount() is accurate.
-func TestGuildDelete_CleansGuildMemberCount(t *testing.T) {
+func (cs *ConnectionSuite) TestGuildDelete_CleansGuildMemberCount() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guild1 := discord.Snowflake(333333333333333)

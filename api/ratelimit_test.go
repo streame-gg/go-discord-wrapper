@@ -493,6 +493,64 @@ func (s *ratelimitTestSuite) TestRateLimiter_429NoResetHeader_BucketExhausted() 
 	s.True(resetAt.After(time.Now()), "resetAt must be in the future")
 }
 
+// TestBug110_OutOfOrderOlderWindowResponseTakesMinRemaining verifies that a
+// same-window response whose resetAt is slightly older than the stored resetAt
+// still causes remaining to be updated conservatively instead of being discarded
+// (Bug 110).
+func (s *ratelimitTestSuite) TestBug110_OutOfOrderOlderWindowResponseTakesMinRemaining() {
+	rl := newRateLimiter(0)
+	defer rl.close()
+
+	// First response sets remaining=5, resetAt=now+5s.
+	rl.update("GET", "/channels/1/messages", makeResp(200, map[string]string{
+		"X-RateLimit-Bucket":      "bkt-110",
+		"X-RateLimit-Limit":       "10",
+		"X-RateLimit-Remaining":   "5",
+		"X-RateLimit-Reset-After": "5",
+	}))
+
+	// Out-of-order response: remaining=2, resetAt=now+3.5s (1.5 s older than first —
+	// outside the old 1 s tolerance, so the previous code would have discarded it).
+	rl.update("GET", "/channels/1/messages", makeResp(200, map[string]string{
+		"X-RateLimit-Bucket":      "bkt-110",
+		"X-RateLimit-Limit":       "10",
+		"X-RateLimit-Remaining":   "2",
+		"X-RateLimit-Reset-After": "3.5",
+	}))
+
+	val, ok := rl.buckets.Load("bkt-110")
+	s.Require().True(ok)
+	b := val.(*rateLimitBucket)
+	b.mu.Lock()
+	got := b.remaining
+	b.mu.Unlock()
+
+	s.Equalf(2, got, "remaining must be updated to 2 from the out-of-order same-window response, got %d (Bug 110)", got)
+}
+
+// TestBug113_ParseRetryAfterHTTPDate verifies that parseRetryAfter accepts
+// an HTTP-date value in addition to the seconds format (Bug 113).
+func (s *ratelimitTestSuite) TestBug113_ParseRetryAfterHTTPDate() {
+	// Seconds format still works.
+	respSecs := makeResp(429, map[string]string{"Retry-After": "2.5"})
+	gotSecs := parseRetryAfter(respSecs)
+	s.InDeltaf(float64(2500*time.Millisecond), float64(gotSecs), float64(10*time.Millisecond),
+		"parseRetryAfter(seconds) = %v, want ~2500ms", gotSecs)
+
+	// HTTP-date format: a timestamp 3 seconds in the future.
+	future := time.Now().Add(3 * time.Second).UTC().Format(http.TimeFormat)
+	respDate := makeResp(429, map[string]string{"Retry-After": future})
+	gotDate := parseRetryAfter(respDate)
+	s.Greaterf(gotDate, time.Duration(0), "parseRetryAfter(HTTP-date) must return >0, got %v", gotDate)
+	s.LessOrEqualf(gotDate, 4*time.Second, "parseRetryAfter(HTTP-date) must return ≤4s, got %v (Bug 113)", gotDate)
+
+	// HTTP-date in the past must return 0 (not negative).
+	past := time.Now().Add(-5 * time.Second).UTC().Format(http.TimeFormat)
+	respPast := makeResp(429, map[string]string{"Retry-After": past})
+	gotPast := parseRetryAfter(respPast)
+	s.Equalf(time.Duration(0), gotPast, "parseRetryAfter(past HTTP-date) must return 0, got %v (Bug 113)", gotPast)
+}
+
 // J0-#10: wait() must re-check global rate limit after bucket sleep.
 func (s *ratelimitTestSuite) TestRateLimiter_GlobalSetDuringBucketSleep() {
 	rl := newRateLimiter(0)

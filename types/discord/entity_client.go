@@ -1,6 +1,10 @@
 package discord
 
-import "context"
+import (
+	"context"
+
+	"github.com/streame-gg/go-discord-wrapper/collection"
+)
 
 // EntityClient is the subset of *connection.Client required by the entity
 // convenience methods (e.g. msg.Edit, member.Ban, guild.CreateRole).
@@ -10,6 +14,7 @@ import "context"
 //
 // Entity methods accept ctx per call; the entity itself does not store a
 // context (unlike Interaction which captures the dispatch context).
+// Wraps the Discord REST API: https://docs.discord.com/developers/reference
 type EntityClient interface {
 	// ── Message ───────────────────────────────────────────────────────────
 	EditMessage(ctx context.Context, channelID, messageID Snowflake, opts MessageEditOptions) (*Message, error)
@@ -24,7 +29,7 @@ type EntityClient interface {
 	ModifyChannel(ctx context.Context, channelID Snowflake, opts ChannelEditOptions) (*Channel, error)
 	DeleteChannel(ctx context.Context, channelID Snowflake, reason *string) (*Channel, error)
 	BulkDeleteMessages(ctx context.Context, channelID Snowflake, messageIDs []Snowflake, reason *string) error
-	GetChannelMessages(ctx context.Context, channelID Snowflake, opts FetchMessagesOptions) ([]*Message, error)
+	ListChannelMessages(ctx context.Context, channelID Snowflake, opts FetchMessagesOptions) ([]*Message, error)
 	TriggerTypingIndicator(ctx context.Context, channelID Snowflake) error
 	SetVoiceChannelStatus(ctx context.Context, channelID Snowflake, status *string) error
 	CreateChannelInvite(ctx context.Context, channelID Snowflake, opts InviteCreateOptions) (*Invite, error)
@@ -76,7 +81,7 @@ type EntityClient interface {
 	// ── GuildScheduledEvent ───────────────────────────────────────────────
 	ModifyGuildScheduledEvent(ctx context.Context, guildID, eventID Snowflake, opts ScheduledEventEditOptions) (*GuildScheduledEvent, error)
 	DeleteGuildScheduledEvent(ctx context.Context, guildID, eventID Snowflake) error
-	GetGuildScheduledEventUsers(ctx context.Context, guildID, eventID Snowflake, opts FetchUsersOptions) ([]*GuildScheduledEventUser, error)
+	ListGuildScheduledEventUsers(ctx context.Context, guildID, eventID Snowflake, opts FetchUsersOptions) ([]*GuildScheduledEventUser, error)
 
 	// ── Sticker ───────────────────────────────────────────────────────────
 	ModifyGuildSticker(ctx context.Context, guildID, stickerID Snowflake, opts StickerEditOptions) (*Sticker, error)
@@ -92,20 +97,20 @@ type EntityClient interface {
 
 	// ── Integration ───────────────────────────────────────────────────────
 	DeleteGuildIntegration(ctx context.Context, guildID, integrationID Snowflake, reason *string) error
-	GetGuildIntegrations(ctx context.Context, guildID Snowflake) ([]*Integration, error)
+	ListGuildIntegrations(ctx context.Context, guildID Snowflake) ([]*Integration, error)
 
 	// ── Fetch (read) — used by sub-managers ──────────────────────────────
 	GetGuildMember(ctx context.Context, guildID, userID Snowflake) (*GuildMember, error)
 	GetGuildRole(ctx context.Context, guildID, roleID Snowflake) (*Role, error)
-	GetGuildRoles(ctx context.Context, guildID Snowflake) ([]*Role, error)
+	ListGuildRoles(ctx context.Context, guildID Snowflake) ([]*Role, error)
 	GetChannel(ctx context.Context, channelID Snowflake) (*Channel, error)
-	GetGuildChannels(ctx context.Context, guildID Snowflake) ([]*Channel, error)
+	ListGuildChannels(ctx context.Context, guildID Snowflake) ([]*Channel, error)
 	GetGuildEmoji(ctx context.Context, guildID, emojiID Snowflake) (*Emoji, error)
 	ListGuildEmojis(ctx context.Context, guildID Snowflake) ([]*Emoji, error)
 	GetGuildSticker(ctx context.Context, guildID, stickerID Snowflake) (*Sticker, error)
 	ListGuildStickers(ctx context.Context, guildID Snowflake) ([]*Sticker, error)
 	GetGuildBan(ctx context.Context, guildID, userID Snowflake) (*Ban, error)
-	GetGuildBans(ctx context.Context, guildID Snowflake, opts FetchBansOptions) ([]*Ban, error)
+	ListGuildBans(ctx context.Context, guildID Snowflake, opts FetchBansOptions) ([]*Ban, error)
 	RemoveGuildBan(ctx context.Context, guildID, userID Snowflake, reason *string) error
 	GetGuildScheduledEvent(ctx context.Context, guildID, eventID Snowflake) (*GuildScheduledEvent, error)
 	ListGuildScheduledEvents(ctx context.Context, guildID Snowflake) ([]*GuildScheduledEvent, error)
@@ -113,8 +118,8 @@ type EntityClient interface {
 	CreateStageInstance(ctx context.Context, opts StageCreateOptions) (*StageInstance, error)
 	GetGuildSoundboardSound(ctx context.Context, guildID, soundID Snowflake) (*SoundboardSound, error)
 	ListGuildSoundboardSounds(ctx context.Context, guildID Snowflake) ([]*SoundboardSound, error)
-	GetGuildInvites(ctx context.Context, guildID Snowflake) ([]*Invite, error)
-	GetGuildWebhooks(ctx context.Context, guildID Snowflake) ([]*Webhook, error)
+	ListGuildInvites(ctx context.Context, guildID Snowflake) ([]*Invite, error)
+	ListGuildWebhooks(ctx context.Context, guildID Snowflake) ([]*Webhook, error)
 	GetAutoModerationRule(ctx context.Context, guildID, ruleID Snowflake) (*AutoModerationRule, error)
 	ListAutoModerationRules(ctx context.Context, guildID Snowflake) ([]*AutoModerationRule, error)
 	CreateAutoModerationRule(ctx context.Context, guildID Snowflake, opts RuleCreateOptions) (*AutoModerationRule, error)
@@ -125,4 +130,17 @@ type EntityClient interface {
 	// ClientCache returns the read-only cache view for use by sub-managers.
 	// Returns nil when no cache is configured.
 	ClientCache() Cache
+
+	// ThreadsForParent returns a snapshot of all cached threads whose parent
+	// channel is parentID. It uses the client's pkg parent→threads index
+	// and is O(threads_in_parent) rather than O(total_channels). Returns an
+	// empty collection when no cache is configured.
+	ThreadsForParent(parentID Snowflake) *collection.Collection[Snowflake, *Channel]
+
+	// ChannelsForGuild returns a snapshot of all cached non-thread channels for
+	// guildID. It uses the client's pkg guild→channels index and is
+	// O(channels_in_guild) rather than O(total_channels). Threads are excluded
+	// to match the Discord API (GET /guilds/{id}/channels). Returns an empty
+	// collection when no cache is configured.
+	ChannelsForGuild(guildID Snowflake) *collection.Collection[Snowflake, *Channel]
 }

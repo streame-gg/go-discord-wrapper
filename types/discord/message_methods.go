@@ -5,6 +5,7 @@ import "context"
 // ── Options ───────────────────────────────────────────────────────────────────
 
 // MessageEditOptions configures Message.Edit.
+// https://docs.discord.com/developers/resources/message#edit-message
 type MessageEditOptions struct {
 	Content         *string
 	Embeds          *[]Embed
@@ -16,6 +17,7 @@ type MessageEditOptions struct {
 }
 
 // MessageCreateOptions configures Message.Reply and Channel.Send.
+// https://docs.discord.com/developers/resources/message#create-message
 type MessageCreateOptions struct {
 	Content          string
 	TTS              bool

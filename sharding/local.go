@@ -86,7 +86,8 @@ func (c *LocalCoordinator) Send(msg options.ShardMessage) error {
 }
 
 // Broadcast delivers msg to every registered shard, including the sender.
-// Each handler is called in its own goroutine.
+// Each handler is called in its own goroutine. Delivery order across shards
+// is non-deterministic (map iteration order).
 func (c *LocalCoordinator) Broadcast(msg options.ShardMessage) error {
 	msg.To = options.BroadcastAll
 

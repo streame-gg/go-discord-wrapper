@@ -11,29 +11,35 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/resources/webhook#create-webhook
 type CreateWebhookParams struct {
 	Name   string  `json:"name"`
 	Avatar *string `json:"avatar,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/webhook#create-webhook
 type CreateWebhookOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/webhook#modify-webhook
 type ModifyWebhookParams struct {
 	Name      *string            `json:"name,omitempty"`
 	Avatar    *string            `json:"avatar,omitempty"`
 	ChannelID *discord.Snowflake `json:"channel_id,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/webhook#modify-webhook
 type ModifyWebhookOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/webhook#delete-webhook
 type DeleteWebhookOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/webhook#execute-webhook
 type ExecuteWebhookParams struct {
 	Content         string                   `json:"content,omitempty"`
 	Username        *string                  `json:"username,omitempty"`
@@ -60,6 +66,7 @@ func (p ExecuteWebhookParams) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// https://docs.discord.com/developers/resources/webhook#execute-webhook
 type ExecuteWebhookQueryParams struct {
 	Wait     *bool
 	ThreadID *discord.Snowflake
@@ -110,8 +117,8 @@ func (c *RestClient) CreateWebhook(ctx context.Context, channelID discord.Snowfl
 	})
 }
 
-// GetChannelWebhooks returns all webhooks for a channel. Requires MANAGE_WEBHOOKS.
-func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID discord.Snowflake) ([]*discord.Webhook, error) {
+// ListChannelWebhooks returns all webhooks for a channel. Requires MANAGE_WEBHOOKS.
+func (c *RestClient) ListChannelWebhooks(ctx context.Context, channelID discord.Snowflake) ([]*discord.Webhook, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -126,8 +133,8 @@ func (c *RestClient) GetChannelWebhooks(ctx context.Context, channelID discord.S
 	})
 }
 
-// GetGuildWebhooks returns all webhooks in a guild.
-func (c *RestClient) GetGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
+// ListGuildWebhooks returns all webhooks in a guild.
+func (c *RestClient) ListGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -314,7 +321,7 @@ func (c *RestClient) GetWebhookMessage(ctx context.Context, webhookID discord.Sn
 	}
 
 	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
+	req, err := c.generateRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +368,7 @@ func (c *RestClient) DeleteWebhookMessage(ctx context.Context, webhookID discord
 	}
 
 	path := "/webhooks/" + webhookID.String() + "/" + url.PathEscape(token) + "/messages/" + messageID.String()
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization())
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil)
 	if err != nil {
 		return err
 	}

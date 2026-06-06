@@ -10,6 +10,8 @@ import "github.com/streame-gg/go-discord-wrapper/types/components"
 //	        builder.NewTextDisplay().SetContent("Hello!").Build(),
 //	    ).
 //	    Build()
+//
+// https://docs.discord.com/developers/components/reference#container
 type ContainerBuilder struct {
 	c components.Container
 }
@@ -46,6 +48,8 @@ func (b *ContainerBuilder) Build() *components.Container {
 // TextDisplayBuilder builds a TextDisplayComponent (Components v2).
 //
 //	td := builder.NewTextDisplay().SetContent("## Hello world").Build()
+//
+// https://docs.discord.com/developers/components/reference#text-display
 type TextDisplayBuilder struct {
 	td components.TextDisplayComponent
 }
@@ -66,6 +70,8 @@ func (b *TextDisplayBuilder) Build() *components.TextDisplayComponent {
 // SeparatorBuilder builds a SeparatorComponent (Components v2).
 //
 //	sep := builder.NewSeparator().SetDivider(true).SetSpacing(components.SeparatorComponentSpacingLarge).Build()
+//
+// https://docs.discord.com/developers/components/reference#separator
 type SeparatorBuilder struct {
 	s components.SeparatorComponent
 }

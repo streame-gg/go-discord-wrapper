@@ -11,6 +11,7 @@ import (
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/auto-moderation#create-auto-moderation-rule
 type CreateAutoModerationRuleParams struct {
 	Name            string                                 `json:"name"`
 	EventType       discord.AutoModerationEventType        `json:"event_type"`
@@ -22,10 +23,12 @@ type CreateAutoModerationRuleParams struct {
 	ExemptChannels  []discord.Snowflake                    `json:"exempt_channels,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/auto-moderation#create-auto-moderation-rule
 type CreateAutoModerationRuleOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/auto-moderation#modify-auto-moderation-rule
 type ModifyAutoModerationRuleParams struct {
 	Name            *string                                `json:"name,omitempty"`
 	EventType       *discord.AutoModerationEventType       `json:"event_type,omitempty"`
@@ -36,10 +39,12 @@ type ModifyAutoModerationRuleParams struct {
 	ExemptChannels  []discord.Snowflake                    `json:"exempt_channels,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/auto-moderation#modify-auto-moderation-rule
 type ModifyAutoModerationRuleOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/auto-moderation#delete-auto-moderation-rule
 type DeleteAutoModerationRuleOptions struct {
 	Reason string
 }

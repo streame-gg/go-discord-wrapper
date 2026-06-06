@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/suite"
 	"net/http"
 	"strings"
 	"testing"
@@ -13,7 +14,8 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-func TestAPIErrorIs(t *testing.T) {
+func (su *apiErrorsSuite) TestAPIErrorIs() {
+	t := su.T()
 	tests := []struct {
 		name       string
 		httpStatus int
@@ -38,10 +40,11 @@ func TestAPIErrorIs(t *testing.T) {
 	}
 }
 
-func TestAPIErrorAs(t *testing.T) {
+func (su *apiErrorsSuite) TestAPIErrorAs() {
+	t := su.T()
 	original := &Error{
 		HTTPStatus: http.StatusNotFound,
-		Code:       discord.GatewayErrorCode(10003),
+		Code:       discord.JSONErrorCode(10003),
 		Message:    "Unknown Channel",
 	}
 
@@ -50,15 +53,16 @@ func TestAPIErrorAs(t *testing.T) {
 	var apiErr *Error
 	require.True(t, errors.As(wrapped, &apiErr), "errors.As should unwrap *APIError")
 	assert.Equal(t, http.StatusNotFound, apiErr.HTTPStatus)
-	assert.Equal(t, discord.GatewayErrorCode(10003), apiErr.Code)
+	assert.Equal(t, discord.JSONErrorCode(10003), apiErr.Code)
 	assert.Equal(t, "Unknown Channel", apiErr.Message)
 }
 
-func TestAPIErrorString(t *testing.T) {
+func (su *apiErrorsSuite) TestAPIErrorString() {
+	t := su.T()
 	t.Run("with discord code", func(t *testing.T) {
 		err := &Error{
 			HTTPStatus: http.StatusNotFound,
-			Code:       discord.GatewayErrorCode(10003),
+			Code:       discord.JSONErrorCode(10003),
 			Message:    "Unknown Channel",
 		}
 		s := err.Error()
@@ -75,3 +79,7 @@ func TestAPIErrorString(t *testing.T) {
 		assert.True(t, strings.Contains(s, "500"), "error string should contain http status 500, got: %s", s)
 	})
 }
+
+type apiErrorsSuite struct{ suite.Suite }
+
+func TestApiErrorsSuite(t *testing.T) { suite.Run(t, new(apiErrorsSuite)) }

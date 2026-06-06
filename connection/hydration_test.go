@@ -24,7 +24,8 @@ func mustSnowflake(s string) discord.Snowflake {
 
 // ── Cache hydration: entities retrieved from cache are hydrated ───────────────
 
-func TestCacheMessage_IsHydratedAfterStore(t *testing.T) {
+func (cs *ConnectionSuite) TestCacheMessage_IsHydratedAfterStore() {
+	t := cs.T()
 	c, stop := launchClient(t, startSilentGateway(t), discord.IntentGuildMessages)
 	defer stop()
 	c.Cache = cache.NewMemoryCache(cache.Options{Messages: cache.MessageOptions{MaxPerChannel: 100}})
@@ -42,7 +43,8 @@ func TestCacheMessage_IsHydratedAfterStore(t *testing.T) {
 	}
 }
 
-func TestCacheUser_IsHydratedAfterStore(t *testing.T) {
+func (cs *ConnectionSuite) TestCacheUser_IsHydratedAfterStore() {
+	t := cs.T()
 	c, stop := launchClient(t, startSilentGateway(t), discord.IntentGuildMessages)
 	defer stop()
 	c.Cache = cache.NewMemoryCache(cache.Options{})
@@ -60,7 +62,8 @@ func TestCacheUser_IsHydratedAfterStore(t *testing.T) {
 	}
 }
 
-func TestCacheMember_IsHydratedAfterStore(t *testing.T) {
+func (cs *ConnectionSuite) TestCacheMember_IsHydratedAfterStore() {
+	t := cs.T()
 	c, stop := launchClient(t, startSilentGateway(t), discord.IntentGuildMembers)
 	defer stop()
 	c.Cache = cache.NewMemoryCache(cache.Options{})
@@ -84,7 +87,8 @@ func TestCacheMember_IsHydratedAfterStore(t *testing.T) {
 	}
 }
 
-func TestCacheRole_IsHydratedAfterStore(t *testing.T) {
+func (cs *ConnectionSuite) TestCacheRole_IsHydratedAfterStore() {
+	t := cs.T()
 	c, stop := launchClient(t, startSilentGateway(t), discord.IntentGuilds)
 	defer stop()
 	c.Cache = cache.NewMemoryCache(cache.Options{})
@@ -105,7 +109,8 @@ func TestCacheRole_IsHydratedAfterStore(t *testing.T) {
 	}
 }
 
-func TestCacheChannel_IsHydratedAfterStore(t *testing.T) {
+func (cs *ConnectionSuite) TestCacheChannel_IsHydratedAfterStore() {
+	t := cs.T()
 	c, stop := launchClient(t, startSilentGateway(t), discord.IntentGuilds)
 	defer stop()
 	c.Cache = cache.NewMemoryCache(cache.Options{})
@@ -125,7 +130,8 @@ func TestCacheChannel_IsHydratedAfterStore(t *testing.T) {
 
 // ── Event hydration: entities in dispatched events are hydrated ───────────────
 
-func TestEventHydration_MessageCreateIsHydrated(t *testing.T) {
+func (cs *ConnectionSuite) TestEventHydration_MessageCreateIsHydrated() {
+	t := cs.T()
 	msgPacket := dispatchPacket("MESSAGE_CREATE", map[string]interface{}{
 		"id": "123", "channel_id": "456",
 		"author":    map[string]interface{}{"id": "1", "username": "u", "discriminator": "0"},
@@ -158,7 +164,8 @@ func TestEventHydration_MessageCreateIsHydrated(t *testing.T) {
 	}
 }
 
-func TestEventHydration_GuildMemberAddIsHydrated(t *testing.T) {
+func (cs *ConnectionSuite) TestEventHydration_GuildMemberAddIsHydrated() {
+	t := cs.T()
 	memberPacket := dispatchPacket("GUILD_MEMBER_ADD", map[string]interface{}{
 		"guild_id":  "123123",
 		"user":      map[string]interface{}{"id": "123", "username": "bob", "discriminator": "0"},

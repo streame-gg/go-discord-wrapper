@@ -8,10 +8,24 @@ import (
 
 // ── Guild sub-manager interfaces ──────────────────────────────────────────────
 
+// Resolve contract (applies to all manager Resolve methods):
+// Accepted input types: the entity pointer (*T), a Snowflake, or a string
+// snowflake. Returns (nil, ErrNotConvertable) for any other type.
+// On a cache miss the return is (nil, nil) — not an error — which is
+// intentional: the caller must check the pointer before use. This is
+// intentionally distinct from ErrNotConvertable, which indicates an
+// unsupported input type. Use Get+Fetch when you need a guaranteed result.
+//
+// GetOrFetch contract: returns the cached entity when present, otherwise falls
+// back to Fetch (a REST call). It is the convenient "give me this entity"
+// path — equivalent to checking Get and calling Fetch on a miss.
+
 // MemberManager manages guild members for a single guild.
+// https://docs.discord.com/developers/resources/guild#guild-member-object
 type MemberManager interface {
 	Cache() *collection.Collection[Snowflake, *GuildMember]
 	Get(userID Snowflake) (*GuildMember, bool)
+	GetOrFetch(ctx context.Context, userID Snowflake) (*GuildMember, error)
 	Fetch(ctx context.Context, userID Snowflake) (*GuildMember, error)
 	FetchAll(ctx context.Context, opts FetchMembersOptions) (*collection.Collection[Snowflake, *GuildMember], error)
 	Resolve(input any) (*GuildMember, error)
@@ -19,9 +33,11 @@ type MemberManager interface {
 }
 
 // RoleManager manages roles for a single guild.
+// https://docs.discord.com/developers/topics/permissions#role-object
 type RoleManager interface {
 	Cache() *collection.Collection[Snowflake, *Role]
 	Get(roleID Snowflake) (*Role, bool)
+	GetOrFetch(ctx context.Context, roleID Snowflake) (*Role, error)
 	Fetch(ctx context.Context, roleID Snowflake) (*Role, error)
 	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, *Role], error)
 	Create(ctx context.Context, opts RoleCreateOptions) (*Role, error)
@@ -30,9 +46,11 @@ type RoleManager interface {
 }
 
 // GuildChannelManager manages channels for a single guild.
+// https://docs.discord.com/developers/resources/channel#channel-object
 type GuildChannelManager interface {
 	Cache() *collection.Collection[Snowflake, *Channel]
 	Get(channelID Snowflake) (*Channel, bool)
+	GetOrFetch(ctx context.Context, channelID Snowflake) (*Channel, error)
 	Fetch(ctx context.Context, channelID Snowflake) (*Channel, error)
 	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, *Channel], error)
 	Create(ctx context.Context, opts ChannelCreateOptions) (*Channel, error)
@@ -41,9 +59,11 @@ type GuildChannelManager interface {
 }
 
 // EmojiManager manages emojis for a single guild.
+// https://docs.discord.com/developers/resources/emoji#emoji-object
 type EmojiManager interface {
 	Cache() *collection.Collection[Snowflake, *Emoji]
 	Get(emojiID Snowflake) (*Emoji, bool)
+	GetOrFetch(ctx context.Context, emojiID Snowflake) (*Emoji, error)
 	Fetch(ctx context.Context, emojiID Snowflake) (*Emoji, error)
 	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, *Emoji], error)
 	Create(ctx context.Context, opts EmojiCreateOptions) (*Emoji, error)
@@ -52,9 +72,11 @@ type EmojiManager interface {
 }
 
 // StickerManager manages stickers for a single guild.
+// https://docs.discord.com/developers/resources/sticker#sticker-object
 type StickerManager interface {
 	Cache() *collection.Collection[Snowflake, *Sticker]
 	Get(stickerID Snowflake) (*Sticker, bool)
+	GetOrFetch(ctx context.Context, stickerID Snowflake) (*Sticker, error)
 	Fetch(ctx context.Context, stickerID Snowflake) (*Sticker, error)
 	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, *Sticker], error)
 	Create(ctx context.Context, opts StickerCreateOptions) (*Sticker, error)
@@ -63,6 +85,7 @@ type StickerManager interface {
 }
 
 // BanManager manages bans for a single guild. Bans are not cached.
+// https://docs.discord.com/developers/resources/guild#ban-object
 type BanManager interface {
 	Fetch(ctx context.Context, userID Snowflake) (*Ban, error)
 	FetchAll(ctx context.Context, opts FetchBansOptions) ([]*Ban, error)
@@ -71,9 +94,11 @@ type BanManager interface {
 }
 
 // ScheduledEventManager manages scheduled events for a single guild.
+// https://docs.discord.com/developers/resources/guild-scheduled-event#guild-scheduled-event-object
 type ScheduledEventManager interface {
 	Cache() *collection.Collection[Snowflake, *GuildScheduledEvent]
 	Get(eventID Snowflake) (*GuildScheduledEvent, bool)
+	GetOrFetch(ctx context.Context, eventID Snowflake) (*GuildScheduledEvent, error)
 	Fetch(ctx context.Context, eventID Snowflake) (*GuildScheduledEvent, error)
 	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, *GuildScheduledEvent], error)
 	Create(ctx context.Context, opts ScheduledEventCreateOptions) (*GuildScheduledEvent, error)
@@ -84,6 +109,7 @@ type ScheduledEventManager interface {
 // StageInstanceManager manages stage instances for a single guild.
 // Note: Discord has no REST endpoint to list all stage instances for a guild;
 // use Cache() (populated from gateway events) or Fetch(ctx, channelID).
+// https://docs.discord.com/developers/resources/stage-instance#stage-instance-object
 type StageInstanceManager interface {
 	Cache() *collection.Collection[Snowflake, *StageInstance]
 	Get(instanceID Snowflake) (*StageInstance, bool)
@@ -94,9 +120,11 @@ type StageInstanceManager interface {
 }
 
 // SoundboardManager manages soundboard sounds for a single guild.
+// https://docs.discord.com/developers/resources/soundboard#soundboard-sound-object
 type SoundboardManager interface {
 	Cache() *collection.Collection[Snowflake, *SoundboardSound]
 	Get(soundID Snowflake) (*SoundboardSound, bool)
+	GetOrFetch(ctx context.Context, soundID Snowflake) (*SoundboardSound, error)
 	Fetch(ctx context.Context, soundID Snowflake) (*SoundboardSound, error)
 	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, *SoundboardSound], error)
 	Resolve(input any) (*SoundboardSound, error)
@@ -104,12 +132,14 @@ type SoundboardManager interface {
 }
 
 // GuildInviteManager manages invites for a single guild. Invites are not cached.
+// https://docs.discord.com/developers/resources/invite#invite-object
 type GuildInviteManager interface {
 	FetchAll(ctx context.Context) ([]*Invite, error)
 }
 
 // VoiceStateManager manages voice states for a single guild.
 // Voice states are gateway-only; there is no REST fetch endpoint.
+// https://docs.discord.com/developers/resources/voice#voice-state-object
 type VoiceStateManager interface {
 	Cache() *collection.Collection[Snowflake, *VoiceState]
 	Get(userID Snowflake) (*VoiceState, bool)
@@ -119,6 +149,7 @@ type VoiceStateManager interface {
 
 // AutoModRuleManager manages auto moderation rules for a single guild.
 // Rules are not cached.
+// https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-rule-object
 type AutoModRuleManager interface {
 	Fetch(ctx context.Context, ruleID Snowflake) (*AutoModerationRule, error)
 	FetchAll(ctx context.Context) ([]*AutoModerationRule, error)
@@ -126,11 +157,13 @@ type AutoModRuleManager interface {
 }
 
 // GuildWebhookManager manages webhooks for a single guild. Webhooks are not cached.
+// https://docs.discord.com/developers/resources/webhook#webhook-object
 type GuildWebhookManager interface {
 	FetchAll(ctx context.Context) ([]*Webhook, error)
 }
 
 // IntegrationManager manages integrations for a single guild. Integrations are not cached.
+// https://docs.discord.com/developers/resources/guild#integration-object
 type IntegrationManager interface {
 	FetchAll(ctx context.Context) ([]*Integration, error)
 	Remove(ctx context.Context, integrationID Snowflake, reason *string) error
@@ -139,9 +172,11 @@ type IntegrationManager interface {
 // ── Channel sub-manager interfaces ────────────────────────────────────────────
 
 // MessageManager manages messages for a single channel.
+// https://docs.discord.com/developers/resources/message#message-object
 type MessageManager interface {
 	Cache() *collection.Collection[Snowflake, *Message]
 	Get(messageID Snowflake) (*Message, bool)
+	GetOrFetch(ctx context.Context, messageID Snowflake) (*Message, error)
 	Fetch(ctx context.Context, messageID Snowflake) (*Message, error)
 	FetchAll(ctx context.Context, opts FetchMessagesOptions) (*collection.Collection[Snowflake, *Message], error)
 	Create(ctx context.Context, opts MessageCreateOptions) (*Message, error)
@@ -152,9 +187,11 @@ type MessageManager interface {
 // ThreadManager manages threads for a single channel.
 // Threads are channels cached in the channel store; there is no REST endpoint
 // to list all threads for a channel without additional filtering.
+// https://docs.discord.com/developers/resources/channel#thread-metadata-object
 type ThreadManager interface {
 	Cache() *collection.Collection[Snowflake, *Channel]
 	Get(threadID Snowflake) (*Channel, bool)
+	GetOrFetch(ctx context.Context, threadID Snowflake) (*Channel, error)
 	Fetch(ctx context.Context, threadID Snowflake) (*Channel, error)
 	Resolve(input any) (*Channel, error)
 	Size() int
@@ -163,27 +200,33 @@ type ThreadManager interface {
 // ── Client-level manager interfaces ──────────────────────────────────────────
 
 // GuildManager is the client-level manager for guilds.
+// https://docs.discord.com/developers/resources/guild#guild-object
 type GuildManager interface {
 	Cache() *collection.Collection[Snowflake, *Guild]
 	Get(guildID Snowflake) (*Guild, bool)
+	GetOrFetch(ctx context.Context, guildID Snowflake) (*Guild, error)
 	Fetch(ctx context.Context, guildID Snowflake) (*Guild, error)
 	Resolve(input any) (*Guild, error)
 	Size() int
 }
 
 // UserManager is the client-level manager for users.
+// https://docs.discord.com/developers/resources/user#user-object
 type UserManager interface {
 	Cache() *collection.Collection[Snowflake, *User]
 	Get(userID Snowflake) (*User, bool)
+	GetOrFetch(ctx context.Context, userID Snowflake) (*User, error)
 	Fetch(ctx context.Context, userID Snowflake) (*User, error)
 	Resolve(input any) (*User, error)
 	Size() int
 }
 
 // ChannelManager is the client-level manager for channels.
+// https://docs.discord.com/developers/resources/channel#channel-object
 type ChannelManager interface {
 	Cache() *collection.Collection[Snowflake, *Channel]
 	Get(channelID Snowflake) (*Channel, bool)
+	GetOrFetch(ctx context.Context, channelID Snowflake) (*Channel, error)
 	Fetch(ctx context.Context, channelID Snowflake) (*Channel, error)
 	Resolve(input any) (*Channel, error)
 	Size() int

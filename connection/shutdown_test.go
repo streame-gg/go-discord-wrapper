@@ -3,7 +3,6 @@ package connection
 import (
 	"sync"
 	"sync/atomic"
-	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -15,7 +14,8 @@ import (
 
 // TestBug51ShutdownIdempotent verifies that calling Shutdown() from many
 // goroutines concurrently never panics (double-close of eventCh or shutdownCh).
-func TestBug51ShutdownIdempotent(t *testing.T) {
+func (cs *ConnectionSuite) TestBug51ShutdownIdempotent() {
+	t := cs.T()
 	wsURL, closeServer := mockGateway(t)
 	defer closeServer()
 
@@ -51,7 +51,8 @@ func TestBug51ShutdownIdempotent(t *testing.T) {
 
 // TestBug48EventChSendRace verifies that pumping events concurrently with
 // Shutdown does not panic under the race detector.
-func TestBug48EventChSendRace(t *testing.T) {
+func (cs *ConnectionSuite) TestBug48EventChSendRace() {
+	t := cs.T()
 	packets := make([]map[string]interface{}, 100)
 	for i := range packets {
 		packets[i] = dispatchPacket("MESSAGE_CREATE", map[string]interface{}{
@@ -85,7 +86,8 @@ func TestBug48EventChSendRace(t *testing.T) {
 
 // TestBug49UnlimitedModeHandlersComplete verifies that all event handlers
 // launched in unlimited mode finish before Shutdown returns.
-func TestBug49UnlimitedModeHandlersComplete(t *testing.T) {
+func (cs *ConnectionSuite) TestBug49UnlimitedModeHandlersComplete() {
+	t := cs.T()
 	const nEvents = 50
 	packets := make([]map[string]interface{}, nEvents)
 	for i := range packets {

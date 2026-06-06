@@ -47,7 +47,8 @@ func newClientWithCacheAndServer(t *testing.T, baseURL string) *Client {
 
 // ── Fix 6: emojiManager ───────────────────────────────────────────────────────
 
-func TestEmojiManager_FetchAll_HydratesAndSetsGuildID(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiManager_FetchAll_HydratesAndSetsGuildID() {
+	t := cs.T()
 	guildID := discord.Snowflake(111222333444555666)
 	emojiID := discord.Snowflake(222333444555666777)
 
@@ -71,7 +72,8 @@ func TestEmojiManager_FetchAll_HydratesAndSetsGuildID(t *testing.T) {
 	assert.Equal(t, guildID, e.GuildID, "emoji.GuildID must be set after FetchAll")
 }
 
-func TestEmojiManager_FetchAll_CachesResults(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiManager_FetchAll_CachesResults() {
+	t := cs.T()
 	guildID := discord.Snowflake(111222333444555667)
 	emojiID := discord.Snowflake(222333444555666778)
 
@@ -96,7 +98,8 @@ func TestEmojiManager_FetchAll_CachesResults(t *testing.T) {
 
 // ── Fix 6: stickerManager ─────────────────────────────────────────────────────
 
-func TestStickerManager_FetchAll_HydratesAndSetsGuildID(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerManager_FetchAll_HydratesAndSetsGuildID() {
+	t := cs.T()
 	guildID := discord.Snowflake(333444555666777888)
 	stickerID := discord.Snowflake(444555666777888999)
 
@@ -121,7 +124,8 @@ func TestStickerManager_FetchAll_HydratesAndSetsGuildID(t *testing.T) {
 	assert.Equal(t, guildID, *s.GuildID, "sticker.GuildID must equal manager's guildID")
 }
 
-func TestStickerManager_FetchAll_CachesResults(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerManager_FetchAll_CachesResults() {
+	t := cs.T()
 	guildID := discord.Snowflake(333444555666777889)
 	stickerID := discord.Snowflake(444555666777889000)
 
@@ -145,7 +149,8 @@ func TestStickerManager_FetchAll_CachesResults(t *testing.T) {
 
 // ── Fix 6: soundboardManager ─────────────────────────────────────────────────
 
-func TestSoundboardManager_FetchAll_Hydrates(t *testing.T) {
+func (cs *ConnectionSuite) TestSoundboardManager_FetchAll_Hydrates() {
+	t := cs.T()
 	guildID := discord.Snowflake(555666777888999000)
 	soundID := discord.Snowflake(666777888999000111)
 
@@ -172,7 +177,8 @@ func TestSoundboardManager_FetchAll_Hydrates(t *testing.T) {
 
 // ── Fix 6: scheduledEventManager ─────────────────────────────────────────────
 
-func TestScheduledEventManager_FetchAll_Hydrates(t *testing.T) {
+func (cs *ConnectionSuite) TestScheduledEventManager_FetchAll_Hydrates() {
+	t := cs.T()
 	guildID := discord.Snowflake(777888999000111222)
 	eventID := discord.Snowflake(888999000111222333)
 
@@ -205,7 +211,8 @@ func TestScheduledEventManager_FetchAll_Hydrates(t *testing.T) {
 
 // ── Fix 6: autoModRuleManager ────────────────────────────────────────────────
 
-func TestAutoModRuleManager_FetchAll_Hydrates(t *testing.T) {
+func (cs *ConnectionSuite) TestAutoModRuleManager_FetchAll_Hydrates() {
+	t := cs.T()
 	guildID := discord.Snowflake(999000111222333444)
 	ruleID := discord.Snowflake(100011112222333445)
 
@@ -236,7 +243,8 @@ func TestAutoModRuleManager_FetchAll_Hydrates(t *testing.T) {
 
 // ── Fix 6: guildWebhookManager ───────────────────────────────────────────────
 
-func TestWebhookManager_FetchAll_Hydrates(t *testing.T) {
+func (cs *ConnectionSuite) TestWebhookManager_FetchAll_Hydrates() {
+	t := cs.T()
 	guildID := discord.Snowflake(111222333444555668)
 	webhookID := discord.Snowflake(222333444555666779)
 
@@ -258,7 +266,8 @@ func TestWebhookManager_FetchAll_Hydrates(t *testing.T) {
 
 // ── Fix 6: integrationManager ────────────────────────────────────────────────
 
-func TestIntegrationManager_FetchAll_Hydrates(t *testing.T) {
+func (cs *ConnectionSuite) TestIntegrationManager_FetchAll_Hydrates() {
+	t := cs.T()
 	guildID := discord.Snowflake(333444555666777890)
 	integID := discord.Snowflake(444555666777889001)
 
@@ -280,7 +289,8 @@ func TestIntegrationManager_FetchAll_Hydrates(t *testing.T) {
 
 // ── Fix 6: guildInviteManager ────────────────────────────────────────────────
 
-func TestInviteManager_FetchAll_Hydrates(t *testing.T) {
+func (cs *ConnectionSuite) TestInviteManager_FetchAll_Hydrates() {
+	t := cs.T()
 	guildID := discord.Snowflake(555666777889000111)
 
 	baseURL, stop := routeServer(t, map[string]any{
@@ -301,7 +311,8 @@ func TestInviteManager_FetchAll_Hydrates(t *testing.T) {
 
 // ── Fix 6: banManager ────────────────────────────────────────────────────────
 
-func TestBanManager_FetchAll_HydratesUser(t *testing.T) {
+func (cs *ConnectionSuite) TestBanManager_FetchAll_HydratesUser() {
+	t := cs.T()
 	guildID := discord.Snowflake(666777888999111222)
 	userID := discord.Snowflake(777888999111222333)
 

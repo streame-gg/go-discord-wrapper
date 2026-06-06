@@ -6,6 +6,7 @@ import (
 
 // GuildMembersChunkEvent is sent in response to a Request Guild Members gateway command.
 // Large guilds may send several chunks; check ChunkIndex and ChunkCount to track progress.
+// https://docs.discord.com/developers/events/gateway-events#guild-members-chunk
 type GuildMembersChunkEvent struct {
 	GuildID    discord.Snowflake     `json:"guild_id"`
 	Members    []discord.GuildMember `json:"members"`

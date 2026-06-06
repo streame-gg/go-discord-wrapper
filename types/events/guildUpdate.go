@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#guild-update
 type GuildUpdateEvent struct {
 	NewGuild discord.Guild  `json:"-"`
 	OldGuild *discord.Guild `json:"-"`

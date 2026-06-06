@@ -4,6 +4,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#guild-delete
 type GuildDeleteEvent struct {
 	discord.UnavailableGuild
 }

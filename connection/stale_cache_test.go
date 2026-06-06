@@ -1,19 +1,18 @@
 package connection
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-// TestBug25GetGuildRolesEvictsStaleRoles verifies that GetGuildRoles removes
+// TestBug25GetGuildRolesEvictsStaleRoles verifies that ListGuildRoles removes
 // roles from the previous cache fill that are no longer returned by the API
 // (Bug 25). We exercise the DeleteGuild+cacheRoles sequence directly because
 // RestClient is a concrete type and cannot be stubbed.
-func TestBug25GetGuildRolesEvictsStaleRoles(t *testing.T) {
+func (cs *ConnectionSuite) TestBug25GetGuildRolesEvictsStaleRoles() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(111222333444555)
@@ -26,21 +25,22 @@ func TestBug25GetGuildRolesEvictsStaleRoles(t *testing.T) {
 	_, okB := c.Cache.Roles().Get(roleB.ID)
 	require.True(t, okB, "roleB must be in cache before the refresh")
 
-	// Simulate what the fixed GetGuildRoles does: remove all guild roles first,
+	// Simulate what the fixed ListGuildRoles does: remove all guild roles first,
 	// then cache only the roles returned by the API (roleA only).
 	c.Cache.Roles().DeleteGuild(guildID)
 	c.cacheRoles(guildID, []*discord.Role{roleA})
 
 	_, okB = c.Cache.Roles().Get(roleB.ID)
-	assert.False(t, okB, "stale roleB must be evicted by GetGuildRoles refresh (Bug 25)")
+	assert.False(t, okB, "stale roleB must be evicted by ListGuildRoles refresh (Bug 25)")
 
 	_, okA := c.Cache.Roles().Get(roleA.ID)
-	assert.True(t, okA, "fresh roleA must remain in cache after GetGuildRoles refresh")
+	assert.True(t, okA, "fresh roleA must remain in cache after ListGuildRoles refresh")
 }
 
-// TestBug25GetGuildChannelsEvictsStaleChannels verifies that GetGuildChannels
+// TestBug25GetGuildChannelsEvictsStaleChannels verifies that ListGuildChannels
 // evicts stale channels (deleted on Discord) before inserting the fresh set.
-func TestBug25GetGuildChannelsEvictsStaleChannels(t *testing.T) {
+func (cs *ConnectionSuite) TestBug25GetGuildChannelsEvictsStaleChannels() {
+	t := cs.T()
 	c := newClientWithCache(t)
 
 	guildID := discord.Snowflake(222333444555666)
@@ -53,7 +53,7 @@ func TestBug25GetGuildChannelsEvictsStaleChannels(t *testing.T) {
 	_, okB := c.Cache.Channels().Get(chB)
 	require.True(t, okB, "channelB must be in cache before the refresh")
 
-	// Simulate what the fixed GetGuildChannels does: drain old IDs and delete
+	// Simulate what the fixed ListGuildChannels does: drain old IDs and delete
 	// them from both the channel cache and the message cache.
 	for _, oldID := range c.drainGuildChannelIDs(guildID) {
 		c.Cache.Channels().Delete(oldID)
@@ -63,8 +63,8 @@ func TestBug25GetGuildChannelsEvictsStaleChannels(t *testing.T) {
 	c.cacheChannels([]*discord.Channel{{ID: chA, GuildID: &guildID}})
 
 	_, okB = c.Cache.Channels().Get(chB)
-	assert.False(t, okB, "stale channelB must be evicted by GetGuildChannels refresh (Bug 25)")
+	assert.False(t, okB, "stale channelB must be evicted by ListGuildChannels refresh (Bug 25)")
 
 	_, okA := c.Cache.Channels().Get(chA)
-	assert.True(t, okA, "fresh channelA must remain in cache after GetGuildChannels refresh")
+	assert.True(t, okA, "fresh channelA must remain in cache after ListGuildChannels refresh")
 }

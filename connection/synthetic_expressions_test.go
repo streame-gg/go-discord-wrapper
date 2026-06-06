@@ -2,7 +2,6 @@ package connection
 
 import (
 	"sync/atomic"
-	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -14,16 +13,16 @@ import (
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
+func snowflake(s string) discord.Snowflake { return mustSnowflake(s) }
+func boolPtr(b bool) *bool                 { return &b }
+func strPtr(s string) *string              { return &s }
+
 func makeEmoji(id, name string) discord.Emoji {
 	return discord.Emoji{ID: snowflake(id), Name: name}
 }
 
 func makeSticker(id, name string) discord.Sticker {
 	return discord.Sticker{ID: snowflake(id), Name: name}
-}
-
-func makeRole(id, perms string) discord.Role {
-	return discord.Role{ID: snowflake(id), Permissions: perms}
 }
 
 func emojiPtrs(emojis []discord.Emoji) []*discord.Emoji {
@@ -62,12 +61,14 @@ func newStickerUpdateEvent(guildID string, newStickers []discord.Sticker, oldSti
 
 // ── Emoji unit tests ─────────────────────────────────────────────────────────
 
-func TestEmojiSynthetic_NoOldEmojis_ReturnsNil(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_NoOldEmojis_ReturnsNil() {
+	t := cs.T()
 	ev := newEmojiUpdateEvent("g1", []discord.Emoji{makeEmoji("e1", "wave")}, nil)
 	assert.Nil(t, deriveGuildEmojiSyntheticEvents(ev))
 }
 
-func TestEmojiSynthetic_AddFires(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_AddFires() {
+	t := cs.T()
 	ev := newEmojiUpdateEvent("g1",
 		[]discord.Emoji{makeEmoji("e1", "wave"), makeEmoji("e2", "fire")},
 		emojiPtrs([]discord.Emoji{makeEmoji("e1", "wave")}))
@@ -80,7 +81,8 @@ func TestEmojiSynthetic_AddFires(t *testing.T) {
 	assert.Equal(t, snowflake("g1"), add.GuildID)
 }
 
-func TestEmojiSynthetic_RemoveFires(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_RemoveFires() {
+	t := cs.T()
 	ev := newEmojiUpdateEvent("g1",
 		[]discord.Emoji{makeEmoji("e1", "wave")},
 		emojiPtrs([]discord.Emoji{makeEmoji("e1", "wave"), makeEmoji("e2", "fire")}))
@@ -92,7 +94,8 @@ func TestEmojiSynthetic_RemoveFires(t *testing.T) {
 	assert.Equal(t, snowflake("e2"), rem.Emoji.ID)
 }
 
-func TestEmojiSynthetic_UpdateFires_NameChanged(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_UpdateFires_NameChanged() {
+	t := cs.T()
 	ev := newEmojiUpdateEvent("g1",
 		[]discord.Emoji{makeEmoji("e1", "newname")},
 		emojiPtrs([]discord.Emoji{makeEmoji("e1", "oldname")}))
@@ -105,14 +108,74 @@ func TestEmojiSynthetic_UpdateFires_NameChanged(t *testing.T) {
 	assert.Equal(t, "newname", upd.NewEmoji.Name)
 }
 
-func TestEmojiSynthetic_UpdateNotFired_NameUnchanged(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_UpdateNotFired_NameUnchanged() {
+	t := cs.T()
 	ev := newEmojiUpdateEvent("g1",
 		[]discord.Emoji{makeEmoji("e1", "wave")},
 		emojiPtrs([]discord.Emoji{makeEmoji("e1", "wave")}))
 	assert.Empty(t, deriveGuildEmojiSyntheticEvents(ev))
 }
 
-func TestEmojiSynthetic_MultipleChanges(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_UpdateFires_AvailableChanged() {
+	t := cs.T()
+	old := makeEmoji("e1", "wave")
+	old.Available = boolPtr(true)
+	new_ := makeEmoji("e1", "wave")
+	new_.Available = boolPtr(false)
+	ev := &events.GuildEmojisUpdateEvent{
+		GuildID: snowflake("g1"), NewEmojis: []*discord.Emoji{&new_}, OldEmojis: []*discord.Emoji{&old},
+	}
+	result := deriveGuildEmojiSyntheticEvents(ev)
+	require.Len(t, result, 1)
+	_, ok := result[0].(*events.GuildEmojiUpdateEvent)
+	assert.True(t, ok)
+}
+
+func (cs *ConnectionSuite) TestEmojiSynthetic_UpdateFires_RequireColonsChanged() {
+	t := cs.T()
+	old := makeEmoji("e1", "wave")
+	old.RequireColons = boolPtr(true)
+	new_ := makeEmoji("e1", "wave")
+	new_.RequireColons = boolPtr(false)
+	ev := &events.GuildEmojisUpdateEvent{
+		GuildID: snowflake("g1"), NewEmojis: []*discord.Emoji{&new_}, OldEmojis: []*discord.Emoji{&old},
+	}
+	result := deriveGuildEmojiSyntheticEvents(ev)
+	require.Len(t, result, 1)
+	_, ok := result[0].(*events.GuildEmojiUpdateEvent)
+	assert.True(t, ok)
+}
+
+func (cs *ConnectionSuite) TestEmojiSynthetic_UpdateFires_RolesChanged() {
+	t := cs.T()
+	old := makeEmoji("e1", "wave")
+	old.Roles = []discord.Snowflake{snowflake("r1")}
+	new_ := makeEmoji("e1", "wave")
+	new_.Roles = []discord.Snowflake{snowflake("r1"), snowflake("r2")}
+	ev := &events.GuildEmojisUpdateEvent{
+		GuildID: snowflake("g1"), NewEmojis: []*discord.Emoji{&new_}, OldEmojis: []*discord.Emoji{&old},
+	}
+	result := deriveGuildEmojiSyntheticEvents(ev)
+	require.Len(t, result, 1)
+	_, ok := result[0].(*events.GuildEmojiUpdateEvent)
+	assert.True(t, ok)
+}
+
+func (cs *ConnectionSuite) TestEmojiSynthetic_UpdateNotFired_RolesReordered() {
+	t := cs.T()
+	// Same role set in different order must not trigger an update event.
+	old := makeEmoji("e1", "wave")
+	old.Roles = []discord.Snowflake{snowflake("r1"), snowflake("r2")}
+	new_ := makeEmoji("e1", "wave")
+	new_.Roles = []discord.Snowflake{snowflake("r2"), snowflake("r1")}
+	ev := &events.GuildEmojisUpdateEvent{
+		GuildID: snowflake("g1"), NewEmojis: []*discord.Emoji{&new_}, OldEmojis: []*discord.Emoji{&old},
+	}
+	assert.Empty(t, deriveGuildEmojiSyntheticEvents(ev))
+}
+
+func (cs *ConnectionSuite) TestEmojiSynthetic_MultipleChanges() {
+	t := cs.T()
 	// e1 renamed, e2 removed, e3 added
 	ev := newEmojiUpdateEvent("g1",
 		[]discord.Emoji{makeEmoji("e1", "renamed"), makeEmoji("e3", "new")},
@@ -130,7 +193,8 @@ func TestEmojiSynthetic_MultipleChanges(t *testing.T) {
 	assert.Equal(t, 1, typeCount[events.EventWrapperGuildEmojiUpdate])
 }
 
-func TestEmojiSynthetic_Unchanged_NoEvents(t *testing.T) {
+func (cs *ConnectionSuite) TestEmojiSynthetic_Unchanged_NoEvents() {
+	t := cs.T()
 	emojis := []discord.Emoji{makeEmoji("e1", "wave"), makeEmoji("e2", "fire")}
 	ev := newEmojiUpdateEvent("g1", emojis, emojiPtrs(emojis))
 	assert.Empty(t, deriveGuildEmojiSyntheticEvents(ev))
@@ -138,12 +202,14 @@ func TestEmojiSynthetic_Unchanged_NoEvents(t *testing.T) {
 
 // ── Sticker unit tests ───────────────────────────────────────────────────────
 
-func TestStickerSynthetic_NoOldStickers_ReturnsNil(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerSynthetic_NoOldStickers_ReturnsNil() {
+	t := cs.T()
 	ev := newStickerUpdateEvent("g1", []discord.Sticker{makeSticker("s1", "doge")}, nil)
 	assert.Nil(t, deriveGuildStickerSyntheticEvents(ev))
 }
 
-func TestStickerSynthetic_AddFires(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerSynthetic_AddFires() {
+	t := cs.T()
 	ev := newStickerUpdateEvent("g1",
 		[]discord.Sticker{makeSticker("s1", "doge"), makeSticker("s2", "cat")},
 		stickerPtrs([]discord.Sticker{makeSticker("s1", "doge")}))
@@ -155,7 +221,8 @@ func TestStickerSynthetic_AddFires(t *testing.T) {
 	assert.Equal(t, snowflake("s2"), add.Sticker.ID)
 }
 
-func TestStickerSynthetic_RemoveFires(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerSynthetic_RemoveFires() {
+	t := cs.T()
 	ev := newStickerUpdateEvent("g1",
 		[]discord.Sticker{makeSticker("s1", "doge")},
 		stickerPtrs([]discord.Sticker{makeSticker("s1", "doge"), makeSticker("s2", "cat")}))
@@ -167,7 +234,8 @@ func TestStickerSynthetic_RemoveFires(t *testing.T) {
 	assert.Equal(t, snowflake("s2"), rem.Sticker.ID)
 }
 
-func TestStickerSynthetic_UpdateFires_NameChanged(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerSynthetic_UpdateFires_NameChanged() {
+	t := cs.T()
 	ev := newStickerUpdateEvent("g1",
 		[]discord.Sticker{makeSticker("s1", "newname")},
 		stickerPtrs([]discord.Sticker{makeSticker("s1", "oldname")}))
@@ -180,69 +248,62 @@ func TestStickerSynthetic_UpdateFires_NameChanged(t *testing.T) {
 	assert.Equal(t, "newname", upd.NewSticker.Name)
 }
 
-func TestStickerSynthetic_UpdateNotFired_Unchanged(t *testing.T) {
+func (cs *ConnectionSuite) TestStickerSynthetic_UpdateNotFired_Unchanged() {
+	t := cs.T()
 	stickers := []discord.Sticker{makeSticker("s1", "doge")}
 	ev := newStickerUpdateEvent("g1", stickers, stickerPtrs(stickers))
 	assert.Empty(t, deriveGuildStickerSyntheticEvents(ev))
 }
 
-// ── Role permissions unit tests ──────────────────────────────────────────────
-
-func TestRolePermSynthetic_NoOldRole_ReturnsNil(t *testing.T) {
-	role := makeRole("r1", "8")
-	ev := &events.GuildRoleUpdateEvent{
-		GuildID: snowflake("g1"),
-		NewRole: role,
-		OldRole: nil,
+func (cs *ConnectionSuite) TestStickerSynthetic_UpdateFires_TagsChanged() {
+	t := cs.T()
+	old := makeSticker("s1", "doge")
+	old.Tags = "dog,cute"
+	new_ := makeSticker("s1", "doge")
+	new_.Tags = "dog,cute,wow"
+	ev := &events.GuildStickersUpdateEvent{
+		GuildID: snowflake("g1"), NewStickers: []*discord.Sticker{&new_}, OldStickers: []*discord.Sticker{&old},
 	}
-	assert.Nil(t, deriveGuildRoleSyntheticEvents(ev))
-}
-
-func TestRolePermSynthetic_PermissionsChangeFires(t *testing.T) {
-	oldRole := makeRole("r1", "0")
-	newRole := makeRole("r1", "8")
-	ev := &events.GuildRoleUpdateEvent{
-		GuildID: snowflake("g1"),
-		NewRole: newRole,
-		OldRole: &oldRole,
-	}
-	result := deriveGuildRoleSyntheticEvents(ev)
+	result := deriveGuildStickerSyntheticEvents(ev)
 	require.Len(t, result, 1)
-	pc, ok := result[0].(*events.GuildRolePermissionsChangeEvent)
-	require.True(t, ok)
-	assert.Equal(t, snowflake("g1"), pc.GuildID)
-	assert.Equal(t, snowflake("r1"), pc.RoleID)
-	assert.Equal(t, "0", pc.OldPermissions)
-	assert.Equal(t, "8", pc.NewPermissions)
-	assert.NotNil(t, pc.OldRole)
-	assert.NotNil(t, pc.NewRole)
+	_, ok := result[0].(*events.GuildStickerUpdateEvent)
+	assert.True(t, ok)
 }
 
-func TestRolePermSynthetic_NotFired_PermissionsUnchanged(t *testing.T) {
-	role := makeRole("r1", "8")
-	old := makeRole("r1", "8")
-	ev := &events.GuildRoleUpdateEvent{
-		GuildID: snowflake("g1"),
-		NewRole: role,
-		OldRole: &old,
+func (cs *ConnectionSuite) TestStickerSynthetic_UpdateFires_DescriptionChanged() {
+	t := cs.T()
+	old := makeSticker("s1", "doge")
+	old.Description = strPtr("cute dog")
+	new_ := makeSticker("s1", "doge")
+	new_.Description = strPtr("very cute dog")
+	ev := &events.GuildStickersUpdateEvent{
+		GuildID: snowflake("g1"), NewStickers: []*discord.Sticker{&new_}, OldStickers: []*discord.Sticker{&old},
 	}
-	assert.Empty(t, deriveGuildRoleSyntheticEvents(ev))
+	result := deriveGuildStickerSyntheticEvents(ev)
+	require.Len(t, result, 1)
+	_, ok := result[0].(*events.GuildStickerUpdateEvent)
+	assert.True(t, ok)
 }
 
-func TestRolePermSynthetic_NotFired_NameChangeOnly(t *testing.T) {
-	oldRole := discord.Role{ID: snowflake("r1"), Name: "old name", Permissions: "8"}
-	newRole := discord.Role{ID: snowflake("r1"), Name: "new name", Permissions: "8"}
-	ev := &events.GuildRoleUpdateEvent{
-		GuildID: snowflake("g1"),
-		NewRole: newRole,
-		OldRole: &oldRole,
+func (cs *ConnectionSuite) TestStickerSynthetic_UpdateFires_AvailableChanged() {
+	t := cs.T()
+	old := makeSticker("s1", "doge")
+	old.Available = boolPtr(true)
+	new_ := makeSticker("s1", "doge")
+	new_.Available = boolPtr(false)
+	ev := &events.GuildStickersUpdateEvent{
+		GuildID: snowflake("g1"), NewStickers: []*discord.Sticker{&new_}, OldStickers: []*discord.Sticker{&old},
 	}
-	assert.Empty(t, deriveGuildRoleSyntheticEvents(ev))
+	result := deriveGuildStickerSyntheticEvents(ev)
+	require.Len(t, result, 1)
+	_, ok := result[0].(*events.GuildStickerUpdateEvent)
+	assert.True(t, ok)
 }
 
 // ── Integration: On* helpers dispatched ─────────────────────────────────────
 
-func TestExpressionSynthetic_OnGuildEmojiAdd_Dispatches(t *testing.T) {
+func (cs *ConnectionSuite) TestExpressionSynthetic_OnGuildEmojiAdd_Dispatches() {
+	t := cs.T()
 	client, err := NewClient("Bot fake-token", discord.IntentGuildExpressions)
 	require.NoError(t, err)
 	defer client.Shutdown()
@@ -269,34 +330,4 @@ func TestExpressionSynthetic_OnGuildEmojiAdd_Dispatches(t *testing.T) {
 		t.Fatal("timeout waiting for GuildEmojiAdd")
 	}
 	assert.True(t, called.Load())
-}
-
-func TestExpressionSynthetic_OnGuildRolePermissionsChange_Dispatches(t *testing.T) {
-	client, err := NewClient("Bot fake-token", discord.IntentGuilds)
-	require.NoError(t, err)
-	defer client.Shutdown()
-
-	done := make(chan struct{})
-	client.OnGuildRolePermissionsChange(func(c *Client, ev *events.GuildRolePermissionsChangeEvent) {
-		if ev.NewPermissions == "8" {
-			close(done)
-		}
-	})
-
-	oldRole := makeRole("r1", "0")
-	newRole := makeRole("r1", "8")
-	ev := &events.GuildRoleUpdateEvent{
-		GuildID: snowflake("g1"),
-		NewRole: newRole,
-		OldRole: &oldRole,
-	}
-	for _, syn := range client.deriveSyntheticEvents(ev) {
-		_ = client.enqueueOrDispatch(syn)
-	}
-
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Fatal("timeout waiting for GuildRolePermissionsChange")
-	}
 }

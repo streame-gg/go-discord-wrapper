@@ -25,7 +25,7 @@ func (m *soundboardManager) Cache() *collection.Collection[discord.Snowflake, *d
 
 func (m *soundboardManager) Get(soundID discord.Snowflake) (*discord.SoundboardSound, bool) {
 	if c := m.client.ClientCache(); c != nil {
-		return c.Soundboard().Get(soundID)
+		return c.Soundboard().GetByGuild(m.guildID).Get(soundID)
 	}
 	return nil, false
 }

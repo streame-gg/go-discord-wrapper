@@ -1,13 +1,15 @@
 package options
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestValidate(t *testing.T) {
+func (su *optionsSuite) TestValidate() {
+	t := su.T()
 	tests := []struct {
 		name    string
 		config  Config
@@ -135,7 +137,8 @@ func TestValidate(t *testing.T) {
 // MaxReconnectRetries < -1 fails Validate (Bug 31).
 // -1 means infinite retries; any value below -1 is meaningless and should be
 // rejected so users get a clear error instead of silent infinite retries.
-func TestBug31MaxReconnectRetriesBelowMinus1IsRejected(t *testing.T) {
+func (su *optionsSuite) TestBug31MaxReconnectRetriesBelowMinus1IsRejected() {
+	t := su.T()
 	err := Config{MaxReconnectRetries: -2}.Validate()
 	assert.Error(t, err, "MaxReconnectRetries=-2 must fail Validate (Bug 31)")
 
@@ -150,7 +153,8 @@ func TestBug31MaxReconnectRetriesBelowMinus1IsRejected(t *testing.T) {
 }
 
 // Bug 11: MaxConcurrentEvents must be rejected when negative.
-func TestBug11_NegativeMaxConcurrentEventsRejected(t *testing.T) {
+func (su *optionsSuite) TestBug11_NegativeMaxConcurrentEventsRejected() {
+	t := su.T()
 	err := Config{MaxConcurrentEvents: -1}.Validate()
 	assert.Error(t, err, "MaxConcurrentEvents=-1 must fail Validate (Bug 11)")
 
@@ -160,3 +164,7 @@ func TestBug11_NegativeMaxConcurrentEventsRejected(t *testing.T) {
 	err = Config{MaxConcurrentEvents: 64}.Validate()
 	assert.NoError(t, err, "MaxConcurrentEvents=64 must be valid")
 }
+
+type optionsSuite struct{ suite.Suite }
+
+func TestOptionsSuite(t *testing.T) { suite.Run(t, new(optionsSuite)) }

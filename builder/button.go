@@ -12,6 +12,8 @@ import (
 //	    SetLabel("Click me").
 //	    SetCustomID("my_button").
 //	    Build()
+//
+// https://docs.discord.com/developers/components/reference#button
 type ButtonBuilder struct {
 	btn components.ButtonComponent
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#voice-state-update
 type VoiceStateUpdateEvent struct {
 	discord.VoiceState
 	// OldState is the user's previous voice state. Nil if the user was not in
@@ -13,6 +14,7 @@ type VoiceStateUpdateEvent struct {
 
 // VoiceServerUpdateEvent is dispatched when a guild's voice server is updated.
 // Use the Token and Endpoint to connect to the voice websocket.
+// https://docs.discord.com/developers/events/gateway-events#voice-server-update
 type VoiceServerUpdateEvent struct {
 	Token    string            `json:"token"`
 	GuildID  discord.Snowflake `json:"guild_id"`
@@ -21,6 +23,7 @@ type VoiceServerUpdateEvent struct {
 
 // VoiceChannelEffectSendEvent is dispatched when a user sends an effect (soundboard,
 // emoji, etc.) in a voice channel.
+// https://docs.discord.com/developers/events/gateway-events#voice-channel-effect-send
 type VoiceChannelEffectSendEvent struct {
 	ChannelID     discord.Snowflake  `json:"channel_id"`
 	GuildID       discord.Snowflake  `json:"guild_id"`

@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#interaction-create
 type InteractionCreateEvent struct {
 	interactions.Interaction
 }

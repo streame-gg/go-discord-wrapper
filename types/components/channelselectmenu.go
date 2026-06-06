@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#channel-select
 type ChannelSelectMenuComponent struct {
 	Type          discord.ComponentType `json:"type"`
 	ID            *int                  `json:"id,omitempty"`
@@ -40,12 +41,13 @@ func (c *ChannelSelectMenuComponent) UnmarshalJSON(data []byte) error {
 }
 
 func (c *ChannelSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	c.Type = discord.ComponentTypeChannelSelect
 	type Alias ChannelSelectMenuComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(c),
+		Alias: Alias(*c),
+		Type:  discord.ComponentTypeChannelSelect,
 	})
 }
 
@@ -57,6 +59,7 @@ func (c *ChannelSelectMenuComponent) IsAnyLabelComponent() {
 
 }
 
+// https://docs.discord.com/developers/components/reference#channel-select
 type ChannelComponentInteractionResponse struct {
 	Type          discord.ComponentType `json:"type"`
 	Values        []discord.Snowflake   `json:"values"`
@@ -69,15 +72,15 @@ type ChannelComponentInteractionResponse struct {
 func (c *ChannelComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (c *ChannelComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	c.ComponentType = discord.ComponentTypeChannelSelect
-	c.Type = discord.ComponentTypeChannelSelect
-
 	type Alias ChannelComponentInteractionResponse
-
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type          discord.ComponentType `json:"type"`
+		ComponentType discord.ComponentType `json:"component_type"`
 	}{
-		Alias: (*Alias)(c),
+		Alias:         Alias(*c),
+		Type:          discord.ComponentTypeChannelSelect,
+		ComponentType: discord.ComponentTypeChannelSelect,
 	})
 }
 

@@ -5,6 +5,7 @@ import "context"
 // ── Options ───────────────────────────────────────────────────────────────────
 
 // RuleCreateOptions configures AutoModRuleManager.Create.
+// https://docs.discord.com/developers/resources/auto-moderation#create-auto-moderation-rule
 type RuleCreateOptions struct {
 	Name            string
 	EventType       AutoModerationEventType
@@ -18,6 +19,7 @@ type RuleCreateOptions struct {
 }
 
 // RuleEditOptions configures AutoModerationRule.Edit.
+// https://docs.discord.com/developers/resources/auto-moderation#modify-auto-moderation-rule
 type RuleEditOptions struct {
 	Name            *string
 	EventType       *AutoModerationEventType

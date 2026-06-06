@@ -2,6 +2,7 @@ package components
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/suite"
 	"strings"
 	"testing"
 
@@ -10,7 +11,8 @@ import (
 
 // TestContainerDecodeRoundTrip verifies that Container with nested components
 // decodes without panic and preserves all child components (Issue 1).
-func TestContainerDecodeRoundTrip(t *testing.T) {
+func (su *decodeSuite) TestContainerDecodeRoundTrip() {
+	t := su.T()
 	raw := `{
 		"type": 17,
 		"components": [
@@ -40,7 +42,8 @@ func TestContainerDecodeRoundTrip(t *testing.T) {
 
 // TestContainerUnknownTypeError verifies that an unknown component type inside
 // a Container returns an error whose message contains the decimal type number (Issue 4b).
-func TestContainerUnknownTypeError(t *testing.T) {
+func (su *decodeSuite) TestContainerUnknownTypeError() {
+	t := su.T()
 	raw := `{"type": 17, "components": [{"type": 999}]}`
 	var c Container
 	err := json.Unmarshal([]byte(raw), &c)
@@ -54,7 +57,8 @@ func TestContainerUnknownTypeError(t *testing.T) {
 
 // TestSectionDecodeRoundTrip verifies that Section with a TextDisplay child
 // decodes without panic (Issue 2).
-func TestSectionDecodeRoundTrip(t *testing.T) {
+func (su *decodeSuite) TestSectionDecodeRoundTrip() {
+	t := su.T()
 	raw := `{
 		"type": 9,
 		"components": [
@@ -73,7 +77,8 @@ func TestSectionDecodeRoundTrip(t *testing.T) {
 
 // TestSectionUnknownTypeError verifies that an unknown type inside a Section
 // returns a readable error (Issue 4a + 4b).
-func TestSectionUnknownTypeError(t *testing.T) {
+func (su *decodeSuite) TestSectionUnknownTypeError() {
+	t := su.T()
 	raw := `{"type": 9, "components": [{"type": 42}]}`
 	var s Section
 	err := json.Unmarshal([]byte(raw), &s)
@@ -87,7 +92,8 @@ func TestSectionUnknownTypeError(t *testing.T) {
 
 // TestActionRowDecodeAllTypes verifies that every valid ActionRow child type
 // decodes without being silently dropped (Issue 3).
-func TestActionRowDecodeAllTypes(t *testing.T) {
+func (su *decodeSuite) TestActionRowDecodeAllTypes() {
+	t := su.T()
 	cases := []struct {
 		name     string
 		raw      string
@@ -121,7 +127,8 @@ func TestActionRowDecodeAllTypes(t *testing.T) {
 
 // TestActionRowUnknownTypeError verifies that an unknown type returns an error
 // with a decimal type number in the message (Issue 3 + 4b).
-func TestActionRowUnknownTypeError(t *testing.T) {
+func (su *decodeSuite) TestActionRowUnknownTypeError() {
+	t := su.T()
 	raw := `{"type": 1, "components": [{"type": 999}]}`
 	var a ActionRow
 	err := json.Unmarshal([]byte(raw), &a)
@@ -135,7 +142,8 @@ func TestActionRowUnknownTypeError(t *testing.T) {
 
 // TestLabelUnknownTypeError verifies LabelComponent returns a readable decimal
 // error on unknown nested component type (Issue 4b).
-func TestLabelUnknownTypeError(t *testing.T) {
+func (su *decodeSuite) TestLabelUnknownTypeError() {
+	t := su.T()
 	raw := `{"type": 18, "label": "l", "component": {"type": 999}}`
 	var l LabelComponent
 	err := json.Unmarshal([]byte(raw), &l)
@@ -149,7 +157,8 @@ func TestLabelUnknownTypeError(t *testing.T) {
 
 // J0-#24: LabelComponent marshal should produce "label" field;
 // LabelComponent unmarshal from {"label":"foo"} must set Label correctly.
-func TestLabelComponentRoundtrip(t *testing.T) {
+func (su *decodeSuite) TestLabelComponentRoundtrip() {
+	t := su.T()
 	orig := LabelComponent{Label: "my label", Description: "desc"}
 	b, err := json.Marshal(&orig)
 	if err != nil {
@@ -171,3 +180,7 @@ func TestLabelComponentRoundtrip(t *testing.T) {
 		t.Errorf("Description: want %q, got %q", "bar", got.Description)
 	}
 }
+
+type decodeSuite struct{ suite.Suite }
+
+func TestDecodeSuite(t *testing.T) { suite.Run(t, new(decodeSuite)) }

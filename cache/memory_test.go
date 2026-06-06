@@ -10,7 +10,6 @@ import (
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -583,14 +582,10 @@ func (s *memoryTestSuite) TestConcurrentAccess_NoRace() {
 
 // TestBug14SoundboardSetNilDoesNotPanic verifies that passing nil to
 // memSoundboardStore.Set does not panic (Bug 14).
-func TestBug14SoundboardSetNilDoesNotPanic(t *testing.T) {
+func (s *memoryTestSuite) TestBug14SoundboardSetNilDoesNotPanic() {
 	c := cache.NewMemoryCache(cache.Options{})
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("Soundboard().Set(guild, nil) panicked: %v (Bug 14)", r)
-		}
-	}()
-	c.Soundboard().Set(mustSnowflake("g1"), nil)
+	defer c.Close()
+	s.NotPanics(func() { c.Soundboard().Set(mustSnowflake("g1"), nil) }, "Bug 14")
 }
 
 // TestBug15PresenceSetNilDoesNotPanic verifies that passing nil to
@@ -598,21 +593,17 @@ func TestBug14SoundboardSetNilDoesNotPanic(t *testing.T) {
 // Note: Presence.User is a value type, so nil-User is not possible in this
 // implementation. The nil presence guard added here covers the panic on
 // presence == nil.
-func TestBug15PresenceSetNilDoesNotPanic(t *testing.T) {
+func (s *memoryTestSuite) TestBug15PresenceSetNilDoesNotPanic() {
 	c := cache.NewMemoryCache(cache.Options{})
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("Presences().Set(nil) panicked: %v (Bug 15)", r)
-		}
-	}()
-	c.Presences().Set(nil)
+	defer c.Close()
+	s.NotPanics(func() { c.Presences().Set(nil) }, "Bug 15")
 }
 
 // TestBug12EmptyRingRemovedAfterTTLExpiry verifies that once all messages in a
 // channel have expired (EvictExpired / default behavior), the channel's ring
-// entry is removed from the internal map during the next sweep, preventing
+// entry is removed from the pkg map during the next sweep, preventing
 // unbounded map growth for bots with many short-lived channels (Bug 12).
-func TestBug12EmptyRingRemovedAfterTTLExpiry(t *testing.T) {
+func (s *memoryTestSuite) TestBug12EmptyRingRemovedAfterTTLExpiry() {
 	c := cache.NewMemoryCache(cache.Options{
 		SweepInterval: 5 * time.Millisecond,
 		Messages: cache.MessageOptions{
@@ -620,6 +611,7 @@ func TestBug12EmptyRingRemovedAfterTTLExpiry(t *testing.T) {
 			TTL:           20 * time.Millisecond,
 		},
 	})
+	defer c.Close()
 
 	// Add one message with a 20 ms TTL.
 	c.Messages().Add(&discord.Message{ID: mustSnowflake("m1"), ChannelID: mustSnowflake("ch1")})
@@ -629,23 +621,20 @@ func TestBug12EmptyRingRemovedAfterTTLExpiry(t *testing.T) {
 
 	// After expiry the message must be gone.
 	_, ok := c.Messages().Get(mustSnowflake("ch1"), mustSnowflake("m1"))
-	if ok {
-		t.Error("expired message still returned — TTL not enforced")
-	}
+	s.False(ok, "expired message still returned — TTL not enforced")
 
-	// The internal ring must also be gone (not just zeroed) so the channel map
-	// doesn't accumulate empty rings.  We verify via Size: it must be 0.
-	if s := c.Messages().Size(); s != 0 {
-		t.Errorf("messages Size()=%d after all messages expired — empty rings kept (Bug 12)", s)
-	}
+	// The pkg ring must also be gone (not just zeroed) so the channel map
+	// doesn't accumulate empty rings. We verify via Size: it must be 0.
+	s.Equal(0, c.Messages().Size(), "empty rings kept after expiry (Bug 12)")
 }
 
 // TestBug5FixedTTLDoesNotExtendOnGet verifies that accessing an entry does not
 // push its expiry further into the future (no sliding TTL). With a 50 ms TTL,
 // an entry accessed at t=40 ms must still expire by ~50 ms, not at ~90 ms.
-func TestBug5FixedTTLDoesNotExtendOnGet(t *testing.T) {
+func (s *memoryTestSuite) TestBug5FixedTTLDoesNotExtendOnGet() {
 	const ttl = 50 * time.Millisecond
 	c := cache.NewMemoryCache(cache.Options{TTL: ttl})
+	defer c.Close()
 
 	c.Guilds().Set(guild("1"))
 
@@ -653,7 +642,7 @@ func TestBug5FixedTTLDoesNotExtendOnGet(t *testing.T) {
 	time.Sleep(30 * time.Millisecond)
 	_, ok := c.Guilds().Get(1)
 	if !ok {
-		t.Skip("entry expired before test could access it — adjust timing")
+		s.T().Skip("entry expired before test could access it — adjust timing")
 	}
 
 	// With sliding TTL the access above would push expiry to ~80 ms from start.
@@ -661,16 +650,14 @@ func TestBug5FixedTTLDoesNotExtendOnGet(t *testing.T) {
 	time.Sleep(30 * time.Millisecond) // total ~60 ms from insertion
 
 	_, ok = c.Guilds().Get(1)
-	if ok {
-		t.Error("entry still alive at 60 ms with 50 ms TTL — sliding TTL not removed (Bug 5)")
-	}
+	s.False(ok, "entry still alive at 60 ms with 50 ms TTL — sliding TTL not removed (Bug 5)")
 }
 
 // TestBug9CountBasedEvictionDoesNotOverEvict verifies that evictGloballyByCount
 // evicts exactly `need` entries and does not forcibly evict from every targeted
 // store. With 1000 guilds and 1 user and need=1, the user (0.1% of entries)
 // must not be evicted — only the guild store should shed 1 entry.
-func TestBug9CountBasedEvictionDoesNotOverEvict(t *testing.T) {
+func (s *memoryTestSuite) TestBug9CountBasedEvictionDoesNotOverEvict() {
 	// SweepInterval=5ms so the sweeper runs promptly when we exceed MaxEntries.
 	c := cache.NewMemoryCache(cache.Options{
 		SweepInterval: 5 * time.Millisecond,
@@ -692,15 +679,13 @@ func TestBug9CountBasedEvictionDoesNotOverEvict(t *testing.T) {
 	time.Sleep(50 * time.Millisecond) // wait for sweeper
 
 	_, userStillPresent := c.Users().Get(1)
-	if !userStillPresent {
-		t.Error("lone user was evicted when need=1 — over-eviction from small store (Bug 9)")
-	}
+	s.True(userStillPresent, "lone user was evicted when need=1 — over-eviction from small store (Bug 9)")
 }
 
 // TestBug4ByteBasedEvictionDistribution verifies that evictGloballyByBytes
 // distributes eviction proportionally by byte share, not entry count.
 // Store B (large entries) should be hit harder than store A (small entries).
-func TestBug4ByteBasedEvictionDistribution(t *testing.T) {
+func (s *memoryTestSuite) TestBug4ByteBasedEvictionDistribution() {
 	// Use a 1 MB limit with a short sweep interval.
 	// Store A: 2000 small guilds (~100 bytes each → ~200 KB)
 	// Store B: 10 users with 100 KB names each → ~1 MB
@@ -748,28 +733,27 @@ func TestBug4ByteBasedEvictionDistribution(t *testing.T) {
 	after := afterGuilds + afterUsers
 
 	if after >= before {
-		t.Skip("no overflow eviction happened — byte limit not exceeded")
+		s.T().Skip("no overflow eviction happened — byte limit not exceeded")
 	}
 
 	evictedGuilds := 2000 - afterGuilds
 	evictedUsers := 10 - afterUsers
 
-	t.Logf("after: guilds=%d users=%d | evictedGuilds=%d evictedUsers=%d",
+	s.T().Logf("after: guilds=%d users=%d | evictedGuilds=%d evictedUsers=%d",
 		afterGuilds, afterUsers, evictedGuilds, evictedUsers)
 
 	// Users contribute far more bytes per entry (~100KB) than guilds (~100B).
 	// With the bug (count-based): guilds evicted >> users because 2000 >> 10.
 	// With the fix (byte-based): users must be evicted at least as much as guilds
 	// relative to their count share.
-	if evictedGuilds > 0 && evictedUsers == 0 {
-		t.Errorf("only guilds were evicted (count=%d) but not users — byte-based eviction not working (Bug 4)",
-			evictedGuilds)
-	}
+	s.Falsef(evictedGuilds > 0 && evictedUsers == 0,
+		"only guilds were evicted (count=%d) but not users — byte-based eviction not working (Bug 4)",
+		evictedGuilds)
 }
 
 // TestBug3ConcurrentAddDeleteChannelNoCounterDrift verifies that concurrent
 // Add and DeleteChannel do not produce orphaned rings or counter drift.
-func TestBug3ConcurrentAddDeleteChannelNoCounterDrift(t *testing.T) {
+func (s *memoryTestSuite) TestBug3ConcurrentAddDeleteChannelNoCounterDrift() {
 	c := cache.NewMemoryCache(cache.Options{
 		Messages: cache.MessageOptions{MaxPerChannel: 50},
 	})
@@ -807,19 +791,15 @@ func TestBug3ConcurrentAddDeleteChannelNoCounterDrift(t *testing.T) {
 	reported := c.Messages().Size()
 	// Get() returns all messages in the channel; use Channel() to count actual messages.
 	actual := c.Messages().Channel(chanID).Len()
-	if reported < 0 {
-		t.Errorf("totalMsgs went negative: %d", reported)
-	}
+	s.GreaterOrEqual(reported, 0, "totalMsgs went negative")
 	// reported may be slightly stale (recomputed lazily), but actual counts from ring
 	// are authoritative. They should be in sync after no concurrent activity.
-	if reported != actual {
-		t.Errorf("counter drift: reported=%d actual=%d", reported, actual)
-	}
+	s.Equal(actual, reported, "counter drift")
 }
 
 // TestBug1MaxPerChannelZeroDisablesCaching verifies that MaxPerChannel=0
 // disables message caching as documented, rather than defaulting to 100.
-func TestBug1MaxPerChannelZeroDisablesCaching(t *testing.T) {
+func (s *memoryTestSuite) TestBug1MaxPerChannelZeroDisablesCaching() {
 	c := newCache(cache.Options{
 		Messages: cache.MessageOptions{MaxPerChannel: 0},
 	})
@@ -828,16 +808,14 @@ func TestBug1MaxPerChannelZeroDisablesCaching(t *testing.T) {
 	c.Messages().Add(message("1", "ch1"))
 	c.Messages().Add(message("2", "ch1"))
 
-	if got := c.Messages().Size(); got != 0 {
-		t.Errorf("expected 0 messages when MaxPerChannel=0, got %d", got)
-	}
+	s.Equal(0, c.Messages().Size(), "expected 0 messages when MaxPerChannel=0")
 }
 
 // TestBug2HitCountPreservedOnUpdate verifies that a Set (update) for an
 // existing key does not reset the hitCount accumulated via Get calls.
 // Without the fix, ClearByFrequency eviction is inverted: a frequently-read
 // entry that gets updated loses its hitCount and is evicted first.
-func TestBug2HitCountPreservedOnUpdate(t *testing.T) {
+func (s *memoryTestSuite) TestBug2HitCountPreservedOnUpdate() {
 	c := newCache(cache.Options{
 		Limits: cache.Limits{MaxGuilds: 2},
 		OnOverflow: cache.OverflowPolicy{
@@ -867,16 +845,14 @@ func TestBug2HitCountPreservedOnUpdate(t *testing.T) {
 	c.Guilds().Set(&discord.Guild{ID: 300, Name: "trigger"})
 
 	_, hotStillCached := c.Guilds().Get(hotID)
-	if !hotStillCached {
-		t.Error("hot guild (hitCount=100 before update) was evicted — hitCount was reset on Set (Bug 2)")
-	}
+	s.True(hotStillCached, "hot guild (hitCount=100 before update) was evicted — hitCount was reset on Set (Bug 2)")
 }
 
 // TestBug11TotalBytesAtomicUnderConcurrentUpdates verifies that concurrent
 // Set (update) calls on the same key do not cause the sweeper to fire spurious
 // overflow evictions due to a temporarily deflated byte count (Bug 11).
 // The whitebox half of this test lives in memory_internal_test.go.
-func TestBug11ConcurrentUpdatesSameKeySweepStability(t *testing.T) {
+func (s *memoryTestSuite) TestBug11ConcurrentUpdatesSameKeySweepStability() {
 	// Use a 1 MB limit. With a single small guild entry (~30 bytes) concurrently
 	// updated, the byte total should never reach 1 MB. If Add(sz) races outside
 	// the lock, totalBytes can momentarily be negative (well below 0 < 1 MB),
@@ -906,32 +882,31 @@ func TestBug11ConcurrentUpdatesSameKeySweepStability(t *testing.T) {
 	wg.Wait()
 
 	// After all concurrent updates the single guild must still be present.
-	if _, ok := c.Guilds().Get(1); !ok {
-		t.Error("guild was spuriously evicted during concurrent same-key updates (Bug 11)")
-	}
+	_, ok := c.Guilds().Get(1)
+	s.True(ok, "guild was spuriously evicted during concurrent same-key updates (Bug 11)")
 }
 
 // Bug 8: Set methods must not panic when called with nil.
-func TestBug8_SetNilDoesNotPanic(t *testing.T) {
+func (s *memoryTestSuite) TestBug8_SetNilDoesNotPanic() {
 	c := cache.NewMemoryCache(cache.Options{})
 	defer c.Close()
 
 	guildID := discord.Snowflake(1)
 
-	assert.NotPanics(t, func() { c.Guilds().Set(nil) })
-	assert.NotPanics(t, func() { c.Channels().Set(nil) })
-	assert.NotPanics(t, func() { c.Users().Set(nil) })
-	assert.NotPanics(t, func() { c.Roles().Set(guildID, nil) })
-	assert.NotPanics(t, func() { c.VoiceStates().Set(guildID, nil) })
-	assert.NotPanics(t, func() { c.ScheduledEvents().Set(nil) })
-	assert.NotPanics(t, func() { c.StageInstances().Set(nil) })
-	assert.NotPanics(t, func() { c.Emojis().Set(guildID, nil) })
-	assert.NotPanics(t, func() { c.Stickers().Set(guildID, nil) })
+	s.NotPanics(func() { c.Guilds().Set(nil) })
+	s.NotPanics(func() { c.Channels().Set(nil) })
+	s.NotPanics(func() { c.Users().Set(nil) })
+	s.NotPanics(func() { c.Roles().Set(guildID, nil) })
+	s.NotPanics(func() { c.VoiceStates().Set(guildID, nil) })
+	s.NotPanics(func() { c.ScheduledEvents().Set(nil) })
+	s.NotPanics(func() { c.StageInstances().Set(nil) })
+	s.NotPanics(func() { c.Emojis().Set(guildID, nil) })
+	s.NotPanics(func() { c.Stickers().Set(guildID, nil) })
 }
 
 // Bug 7: concurrent Get and DeleteChannel on the same channel must not race or
 // return data from a deleted ring.
-func TestBug7_MessageStoreGetDeleteChannelRace(t *testing.T) {
+func (s *memoryTestSuite) TestBug7_MessageStoreGetDeleteChannelRace() {
 	c := cache.NewMemoryCache(cache.Options{})
 	defer c.Close()
 

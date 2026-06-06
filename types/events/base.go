@@ -2,10 +2,16 @@ package events
 
 // eventFactories maps each EventType to a factory that returns a new zero-value
 // instance of the corresponding event struct. Populated via RegisterEvent.
+//
+// The map is written only during package init (via init() functions) and is
+// read-only after program startup. It is not protected by a mutex — calling
+// RegisterEvent after init() completes is a data race.
 var eventFactories = map[EventType]func() Event{}
 
 // RegisterEvent registers an event type so the gateway knows how to unmarshal
-// it. Call this from an init() function in your event file:
+// it. Must only be called from package init() functions, before any goroutine
+// reads eventFactories (i.e. before the gateway connects). Calling it after
+// startup is a data race.
 //
 //	func init() { events.RegisterEvent(MyEvent{}) }
 func RegisterEvent(e Event) {
@@ -13,17 +19,22 @@ func RegisterEvent(e Event) {
 }
 
 // GetEventFactory returns the factory function for the given event type and
-// whether it was found. Use this instead of accessing the internal map directly.
+// whether it was found. Use this instead of accessing the pkg map directly.
 func GetEventFactory(t EventType) (func() Event, bool) {
 	f, ok := eventFactories[t]
 	return f, ok
 }
 
+// Event values are shared across concurrent handlers and must not be mutated.
+// Each concrete event corresponds to a Discord gateway dispatch payload.
+// https://docs.discord.com/developers/events/gateway-events#receive-events
 type Event interface {
 	Event() EventType
 	DesiredEventType() Event
 }
 
+// EventType is the gateway dispatch event name (the "t" field of an Opcode 0 payload).
+// https://docs.discord.com/developers/events/gateway-events#receive-events
 type EventType string
 
 const (
@@ -78,6 +89,7 @@ const (
 	EventIntegrationCreate             EventType = "INTEGRATION_CREATE"
 	EventIntegrationUpdate             EventType = "INTEGRATION_UPDATE"
 	EventIntegrationDelete             EventType = "INTEGRATION_DELETE"
+	EventGuildIntegrationsUpdate       EventType = "GUILD_INTEGRATIONS_UPDATE"
 	EventWebhooksUpdate                EventType = "WEBHOOKS_UPDATE"
 	EventAutoModerationRuleCreate      EventType = "AUTO_MODERATION_RULE_CREATE"
 	EventAutoModerationRuleUpdate      EventType = "AUTO_MODERATION_RULE_UPDATE"
@@ -113,23 +125,6 @@ const (
 	EventSoundboardSounds            EventType = "SOUNDBOARD_SOUNDS"
 
 	// Wrapper-synthesized events — derived by go-discord-wrapper, never sent by Discord directly.
-	EventWrapperVoiceMemberJoin   EventType = "WRAPPER_VOICE_MEMBER_JOIN"
-	EventWrapperVoiceMemberLeave  EventType = "WRAPPER_VOICE_MEMBER_LEAVE"
-	EventWrapperVoiceMemberMove   EventType = "WRAPPER_VOICE_MEMBER_MOVE"
-	EventWrapperVoiceMemberUpdate EventType = "WRAPPER_VOICE_MEMBER_UPDATE"
-
-	EventWrapperGuildMemberRoleAdd    EventType = "WRAPPER_GUILD_MEMBER_ROLE_ADD"
-	EventWrapperGuildMemberRoleRemove EventType = "WRAPPER_GUILD_MEMBER_ROLE_REMOVE"
-	EventWrapperGuildMemberNickChange EventType = "WRAPPER_GUILD_MEMBER_NICK_CHANGE"
-	EventWrapperGuildMemberTimeout    EventType = "WRAPPER_GUILD_MEMBER_TIMEOUT"
-	EventWrapperGuildMemberBoostStart EventType = "WRAPPER_GUILD_MEMBER_BOOST_START"
-	EventWrapperGuildMemberBoostEnd   EventType = "WRAPPER_GUILD_MEMBER_BOOST_END"
-
-	EventWrapperUserOnline         EventType = "WRAPPER_USER_ONLINE"
-	EventWrapperUserOffline        EventType = "WRAPPER_USER_OFFLINE"
-	EventWrapperUserActivityChange EventType = "WRAPPER_USER_ACTIVITY_CHANGE"
-	EventWrapperUserUpdate         EventType = "WRAPPER_USER_UPDATE"
-
 	EventWrapperGuildEmojiAdd    EventType = "WRAPPER_GUILD_EMOJI_ADD"
 	EventWrapperGuildEmojiRemove EventType = "WRAPPER_GUILD_EMOJI_REMOVE"
 	EventWrapperGuildEmojiUpdate EventType = "WRAPPER_GUILD_EMOJI_UPDATE"
@@ -138,5 +133,7 @@ const (
 	EventWrapperGuildStickerRemove EventType = "WRAPPER_GUILD_STICKER_REMOVE"
 	EventWrapperGuildStickerUpdate EventType = "WRAPPER_GUILD_STICKER_UPDATE"
 
-	EventWrapperGuildRolePermissionsChange EventType = "WRAPPER_GUILD_ROLE_PERMISSIONS_CHANGE"
+	EventWrapperWebhookCreate EventType = "WRAPPER_WEBHOOK_CREATE"
+	EventWrapperWebhookUpdate EventType = "WRAPPER_WEBHOOK_UPDATE"
+	EventWrapperWebhookDelete EventType = "WRAPPER_WEBHOOK_DELETE"
 )

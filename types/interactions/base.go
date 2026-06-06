@@ -11,6 +11,7 @@ import (
 // not dispatched through the gateway (i.e. client/ctx were never set).
 var errNotHydrated = errors.New("interactions: Interaction was not dispatched via the gateway — use the client and ctx arguments directly")
 
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object
 type Interaction struct {
 	ID                           discord.Snowflake                                             `json:"id"`
 	ApplicationID                discord.Snowflake                                             `json:"application_id"`

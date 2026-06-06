@@ -8,6 +8,7 @@ import (
 // ── Options ───────────────────────────────────────────────────────────────────
 
 // GuildEditOptions configures Guild.Edit.
+// https://docs.discord.com/developers/resources/guild#modify-guild
 type GuildEditOptions struct {
 	Name                        *string
 	VerificationLevel           *GuildVerificationLevel
@@ -33,12 +34,14 @@ type GuildEditOptions struct {
 }
 
 // FetchMembersOptions configures Guild.FetchMembers.
+// https://docs.discord.com/developers/resources/guild#list-guild-members
 type FetchMembersOptions struct {
 	After *Snowflake
 	Limit *int
 }
 
 // FetchBansOptions configures BanManager.FetchAll.
+// https://docs.discord.com/developers/resources/guild#get-guild-bans
 type FetchBansOptions struct {
 	Before *Snowflake
 	After  *Snowflake
@@ -46,6 +49,7 @@ type FetchBansOptions struct {
 }
 
 // AuditLogOptions configures Guild.FetchAuditLog.
+// https://docs.discord.com/developers/resources/audit-log#get-guild-audit-log
 type AuditLogOptions struct {
 	UserID     *Snowflake
 	ActionType *AuditLogActionType
@@ -55,6 +59,7 @@ type AuditLogOptions struct {
 }
 
 // ScheduledEventCreateOptions configures Guild.CreateScheduledEvent.
+// https://docs.discord.com/developers/resources/guild-scheduled-event#create-guild-scheduled-event
 type ScheduledEventCreateOptions struct {
 	ChannelID          *Snowflake
 	EntityMetadata     *GuildScheduledEventEntityMetadata

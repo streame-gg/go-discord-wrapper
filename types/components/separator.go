@@ -5,6 +5,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#separator-separator-spacing-size
 type SeparatorComponentSpacing int
 
 const (
@@ -12,6 +13,7 @@ const (
 	SeparatorComponentSpacingLarge SeparatorComponentSpacing = 2
 )
 
+// https://docs.discord.com/developers/components/reference#separator
 type SeparatorComponent struct {
 	Type                      discord.ComponentType     `json:"type"`
 	ID                        *int                      `json:"id,omitempty"`
@@ -37,12 +39,13 @@ func (s *SeparatorComponent) UnmarshalJSON(data []byte) error {
 }
 
 func (s *SeparatorComponent) MarshalJSON() ([]byte, error) {
-	s.Type = discord.ComponentTypeSeparator
 	type Alias SeparatorComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(s),
+		Alias: Alias(*s),
+		Type:  discord.ComponentTypeSeparator,
 	})
 }
 

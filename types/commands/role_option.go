@@ -5,6 +5,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-option-structure
 type ApplicationCommandOptionRole struct {
 	Type                     discord.ApplicationCommandOptionType `json:"type"`
 	Name                     string                               `json:"name"`
@@ -19,12 +20,13 @@ func (o *ApplicationCommandOptionRole) ApplicationCommandOptionType() discord.Ap
 }
 
 func (o *ApplicationCommandOptionRole) MarshalJSON() ([]byte, error) {
-	o.Type = o.ApplicationCommandOptionType()
 	type Alias ApplicationCommandOptionRole
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ApplicationCommandOptionType `json:"type"`
 	}{
-		Alias: (*Alias)(o),
+		Alias: Alias(*o),
+		Type:  o.ApplicationCommandOptionType(),
 	})
 }
 

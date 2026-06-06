@@ -7,6 +7,7 @@ import (
 )
 
 // ApplicationCommandPermissionsUpdateEvent is dispatched when command permissions are updated in a guild.
+// https://docs.discord.com/developers/events/gateway-events#application-command-permissions-update
 type ApplicationCommandPermissionsUpdateEvent struct {
 	NewPermissions discord.GuildApplicationCommandPermissions `json:"-"`
 }

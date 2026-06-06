@@ -7,6 +7,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#label
 type LabelComponent struct {
 	Type        discord.ComponentType `json:"type"`
 	ID          *int                  `json:"id,omitempty"`
@@ -92,12 +93,13 @@ func (l *LabelComponent) UnmarshalJSON(data []byte) error {
 }
 
 func (l *LabelComponent) MarshalJSON() ([]byte, error) {
-	l.Type = discord.ComponentTypeLabel
 	type Alias LabelComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(l),
+		Alias: Alias(*l),
+		Type:  discord.ComponentTypeLabel,
 	})
 }
 
@@ -115,12 +117,13 @@ type LabelComponentInteractionResponse struct {
 func (l *LabelComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (l *LabelComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	l.Type = discord.ComponentTypeLabel
 	type Alias LabelComponentInteractionResponse
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(l),
+		Alias: Alias(*l),
+		Type:  discord.ComponentTypeLabel,
 	})
 }
 
@@ -181,6 +184,7 @@ func (l *LabelComponentInteractionResponse) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// https://docs.discord.com/developers/components/reference#label
 type ComponentLabelComponent struct {
 	Type        discord.ComponentType           `json:"type"`
 	ID          *int                            `json:"id,omitempty"`

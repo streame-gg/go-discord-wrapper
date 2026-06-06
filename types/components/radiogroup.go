@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/components/reference#radio-group
 type RadioGroupComponent struct {
 	Type     discord.ComponentType        `json:"type"`
 	ID       *int                         `json:"id,omitempty"`
@@ -14,6 +15,7 @@ type RadioGroupComponent struct {
 	Required *bool                        `json:"required,omitempty"`
 }
 
+// https://docs.discord.com/developers/components/reference#radio-group
 type RadioGroupComponentOption struct {
 	Value       string  `json:"value"`
 	Label       string  `json:"label"`
@@ -22,12 +24,13 @@ type RadioGroupComponentOption struct {
 }
 
 func (r *RadioGroupComponent) MarshalJSON() ([]byte, error) {
-	r.Type = discord.ComponentTypeRadioGroup
 	type Alias RadioGroupComponent
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(r),
+		Alias: Alias(*r),
+		Type:  discord.ComponentTypeRadioGroup,
 	})
 }
 
@@ -56,6 +59,7 @@ func (r *RadioGroupComponent) IsAnyLabelComponent() {
 
 }
 
+// https://docs.discord.com/developers/components/reference#radio-group
 type RadioGroupComponentInteractionResponse struct {
 	Type     discord.ComponentType `json:"type"`
 	ID       *int                  `json:"id,omitempty"`
@@ -66,13 +70,13 @@ type RadioGroupComponentInteractionResponse struct {
 func (r *RadioGroupComponentInteractionResponse) IsInteractionResponseDataComponent() {}
 
 func (r *RadioGroupComponentInteractionResponse) MarshalJSON() ([]byte, error) {
-	r.Type = discord.ComponentTypeRadioGroup
-
 	type Alias RadioGroupComponentInteractionResponse
-	return json.Marshal(&struct {
-		*Alias
+	return json.Marshal(struct {
+		Alias
+		Type discord.ComponentType `json:"type"`
 	}{
-		Alias: (*Alias)(r),
+		Alias: Alias(*r),
+		Type:  discord.ComponentTypeRadioGroup,
 	})
 }
 

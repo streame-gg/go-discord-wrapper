@@ -2,6 +2,7 @@ package managers_test
 
 import (
 	"context"
+	"github.com/stretchr/testify/suite"
 	"strconv"
 	"testing"
 
@@ -138,37 +139,52 @@ func (s *stubUserStore) Size() int { return len(s.users) }
 // ── Stub cache ────────────────────────────────────────────────────────────────
 
 type stubCache struct {
-	members  *stubMemberStore
-	roles    *stubRoleStore
-	channels *stubChannelStore
-	messages *stubMessageStore
-	guilds   *stubGuildStore
-	users    *stubUserStore
+	members         *stubMemberStore
+	roles           *stubRoleStore
+	channels        *stubChannelStore
+	messages        *stubMessageStore
+	guilds          *stubGuildStore
+	users           *stubUserStore
+	voiceStates     *stubVoiceStateStore
+	soundboard      *stubSoundboardStore
+	scheduledEvents *stubScheduledEventStore
+	stageInstances  *stubStageInstanceStore
+	emojis          *stubEmojiStore
+	stickers        *stubStickerStore
 }
 
 func newStubCache() *stubCache {
 	return &stubCache{
-		members:  &stubMemberStore{members: map[discord.Snowflake]map[discord.Snowflake]*discord.GuildMember{}},
-		roles:    &stubRoleStore{roles: map[discord.Snowflake]map[discord.Snowflake]*discord.Role{}},
-		channels: &stubChannelStore{channels: map[discord.Snowflake]*discord.Channel{}},
-		messages: &stubMessageStore{messages: map[discord.Snowflake]map[discord.Snowflake]*discord.Message{}},
-		guilds:   &stubGuildStore{guilds: map[discord.Snowflake]*discord.Guild{}},
-		users:    &stubUserStore{users: map[discord.Snowflake]*discord.User{}},
+		members:         &stubMemberStore{members: map[discord.Snowflake]map[discord.Snowflake]*discord.GuildMember{}},
+		roles:           &stubRoleStore{roles: map[discord.Snowflake]map[discord.Snowflake]*discord.Role{}},
+		channels:        &stubChannelStore{channels: map[discord.Snowflake]*discord.Channel{}},
+		messages:        &stubMessageStore{messages: map[discord.Snowflake]map[discord.Snowflake]*discord.Message{}},
+		guilds:          &stubGuildStore{guilds: map[discord.Snowflake]*discord.Guild{}},
+		users:           &stubUserStore{users: map[discord.Snowflake]*discord.User{}},
+		voiceStates:     &stubVoiceStateStore{states: map[discord.Snowflake]map[discord.Snowflake]*discord.VoiceState{}},
+		soundboard:      &stubSoundboardStore{sounds: map[discord.Snowflake]map[discord.Snowflake]*discord.SoundboardSound{}},
+		scheduledEvents: &stubScheduledEventStore{events: map[discord.Snowflake]map[discord.Snowflake]*discord.GuildScheduledEvent{}},
+		stageInstances:  &stubStageInstanceStore{instances: map[discord.Snowflake]map[discord.Snowflake]*discord.StageInstance{}},
+		emojis:          &stubEmojiStore{emojis: map[discord.Snowflake]map[discord.Snowflake]*discord.Emoji{}},
+		stickers:        &stubStickerStore{stickers: map[discord.Snowflake]map[discord.Snowflake]*discord.Sticker{}},
 	}
 }
 
-func (c *stubCache) Guilds() discord.GuildStore                   { return c.guilds }
-func (c *stubCache) Channels() discord.ChannelStore               { return c.channels }
-func (c *stubCache) Users() discord.UserStore                     { return c.users }
-func (c *stubCache) Members() discord.MemberStore                 { return c.members }
-func (c *stubCache) Messages() discord.MessageStore               { return c.messages }
-func (c *stubCache) Roles() discord.RoleStore                     { return c.roles }
-func (c *stubCache) VoiceStates() discord.VoiceStateStore         { return nil }
-func (c *stubCache) Soundboard() discord.SoundboardStore          { return nil }
-func (c *stubCache) ScheduledEvents() discord.ScheduledEventStore { return nil }
-func (c *stubCache) StageInstances() discord.StageInstanceStore   { return nil }
-func (c *stubCache) Emojis() discord.EmojiStore                   { return nil }
-func (c *stubCache) Stickers() discord.StickerStore               { return nil }
+func (c *stubCache) Guilds() discord.GuildStore                    { return c.guilds }
+func (c *stubCache) Channels() discord.ChannelStore                { return c.channels }
+func (c *stubCache) Users() discord.UserStore                      { return c.users }
+func (c *stubCache) Members() discord.MemberStore                  { return c.members }
+func (c *stubCache) Messages() discord.MessageStore                { return c.messages }
+func (c *stubCache) Roles() discord.RoleStore                      { return c.roles }
+func (c *stubCache) VoiceStates() discord.VoiceStateStore          { return c.voiceStates }
+func (c *stubCache) Soundboard() discord.SoundboardStore           { return c.soundboard }
+func (c *stubCache) ScheduledEvents() discord.ScheduledEventStore  { return c.scheduledEvents }
+func (c *stubCache) StageInstances() discord.StageInstanceStore    { return c.stageInstances }
+func (c *stubCache) Emojis() discord.EmojiStore                    { return c.emojis }
+func (c *stubCache) Stickers() discord.StickerStore                { return c.stickers }
+func (c *stubCache) Bans() discord.BanStore                        { return nil }
+func (c *stubCache) AutoModRules() discord.AutoModerationRuleStore { return nil }
+func (c *stubCache) Invites() discord.InviteStore                  { return nil }
 
 var _ discord.Cache = (*stubCache)(nil)
 
@@ -181,9 +197,21 @@ type stubEntityClient struct {
 	fetchMessage func(ctx context.Context, channelID, messageID discord.Snowflake) (*discord.Message, error)
 	fetchGuild   func(ctx context.Context, guildID discord.Snowflake) (*discord.Guild, error)
 	fetchUser    func(ctx context.Context, userID discord.Snowflake) (*discord.User, error)
+
+	listRoles    func(guildID discord.Snowflake) ([]*discord.Role, error)
+	listChannels func(guildID discord.Snowflake) ([]*discord.Channel, error)
+	listEmojis   func(guildID discord.Snowflake) ([]*discord.Emoji, error)
+	listStickers func(guildID discord.Snowflake) ([]*discord.Sticker, error)
+	listEvents   func(guildID discord.Snowflake) ([]*discord.GuildScheduledEvent, error)
 }
 
 func (s *stubEntityClient) ClientCache() discord.Cache { return s.cache }
+func (s *stubEntityClient) ThreadsForParent(parentID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Channel] {
+	return collection.New[discord.Snowflake, *discord.Channel]()
+}
+func (s *stubEntityClient) ChannelsForGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Channel] {
+	return collection.New[discord.Snowflake, *discord.Channel]()
+}
 func (s *stubEntityClient) GetGuildMember(ctx context.Context, guildID, userID discord.Snowflake) (*discord.GuildMember, error) {
 	if s.fetchMember != nil {
 		return s.fetchMember(ctx, guildID, userID)
@@ -246,7 +274,7 @@ func (s *stubEntityClient) DeleteChannel(_ context.Context, _ discord.Snowflake,
 func (s *stubEntityClient) BulkDeleteMessages(_ context.Context, _ discord.Snowflake, _ []discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) GetChannelMessages(_ context.Context, _ discord.Snowflake, _ discord.FetchMessagesOptions) ([]*discord.Message, error) {
+func (s *stubEntityClient) ListChannelMessages(_ context.Context, _ discord.Snowflake, _ discord.FetchMessagesOptions) ([]*discord.Message, error) {
 	return nil, nil
 }
 func (s *stubEntityClient) TriggerTypingIndicator(_ context.Context, _ discord.Snowflake) error {
@@ -345,7 +373,7 @@ func (s *stubEntityClient) ModifyGuildScheduledEvent(_ context.Context, _, _ dis
 func (s *stubEntityClient) DeleteGuildScheduledEvent(_ context.Context, _, _ discord.Snowflake) error {
 	return nil
 }
-func (s *stubEntityClient) GetGuildScheduledEventUsers(_ context.Context, _, _ discord.Snowflake, _ discord.FetchUsersOptions) ([]*discord.GuildScheduledEventUser, error) {
+func (s *stubEntityClient) ListGuildScheduledEventUsers(_ context.Context, _, _ discord.Snowflake, _ discord.FetchUsersOptions) ([]*discord.GuildScheduledEventUser, error) {
 	return nil, nil
 }
 func (s *stubEntityClient) ModifyGuildSticker(_ context.Context, _, _ discord.Snowflake, _ discord.StickerEditOptions) (*discord.Sticker, error) {
@@ -369,34 +397,46 @@ func (s *stubEntityClient) DeleteGuildSoundboardSound(_ context.Context, _, _ di
 func (s *stubEntityClient) DeleteGuildIntegration(_ context.Context, _, _ discord.Snowflake, _ *string) error {
 	return nil
 }
-func (s *stubEntityClient) GetGuildIntegrations(_ context.Context, _ discord.Snowflake) ([]*discord.Integration, error) {
+func (s *stubEntityClient) ListGuildIntegrations(_ context.Context, _ discord.Snowflake) ([]*discord.Integration, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildRoles(_ context.Context, _ discord.Snowflake) ([]*discord.Role, error) {
+func (s *stubEntityClient) ListGuildRoles(_ context.Context, guildID discord.Snowflake) ([]*discord.Role, error) {
+	if s.listRoles != nil {
+		return s.listRoles(guildID)
+	}
 	return nil, nil
 }
 func (s *stubEntityClient) GetChannel(_ context.Context, _ discord.Snowflake) (*discord.Channel, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildChannels(_ context.Context, _ discord.Snowflake) ([]*discord.Channel, error) {
+func (s *stubEntityClient) ListGuildChannels(_ context.Context, guildID discord.Snowflake) ([]*discord.Channel, error) {
+	if s.listChannels != nil {
+		return s.listChannels(guildID)
+	}
 	return nil, nil
 }
 func (s *stubEntityClient) GetGuildEmoji(_ context.Context, _, _ discord.Snowflake) (*discord.Emoji, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ListGuildEmojis(_ context.Context, _ discord.Snowflake) ([]*discord.Emoji, error) {
+func (s *stubEntityClient) ListGuildEmojis(_ context.Context, guildID discord.Snowflake) ([]*discord.Emoji, error) {
+	if s.listEmojis != nil {
+		return s.listEmojis(guildID)
+	}
 	return nil, nil
 }
 func (s *stubEntityClient) GetGuildSticker(_ context.Context, _, _ discord.Snowflake) (*discord.Sticker, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ListGuildStickers(_ context.Context, _ discord.Snowflake) ([]*discord.Sticker, error) {
+func (s *stubEntityClient) ListGuildStickers(_ context.Context, guildID discord.Snowflake) ([]*discord.Sticker, error) {
+	if s.listStickers != nil {
+		return s.listStickers(guildID)
+	}
 	return nil, nil
 }
 func (s *stubEntityClient) GetGuildBan(_ context.Context, _, _ discord.Snowflake) (*discord.Ban, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildBans(_ context.Context, _ discord.Snowflake, _ discord.FetchBansOptions) ([]*discord.Ban, error) {
+func (s *stubEntityClient) ListGuildBans(_ context.Context, _ discord.Snowflake, _ discord.FetchBansOptions) ([]*discord.Ban, error) {
 	return nil, nil
 }
 func (s *stubEntityClient) RemoveGuildBan(_ context.Context, _, _ discord.Snowflake, _ *string) error {
@@ -405,7 +445,10 @@ func (s *stubEntityClient) RemoveGuildBan(_ context.Context, _, _ discord.Snowfl
 func (s *stubEntityClient) GetGuildScheduledEvent(_ context.Context, _, _ discord.Snowflake) (*discord.GuildScheduledEvent, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ListGuildScheduledEvents(_ context.Context, _ discord.Snowflake) ([]*discord.GuildScheduledEvent, error) {
+func (s *stubEntityClient) ListGuildScheduledEvents(_ context.Context, guildID discord.Snowflake) ([]*discord.GuildScheduledEvent, error) {
+	if s.listEvents != nil {
+		return s.listEvents(guildID)
+	}
 	return nil, nil
 }
 func (s *stubEntityClient) GetStageInstance(_ context.Context, _ discord.Snowflake) (*discord.StageInstance, error) {
@@ -420,10 +463,10 @@ func (s *stubEntityClient) GetGuildSoundboardSound(_ context.Context, _, _ disco
 func (s *stubEntityClient) ListGuildSoundboardSounds(_ context.Context, _ discord.Snowflake) ([]*discord.SoundboardSound, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildInvites(_ context.Context, _ discord.Snowflake) ([]*discord.Invite, error) {
+func (s *stubEntityClient) ListGuildInvites(_ context.Context, _ discord.Snowflake) ([]*discord.Invite, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) GetGuildWebhooks(_ context.Context, _ discord.Snowflake) ([]*discord.Webhook, error) {
+func (s *stubEntityClient) ListGuildWebhooks(_ context.Context, _ discord.Snowflake) ([]*discord.Webhook, error) {
 	return nil, nil
 }
 func (s *stubEntityClient) GetAutoModerationRule(_ context.Context, _, _ discord.Snowflake) (*discord.AutoModerationRule, error) {
@@ -440,7 +483,8 @@ var _ discord.EntityClient = (*stubEntityClient)(nil)
 
 // ── MemberManager tests ───────────────────────────────────────────────────────
 
-func TestMemberManager_Cache_ReturnsGuildMembers(t *testing.T) {
+func (su *managersSuite) TestMemberManager_Cache_ReturnsGuildMembers() {
+	t := su.T()
 	const guildID discord.Snowflake = 1
 	const userID discord.Snowflake = 2
 	cache := newStubCache()
@@ -455,7 +499,8 @@ func TestMemberManager_Cache_ReturnsGuildMembers(t *testing.T) {
 	}
 }
 
-func TestMemberManager_Get_HitAndMiss(t *testing.T) {
+func (su *managersSuite) TestMemberManager_Get_HitAndMiss() {
+	t := su.T()
 	const guildID discord.Snowflake = 1
 	const userID discord.Snowflake = 2
 	cache := newStubCache()
@@ -472,7 +517,8 @@ func TestMemberManager_Get_HitAndMiss(t *testing.T) {
 	}
 }
 
-func TestMemberManager_Get_NoCache(t *testing.T) {
+func (su *managersSuite) TestMemberManager_Get_NoCache() {
+	t := su.T()
 	m := managers.NewMemberManager(1, &stubEntityClient{cache: nil})
 	_, ok := m.Get(2)
 	if ok {
@@ -480,7 +526,8 @@ func TestMemberManager_Get_NoCache(t *testing.T) {
 	}
 }
 
-func TestMemberManager_Fetch_CallsClient(t *testing.T) {
+func (su *managersSuite) TestMemberManager_Fetch_CallsClient() {
+	t := su.T()
 	const guildID discord.Snowflake = 1
 	const userID discord.Snowflake = 2
 	want := &discord.GuildMember{UserID: userID}
@@ -504,7 +551,8 @@ func TestMemberManager_Fetch_CallsClient(t *testing.T) {
 	}
 }
 
-func TestMemberManager_Resolve(t *testing.T) {
+func (su *managersSuite) TestMemberManager_Resolve() {
+	t := su.T()
 	const guildID discord.Snowflake = 213456789012345
 	const userID discord.Snowflake = 123456789012345
 	mem := &discord.GuildMember{UserID: userID}
@@ -526,7 +574,8 @@ func TestMemberManager_Resolve(t *testing.T) {
 	}
 }
 
-func TestMemberManager_Size_NoCache(t *testing.T) {
+func (su *managersSuite) TestMemberManager_Size_NoCache() {
+	t := su.T()
 	m := managers.NewMemberManager(1, &stubEntityClient{})
 	if s := m.Size(); s != 0 {
 		t.Fatalf("expected size 0 with no cache, got %d", s)
@@ -535,7 +584,8 @@ func TestMemberManager_Size_NoCache(t *testing.T) {
 
 // ── RoleManager tests ─────────────────────────────────────────────────────────
 
-func TestRoleManager_Cache_ReturnsGuildRoles(t *testing.T) {
+func (su *managersSuite) TestRoleManager_Cache_ReturnsGuildRoles() {
+	t := su.T()
 	const guildID discord.Snowflake = 1
 	cache := newStubCache()
 	cache.roles.roles[guildID] = map[discord.Snowflake]*discord.Role{
@@ -550,7 +600,8 @@ func TestRoleManager_Cache_ReturnsGuildRoles(t *testing.T) {
 	}
 }
 
-func TestRoleManager_Get(t *testing.T) {
+func (su *managersSuite) TestRoleManager_Get() {
+	t := su.T()
 	const guildID discord.Snowflake = 1
 	const roleID discord.Snowflake = 2
 	cache := newStubCache()
@@ -562,7 +613,8 @@ func TestRoleManager_Get(t *testing.T) {
 	}
 }
 
-func TestRoleManager_Resolve(t *testing.T) {
+func (su *managersSuite) TestRoleManager_Resolve() {
+	t := su.T()
 	const guildID discord.Snowflake = 10
 	const roleID discord.Snowflake = 11
 	role := &discord.Role{ID: roleID}
@@ -583,7 +635,8 @@ func TestRoleManager_Resolve(t *testing.T) {
 
 // ── MessageManager tests ──────────────────────────────────────────────────────
 
-func TestMessageManager_Cache_ReturnsChannelMessages(t *testing.T) {
+func (su *managersSuite) TestMessageManager_Cache_ReturnsChannelMessages() {
+	t := su.T()
 	const channelID discord.Snowflake = 12
 	const msgID discord.Snowflake = 13
 	cache := newStubCache()
@@ -598,7 +651,8 @@ func TestMessageManager_Cache_ReturnsChannelMessages(t *testing.T) {
 	}
 }
 
-func TestMessageManager_Get(t *testing.T) {
+func (su *managersSuite) TestMessageManager_Get() {
+	t := su.T()
 	const channelID discord.Snowflake = 12
 	const msgID discord.Snowflake = 13
 	cache := newStubCache()
@@ -615,7 +669,8 @@ func TestMessageManager_Get(t *testing.T) {
 	}
 }
 
-func TestMessageManager_Fetch_CallsClient(t *testing.T) {
+func (su *managersSuite) TestMessageManager_Fetch_CallsClient() {
+	t := su.T()
 	const channelID discord.Snowflake = 12
 	const msgID discord.Snowflake = 13
 	want := &discord.Message{ID: msgID}
@@ -633,14 +688,16 @@ func TestMessageManager_Fetch_CallsClient(t *testing.T) {
 
 // ── ClientGuildManager tests ──────────────────────────────────────────────────
 
-func TestClientGuildManager_Cache_Empty(t *testing.T) {
+func (su *managersSuite) TestClientGuildManager_Cache_Empty() {
+	t := su.T()
 	m := managers.NewClientGuildManager(&stubEntityClient{cache: newStubCache()})
 	if m.Cache().Len() != 0 {
 		t.Fatal("expected empty cache")
 	}
 }
 
-func TestClientGuildManager_Fetch(t *testing.T) {
+func (su *managersSuite) TestClientGuildManager_Fetch() {
+	t := su.T()
 	const guildID discord.Snowflake = 10
 	want := &discord.Guild{ID: guildID}
 	client := &stubEntityClient{
@@ -655,7 +712,8 @@ func TestClientGuildManager_Fetch(t *testing.T) {
 	}
 }
 
-func TestClientGuildManager_Resolve_NoCache(t *testing.T) {
+func (su *managersSuite) TestClientGuildManager_Resolve_NoCache() {
+	t := su.T()
 	m := managers.NewClientGuildManager(&stubEntityClient{})
 	if got, _ := m.Resolve(10); got != nil {
 		t.Fatal("Resolve with no cache should return nil")
@@ -664,7 +722,8 @@ func TestClientGuildManager_Resolve_NoCache(t *testing.T) {
 
 // ── ClientUserManager tests ───────────────────────────────────────────────────
 
-func TestClientUserManager_Fetch(t *testing.T) {
+func (su *managersSuite) TestClientUserManager_Fetch() {
+	t := su.T()
 	const userID discord.Snowflake = 13123
 	want := &discord.User{ID: userID}
 	client := &stubEntityClient{
@@ -681,7 +740,8 @@ func TestClientUserManager_Fetch(t *testing.T) {
 
 // ── Nil cache guard ───────────────────────────────────────────────────────────
 
-func TestMemberManager_CacheReturnsEmpty_WhenNilCache(t *testing.T) {
+func (su *managersSuite) TestMemberManager_CacheReturnsEmpty_WhenNilCache() {
+	t := su.T()
 	m := managers.NewMemberManager(10, &stubEntityClient{cache: nil})
 	coll := m.Cache()
 	if coll == nil {
@@ -691,3 +751,7 @@ func TestMemberManager_CacheReturnsEmpty_WhenNilCache(t *testing.T) {
 		t.Fatal("Cache() should return empty collection when cache is nil")
 	}
 }
+
+type managersSuite struct{ suite.Suite }
+
+func TestManagersSuite(t *testing.T) { suite.Run(t, new(managersSuite)) }

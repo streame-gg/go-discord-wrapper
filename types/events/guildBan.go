@@ -4,11 +4,13 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#guild-ban-add
 type GuildBanAddEvent struct {
 	GuildID discord.Snowflake `json:"guild_id"`
 	User    discord.User      `json:"user"`
 }
 
+// https://docs.discord.com/developers/events/gateway-events#guild-ban-remove
 type GuildBanRemoveEvent struct {
 	GuildID discord.Snowflake `json:"guild_id"`
 	User    discord.User      `json:"user"`

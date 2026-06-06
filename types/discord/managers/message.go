@@ -35,7 +35,7 @@ func (m *messageManager) Fetch(ctx context.Context, messageID discord.Snowflake)
 }
 
 func (m *messageManager) FetchAll(ctx context.Context, opts discord.FetchMessagesOptions) (*collection.Collection[discord.Snowflake, *discord.Message], error) {
-	messages, err := m.client.GetChannelMessages(ctx, m.channelID, opts)
+	messages, err := m.client.ListChannelMessages(ctx, m.channelID, opts)
 	if err != nil {
 		return nil, err
 	}

@@ -1,3 +1,12 @@
+// Package connection — cache update helpers.
+//
+// Note: cacheMember is the only helper that calls cacheStoreEnabled before
+// writing to the cache. All other helpers (cacheChannel, cacheGuild,
+// cacheUser, …) write unconditionally and rely on the caller having already
+// checked the relevant category flag before invoking them. This is
+// intentional: callers in gateway.go gate the entire block on
+// cacheStoreEnabled, so the individual helpers do not need to repeat the
+// check. Keep this invariant in mind when adding new helpers.
 package connection
 
 import (
@@ -102,6 +111,41 @@ func (d *Client) cacheRoles(guildID discord.Snowflake, roles []*discord.Role) {
 	}
 }
 
+func (d *Client) cacheBan(guildID discord.Snowflake, ban *discord.Ban) {
+	if ban == nil {
+		return
+	}
+	ban.User.Hydrate(d)
+	if d.cacheStoreEnabled(cache.CategoryBans) {
+		d.Cache.Bans().Set(guildID, ban)
+	}
+	if d.cacheStoreEnabled(cache.CategoryUsers) {
+		d.cacheUser(&ban.User)
+	}
+}
+
+func (d *Client) cacheInviteForGuild(guildID discord.Snowflake, invite *discord.Invite) {
+	if invite == nil || !d.cacheStoreEnabled(cache.CategoryInvites) {
+		return
+	}
+	d.Cache.Invites().SetWithGuild(guildID, invite)
+}
+
+func (d *Client) cacheInvite(invite *discord.Invite) {
+	if invite == nil || !d.cacheStoreEnabled(cache.CategoryInvites) {
+		return
+	}
+	d.Cache.Invites().Set(invite)
+}
+
+func (d *Client) cacheAutoModRule(guildID discord.Snowflake, rule *discord.AutoModerationRule) {
+	if rule == nil || !d.cacheStoreEnabled(cache.CategoryAutoModRules) {
+		return
+	}
+	rule.Hydrate(d)
+	d.Cache.AutoModRules().Set(guildID, rule)
+}
+
 func (d *Client) cacheUser(user *discord.User) {
 	if d.Cache == nil || user == nil {
 		return
@@ -147,10 +191,17 @@ func (d *Client) removeGuildFromCache(guildID discord.Snowflake) {
 	d.Cache.StageInstances().DeleteGuild(guildID)
 	d.Cache.Emojis().DeleteGuild(guildID)
 	d.Cache.Stickers().DeleteGuild(guildID)
+	d.Cache.Bans().DeleteGuild(guildID)
+	d.Cache.AutoModRules().DeleteGuild(guildID)
+	d.Cache.Invites().DeleteGuild(guildID)
 
 	for _, channelID := range d.drainGuildChannelIDs(guildID) {
 		d.Cache.Channels().Delete(channelID)
 		d.Cache.Messages().DeleteChannel(channelID)
+		for _, threadID := range d.drainParentThreadIDs(channelID) {
+			d.Cache.Channels().Delete(threadID)
+			d.Cache.Messages().DeleteChannel(threadID)
+		}
 	}
 }
 
@@ -178,12 +229,97 @@ func (d *Client) removeMessagesFromCache(channelID discord.Snowflake, messageIDs
 	d.Cache.Messages().DeleteBulk(channelID, messageIDs)
 }
 
-func (d *Client) removeRoleFromCache(roleID discord.Snowflake) {
+// reactionEmojiMatches returns true when a and b refer to the same emoji.
+// Custom emojis are matched by ID; unicode emojis are matched by Name.
+func reactionEmojiMatches(a, b discord.Emoji) bool {
+	if a.ID != 0 && b.ID != 0 {
+		return a.ID == b.ID
+	}
+	return a.Name != "" && a.Name == b.Name
+}
+
+// appendOrIncrementReaction returns a new slice with count for emoji incremented
+// by one, or a new Reaction appended if the emoji is not yet present.
+func appendOrIncrementReaction(existing *[]discord.Reaction, emoji discord.Emoji) []discord.Reaction {
+	var reactions []discord.Reaction
+	if existing != nil {
+		reactions = make([]discord.Reaction, len(*existing))
+		copy(reactions, *existing)
+	}
+	for i := range reactions {
+		if reactionEmojiMatches(reactions[i].Emoji, emoji) {
+			reactions[i].Count++
+			return reactions
+		}
+	}
+	return append(reactions, discord.Reaction{Count: 1, Emoji: emoji})
+}
+
+// decrementOrRemoveReaction returns a new slice with the count for emoji
+// decremented by one; the entry is dropped when the count reaches zero.
+func decrementOrRemoveReaction(existing *[]discord.Reaction, emoji discord.Emoji) []discord.Reaction {
+	if existing == nil {
+		return nil
+	}
+	reactions := make([]discord.Reaction, 0, len(*existing))
+	for _, r := range *existing {
+		if !reactionEmojiMatches(r.Emoji, emoji) {
+			reactions = append(reactions, r)
+			continue
+		}
+		if r.Count > 1 {
+			r.Count--
+			reactions = append(reactions, r)
+		}
+	}
+	return reactions
+}
+
+// removeEmojiReaction returns a new slice with all reactions for the given
+// emoji removed, regardless of count.
+func removeEmojiReaction(existing *[]discord.Reaction, emoji discord.Emoji) []discord.Reaction {
+	if existing == nil {
+		return nil
+	}
+	reactions := make([]discord.Reaction, 0, len(*existing))
+	for _, r := range *existing {
+		if !reactionEmojiMatches(r.Emoji, emoji) {
+			reactions = append(reactions, r)
+		}
+	}
+	return reactions
+}
+
+func (d *Client) removeRoleFromCache(guildID, roleID discord.Snowflake) {
 	if d.Cache == nil {
 		return
 	}
 
 	d.Cache.Roles().Delete(roleID)
+
+	if d.cacheStoreEnabled(cache.CategoryMembers) {
+		for _, m := range d.Cache.Members().AllInGuild(guildID).Values() {
+			found := false
+			for _, r := range m.Roles {
+				if r == roleID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+			updated := *m
+			filtered := make([]discord.Snowflake, 0, len(m.Roles)-1)
+			for _, r := range m.Roles {
+				if r != roleID {
+					filtered = append(filtered, r)
+				}
+			}
+			updated.Roles = filtered
+			d.Cache.Members().Set(guildID, &updated)
+		}
+	}
 }
 
 // trackChannel records the channel→guild association in the bidirectional
@@ -210,7 +346,7 @@ func (d *Client) trackChannel(channel *discord.Channel) {
 		}
 	}
 
-	if channel.GuildID == nil {
+	if channel.GuildID == nil || channel.IsThread() {
 		return
 	}
 

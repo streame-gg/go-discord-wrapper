@@ -1,13 +1,15 @@
 package stores
 
 import (
+	"github.com/stretchr/testify/suite"
 	"testing"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // J0-#13: MemMessageStore.Channel() must return copies, not shared pointers.
-func TestMemMessageStore_ChannelReturnsCopies(t *testing.T) {
+func (su *storesMessageSuite) TestMemMessageStore_ChannelReturnsCopies() {
+	t := su.T()
 	s := NewMessageStore(MessageDefaults())
 	defer s.Close()
 
@@ -35,3 +37,7 @@ func TestMemMessageStore_ChannelReturnsCopies(t *testing.T) {
 		t.Fatalf("cache was mutated: got %q, want %q", msg2.Content, "hello")
 	}
 }
+
+type storesMessageSuite struct{ suite.Suite }
+
+func TestStoresMessageSuite(t *testing.T) { suite.Run(t, new(storesMessageSuite)) }

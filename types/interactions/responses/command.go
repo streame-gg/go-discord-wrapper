@@ -6,6 +6,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-application-command-data
 type InteractionDataApplicationCommand struct {
 	ID          discord.Snowflake                                       `json:"id"`
 	CommandName string                                                  `json:"name"`

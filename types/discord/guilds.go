@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#guild-create
 type AnyGuildWrapper struct {
 	Guild AnyGuild
 }
@@ -35,11 +36,13 @@ func (ag *AnyGuildWrapper) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// https://docs.discord.com/developers/resources/guild#guild-object
 type AnyGuild interface {
 	IsAvailable() bool
 	GetID() Snowflake
 }
 
+// https://docs.discord.com/developers/resources/guild#guild-object
 type Guild struct {
 	hClient EntityClient
 
@@ -111,6 +114,7 @@ func (g Guild) GetID() Snowflake {
 	return g.ID
 }
 
+// https://docs.discord.com/developers/resources/guild#unavailable-guild-object
 type UnavailableGuild struct {
 	ID          Snowflake `json:"id"`
 	Unavailable *bool     `json:"unavailable"`
@@ -127,6 +131,7 @@ func (ug UnavailableGuild) GetID() Snowflake {
 	return ug.ID
 }
 
+// https://docs.discord.com/developers/resources/guild#guild-object-verification-level
 type GuildVerificationLevel int
 
 const (
@@ -137,6 +142,7 @@ const (
 	GuildVerificationLevelVeryHigh GuildVerificationLevel = 4
 )
 
+// https://docs.discord.com/developers/resources/guild#guild-object-default-message-notification-level
 type DefaultMessageNotificationLevel int
 
 const (
@@ -144,6 +150,7 @@ const (
 	DefaultMessageNotificationLevelOnlyMentions DefaultMessageNotificationLevel = 1
 )
 
+// https://docs.discord.com/developers/resources/guild#guild-object-premium-tier
 type GuildPremiumTier int
 
 const (
@@ -153,6 +160,7 @@ const (
 	GuildPremiumTierTier3 GuildPremiumTier = 3
 )
 
+// https://docs.discord.com/developers/resources/guild#guild-object-guild-nsfw-level
 type GuildNSFWLevel int
 
 const (
@@ -162,6 +170,7 @@ const (
 	GuildNSFWLevelAgeRestricted GuildNSFWLevel = 3
 )
 
+// https://docs.discord.com/developers/resources/guild#guild-object-explicit-content-filter-level
 type GuildExplicitContentFilterLevel int
 
 const (
@@ -170,6 +179,7 @@ const (
 	GuildExplicitContentFilterLevelAllMembers          GuildExplicitContentFilterLevel = 2
 )
 
+// https://docs.discord.com/developers/resources/guild#guild-object-mfa-level
 type GuildMFALevel int
 
 func (g GuildMFALevel) ToInt() int {
@@ -181,6 +191,7 @@ const (
 	GuildMFALevelElevated GuildMFALevel = 1
 )
 
+// https://docs.discord.com/developers/resources/guild#guild-object-system-channel-flags
 type GuildSystemChannelFlags int
 
 const (
@@ -192,6 +203,7 @@ const (
 	GuildSystemChannelFlagsPurchaseNotificationReplies     GuildSystemChannelFlags = 1 << 5
 )
 
+// https://docs.discord.com/developers/resources/guild#guild-object-guild-features
 type GuildFeatures string
 
 const (
@@ -229,6 +241,7 @@ const (
 	GuildFeatureEnhancedRoleColors                    GuildFeatures = "ENHANCED_ROLE_COLORS"
 )
 
+// https://docs.discord.com/developers/resources/guild#incidents-data-object
 type GuildIncidentsData struct {
 	InvitesDisabledUntil *time.Time `json:"invites_disabled_until,omitempty"`
 	DmsDisabledUntil     *time.Time `json:"dms_disabled_until,omitempty"`
@@ -236,11 +249,13 @@ type GuildIncidentsData struct {
 	RaidDetectedAt       *time.Time `json:"raid_detected_at,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#welcome-screen-object
 type GuildWelcomeScreen struct {
 	Description     *string                     `json:"description,omitempty"`
 	WelcomeChannels []GuildWelcomeScreenChannel `json:"welcome_channels,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#welcome-screen-object-welcome-screen-channel-structure
 type GuildWelcomeScreenChannel struct {
 	ChannelID   Snowflake  `json:"channel_id"`
 	Description string     `json:"description"`
@@ -248,12 +263,14 @@ type GuildWelcomeScreenChannel struct {
 	EmojiName   *string    `json:"emoji_name,omitempty"`
 }
 
+// https://docs.discord.com/developers/topics/permissions#role-object-role-colors-object
 type RoleColors struct {
 	PrimaryColor   *int `json:"primary_color,omitempty"`
 	SecondaryColor *int `json:"secondary_color,omitempty"`
 	TertiaryColor  *int `json:"tertiary_color,omitempty"`
 }
 
+// https://docs.discord.com/developers/topics/permissions#role-object
 type Role struct {
 	hClient      EntityClient
 	GuildID      Snowflake  `json:"-"`
@@ -264,28 +281,35 @@ type Role struct {
 	IconHash     *string    `json:"icon,omitempty"`
 	UnicodeEmoji *string    `json:"unicode_emoji,omitempty"`
 	Position     int        `json:"position,omitempty"`
-	Permissions  string     `json:"permissions"`
+	Permissions  Permission `json:"permissions"`
 	Managed      bool       `json:"managed"`
 	Mentionable  bool       `json:"mentionable"`
 	Tags         *RoleTags  `json:"tags,omitempty"`
 	Flags        *RoleFlags `json:"flags,omitempty"`
 }
 
+// https://docs.discord.com/developers/topics/permissions#role-object-role-tags-structure
 type RoleTags struct {
-	BotID                 *Snowflake   `json:"bot_id,omitempty"`
-	IntegrationID         *Snowflake   `json:"integration_id,omitempty"`
-	PremiumSubscriber     *interface{} `json:"premium_subscriber,omitempty"`
-	SubscriptionListingID *Snowflake   `json:"subscription_listing_id,omitempty"`
-	AvailableForPurchase  *interface{} `json:"available_for_purchase,omitempty"`
-	GuildConnections      *interface{} `json:"guild_connections,omitempty"`
+	BotID         *Snowflake `json:"bot_id,omitempty"`
+	IntegrationID *Snowflake `json:"integration_id,omitempty"`
+	// PremiumSubscriber is true when this is the guild's Nitro Booster role.
+	// Discord encodes it as JSON null when present and omits it when absent.
+	PremiumSubscriber     NullFlag   `json:"premium_subscriber,omitempty"`
+	SubscriptionListingID *Snowflake `json:"subscription_listing_id,omitempty"`
+	// AvailableForPurchase is true when the role can be purchased via a subscription.
+	AvailableForPurchase NullFlag `json:"available_for_purchase,omitempty"`
+	// GuildConnections is true when this is a linked role.
+	GuildConnections NullFlag `json:"guild_connections,omitempty"`
 }
 
+// https://docs.discord.com/developers/topics/permissions#role-object-role-flags
 type RoleFlags int
 
 const (
 	RoleFlagsInPrompt RoleFlags = 1 << 0
 )
 
+// https://docs.discord.com/developers/resources/sticker#sticker-object
 type Sticker struct {
 	hClient     EntityClient
 	ID          Snowflake         `json:"id"`
@@ -301,6 +325,7 @@ type Sticker struct {
 	User        *User             `json:"user,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/sticker#sticker-object-sticker-types
 type StickerType int
 
 const (
@@ -308,6 +333,7 @@ const (
 	StickerTypeGuild    StickerType = 2
 )
 
+// https://docs.discord.com/developers/resources/sticker#sticker-object-sticker-format-types
 type StickerFormatType int
 
 const (
@@ -318,12 +344,16 @@ const (
 )
 
 // GuildWidgetSettings holds the guild widget configuration.
+//
+// https://docs.discord.com/developers/resources/guild#guild-widget-settings-object
 type GuildWidgetSettings struct {
 	Enabled   bool       `json:"enabled"`
 	ChannelID *Snowflake `json:"channel_id,omitempty"`
 }
 
 // GuildWidget is the public JSON widget for a guild.
+//
+// https://docs.discord.com/developers/resources/guild#guild-widget-object
 type GuildWidget struct {
 	ID            Snowflake `json:"id"`
 	Name          string    `json:"name"`
@@ -335,6 +365,8 @@ type GuildWidget struct {
 
 // GatewayGuild extends [Guild] with fields that are only present in the
 // GUILD_CREATE gateway event payload and are never sent in REST responses.
+//
+// https://docs.discord.com/developers/events/gateway-events#guild-create-guild-create-extra-fields
 type GatewayGuild struct {
 	Guild
 	JoinedAt             *time.Time            `json:"joined_at,omitempty"`
@@ -354,20 +386,24 @@ type GatewayGuild struct {
 func (g GatewayGuild) IsAvailable() bool { return true }
 func (g GatewayGuild) GetID() Snowflake  { return g.ID }
 
+// https://docs.discord.com/developers/resources/guild#ban-object
 type Ban struct {
 	Reason *string `json:"reason,omitempty"`
 	User   User    `json:"user"`
 }
 
+// https://docs.discord.com/developers/resources/guild#get-guild-vanity-url
 type GuildVanityURL struct {
 	Code *string `json:"code,omitempty"`
 	Uses int     `json:"uses"`
 }
 
+// https://docs.discord.com/developers/resources/guild#get-guild-prune-count
 type GuildPruneCountResult struct {
 	Pruned *int `json:"pruned,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/sticker#sticker-pack-object
 type StickerPack struct {
 	ID             Snowflake  `json:"id"`
 	Stickers       []Sticker  `json:"stickers"`
@@ -378,6 +414,7 @@ type StickerPack struct {
 	BannerAssetID  *Snowflake `json:"banner_asset_id,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/user#get-current-user-guilds
 type CurrentUserGuild struct {
 	ID                       Snowflake       `json:"id"`
 	Name                     string          `json:"name"`
@@ -392,6 +429,8 @@ type CurrentUserGuild struct {
 // GatewayPresence is a stripped-down presence record as sent inside the
 // GUILD_CREATE payload. It has no guild_id field; the enclosing guild provides
 // that context.
+//
+// https://docs.discord.com/developers/events/gateway-events#presence-update
 type GatewayPresence struct {
 	User         PartialPresenceUser `json:"user"`
 	Status       PresenceStatus      `json:"status"`
@@ -402,6 +441,8 @@ type GatewayPresence struct {
 // GatewayGuildWrapper is like [AnyGuildWrapper] but deserialises available
 // guilds as [GatewayGuild] so that gateway-only fields (channels, members,
 // voice states, etc.) are retained. Used by [GuildCreateEvent].
+//
+// https://docs.discord.com/developers/events/gateway-events#guild-create
 type GatewayGuildWrapper struct {
 	Guild AnyGuild
 }
@@ -429,6 +470,7 @@ func (ag *GatewayGuildWrapper) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// https://docs.discord.com/developers/resources/guild#guild-join-request-object
 type GuildJoinRequestApplicationStatus string
 
 const (
@@ -438,6 +480,7 @@ const (
 	GuildJoinRequestStatusApproved  GuildJoinRequestApplicationStatus = "APPROVED"
 )
 
+// https://docs.discord.com/developers/resources/guild#guild-join-request-object
 type GuildJoinRequest struct {
 	ID                Snowflake                         `json:"id"`
 	CreatedAt         string                            `json:"created_at"`
@@ -449,12 +492,14 @@ type GuildJoinRequest struct {
 	User              *User                             `json:"user,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#guild-onboarding-object
 type GuildNewMemberWelcomeChannel struct {
 	ChannelID   Snowflake `json:"channel_id"`
 	Title       string    `json:"title"`
 	Description *string   `json:"description,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/guild#guild-onboarding-object
 type GuildNewMemberWelcome struct {
 	GuildID          Snowflake                      `json:"guild_id"`
 	Enabled          bool                           `json:"enabled"`

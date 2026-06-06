@@ -11,6 +11,7 @@ import (
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/stage-instance#create-stage-instance
 type CreateStageInstanceParams struct {
 	ChannelID             discord.Snowflake                  `json:"channel_id"`
 	Topic                 string                             `json:"topic"`
@@ -19,19 +20,23 @@ type CreateStageInstanceParams struct {
 	GuildScheduledEventID *discord.Snowflake                 `json:"guild_scheduled_event_id,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/stage-instance#create-stage-instance
 type CreateStageInstanceOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/stage-instance#modify-stage-instance
 type ModifyStageInstanceParams struct {
 	Topic        *string                            `json:"topic,omitempty"`
 	PrivacyLevel *discord.StageInstancePrivacyLevel `json:"privacy_level,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/stage-instance#modify-stage-instance
 type ModifyStageInstanceOptions struct {
 	Reason string
 }
 
+// https://docs.discord.com/developers/resources/stage-instance#delete-stage-instance
 type DeleteStageInstanceOptions struct {
 	Reason string
 }

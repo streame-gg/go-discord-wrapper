@@ -2,6 +2,7 @@ package events
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/suite"
 	"testing"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -11,7 +12,8 @@ import (
 // MemberCount on GuildCreateEvent are decoded correctly (Issue 5).
 // Prior to the fix the promoted GatewayGuildWrapper.UnmarshalJSON consumed the
 // entire payload and these outer fields were always zero/nil.
-func TestGuildCreateEventOuterFields(t *testing.T) {
+func (su *guildCreateSuite) TestGuildCreateEventOuterFields() {
+	t := su.T()
 	unavailableFalse := false
 	payload := `{
 		"id": "123456789012345678",
@@ -57,7 +59,8 @@ func TestGuildCreateEventOuterFields(t *testing.T) {
 
 // TestGuildCreateEventUnavailableGuild verifies that an unavailable guild
 // payload is still handled correctly.
-func TestGuildCreateEventUnavailableGuild(t *testing.T) {
+func (su *guildCreateSuite) TestGuildCreateEventUnavailableGuild() {
+	t := su.T()
 	payload := `{"id": "111111111111111111", "unavailable": true}`
 
 	var ev GuildCreateEvent
@@ -71,3 +74,7 @@ func TestGuildCreateEventUnavailableGuild(t *testing.T) {
 		t.Error("want guild to be unavailable")
 	}
 }
+
+type guildCreateSuite struct{ suite.Suite }
+
+func TestGuildCreateSuite(t *testing.T) { suite.Run(t, new(guildCreateSuite)) }

@@ -56,6 +56,10 @@ type Config struct {
 	Retry              RetryOptions
 	MinRequestInterval time.Duration
 	RateLimiter        *RateLimiterOptions
+
+	// MaxResponseBodySize caps how many bytes are read from a response body.
+	// 0 means use the default (50 MiB). Set to -1 for no limit (not recommended).
+	MaxResponseBodySize int64
 }
 
 // RateLimiterOptions configures proactive rate limit throttling.
@@ -156,7 +160,8 @@ func WithAPIVersion(v discord.APIVersion) Option {
 	return func(c *Config) { c.APIVersion = v }
 }
 
-// WithLogger sets a custom slog logger on the Client.
+// WithLogger sets a custom slog logger on the Client. By default the Client is
+// silent (logs are discarded); provide a logger here to receive them.
 func WithLogger(l *slog.Logger) Option {
 	return func(c *Config) { c.Logger = l }
 }
@@ -186,6 +191,13 @@ func WithMinRequestInterval(d time.Duration) Option {
 // Defaults to "https://discord.com/api". Useful for testing or API proxies.
 func WithBaseURL(url string) Option {
 	return func(c *Config) { c.BaseURL = url }
+}
+
+// WithMaxResponseBodySize sets the maximum number of bytes read from a REST
+// response body. The default is 50 MiB. Pass -1 to disable the limit (not
+// recommended — Discord responses are never larger than a few MB in practice).
+func WithMaxResponseBodySize(n int64) Option {
+	return func(c *Config) { c.MaxResponseBodySize = n }
 }
 
 // WithCoordinator attaches a ShardCoordinator to the client.
@@ -230,13 +242,20 @@ func WithMaxConcurrentEvents(n int) Option {
 }
 
 // WithLogLevel sets the minimum slog level when no custom logger is provided via
-// WithLogger. Has no effect if WithLogger is also used.
+// WithLogger. Has no effect if WithLogger is also used. Without this option (and
+// without WithLogger) the Client is silent by default.
 func WithLogLevel(level slog.Level) Option {
 	return func(c *Config) { c.LogLevel = &level }
 }
 
 // WithDisableCacheAutoPopulation disables automatic cache population from gateway
-// events. Use this when you want full control over what goes into the cache.
+// events entirely (sets CacheStores to 0). Use this when you want full control
+// over what goes into the cache.
+//
+// Order matters: this option resets CacheStores to 0, so it must not be
+// followed by WithCacheStores, and any preceding WithCacheStores call will be
+// overwritten. If you need to disable only specific stores, use
+// WithDisableCacheStore instead.
 func WithDisableCacheAutoPopulation() Option {
 	return func(c *Config) {
 		c.DisableCacheAutoPopulation = true
@@ -244,10 +263,15 @@ func WithDisableCacheAutoPopulation() Option {
 	}
 }
 
-// WithCacheStores sets the cache stores that are auto-populated from gateway events.
-// Pass a bitmask of cache.Category* values, for example:
+// WithCacheStores sets the exact set of stores that are auto-populated from
+// gateway events. Pass a bitmask of cache.Category* values:
 //
 //	options.WithCacheStores(cache.CategoryGuilds | cache.CategoryChannels)
+//
+// Order matters: this option re-enables auto-population (sets
+// DisableCacheAutoPopulation to false), so it overrides a preceding
+// WithDisableCacheAutoPopulation. Place WithCacheStores after any
+// WithDisableCacheAutoPopulation call if both are used.
 func WithCacheStores(stores cache.OverflowCategory) Option {
 	return func(c *Config) {
 		c.CacheStores = stores
@@ -257,6 +281,9 @@ func WithCacheStores(stores cache.OverflowCategory) Option {
 
 // WithDisableCacheStore disables auto-population for the specified stores.
 // It starts from the default CategoryAll unless you have already set CacheStores.
+// Do not combine with WithDisableCacheAutoPopulation: that option sets
+// DisableCacheAutoPopulation=true, which causes NewClient to override CacheStores
+// to 0 regardless of what this option sets.
 func WithDisableCacheStore(stores cache.OverflowCategory) Option {
 	return func(c *Config) {
 		if c.CacheStores == 0 {

@@ -16,5 +16,5 @@ func NewGuildInviteManager(guildID discord.Snowflake, c discord.EntityClient) di
 }
 
 func (m *guildInviteManager) FetchAll(ctx context.Context) ([]*discord.Invite, error) {
-	return m.client.GetGuildInvites(ctx, m.guildID)
+	return m.client.ListGuildInvites(ctx, m.guildID)
 }

@@ -1,5 +1,6 @@
 package discord
 
+// https://docs.discord.com/developers/resources/stage-instance#stage-instance-object-privacy-level
 type StageInstancePrivacyLevel int
 
 const (
@@ -7,6 +8,7 @@ const (
 	StageInstancePrivacyLevelGuildOnly StageInstancePrivacyLevel = 2
 )
 
+// https://docs.discord.com/developers/resources/stage-instance#stage-instance-object
 type StageInstance struct {
 	hClient               EntityClient
 	ID                    Snowflake                 `json:"id"`

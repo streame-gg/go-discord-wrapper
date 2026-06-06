@@ -8,6 +8,9 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/cache/stores"
 )
 
+// Compile-time guarantee that MemoryCache satisfies the full Cache interface.
+var _ Cache = (*MemoryCache)(nil)
+
 // MemoryCache is an in-process implementation of [Cache].
 //
 // Create with [NewMemoryCache] and wire it to the gateway client via
@@ -27,6 +30,9 @@ type MemoryCache struct {
 	emojis          *stores.MemEmojiStore
 	stickers        *stores.MemStickerStore
 	presences       *stores.MemPresenceStore
+	bans            *stores.MemBanStore
+	autoModRules    *stores.MemAutoModerationRuleStore
+	invites         *stores.MemInviteStore
 
 	stopOnce sync.Once
 	stopCh   chan struct{}
@@ -84,6 +90,9 @@ func NewMemoryCache(opts Options) *MemoryCache {
 		emojis:          stores.NewEmojiStore(sc(0)),
 		stickers:        stores.NewStickerStore(sc(opts.Limits.MaxStickers)),
 		presences:       stores.NewPresenceStore(stores.PresenceDefaults()),
+		bans:            stores.NewBanStore(sc(0)),
+		autoModRules:    stores.NewAutoModerationRuleStore(sc(0)),
+		invites:         stores.NewInviteStore(sc(0)),
 		stopCh:          make(chan struct{}),
 	}
 
@@ -104,19 +113,22 @@ func clearByToStrategy(by ClearBy) stores.EvictionStrategy {
 	}
 }
 
-func (c *MemoryCache) Guilds() GuildStore                   { return c.guilds }
-func (c *MemoryCache) Channels() ChannelStore               { return c.channels }
-func (c *MemoryCache) Users() UserStore                     { return c.users }
-func (c *MemoryCache) Members() MemberStore                 { return c.members }
-func (c *MemoryCache) Roles() RoleStore                     { return c.roles }
-func (c *MemoryCache) Messages() MessageStore               { return c.messages }
-func (c *MemoryCache) VoiceStates() VoiceStateStore         { return c.voiceStates }
-func (c *MemoryCache) Soundboard() SoundboardStore          { return c.soundboard }
-func (c *MemoryCache) ScheduledEvents() ScheduledEventStore { return c.scheduledEvents }
-func (c *MemoryCache) StageInstances() StageInstanceStore   { return c.stageInstances }
-func (c *MemoryCache) Emojis() EmojiStore                   { return c.emojis }
-func (c *MemoryCache) Stickers() StickerStore               { return c.stickers }
-func (c *MemoryCache) Presences() PresenceStore             { return c.presences }
+func (c *MemoryCache) Guilds() GuildStore                    { return c.guilds }
+func (c *MemoryCache) Channels() ChannelStore                { return c.channels }
+func (c *MemoryCache) Users() UserStore                      { return c.users }
+func (c *MemoryCache) Members() MemberStore                  { return c.members }
+func (c *MemoryCache) Roles() RoleStore                      { return c.roles }
+func (c *MemoryCache) Messages() MessageStore                { return c.messages }
+func (c *MemoryCache) VoiceStates() VoiceStateStore          { return c.voiceStates }
+func (c *MemoryCache) Soundboard() SoundboardStore           { return c.soundboard }
+func (c *MemoryCache) ScheduledEvents() ScheduledEventStore  { return c.scheduledEvents }
+func (c *MemoryCache) StageInstances() StageInstanceStore    { return c.stageInstances }
+func (c *MemoryCache) Emojis() EmojiStore                    { return c.emojis }
+func (c *MemoryCache) Stickers() StickerStore                { return c.stickers }
+func (c *MemoryCache) Presences() PresenceStore              { return c.presences }
+func (c *MemoryCache) Bans() BanStore                        { return c.bans }
+func (c *MemoryCache) AutoModRules() AutoModerationRuleStore { return c.autoModRules }
+func (c *MemoryCache) Invites() InviteStore                  { return c.invites }
 
 // Close stops the background sweeper and all store goroutines. Safe to call
 // multiple times.
@@ -137,6 +149,9 @@ func (c *MemoryCache) Close() error {
 		c.emojis.Close()
 		c.stickers.Close()
 		c.presences.Close()
+		c.bans.Close()
+		c.autoModRules.Close()
+		c.invites.Close()
 	})
 	return nil
 }
@@ -173,6 +188,9 @@ func (c *MemoryCache) sweep() {
 	c.emojis.SweepExpired(uw)
 	c.stickers.SweepExpired(uw)
 	c.presences.SweepExpired(uw)
+	c.bans.SweepExpired(uw)
+	c.autoModRules.SweepExpired(uw)
+	c.invites.SweepExpired(uw)
 
 	c.enforceGlobalLimits()
 }
@@ -241,6 +259,15 @@ func (c *MemoryCache) countTargeted(target OverflowCategory) int {
 	if target&CategoryPresences != 0 {
 		n += c.presences.Size()
 	}
+	if target&CategoryBans != 0 {
+		n += c.bans.Size()
+	}
+	if target&CategoryAutoModRules != 0 {
+		n += c.autoModRules.Size()
+	}
+	if target&CategoryInvites != 0 {
+		n += c.invites.Size()
+	}
 	return n
 }
 
@@ -282,6 +309,15 @@ func (c *MemoryCache) bytesTargeted(target OverflowCategory) int64 {
 	}
 	if target&CategoryPresences != 0 {
 		b += c.presences.Bytes()
+	}
+	if target&CategoryBans != 0 {
+		b += c.bans.Bytes()
+	}
+	if target&CategoryAutoModRules != 0 {
+		b += c.autoModRules.Bytes()
+	}
+	if target&CategoryInvites != 0 {
+		b += c.invites.Bytes()
 	}
 	return b
 }
@@ -340,6 +376,15 @@ func (c *MemoryCache) storesForTarget(target OverflowCategory) []storeEntry {
 	}
 	if target&CategoryPresences != 0 {
 		add(c.presences.Size(), c.presences.Bytes(), c.presences.TrimTo)
+	}
+	if target&CategoryBans != 0 {
+		add(c.bans.Size(), c.bans.Bytes(), c.bans.TrimTo)
+	}
+	if target&CategoryAutoModRules != 0 {
+		add(c.autoModRules.Size(), c.autoModRules.Bytes(), c.autoModRules.TrimTo)
+	}
+	if target&CategoryInvites != 0 {
+		add(c.invites.Size(), c.invites.Bytes(), c.invites.TrimTo)
 	}
 	return out
 }
@@ -427,9 +472,9 @@ func (c *MemoryCache) evictByBytes(need int64, target OverflowCategory, by Clear
 		if toEvict > info.e.size {
 			toEvict = info.e.size
 		}
-		if toEvict <= 0 {
-			continue
-		}
+		// toEvict is always >= 1 here: the loop only runs while need >= 1, avgSize
+		// is clamped to >= 1, and info.e.size >= 1 (zero-size stores are skipped
+		// above), so ceil(need/avgSize) capped at size cannot be <= 0.
 		info.e.trimTo(info.e.size - toEvict)
 		need -= int64(toEvict) * info.avgSize
 	}

@@ -5,6 +5,7 @@ import "context"
 // ── Options ───────────────────────────────────────────────────────────────────
 
 // StageCreateOptions configures StageInstanceManager.Create.
+// https://docs.discord.com/developers/resources/stage-instance#create-stage-instance
 type StageCreateOptions struct {
 	ChannelID             Snowflake
 	Topic                 string
@@ -15,6 +16,7 @@ type StageCreateOptions struct {
 }
 
 // StageEditOptions configures StageInstance.Edit.
+// https://docs.discord.com/developers/resources/stage-instance#modify-stage-instance
 type StageEditOptions struct {
 	Topic          *string
 	PrivacyLevel   *StageInstancePrivacyLevel

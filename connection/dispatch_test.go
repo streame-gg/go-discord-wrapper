@@ -120,7 +120,8 @@ func launchClient(t *testing.T, wsURL string, intents discord.Intent) (c *Client
 
 // ── Event dispatch tests ──────────────────────────────────────────────────────
 
-func TestDispatchFiresRegisteredHandler(t *testing.T) {
+func (cs *ConnectionSuite) TestDispatchFiresRegisteredHandler() {
+	t := cs.T()
 	msgPacket := dispatchPacket("MESSAGE_CREATE", map[string]interface{}{
 		"id": "123", "channel_id": "456",
 		"author":    map[string]interface{}{"id": "1", "username": "u", "discriminator": "0"},
@@ -151,7 +152,8 @@ func TestDispatchFiresRegisteredHandler(t *testing.T) {
 	assert.True(t, called.Load())
 }
 
-func TestDispatchCallsAllRegisteredHandlers(t *testing.T) {
+func (cs *ConnectionSuite) TestDispatchCallsAllRegisteredHandlers() {
+	t := cs.T()
 	msgPacket := dispatchPacket("MESSAGE_CREATE", map[string]interface{}{
 		"id": "1", "channel_id": "2",
 		"author":    map[string]interface{}{"id": "3", "username": "u", "discriminator": "0"},
@@ -192,7 +194,8 @@ func TestDispatchCallsAllRegisteredHandlers(t *testing.T) {
 
 // ── Middleware tests ──────────────────────────────────────────────────────────
 
-func TestMiddlewareWrapsHandler(t *testing.T) {
+func (cs *ConnectionSuite) TestMiddlewareWrapsHandler() {
+	t := cs.T()
 	msgPacket := dispatchPacket("MESSAGE_CREATE", map[string]interface{}{
 		"id": "1", "channel_id": "2",
 		"author":    map[string]interface{}{"id": "3", "username": "u", "discriminator": "0"},
@@ -244,7 +247,8 @@ func TestMiddlewareWrapsHandler(t *testing.T) {
 	assert.Equal(t, "after", order[2])
 }
 
-func TestMiddlewareCanShortCircuit(t *testing.T) {
+func (cs *ConnectionSuite) TestMiddlewareCanShortCircuit() {
+	t := cs.T()
 	msgPacket := dispatchPacket("MESSAGE_CREATE", map[string]interface{}{
 		"id": "1", "channel_id": "2",
 		"author":    map[string]interface{}{"id": "3", "username": "u", "discriminator": "0"},
@@ -282,7 +286,8 @@ func TestMiddlewareCanShortCircuit(t *testing.T) {
 	assert.False(t, handlerCalled.Load(), "handler should not run when middleware short-circuits")
 }
 
-func TestHandlerRegisteredBeforeUseIsNotWrapped(t *testing.T) {
+func (cs *ConnectionSuite) TestHandlerRegisteredBeforeUseIsNotWrapped() {
+	t := cs.T()
 	msgPacket := dispatchPacket("MESSAGE_CREATE", map[string]interface{}{
 		"id": "1", "channel_id": "2",
 		"author":    map[string]interface{}{"id": "3", "username": "u", "discriminator": "0"},

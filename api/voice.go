@@ -12,12 +12,14 @@ import (
 
 // ── Param types ───────────────────────────────────────────────────────────────
 
+// https://docs.discord.com/developers/resources/voice#modify-current-user-voice-state
 type ModifyCurrentUserVoiceStateParams struct {
 	ChannelID               *discord.Snowflake `json:"channel_id,omitempty"`
 	Suppress                *bool              `json:"suppress,omitempty"`
 	RequestToSpeakTimestamp *time.Time         `json:"request_to_speak_timestamp,omitempty"`
 }
 
+// https://docs.discord.com/developers/resources/voice#modify-user-voice-state
 type ModifyUserVoiceStateParams struct {
 	ChannelID *discord.Snowflake `json:"channel_id,omitempty"`
 	Suppress  *bool              `json:"suppress,omitempty"`

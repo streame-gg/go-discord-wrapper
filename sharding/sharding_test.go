@@ -560,6 +560,38 @@ func (s *shardingTestSuite) TestBug26BucketStart_ConcurrentFactory() {
 	s.True(callTimes[3].IsZero(), "shard 3 must not be called after bucket 0 fails")
 }
 
+// TestWithLoginTimeout_ExpiresOnHangingLogin verifies that WithLoginTimeout causes
+// Start to fail with a deadline error when Login does not return in time.
+func (s *shardingTestSuite) TestWithLoginTimeout_ExpiresOnHangingLogin() {
+	coord := sharding.NewLocalCoordinator(1)
+	mgr := sharding.NewShardManager(coord, func(id, total int) (*connection.Client, error) {
+		return connection.NewClient("Bot fake-token", discord.IntentGuilds,
+			options.WithSharding(total, id),
+			options.WithCoordinator(coord),
+		)
+	}, sharding.WithLoginTimeout(50*time.Millisecond))
+
+	start := time.Now()
+	err := mgr.Start()
+	elapsed := time.Since(start)
+
+	s.Require().Error(err, "Start must fail when Login exceeds the timeout")
+	s.Less(elapsed, 5*time.Second, "Start must not block longer than the login timeout (+margin)")
+}
+
+// TestWithLoginTimeout_DefaultIsThirtySeconds verifies that NewShardManager uses
+// 30 s as the default login timeout (factory errors fast, so we only check the
+// option has no effect on the error type, not the actual 30 s wait).
+func (s *shardingTestSuite) TestWithLoginTimeout_DefaultIsThirtySeconds() {
+	coord := sharding.NewLocalCoordinator(1)
+	factoryErr := errors.New("boom")
+	mgr := sharding.NewShardManager(coord, func(id, total int) (*connection.Client, error) {
+		return nil, factoryErr
+	})
+	err := mgr.Start()
+	s.Require().ErrorIs(err, factoryErr, "factory error must propagate regardless of login timeout default")
+}
+
 // TestBug26BackwardsCompat_NilRest verifies that NewShardManager (nil rest) defaults
 // to max_concurrency=1, matching pre-fix sequential behaviour (Bug 26).
 func (s *shardingTestSuite) TestBug26BackwardsCompat_NilRest() {
@@ -593,7 +625,8 @@ func (s *shardingTestSuite) TestBug26BackwardsCompat_NilRest() {
 // slot i and the function returned with only 1 result and nil error even though
 // shard 1 never sent a valid reply. The new `for len(results) < total` loop
 // correctly blocks until all valid responses arrive, returning a context error.
-func TestBug29RequestAllMalformedResponseDoesNotConsumeSlot(t *testing.T) {
+func (s *shardingTestSuite) TestBug29RequestAllMalformedResponseDoesNotConsumeSlot() {
+	t := s.T()
 	const total = 2
 	coord := sharding.NewLocalCoordinator(total)
 
@@ -641,4 +674,49 @@ func TestBug29RequestAllMalformedResponseDoesNotConsumeSlot(t *testing.T) {
 	assert.Error(t, err, "expected context error: malformed response must not consume a slot (Bug 29)")
 	assert.ErrorIs(t, err, context.DeadlineExceeded)
 	assert.Len(t, results, 1, "expected exactly 1 valid result (from shard 0)")
+}
+
+// TestBug99RequestAllDeduplicatesDuplicateReplies verifies that when a shard
+// sends more than one valid reply for the same request, only the first reply
+// is counted. Previously the loop advanced the counter for every valid message
+// regardless of msg.From, so two replies from shard 0 would satisfy the total
+// of 2 while shard 1 was never heard from (Bug 99).
+func (s *shardingTestSuite) TestBug99RequestAllDeduplicatesDuplicateReplies() {
+	t := s.T()
+	const total = 2
+	coord := sharding.NewLocalCoordinator(total)
+
+	c0, err := connection.NewClient("Bot fake-token", discord.IntentGuilds,
+		options.WithSharding(total, 0),
+		options.WithCoordinator(coord),
+	)
+	require.NoError(t, err)
+	defer c0.Shutdown()
+
+	c1, err := connection.NewClient("Bot fake-token", discord.IntentGuilds,
+		options.WithSharding(total, 1),
+		options.WithCoordinator(coord),
+	)
+	require.NoError(t, err)
+	defer c1.Shutdown()
+
+	// Shard 0 sends two valid replies.
+	c0.OnShardMessage(func(msg options.ShardMessage) {
+		if msg.Type == "REQ" {
+			_ = c0.ReplyToShard(msg, "RESP", 10)
+			_ = c0.ReplyToShard(msg, "RESP", 10)
+		}
+	})
+
+	// Shard 1 never replies, so RequestAll must block until the context expires.
+	_ = c1
+
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+
+	results, err := sharding.RequestAll[int](ctx, c0, "REQ", nil, "RESP")
+
+	assert.Error(t, err, "expected context error: duplicate reply from shard 0 must not satisfy shard 1's slot (Bug 99)")
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Len(t, results, 1, "expected exactly 1 result (one unique shard replied)")
 }

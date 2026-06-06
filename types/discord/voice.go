@@ -5,6 +5,7 @@ import (
 )
 
 // VoiceRegion describes a Discord voice server region.
+// https://docs.discord.com/developers/resources/voice#voice-region-object
 type VoiceRegion struct {
 	ID         string `json:"id"`
 	Name       string `json:"name"`
@@ -13,6 +14,7 @@ type VoiceRegion struct {
 	Custom     bool   `json:"custom"`
 }
 
+// https://docs.discord.com/developers/resources/voice#voice-state-object
 type VoiceState struct {
 	GuildID                 *Snowflake   `json:"guild_id,omitempty"`
 	ChannelID               *Snowflake   `json:"channel_id,omitempty"`

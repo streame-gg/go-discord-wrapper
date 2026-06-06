@@ -9,24 +9,30 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
+	"math"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper"
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
-	"github.com/streame-gg/go-discord-wrapper/util"
 )
 
 // routePathKey is the context key used to carry the relative route path through
 // the request lifecycle so the rate limiter can key on it without re-parsing the URL.
 type routePathKey struct{}
 
+// https://docs.discord.com/developers/reference
 type RestEventType string
 
+// https://docs.discord.com/developers/reference
 type NoReturnData struct{}
 
 const (
@@ -37,6 +43,7 @@ const (
 	RestEventError     RestEventType = "ERROR"
 )
 
+// https://docs.discord.com/developers/reference
 type RestEvent struct {
 	Type       RestEventType
 	Request    *http.Request
@@ -46,9 +53,15 @@ type RestEvent struct {
 	Err        error
 }
 
+// https://docs.discord.com/developers/reference
 type RestEventHandler func(*RestClient, RestEvent)
 
+// https://docs.discord.com/developers/reference
 type RestClient struct {
+	// BaseURL is the root of the Discord REST API (default: "https://discord.com/api").
+	// It is read by buildURL on every request without a lock. If you need to
+	// override it, do so before the client is used for the first time; mutating
+	// it concurrently with in-flight requests is a data race.
 	BaseURL string
 	token   string
 	Version discord.APIVersion
@@ -68,6 +81,22 @@ type RestClient struct {
 	rateLimiter *rateLimiter
 
 	eventEmitter *util.EventEmitter[RestEventType, RestEventHandler]
+
+	maxResponseBodySize int64
+}
+
+// resolveLogger returns the logger configured via WithLogger/WithLogLevel, or a
+// silent (DiscardHandler) logger by default so the library does not write to the
+// application's logs unless asked to.
+func resolveLogger(cfg options.Config) *slog.Logger {
+	switch {
+	case cfg.Logger != nil:
+		return cfg.Logger
+	case cfg.LogLevel != nil:
+		return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: *cfg.LogLevel}))
+	default:
+		return slog.New(slog.DiscardHandler)
+	}
 }
 
 // NewRestClient creates a REST client for the Discord API.
@@ -79,12 +108,33 @@ type RestClient struct {
 //	)
 func NewRestClient(token string, opts ...options.Option) (*RestClient, error) {
 	token = strings.TrimSpace(token)
-	token = strings.TrimPrefix(token, "Bot ")
-	token = strings.TrimPrefix(token, "Bearer ")
+	if len(token) == 0 {
+		return nil, errors.New("token required")
+	}
+
+	if parts := strings.SplitN(token, " ", 2); strings.ToLower(parts[0]) == "bot" {
+		// Route through the configured logger so the advisory is silent by default
+		// (a library should not write to the application's logs unless asked to).
+		resolveLogger(options.Build(options.Config{}, opts)).Info("NewRestClient: token appears to be a bot token with 'Bot' prefix; the library will add this prefix automatically, so you should pass the raw token without 'Bot '")
+		if len(parts) == 2 {
+			token = strings.TrimSpace(parts[1])
+		} else {
+			token = ""
+		}
+	}
+
 	if token == "" {
 		return nil, errors.New("go-discord-wrapper: token must not be empty")
 	}
 
+	return newRestClient(token, opts...)
+}
+
+// newRestClient assembles a RestClient from the given options without enforcing
+// that token is non-empty. It is used by NewRestClient (after token validation)
+// and by clients that authenticate per-request rather than with a bot token,
+// such as WebhookClient.
+func newRestClient(token string, opts ...options.Option) (*RestClient, error) {
 	cfg := options.Build(options.Config{
 		BaseURL:    "https://discord.com/api",
 		APIVersion: discord.APIVersion10,
@@ -116,15 +166,27 @@ func NewRestClient(token string, opts ...options.Option) (*RestClient, error) {
 		rl = newRateLimiter(safetyMargin)
 	}
 
+	maxBody := cfg.MaxResponseBodySize
+	switch {
+	case maxBody == 0:
+		maxBody = 50 << 20 // default 50 MiB
+	case maxBody < 0:
+		// WithMaxResponseBodySize(-1) disables the limit. io.LimitReader treats a
+		// negative limit as "already exhausted" and returns EOF immediately, so
+		// translate it to an effectively unlimited read instead.
+		maxBody = math.MaxInt64
+	}
+
 	return &RestClient{
-		BaseURL:            cfg.BaseURL,
-		token:              token,
-		Version:            cfg.APIVersion,
-		httpClient:         httpClient,
-		retryOptions:       cfg.Retry,
-		minRequestInterval: cfg.MinRequestInterval,
-		rateLimiter:        rl,
-		eventEmitter:       util.NewEventEmitter[RestEventType, RestEventHandler](),
+		BaseURL:             cfg.BaseURL,
+		token:               token,
+		Version:             cfg.APIVersion,
+		httpClient:          httpClient,
+		retryOptions:        cfg.Retry,
+		minRequestInterval:  cfg.MinRequestInterval,
+		rateLimiter:         rl,
+		eventEmitter:        util.NewEventEmitter[RestEventType, RestEventHandler](),
+		maxResponseBodySize: maxBody,
 	}, nil
 }
 
@@ -149,21 +211,18 @@ func (c *RestClient) OnEvent(eventType RestEventType, handler RestEventHandler) 
 	c.eventEmitter.On(eventType, handler)
 }
 
-// redactRequestSecrets returns a clone of req with the webhook token replaced by
-// "[REDACTED]" so that lifecycle hook payloads never expose credentials.
-// Paths of the form /webhooks/{id}/{token}/... are detected by structure.
+// redactRequestSecrets returns a clone of req with credentials removed so that
+// lifecycle hook payloads never expose secrets. It redacts:
+//   - The Authorization header (contains the bot token)
+//   - Webhook/interaction tokens embedded in URL paths
 func redactRequestSecrets(req *http.Request) *http.Request {
 	if req == nil || req.URL == nil {
 		return req
 	}
 
 	parts := strings.Split(strings.Trim(req.URL.Path, "/"), "/")
-	if len(parts) == 0 {
-		return req
-	}
 
 	tokenIndex := -1
-
 	for i, part := range parts {
 		switch part {
 		case "webhooks":
@@ -177,25 +236,30 @@ func redactRequestSecrets(req *http.Request) *http.Request {
 				tokenIndex = i + 2
 			}
 		}
-
 		if tokenIndex != -1 {
 			break
 		}
 	}
 
-	if tokenIndex == -1 {
+	hasAuth := req.Header.Get("Authorization") != ""
+	if tokenIndex == -1 && !hasAuth {
 		return req
 	}
 
 	clone := req.Clone(req.Context())
-	urlCopy := *req.URL
 
-	redacted := make([]string, len(parts))
-	copy(redacted, parts)
-	redacted[tokenIndex] = "[REDACTED]"
+	if hasAuth {
+		clone.Header.Set("Authorization", "[REDACTED]")
+	}
 
-	urlCopy.Path = "/" + strings.Join(redacted, "/")
-	clone.URL = &urlCopy
+	if tokenIndex != -1 {
+		urlCopy := *req.URL
+		redacted := make([]string, len(parts))
+		copy(redacted, parts)
+		redacted[tokenIndex] = "[REDACTED]"
+		urlCopy.Path = "/" + strings.Join(redacted, "/")
+		clone.URL = &urlCopy
+	}
 
 	return clone
 }
@@ -221,8 +285,14 @@ func validateAPIPath(path string) error {
 		if seg == "" {
 			return fmt.Errorf("go-discord-wrapper: path %q contains an empty segment at position %d", path, i)
 		}
-		if isAllDigits(seg) && !isSnowflakeID(seg) {
-			return fmt.Errorf("go-discord-wrapper: path segment %q is not a valid Discord Snowflake (must be 15–20 decimal digits)", seg)
+		// All-digit segments cannot alter the path structure, so they are
+		// injection-safe. Both Snowflakes (15–20 digits) and small integer
+		// sub-resource indexes — e.g. poll answer IDs in
+		// /channels/{id}/polls/{id}/answers/{answer_id} — are legitimate;
+		// Snowflake-typed parameters are validated at the call site. Reject only
+		// abnormally long digit runs, which no real Discord ID or index uses.
+		if isAllDigits(seg) && len(seg) > 20 {
+			return fmt.Errorf("go-discord-wrapper: path segment %q is too long to be a valid Discord ID", seg)
 		}
 	}
 	return nil
@@ -287,7 +357,7 @@ func (c *RestClient) generateRequest(ctx context.Context, method, path string, b
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", fmt.Sprintf("GoDiscordWrapper (%s@%s)", discord.RepositoryURL, discord.RepositoryVersion))
+	req.Header.Set("User-Agent", fmt.Sprintf("GoDiscordWrapper (%s@%s)", go_discord_wrapper.RepositoryURL, go_discord_wrapper.RepositoryVersion))
 
 	for _, option := range options {
 		option(req)
@@ -296,17 +366,9 @@ func (c *RestClient) generateRequest(ctx context.Context, method, path string, b
 	return req, nil
 }
 
-// doRequest executes req and decodes a successful response into v (when v != nil).
-// The returned *http.Response has its Body already closed; callers must not
-// read from it. Inspect headers and status codes via the returned value, but
-// do not call resp.Body.Read or resp.Body.Close again.
-
-// successResponseCodeData is based on map[statusCode]returnRequestBody
-// if statusCode is 204 (No Content), no request body will be returned, so you do not have to set it to false
-
-// Waiting for Go 1.27 to implement this in the RestClient;
-// https://github.com/golang/go/issues/77273
-
+// doRequestWithoutResponse executes req and discards the response body.
+// enforceStatusCodes optionally restricts which HTTP status codes are treated
+// as success; when empty, 200, 201, 202, and 204 are all accepted.
 func doRequestWithoutResponse(c *RestClient, req *http.Request, enforceStatusCodes ...int) error {
 	if len(enforceStatusCodes) == 0 {
 		_, err := doRequest[NoReturnData](c, req, map[int]bool{
@@ -380,7 +442,7 @@ func doRawBytes(c *RestClient, req *http.Request) ([]byte, error) {
 			continue
 		}
 
-		buf, readErr := io.ReadAll(io.LimitReader(resp.Body, 50<<20))
+		buf, readErr := io.ReadAll(io.LimitReader(resp.Body, c.maxResponseBodySize))
 		_ = resp.Body.Close()
 		if readErr != nil {
 			return nil, fmt.Errorf("read response body: %w", readErr)
@@ -427,6 +489,11 @@ func doRequestSlice[T any](c *RestClient, req *http.Request, codes map[int]bool)
 	return *result, nil
 }
 
+// doRequest executes req through the full rate-limit/retry pipeline and decodes
+// the response body into T on success. successResponseCodeData maps each
+// accepted HTTP status code to a bool: true means "decode body into T", false
+// means "success but no body to decode" (e.g. 204 No Content). The returned
+// *http.Response has its Body already closed; do not read or close it again.
 func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData map[int]bool) (*T, error) {
 	if req == nil {
 		return nil, errors.New("request must not be nil")
@@ -483,7 +550,7 @@ func doRequest[T any](c *RestClient, req *http.Request, successResponseCodeData 
 
 		// Buffer the response body so that event handlers and the decoder both see
 		// the full body without competing for the live network reader.
-		bodyBuf, readErr := io.ReadAll(io.LimitReader(resp.Body, 50<<20))
+		bodyBuf, readErr := io.ReadAll(io.LimitReader(resp.Body, c.maxResponseBodySize))
 		_ = resp.Body.Close()
 		if readErr != nil {
 			return nil, fmt.Errorf("read response body: %w", readErr)
@@ -581,11 +648,12 @@ func (c *RestClient) waitForMinInterval(ctx context.Context) error {
 	}
 
 	c.rateLimitMu.Lock()
-	wait := time.Until(c.nextRequestAt)
-	if wait < 0 {
-		wait = 0
+	now := time.Now()
+	if c.nextRequestAt.Before(now) {
+		c.nextRequestAt = now
 	}
-	c.nextRequestAt = time.Now().Add(c.minRequestInterval)
+	wait := c.nextRequestAt.Sub(now)
+	c.nextRequestAt = c.nextRequestAt.Add(c.minRequestInterval)
 	c.rateLimitMu.Unlock()
 
 	if wait > 0 {
@@ -605,7 +673,7 @@ func decodeGatewayErrorFromBytes(buf []byte, resp *http.Response) error {
 	_ = json.Unmarshal(buf, &body)
 	return &Error{
 		HTTPStatus: resp.StatusCode,
-		Code:       discord.GatewayErrorCode(body.Code),
+		Code:       discord.JSONErrorCode(body.Code),
 		Message:    body.Message,
 		Errors:     body.Errors,
 	}

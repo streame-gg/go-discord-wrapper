@@ -35,13 +35,13 @@ func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionI
 		if err != nil {
 			return nil, err
 		}
-		req, err = c.generateRequest(ctx, http.MethodPost, path, buf, c.WithBotAuthorization())
+		req, err = c.generateRequest(ctx, http.MethodPost, path, buf)
 		if err != nil {
 			return nil, err
 		}
 		req.Header.Set("Content-Type", ct)
 	} else {
-		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization())
+		req, err = c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body))
 		if err != nil {
 			return nil, err
 		}
@@ -145,7 +145,7 @@ func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID discord.Sn
 		if err != nil {
 			return nil, err
 		}
-		req, err = c.generateRequest(ctx, http.MethodPost, path, buf, c.WithBotAuthorization())
+		req, err = c.generateRequest(ctx, http.MethodPost, path, buf)
 		if err != nil {
 			return nil, err
 		}

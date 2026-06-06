@@ -1,5 +1,6 @@
 package discord
 
+// https://docs.discord.com/developers/resources/message#attachment-object
 type Attachment struct {
 	ID           Snowflake `json:"id"`
 	Filename     string    `json:"filename"`

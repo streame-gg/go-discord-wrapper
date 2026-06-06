@@ -6,10 +6,12 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/events/gateway-events#auto-moderation-rule-create
 type AutoModerationRuleCreateEvent struct {
 	discord.AutoModerationRule
 }
 
+// https://docs.discord.com/developers/events/gateway-events#auto-moderation-rule-update
 type AutoModerationRuleUpdateEvent struct {
 	NewRule discord.AutoModerationRule `json:"-"`
 	// OldRule is nil when the rule was not previously cached (no automod rule store exists).
@@ -28,10 +30,12 @@ func (e AutoModerationRuleUpdateEvent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(wire{e.NewRule, e.OldRule})
 }
 
+// https://docs.discord.com/developers/events/gateway-events#auto-moderation-rule-delete
 type AutoModerationRuleDeleteEvent struct {
 	discord.AutoModerationRule
 }
 
+// https://docs.discord.com/developers/events/gateway-events#auto-moderation-action-execution
 type AutoModerationActionExecutionEvent struct {
 	GuildID              discord.Snowflake                 `json:"guild_id"`
 	Action               discord.AutoModerationAction      `json:"action"`
