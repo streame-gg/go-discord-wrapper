@@ -31,10 +31,6 @@ type ButtonComponent struct {
 	Disabled bool                  `json:"disabled,omitempty"`
 }
 
-var _ AnyContainerComponent = &ButtonComponent{}
-
-func (b *ButtonComponent) IsAnyContainerComponent() {}
-
 func (b *ButtonComponent) UnmarshalJSON(data []byte) error {
 	type Alias ButtonComponent
 	var raw struct {
