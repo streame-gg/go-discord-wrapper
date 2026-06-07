@@ -131,9 +131,9 @@ type CreateMessageParams struct {
 	EnforceNonce bool                   `json:"enforce_nonce,omitempty"`
 	// Files are binary attachments sent via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
-	Files             []discord.MessageFile     `json:"-"`
-	Poll              discord.PollRequest       `json:"poll_request,omitempty"`
-	SharedClientTheme discord.SharedClientTheme `json:"shared_client_theme,omitempty"`
+	Files             []discord.MessageFile      `json:"-"`
+	Poll              *discord.PollRequest       `json:"poll_request,omitempty"`
+	SharedClientTheme *discord.SharedClientTheme `json:"shared_client_theme,omitempty"`
 }
 
 func (p CreateMessageParams) MarshalJSON() ([]byte, error) {

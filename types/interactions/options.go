@@ -108,7 +108,7 @@ func (o FollowUpOptions) toCreateParams() api.CreateMessageParams {
 		AllowedMentions: o.AllowedMentions,
 	}
 	if o.Poll != nil {
-		params.Poll = *o.Poll
+		params.Poll = o.Poll
 	}
 	var flags discord.MessageFlag
 	if o.Ephemeral {

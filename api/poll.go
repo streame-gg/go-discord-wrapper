@@ -40,7 +40,7 @@ func (c *RestClient) CreatePoll(ctx context.Context, channelID discord.Snowflake
 	}
 
 	return c.CreateMessage(ctx, channelID, CreateMessageParams{
-		Poll: poll,
+		Poll: &poll,
 	})
 }
 

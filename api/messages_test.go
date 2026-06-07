@@ -2,12 +2,14 @@ package api
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/suite"
+	"encoding/json"
 	"io"
 	"mime"
 	"mime/multipart"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -158,6 +160,16 @@ func (su *apiMessagesSuite) TestBuildMultipartMessage_BasenameInHeader() {
 		}
 	}
 	t.Error("no file part found in multipart body")
+}
+
+func (su *apiMessagesSuite) TestCreateMessage_NoPollOrClientThemeSetIfNotProvided() {
+	payload := []byte(`{"content":"hello"}`)
+	var marshaled CreateMessageParams
+	su.Require().NoError(json.Unmarshal(payload, &marshaled))
+
+	su.Require().Nil(marshaled.Poll)
+	su.Require().Nil(marshaled.SharedClientTheme)
+	su.Require().Equal("hello", marshaled.Content)
 }
 
 type apiMessagesSuite struct{ suite.Suite }
