@@ -8,6 +8,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+// https://docs.discord.com/developers/resources/application#get-application-activity-instance
 func (c *RestClient) GetActivityInstance(ctx context.Context, appID discord.Snowflake, instanceID string) (*discord.ActivityInstance, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
