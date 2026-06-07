@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// GuildMember.User is nil on MESSAGE_CREATE and MESSAGE_UPDATE gateway events.
+// GuildMember.User is nil on MESSAGE_UPDATE gateway events.
 //
 // https://docs.discord.com/developers/resources/guild#guild-member-object
 type GuildMember struct {

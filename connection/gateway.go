@@ -2125,6 +2125,12 @@ func (d *Client) hydrateEvent(event events.Event) {
 			if ev.GuildID != nil {
 				ev.Member.GuildID = *ev.GuildID
 			}
+			if ev.Member.User == nil && ev.Author != nil {
+				copyOfAuthor := *ev.Author
+				ev.Member.User = &copyOfAuthor
+				ev.Member.UserID = (&copyOfAuthor).ID
+				ev.Member.User.Hydrate(d)
+			}
 			ev.Member.Hydrate(d)
 		}
 	case *events.MessageUpdateEvent:
