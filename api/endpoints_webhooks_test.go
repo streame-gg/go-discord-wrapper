@@ -19,7 +19,7 @@ func (s *endpointSuite) TestWebhookRestEndpoints() {
 	waitTrue := true
 	s.runEndpoints([]epCase{
 		{name: "CreateWebhook", method: "POST", path: "/channels/" + testChanID.String() + "/webhooks", call: func() error {
-			return drop(s.client.CreateWebhook(ctx, testChanID, CreateWebhookParams{}, nil))
+			return drop(s.client.CreateWebhook(ctx, testChanID, CreateWebhookParams{}))
 		}},
 		{name: "ListChannelWebhooks", method: "GET", path: "/channels/" + testChanID.String() + "/webhooks", body: "[]", call: func() error {
 			return drop(s.client.ListChannelWebhooks(ctx, testChanID))
@@ -34,7 +34,7 @@ func (s *endpointSuite) TestWebhookRestEndpoints() {
 			return drop(s.client.GetWebhookWithToken(ctx, testWebhookID, "tok"))
 		}},
 		{name: "ModifyWebhook", method: "PATCH", path: "/webhooks/" + wh, call: func() error {
-			return drop(s.client.ModifyWebhook(ctx, testWebhookID, ModifyWebhookParams{}, nil))
+			return drop(s.client.ModifyWebhook(ctx, testWebhookID, ModifyWebhookParams{}))
 		}},
 		{name: "ModifyWebhookWithToken", method: "PATCH", path: "/webhooks/" + wh + "/tok", call: func() error {
 			return drop(s.client.ModifyWebhookWithToken(ctx, testWebhookID, "tok", ModifyWebhookParams{}))
