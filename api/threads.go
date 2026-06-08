@@ -19,11 +19,8 @@ type CreateThreadFromMessageParams struct {
 	Name                string `json:"name"`
 	AutoArchiveDuration *int   `json:"auto_archive_duration,omitempty"`
 	RateLimitPerUser    *int   `json:"rate_limit_per_user,omitempty"`
-}
 
-// https://docs.discord.com/developers/resources/channel#start-thread-from-message
-type CreateThreadFromMessageOptions struct {
-	Reason string
+	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/channel#start-thread-without-message
@@ -33,11 +30,8 @@ type CreateThreadParams struct {
 	Type                *discord.ChannelType `json:"type,omitempty"`
 	Invitable           *bool                `json:"invitable,omitempty"`
 	RateLimitPerUser    *int                 `json:"rate_limit_per_user,omitempty"`
-}
 
-// https://docs.discord.com/developers/resources/channel#start-thread-without-message
-type CreateThreadOptions struct {
-	Reason string
+	AuditLogReason *string `json:"-"`
 }
 
 // CreateForumThreadParams is used to start a thread in a forum or media channel.
@@ -48,11 +42,8 @@ type CreateForumThreadParams struct {
 	RateLimitPerUser    *int                `json:"rate_limit_per_user,omitempty"`
 	Message             CreateMessageParams `json:"message"`
 	AppliedTags         []discord.Snowflake `json:"applied_tags,omitempty"`
-}
 
-// https://docs.discord.com/developers/resources/channel#start-thread-in-forum-or-media-channel
-type CreateForumThreadOptions struct {
-	Reason string
+	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/channel#list-thread-members
@@ -126,7 +117,8 @@ type ActiveThreadsResponse struct {
 // ── Thread endpoints ──────────────────────────────────────────────────────────
 
 // CreateThreadFromMessage starts a public thread from an existing message.
-func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, messageID discord.Snowflake, params CreateThreadFromMessageParams, opts *CreateThreadFromMessageOptions) (*discord.Channel, error) {
+// https://docs.discord.com/developers/resources/channel#start-thread-from-message
+func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, messageID discord.Snowflake, params CreateThreadFromMessageParams) (*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -142,17 +134,7 @@ func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, mes
 
 	path := "/channels/" + channelID.String() + "/messages/" + messageID.String() + "/threads"
 
-	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization())
-		if err != nil {
-			return nil, err
-		}
-		return doRequest[discord.Channel](c, req, map[int]bool{
-			http.StatusCreated: true,
-		})
-	}
-
-	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(params.AuditLogReason))
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +145,8 @@ func (c *RestClient) CreateThreadFromMessage(ctx context.Context, channelID, mes
 }
 
 // CreateThread starts a thread that is not connected to an existing message.
-func (c *RestClient) CreateThread(ctx context.Context, channelID discord.Snowflake, params CreateThreadParams, opts *CreateThreadOptions) (*discord.Channel, error) {
+// https://docs.discord.com/developers/resources/channel#start-thread-without-message
+func (c *RestClient) CreateThread(ctx context.Context, channelID discord.Snowflake, params CreateThreadParams) (*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -173,17 +156,7 @@ func (c *RestClient) CreateThread(ctx context.Context, channelID discord.Snowfla
 		return nil, err
 	}
 
-	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body), c.WithBotAuthorization())
-		if err != nil {
-			return nil, err
-		}
-		return doRequest[discord.Channel](c, req, map[int]bool{
-			http.StatusCreated: true,
-		})
-	}
-
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/threads", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(params.AuditLogReason))
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +168,8 @@ func (c *RestClient) CreateThread(ctx context.Context, channelID discord.Snowfla
 
 // CreateForumThread starts a thread in a forum or media channel.
 // When params.Message.Files is non-empty the request is sent as multipart/form-data.
-func (c *RestClient) CreateForumThread(ctx context.Context, channelID discord.Snowflake, params CreateForumThreadParams, opts *CreateForumThreadOptions) (*discord.Channel, error) {
+// https://docs.discord.com/developers/resources/channel#start-thread-in-forum-or-media-channel
+func (c *RestClient) CreateForumThread(ctx context.Context, channelID discord.Snowflake, params CreateForumThreadParams) (*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -207,10 +181,7 @@ func (c *RestClient) CreateForumThread(ctx context.Context, channelID discord.Sn
 		return nil, err
 	}
 
-	reqOpts := []func(req *http.Request){c.WithBotAuthorization()}
-	if opts != nil {
-		reqOpts = append(reqOpts, WithAuditLogReason(opts.Reason))
-	}
+	reqOpts := []func(req *http.Request){c.WithBotAuthorization(), WithAuditLogReason(params.AuditLogReason)}
 
 	var req *http.Request
 	if len(params.Message.Files) > 0 {
@@ -236,6 +207,7 @@ func (c *RestClient) CreateForumThread(ctx context.Context, channelID discord.Sn
 }
 
 // JoinThread adds the current user to a thread.
+// https://docs.discord.com/developers/resources/channel#join-thread
 func (c *RestClient) JoinThread(ctx context.Context, channelID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -250,6 +222,7 @@ func (c *RestClient) JoinThread(ctx context.Context, channelID discord.Snowflake
 }
 
 // LeaveThread removes the current user from a thread.
+// https://docs.discord.com/developers/resources/channel#leave-thread
 func (c *RestClient) LeaveThread(ctx context.Context, channelID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -264,6 +237,7 @@ func (c *RestClient) LeaveThread(ctx context.Context, channelID discord.Snowflak
 }
 
 // AddThreadMember adds another user to a thread.
+// https://docs.discord.com/developers/resources/channel#add-thread-member
 func (c *RestClient) AddThreadMember(ctx context.Context, channelID, userID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -282,6 +256,7 @@ func (c *RestClient) AddThreadMember(ctx context.Context, channelID, userID disc
 }
 
 // RemoveThreadMember removes a user from a thread.
+// https://docs.discord.com/developers/resources/channel#remove-thread-member
 func (c *RestClient) RemoveThreadMember(ctx context.Context, channelID, userID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -298,6 +273,7 @@ func (c *RestClient) RemoveThreadMember(ctx context.Context, channelID, userID d
 
 // GetThreadMember returns the thread member object for the given user.
 // Set withMember to true to include the guild member object.
+// https://docs.discord.com/developers/resources/channel#get-thread-member
 func (c *RestClient) GetThreadMember(ctx context.Context, channelID, userID discord.Snowflake, withMember bool) (*discord.ThreadMember, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -323,6 +299,7 @@ func (c *RestClient) GetThreadMember(ctx context.Context, channelID, userID disc
 }
 
 // ListThreadMembers returns the members of a thread.
+// https://docs.discord.com/developers/resources/channel#list-thread-members
 func (c *RestClient) ListThreadMembers(ctx context.Context, channelID discord.Snowflake, params ListThreadMembersParams) ([]*discord.ThreadMember, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -340,6 +317,7 @@ func (c *RestClient) ListThreadMembers(ctx context.Context, channelID discord.Sn
 }
 
 // ListPublicArchivedThreads returns archived public threads in a channel, newest first.
+// https://docs.discord.com/developers/resources/channel#list-public-archived-threads
 func (c *RestClient) ListPublicArchivedThreads(ctx context.Context, channelID discord.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -357,6 +335,7 @@ func (c *RestClient) ListPublicArchivedThreads(ctx context.Context, channelID di
 }
 
 // ListPrivateArchivedThreads returns archived private threads in a channel, newest first.
+// https://docs.discord.com/developers/resources/channel#list-private-archived-threads
 func (c *RestClient) ListPrivateArchivedThreads(ctx context.Context, channelID discord.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -374,6 +353,7 @@ func (c *RestClient) ListPrivateArchivedThreads(ctx context.Context, channelID d
 }
 
 // ListJoinedPrivateArchivedThreads returns private archived threads the current user has joined.
+// https://docs.discord.com/developers/resources/channel#list-joined-private-archived-threads
 func (c *RestClient) ListJoinedPrivateArchivedThreads(ctx context.Context, channelID discord.Snowflake, params ListArchivedThreadsParams) (*ArchivedThreadsResponse, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -433,6 +413,7 @@ func (p SearchThreadsParams) toQuery() string {
 
 // SearchThreads searches for threads in a forum or media channel. Returns 202 while the index
 // is still being built (result will be empty).
+// https://docs.discord.com/developers/resources/channel
 func (c *RestClient) SearchThreads(ctx context.Context, channelID discord.Snowflake, params SearchThreadsParams) (*discord.ThreadSearchResponse, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -451,6 +432,7 @@ func (c *RestClient) SearchThreads(ctx context.Context, channelID discord.Snowfl
 }
 
 // ListActiveGuildThreads returns all active threads in the guild that the current user can access.
+// https://docs.discord.com/developers/resources/guild#list-active-guild-threads
 func (c *RestClient) ListActiveGuildThreads(ctx context.Context, guildID discord.Snowflake) (*ActiveThreadsResponse, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err

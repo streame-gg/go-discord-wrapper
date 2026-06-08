@@ -8,6 +8,7 @@ import (
 )
 
 // ListSKUs returns all SKUs for the given application.
+// https://docs.discord.com/developers/resources/sku#list-skus
 func (c *RestClient) ListSKUs(ctx context.Context, appID discord.Snowflake) ([]*discord.SKU, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err

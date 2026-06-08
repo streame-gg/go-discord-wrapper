@@ -230,16 +230,16 @@ func (s *Sticker) URL() string {
 
 // IconURL returns the application's icon URL, or "" if it has none.
 func (a *Application) IconURL(opts *ImageOptions) string {
-	if a == nil || a.IconHash == nil {
+	if a == nil || a.Icon == nil {
 		return ""
 	}
-	return imageURL(cdnBaseURL, "/app-icons/"+a.ID.String()+"/"+*a.IconHash, false, opts)
+	return imageURL(cdnBaseURL, "/app-icons/"+a.ID.String()+"/"+*a.Icon, false, opts)
 }
 
 // CoverImageURL returns the application's store cover image URL, or "" if unset.
 func (a *Application) CoverImageURL(opts *ImageOptions) string {
-	if a == nil || a.CoverImage == nil {
+	if a == nil || a.CoverImage == "" {
 		return ""
 	}
-	return imageURL(cdnBaseURL, "/app-icons/"+a.ID.String()+"/"+*a.CoverImage, false, opts)
+	return imageURL(cdnBaseURL, "/app-icons/"+a.ID.String()+"/"+a.CoverImage, false, opts)
 }

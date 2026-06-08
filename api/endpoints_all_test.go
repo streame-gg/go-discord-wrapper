@@ -82,7 +82,7 @@ func (s *endpointSuite) TestGuildEndpoints() {
 			return drop(s.client.GetGuildPreview(ctx, testGuildID))
 		}},
 		{name: "ModifyGuild", method: "PATCH", path: "/guilds/" + g, call: func() error {
-			return drop(s.client.ModifyGuild(ctx, testGuildID, ModifyGuildParams{}, nil))
+			return drop(s.client.ModifyGuild(ctx, testGuildID, ModifyGuildParams{}))
 		}},
 		{name: "DeleteGuild", method: "DELETE", path: "/guilds/" + g, call: func() error {
 			return s.client.DeleteGuild(ctx, testGuildID)
@@ -91,7 +91,7 @@ func (s *endpointSuite) TestGuildEndpoints() {
 			return drop(s.client.ListGuildChannels(ctx, testGuildID))
 		}},
 		{name: "CreateGuildChannel", method: "POST", path: "/guilds/" + g + "/channels", status: http.StatusCreated, call: func() error {
-			return drop(s.client.CreateGuildChannel(ctx, testGuildID, CreateGuildChannelParams{}, nil))
+			return drop(s.client.CreateGuildChannel(ctx, testGuildID, CreateGuildChannelParams{}))
 		}},
 		{name: "ModifyGuildChannelPositions", method: "PATCH", path: "/guilds/" + g + "/channels", call: func() error {
 			return s.client.ModifyGuildChannelPositions(ctx, testGuildID, nil, nil)
@@ -106,7 +106,7 @@ func (s *endpointSuite) TestGuildEndpoints() {
 			return drop(s.client.ModifyGuildRolePositions(ctx, testGuildID, nil, nil))
 		}},
 		{name: "ModifyGuildRole", method: "PATCH", path: "/guilds/" + g + "/roles/" + testRoleID.String(), call: func() error {
-			return drop(s.client.ModifyGuildRole(ctx, testGuildID, testRoleID, ModifyGuildRoleParams{}, nil))
+			return drop(s.client.ModifyGuildRole(ctx, testGuildID, testRoleID, ModifyGuildRoleParams{}))
 		}},
 		{name: "ListGuildBans", method: "GET", path: "/guilds/" + g + "/bans", body: "[]", call: func() error {
 			return drop(s.client.ListGuildBans(ctx, testGuildID, GetGuildBansParams{}))
@@ -115,7 +115,7 @@ func (s *endpointSuite) TestGuildEndpoints() {
 			return drop(s.client.GetGuildBan(ctx, testGuildID, testUserID))
 		}},
 		{name: "CreateGuildBan", method: "PUT", path: "/guilds/" + g + "/bans/" + testUserID.String(), call: func() error {
-			return s.client.CreateGuildBan(ctx, testGuildID, testUserID, CreateGuildBanParams{}, nil)
+			return s.client.CreateGuildBan(ctx, testGuildID, testUserID, CreateGuildBanParams{})
 		}},
 		{name: "RemoveGuildBan", method: "DELETE", path: "/guilds/" + g + "/bans/" + testUserID.String(), call: func() error {
 			return s.client.RemoveGuildBan(ctx, testGuildID, testUserID, nil)
@@ -124,7 +124,7 @@ func (s *endpointSuite) TestGuildEndpoints() {
 			return drop(s.client.GetGuildPruneCount(ctx, testGuildID, GetGuildPruneCountParams{}))
 		}},
 		{name: "BeginGuildPrune", method: "POST", path: "/guilds/" + g + "/prune", call: func() error {
-			return drop(s.client.BeginGuildPrune(ctx, testGuildID, BeginGuildPruneParams{}, nil))
+			return drop(s.client.BeginGuildPrune(ctx, testGuildID, BeginGuildPruneParams{}))
 		}},
 		{name: "ListGuildInvites", method: "GET", path: "/guilds/" + g + "/invites", body: "[]", call: func() error {
 			return drop(s.client.ListGuildInvites(ctx, testGuildID))
@@ -151,19 +151,19 @@ func (s *endpointSuite) TestGuildEndpoints() {
 			return drop(s.client.GetGuildWelcomeScreen(ctx, testGuildID))
 		}},
 		{name: "ModifyGuildWelcomeScreen", method: "PATCH", path: "/guilds/" + g + "/welcome-screen", call: func() error {
-			return drop(s.client.ModifyGuildWelcomeScreen(ctx, testGuildID, ModifyGuildWelcomeScreenParams{}, nil))
+			return drop(s.client.ModifyGuildWelcomeScreen(ctx, testGuildID, ModifyGuildWelcomeScreenParams{}))
 		}},
 		{name: "GetGuildOnboarding", method: "GET", path: "/guilds/" + g + "/onboarding", call: func() error {
 			return drop(s.client.GetGuildOnboarding(ctx, testGuildID))
 		}},
 		{name: "ModifyGuildOnboarding", method: "PUT", path: "/guilds/" + g + "/onboarding", call: func() error {
-			return drop(s.client.ModifyGuildOnboarding(ctx, testGuildID, ModifyGuildOnboardingParams{}, nil))
+			return drop(s.client.ModifyGuildOnboarding(ctx, testGuildID, ModifyGuildOnboardingParams{}))
 		}},
 		{name: "CreateGuild", method: "POST", path: "/guilds", status: http.StatusCreated, call: func() error {
 			return drop(s.client.CreateGuild(ctx, CreateGuildParams{}))
 		}},
 		{name: "BulkBanGuildMembers", method: "POST", path: "/guilds/" + g + "/bulk-ban", call: func() error {
-			return drop(s.client.BulkBanGuildMembers(ctx, testGuildID, BulkBanParams{}, nil))
+			return drop(s.client.BulkBanGuildMembers(ctx, testGuildID, BulkBanParams{}))
 		}},
 		{name: "GetGuildJoinRequests", method: "GET", path: "/guilds/" + g + "/requests", call: func() error {
 			return drop(s.client.GetGuildJoinRequests(ctx, testGuildID, GetGuildJoinRequestsParams{}))
@@ -201,7 +201,7 @@ func (s *endpointSuite) TestMemberEndpoints() {
 			return drop(s.client.SearchGuildMembers(ctx, testGuildID, SearchGuildMembersParams{}))
 		}},
 		{name: "ModifyGuildMember", method: "PATCH", path: "/guilds/" + g + "/members/" + u, call: func() error {
-			return drop(s.client.ModifyGuildMember(ctx, testGuildID, testUserID, ModifyGuildMemberParams{}, nil))
+			return drop(s.client.ModifyGuildMember(ctx, testGuildID, testUserID, ModifyGuildMemberParams{}))
 		}},
 		{name: "ModifyCurrentMember", method: "PATCH", path: "/guilds/" + g + "/members/@me", call: func() error {
 			return drop(s.client.ModifyCurrentMember(ctx, testGuildID, ModifyCurrentMemberParams{}))
@@ -223,16 +223,16 @@ func (s *endpointSuite) TestChannelEndpoints() {
 	ch := testChanID.String()
 	s.runEndpoints([]epCase{
 		{name: "ModifyChannel", method: "PATCH", path: "/channels/" + ch, call: func() error {
-			return drop(s.client.ModifyChannel(ctx, testChanID, ModifyChannelParams{}, nil))
+			return drop(s.client.ModifyChannel(ctx, testChanID, ModifyChannelParams{}))
 		}},
 		{name: "ListChannelInvites", method: "GET", path: "/channels/" + ch + "/invites", body: "[]", call: func() error {
 			return drop(s.client.ListChannelInvites(ctx, testChanID))
 		}},
 		{name: "CreateChannelInvite", method: "POST", path: "/channels/" + ch + "/invites", call: func() error {
-			return drop(s.client.CreateChannelInvite(ctx, testChanID, CreateChannelInviteParams{}, nil))
+			return drop(s.client.CreateChannelInvite(ctx, testChanID, CreateChannelInviteParams{}))
 		}},
 		{name: "EditChannelPermissions", method: "PUT", path: "/channels/" + ch + "/permissions/" + testOverwriteID.String(), call: func() error {
-			return s.client.EditChannelPermissions(ctx, testChanID, testOverwriteID, EditChannelPermissionsParams{}, nil)
+			return s.client.EditChannelPermissions(ctx, testChanID, testOverwriteID, EditChannelPermissionsParams{})
 		}},
 		{name: "DeleteChannelPermission", method: "DELETE", path: "/channels/" + ch + "/permissions/" + testOverwriteID.String(), call: func() error {
 			return s.client.DeleteChannelPermission(ctx, testChanID, testOverwriteID, nil)
@@ -307,10 +307,10 @@ func (s *endpointSuite) TestEmojiEndpoints() {
 			return drop(s.client.GetGuildEmoji(ctx, testGuildID, testEmojiID))
 		}},
 		{name: "CreateGuildEmoji", method: "POST", path: "/guilds/" + g + "/emojis", status: http.StatusCreated, call: func() error {
-			return drop(s.client.CreateGuildEmoji(ctx, testGuildID, CreateGuildEmojiParams{}, nil))
+			return drop(s.client.CreateGuildEmoji(ctx, testGuildID, CreateGuildEmojiParams{}))
 		}},
 		{name: "ModifyGuildEmoji", method: "PATCH", path: "/guilds/" + g + "/emojis/" + e, call: func() error {
-			return drop(s.client.ModifyGuildEmoji(ctx, testGuildID, testEmojiID, ModifyGuildEmojiParams{}, nil))
+			return drop(s.client.ModifyGuildEmoji(ctx, testGuildID, testEmojiID, ModifyGuildEmojiParams{}))
 		}},
 		{name: "ListApplicationEmojis", method: "GET", path: "/applications/" + app + "/emojis", call: func() error {
 			return drop(s.client.ListApplicationEmojis(ctx, testAppID))
@@ -361,13 +361,13 @@ func (s *endpointSuite) TestThreadEndpoints() {
 	ch := testChanID.String()
 	s.runEndpoints([]epCase{
 		{name: "CreateThreadFromMessage", method: "POST", path: "/channels/" + ch + "/messages/" + testMsgID.String() + "/threads", status: http.StatusCreated, call: func() error {
-			return drop(s.client.CreateThreadFromMessage(ctx, testChanID, testMsgID, CreateThreadFromMessageParams{}, nil))
+			return drop(s.client.CreateThreadFromMessage(ctx, testChanID, testMsgID, CreateThreadFromMessageParams{}))
 		}},
 		{name: "CreateThread", method: "POST", path: "/channels/" + ch + "/threads", status: http.StatusCreated, call: func() error {
-			return drop(s.client.CreateThread(ctx, testChanID, CreateThreadParams{}, nil))
+			return drop(s.client.CreateThread(ctx, testChanID, CreateThreadParams{}))
 		}},
 		{name: "CreateForumThread", method: "POST", path: "/channels/" + ch + "/threads", status: http.StatusCreated, call: func() error {
-			return drop(s.client.CreateForumThread(ctx, testChanID, CreateForumThreadParams{}, nil))
+			return drop(s.client.CreateForumThread(ctx, testChanID, CreateForumThreadParams{}))
 		}},
 		{name: "JoinThread", method: "PUT", path: "/channels/" + ch + "/thread-members/@me", call: func() error {
 			return s.client.JoinThread(ctx, testChanID)
@@ -477,16 +477,16 @@ func (s *endpointSuite) TestMessageEndpoints() {
 // covered separately in restclient_auditlog_test.go).
 func (s *endpointSuite) TestAuditReasonForwarding() {
 	ctx := context.Background()
-	const r = "audit-me"
+	r := "audit-me"
 	g := testGuildID.String()
 	ch := testChanID.String()
 	created := http.StatusCreated
 	s.runEndpoints([]epCase{
 		{name: "ModifyGuild", method: "PATCH", path: "/guilds/" + g, wantReason: r, call: func() error {
-			return drop(s.client.ModifyGuild(ctx, testGuildID, ModifyGuildParams{}, &ModifyGuildOptions{Reason: r}))
+			return drop(s.client.ModifyGuild(ctx, testGuildID, ModifyGuildParams{AuditLogReason: &r}))
 		}},
 		{name: "CreateGuildChannel", method: "POST", path: "/guilds/" + g + "/channels", status: created, wantReason: r, call: func() error {
-			return drop(s.client.CreateGuildChannel(ctx, testGuildID, CreateGuildChannelParams{}, &CreateGuildChannelOptions{Reason: r}))
+			return drop(s.client.CreateGuildChannel(ctx, testGuildID, CreateGuildChannelParams{AuditLogReason: &r}))
 		}},
 		{name: "ModifyGuildChannelPositions", method: "PATCH", path: "/guilds/" + g + "/channels", wantReason: r, call: func() error {
 			return s.client.ModifyGuildChannelPositions(ctx, testGuildID, nil, &ModifyGuildChannelPositionsOptions{Reason: r})
@@ -495,43 +495,43 @@ func (s *endpointSuite) TestAuditReasonForwarding() {
 			return drop(s.client.ModifyGuildRolePositions(ctx, testGuildID, nil, &ModifyGuildRolePositionsOptions{Reason: r}))
 		}},
 		{name: "ModifyGuildRole", method: "PATCH", path: "/guilds/" + g + "/roles/" + testRoleID.String(), wantReason: r, call: func() error {
-			return drop(s.client.ModifyGuildRole(ctx, testGuildID, testRoleID, ModifyGuildRoleParams{}, &ModifyGuildRoleOptions{Reason: r}))
+			return drop(s.client.ModifyGuildRole(ctx, testGuildID, testRoleID, ModifyGuildRoleParams{AuditLogReason: &r}))
 		}},
 		{name: "CreateGuildBan", method: "PUT", path: "/guilds/" + g + "/bans/" + testUserID.String(), wantReason: r, call: func() error {
-			return s.client.CreateGuildBan(ctx, testGuildID, testUserID, CreateGuildBanParams{}, &CreateGuildBanOptions{Reason: r})
+			return s.client.CreateGuildBan(ctx, testGuildID, testUserID, CreateGuildBanParams{AuditLogReason: &r})
 		}},
 		{name: "RemoveGuildBan", method: "DELETE", path: "/guilds/" + g + "/bans/" + testUserID.String(), wantReason: r, call: func() error {
 			return s.client.RemoveGuildBan(ctx, testGuildID, testUserID, &RemoveGuildBanOptions{Reason: r})
 		}},
 		{name: "BeginGuildPrune", method: "POST", path: "/guilds/" + g + "/prune", wantReason: r, call: func() error {
-			return drop(s.client.BeginGuildPrune(ctx, testGuildID, BeginGuildPruneParams{}, &BeginGuildPruneOptions{Reason: r}))
+			return drop(s.client.BeginGuildPrune(ctx, testGuildID, BeginGuildPruneParams{AuditLogReason: &r}))
 		}},
 		{name: "ModifyGuildWelcomeScreen", method: "PATCH", path: "/guilds/" + g + "/welcome-screen", wantReason: r, call: func() error {
-			return drop(s.client.ModifyGuildWelcomeScreen(ctx, testGuildID, ModifyGuildWelcomeScreenParams{}, &ModifyGuildWelcomeScreenOptions{Reason: r}))
+			return drop(s.client.ModifyGuildWelcomeScreen(ctx, testGuildID, ModifyGuildWelcomeScreenParams{AuditLogReason: &r}))
 		}},
 		{name: "ModifyGuildOnboarding", method: "PUT", path: "/guilds/" + g + "/onboarding", wantReason: r, call: func() error {
-			return drop(s.client.ModifyGuildOnboarding(ctx, testGuildID, ModifyGuildOnboardingParams{}, &ModifyGuildOnboardingOptions{Reason: r}))
+			return drop(s.client.ModifyGuildOnboarding(ctx, testGuildID, ModifyGuildOnboardingParams{AuditLogReason: &r}))
 		}},
 		{name: "BulkBanGuildMembers", method: "POST", path: "/guilds/" + g + "/bulk-ban", wantReason: r, call: func() error {
-			return drop(s.client.BulkBanGuildMembers(ctx, testGuildID, BulkBanParams{}, &BulkBanOptions{Reason: r}))
+			return drop(s.client.BulkBanGuildMembers(ctx, testGuildID, BulkBanParams{AuditLogReason: &r}))
 		}},
 		{name: "DeleteGuildIntegration", method: "DELETE", path: "/guilds/" + g + "/integrations/" + testIntegrationID.String(), wantReason: r, call: func() error {
 			return s.client.DeleteGuildIntegration(ctx, testGuildID, testIntegrationID, &DeleteGuildIntegrationOptions{Reason: r})
 		}},
 		{name: "ModifyChannel", method: "PATCH", path: "/channels/" + ch, wantReason: r, call: func() error {
-			return drop(s.client.ModifyChannel(ctx, testChanID, ModifyChannelParams{}, &ModifyChannelOptions{Reason: r}))
+			return drop(s.client.ModifyChannel(ctx, testChanID, ModifyChannelParams{AuditLogReason: &r}))
 		}},
 		{name: "CreateChannelInvite", method: "POST", path: "/channels/" + ch + "/invites", wantReason: r, call: func() error {
-			return drop(s.client.CreateChannelInvite(ctx, testChanID, CreateChannelInviteParams{}, &CreateChannelInviteOptions{Reason: r}))
+			return drop(s.client.CreateChannelInvite(ctx, testChanID, CreateChannelInviteParams{AuditLogReason: &r}))
 		}},
 		{name: "EditChannelPermissions", method: "PUT", path: "/channels/" + ch + "/permissions/" + testOverwriteID.String(), wantReason: r, call: func() error {
-			return s.client.EditChannelPermissions(ctx, testChanID, testOverwriteID, EditChannelPermissionsParams{}, &EditChannelPermissionsOptions{Reason: r})
+			return s.client.EditChannelPermissions(ctx, testChanID, testOverwriteID, EditChannelPermissionsParams{AuditLogReason: &r})
 		}},
 		{name: "DeleteChannelPermission", method: "DELETE", path: "/channels/" + ch + "/permissions/" + testOverwriteID.String(), wantReason: r, call: func() error {
 			return s.client.DeleteChannelPermission(ctx, testChanID, testOverwriteID, &DeleteChannelPermissionOptions{Reason: r})
 		}},
 		{name: "ModifyGuildMember", method: "PATCH", path: "/guilds/" + g + "/members/" + testUserID.String(), wantReason: r, call: func() error {
-			return drop(s.client.ModifyGuildMember(ctx, testGuildID, testUserID, ModifyGuildMemberParams{}, &ModifyGuildMemberOptions{Reason: r}))
+			return drop(s.client.ModifyGuildMember(ctx, testGuildID, testUserID, ModifyGuildMemberParams{AuditLogReason: &r}))
 		}},
 		{name: "AddGuildMemberRole", method: "PUT", path: "/guilds/" + g + "/members/" + testUserID.String() + "/roles/" + testRoleID.String(), wantReason: r, call: func() error {
 			return s.client.AddGuildMemberRole(ctx, testGuildID, testUserID, testRoleID, &AddGuildMemberRoleOptions{Reason: r})
@@ -543,40 +543,40 @@ func (s *endpointSuite) TestAuditReasonForwarding() {
 			return s.client.KickGuildMember(ctx, testGuildID, testUserID, &KickGuildMemberOptions{Reason: r})
 		}},
 		{name: "CreateGuildEmoji", method: "POST", path: "/guilds/" + g + "/emojis", status: created, wantReason: r, call: func() error {
-			return drop(s.client.CreateGuildEmoji(ctx, testGuildID, CreateGuildEmojiParams{}, &CreateGuildEmojiOptions{Reason: r}))
+			return drop(s.client.CreateGuildEmoji(ctx, testGuildID, CreateGuildEmojiParams{AuditLogReason: &r}))
 		}},
 		{name: "ModifyGuildEmoji", method: "PATCH", path: "/guilds/" + g + "/emojis/" + testEmojiID.String(), wantReason: r, call: func() error {
-			return drop(s.client.ModifyGuildEmoji(ctx, testGuildID, testEmojiID, ModifyGuildEmojiParams{}, &ModifyGuildEmojiOptions{Reason: r}))
+			return drop(s.client.ModifyGuildEmoji(ctx, testGuildID, testEmojiID, ModifyGuildEmojiParams{AuditLogReason: &r}))
 		}},
 		{name: "CreateAutoModerationRule", method: "POST", path: "/guilds/" + g + "/auto-moderation/rules", wantReason: r, call: func() error {
-			return drop(s.client.CreateAutoModerationRule(ctx, testGuildID, CreateAutoModerationRuleParams{}, &CreateAutoModerationRuleOptions{Reason: r}))
+			return drop(s.client.CreateAutoModerationRule(ctx, testGuildID, CreateAutoModerationRuleParams{AuditLogReason: &r}))
 		}},
 		{name: "ModifyAutoModerationRule", method: "PATCH", path: "/guilds/" + g + "/auto-moderation/rules/" + testRuleID.String(), wantReason: r, call: func() error {
-			return drop(s.client.ModifyAutoModerationRule(ctx, testGuildID, testRuleID, ModifyAutoModerationRuleParams{}, &ModifyAutoModerationRuleOptions{Reason: r}))
+			return drop(s.client.ModifyAutoModerationRule(ctx, testGuildID, testRuleID, ModifyAutoModerationRuleParams{AuditLogReason: &r}))
 		}},
 		{name: "DeleteAutoModerationRule", method: "DELETE", path: "/guilds/" + g + "/auto-moderation/rules/" + testRuleID.String(), wantReason: r, call: func() error {
 			return s.client.DeleteAutoModerationRule(ctx, testGuildID, testRuleID, &DeleteAutoModerationRuleOptions{Reason: r})
 		}},
 		{name: "CreateStageInstance", method: "POST", path: "/stage-instances", status: created, wantReason: r, call: func() error {
-			return drop(s.client.CreateStageInstance(ctx, CreateStageInstanceParams{ChannelID: testChanID}, &CreateStageInstanceOptions{Reason: r}))
+			return drop(s.client.CreateStageInstance(ctx, CreateStageInstanceParams{ChannelID: testChanID, AuditLogReason: &r}))
 		}},
 		{name: "ModifyStageInstance", method: "PATCH", path: "/stage-instances/" + ch, wantReason: r, call: func() error {
-			return drop(s.client.ModifyStageInstance(ctx, testChanID, ModifyStageInstanceParams{}, &ModifyStageInstanceOptions{Reason: r}))
+			return drop(s.client.ModifyStageInstance(ctx, testChanID, ModifyStageInstanceParams{AuditLogReason: &r}))
 		}},
 		{name: "DeleteStageInstance", method: "DELETE", path: "/stage-instances/" + ch, wantReason: r, call: func() error {
 			return s.client.DeleteStageInstance(ctx, testChanID, &DeleteStageInstanceOptions{Reason: r})
 		}},
 		{name: "CreateGuildSoundboardSound", method: "POST", path: "/guilds/" + g + "/soundboard-sounds", wantReason: r, call: func() error {
-			return drop(s.client.CreateGuildSoundboardSound(ctx, testGuildID, CreateGuildSoundboardSoundParams{}, &CreateGuildSoundboardSoundOptions{Reason: r}))
+			return drop(s.client.CreateGuildSoundboardSound(ctx, testGuildID, CreateGuildSoundboardSoundParams{AuditLogReason: &r}))
 		}},
 		{name: "ModifyGuildSoundboardSound", method: "PATCH", path: "/guilds/" + g + "/soundboard-sounds/" + testSoundID.String(), wantReason: r, call: func() error {
-			return drop(s.client.ModifyGuildSoundboardSound(ctx, testGuildID, testSoundID, ModifyGuildSoundboardSoundParams{}, &ModifyGuildSoundboardSoundOptions{Reason: r}))
+			return drop(s.client.ModifyGuildSoundboardSound(ctx, testGuildID, testSoundID, ModifyGuildSoundboardSoundParams{AuditLogReason: &r}))
 		}},
 		{name: "DeleteGuildSoundboardSound", method: "DELETE", path: "/guilds/" + g + "/soundboard-sounds/" + testSoundID.String(), wantReason: r, call: func() error {
 			return s.client.DeleteGuildSoundboardSound(ctx, testGuildID, testSoundID, &DeleteGuildSoundboardSoundOptions{Reason: r})
 		}},
 		{name: "ModifyGuildSticker", method: "PATCH", path: "/guilds/" + g + "/stickers/" + testStickerID.String(), wantReason: r, call: func() error {
-			return drop(s.client.ModifyGuildSticker(ctx, testGuildID, testStickerID, ModifyGuildStickerParams{}, &ModifyGuildStickerOptions{Reason: r}))
+			return drop(s.client.ModifyGuildSticker(ctx, testGuildID, testStickerID, ModifyGuildStickerParams{AuditLogReason: &r}))
 		}},
 		{name: "DeleteGuildSticker", method: "DELETE", path: "/guilds/" + g + "/stickers/" + testStickerID.String(), wantReason: r, call: func() error {
 			return s.client.DeleteGuildSticker(ctx, testGuildID, testStickerID, &DeleteGuildStickerOptions{Reason: r})
@@ -584,25 +584,26 @@ func (s *endpointSuite) TestAuditReasonForwarding() {
 		{name: "CreateGuildSticker", method: "POST", path: "/guilds/" + g + "/stickers", status: created, wantReason: r, call: func() error {
 			return drop(s.client.CreateGuildSticker(ctx, testGuildID, CreateGuildStickerParams{
 				Name: "s", Description: "d", Tags: "t", File: []byte("png"), ContentType: "image/png",
-			}, &CreateGuildStickerOptions{Reason: r}))
+				AuditLogReason: &r,
+			}))
 		}},
 		{name: "CreateWebhook", method: "POST", path: "/channels/" + ch + "/webhooks", wantReason: r, call: func() error {
-			return drop(s.client.CreateWebhook(ctx, testChanID, CreateWebhookParams{}, &CreateWebhookOptions{Reason: r}))
+			return drop(s.client.CreateWebhook(ctx, testChanID, CreateWebhookParams{AuditLogReason: &r}))
 		}},
 		{name: "ModifyWebhook", method: "PATCH", path: "/webhooks/" + testWebhookID.String(), wantReason: r, call: func() error {
-			return drop(s.client.ModifyWebhook(ctx, testWebhookID, ModifyWebhookParams{}, &ModifyWebhookOptions{Reason: r}))
+			return drop(s.client.ModifyWebhook(ctx, testWebhookID, ModifyWebhookParams{AuditLogReason: &r}))
 		}},
 		{name: "DeleteWebhook", method: "DELETE", path: "/webhooks/" + testWebhookID.String(), wantReason: r, call: func() error {
 			return s.client.DeleteWebhook(ctx, testWebhookID, &DeleteWebhookOptions{Reason: r})
 		}},
 		{name: "CreateThreadFromMessage", method: "POST", path: "/channels/" + ch + "/messages/" + testMsgID.String() + "/threads", status: created, wantReason: r, call: func() error {
-			return drop(s.client.CreateThreadFromMessage(ctx, testChanID, testMsgID, CreateThreadFromMessageParams{}, &CreateThreadFromMessageOptions{Reason: r}))
+			return drop(s.client.CreateThreadFromMessage(ctx, testChanID, testMsgID, CreateThreadFromMessageParams{AuditLogReason: &r}))
 		}},
 		{name: "CreateThread", method: "POST", path: "/channels/" + ch + "/threads", status: created, wantReason: r, call: func() error {
-			return drop(s.client.CreateThread(ctx, testChanID, CreateThreadParams{}, &CreateThreadOptions{Reason: r}))
+			return drop(s.client.CreateThread(ctx, testChanID, CreateThreadParams{AuditLogReason: &r}))
 		}},
 		{name: "CreateForumThread", method: "POST", path: "/channels/" + ch + "/threads", status: created, wantReason: r, call: func() error {
-			return drop(s.client.CreateForumThread(ctx, testChanID, CreateForumThreadParams{}, &CreateForumThreadOptions{Reason: r}))
+			return drop(s.client.CreateForumThread(ctx, testChanID, CreateForumThreadParams{AuditLogReason: &r}))
 		}},
 		{name: "DeleteMessage", method: "DELETE", path: "/channels/" + ch + "/messages/" + testMsgID.String(), wantReason: r, call: func() error {
 			return s.client.DeleteMessage(ctx, testChanID, testMsgID, &DeleteMessageOptions{Reason: r})
@@ -797,23 +798,23 @@ func (s *endpointSuite) TestMiscEndpoints() {
 			return drop(s.client.GetAutoModerationRule(ctx, testGuildID, testRuleID))
 		}},
 		{name: "CreateAutoModerationRule", method: "POST", path: "/guilds/" + g + "/auto-moderation/rules", call: func() error {
-			return drop(s.client.CreateAutoModerationRule(ctx, testGuildID, CreateAutoModerationRuleParams{}, nil))
+			return drop(s.client.CreateAutoModerationRule(ctx, testGuildID, CreateAutoModerationRuleParams{}))
 		}},
 		{name: "ModifyAutoModerationRule", method: "PATCH", path: "/guilds/" + g + "/auto-moderation/rules/" + testRuleID.String(), call: func() error {
-			return drop(s.client.ModifyAutoModerationRule(ctx, testGuildID, testRuleID, ModifyAutoModerationRuleParams{}, nil))
+			return drop(s.client.ModifyAutoModerationRule(ctx, testGuildID, testRuleID, ModifyAutoModerationRuleParams{}))
 		}},
 		{name: "DeleteAutoModerationRule", method: "DELETE", path: "/guilds/" + g + "/auto-moderation/rules/" + testRuleID.String(), call: func() error {
 			return s.client.DeleteAutoModerationRule(ctx, testGuildID, testRuleID, nil)
 		}},
 		// stage instances
 		{name: "CreateStageInstance", method: "POST", path: "/stage-instances", status: http.StatusCreated, call: func() error {
-			return drop(s.client.CreateStageInstance(ctx, CreateStageInstanceParams{ChannelID: testChanID}, nil))
+			return drop(s.client.CreateStageInstance(ctx, CreateStageInstanceParams{ChannelID: testChanID}))
 		}},
 		{name: "GetStageInstance", method: "GET", path: "/stage-instances/" + testChanID.String(), call: func() error {
 			return drop(s.client.GetStageInstance(ctx, testChanID))
 		}},
 		{name: "ModifyStageInstance", method: "PATCH", path: "/stage-instances/" + testChanID.String(), call: func() error {
-			return drop(s.client.ModifyStageInstance(ctx, testChanID, ModifyStageInstanceParams{}, nil))
+			return drop(s.client.ModifyStageInstance(ctx, testChanID, ModifyStageInstanceParams{}))
 		}},
 		{name: "DeleteStageInstance", method: "DELETE", path: "/stage-instances/" + testChanID.String(), call: func() error {
 			return s.client.DeleteStageInstance(ctx, testChanID, nil)
@@ -839,7 +840,7 @@ func (s *endpointSuite) TestMiscEndpoints() {
 			return drop(s.client.GetGuildSticker(ctx, testGuildID, testStickerID))
 		}},
 		{name: "ModifyGuildSticker", method: "PATCH", path: "/guilds/" + g + "/stickers/" + testStickerID.String(), call: func() error {
-			return drop(s.client.ModifyGuildSticker(ctx, testGuildID, testStickerID, ModifyGuildStickerParams{}, nil))
+			return drop(s.client.ModifyGuildSticker(ctx, testGuildID, testStickerID, ModifyGuildStickerParams{}))
 		}},
 		{name: "DeleteGuildSticker", method: "DELETE", path: "/guilds/" + g + "/stickers/" + testStickerID.String(), call: func() error {
 			return s.client.DeleteGuildSticker(ctx, testGuildID, testStickerID, nil)
@@ -850,7 +851,7 @@ func (s *endpointSuite) TestMiscEndpoints() {
 		{name: "CreateGuildSticker", method: "POST", path: "/guilds/" + g + "/stickers", status: http.StatusCreated, call: func() error {
 			return drop(s.client.CreateGuildSticker(ctx, testGuildID, CreateGuildStickerParams{
 				Name: "s", Description: "d", Tags: "t", File: []byte("png"), ContentType: "image/png",
-			}, nil))
+			}))
 		}},
 		// soundboard
 		{name: "ListDefaultSoundboardSounds", method: "GET", path: "/soundboard-default-sounds", body: "[]", call: func() error {
@@ -863,10 +864,10 @@ func (s *endpointSuite) TestMiscEndpoints() {
 			return drop(s.client.GetGuildSoundboardSound(ctx, testGuildID, testSoundID))
 		}},
 		{name: "CreateGuildSoundboardSound", method: "POST", path: "/guilds/" + g + "/soundboard-sounds", call: func() error {
-			return drop(s.client.CreateGuildSoundboardSound(ctx, testGuildID, CreateGuildSoundboardSoundParams{}, nil))
+			return drop(s.client.CreateGuildSoundboardSound(ctx, testGuildID, CreateGuildSoundboardSoundParams{}))
 		}},
 		{name: "ModifyGuildSoundboardSound", method: "PATCH", path: "/guilds/" + g + "/soundboard-sounds/" + testSoundID.String(), call: func() error {
-			return drop(s.client.ModifyGuildSoundboardSound(ctx, testGuildID, testSoundID, ModifyGuildSoundboardSoundParams{}, nil))
+			return drop(s.client.ModifyGuildSoundboardSound(ctx, testGuildID, testSoundID, ModifyGuildSoundboardSoundParams{}))
 		}},
 		{name: "DeleteGuildSoundboardSound", method: "DELETE", path: "/guilds/" + g + "/soundboard-sounds/" + testSoundID.String(), call: func() error {
 			return s.client.DeleteGuildSoundboardSound(ctx, testGuildID, testSoundID, nil)

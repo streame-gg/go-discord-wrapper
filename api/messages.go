@@ -210,6 +210,7 @@ func encodeEmoji(emoji string) string {
 // ── Message endpoints ─────────────────────────────────────────────────────────
 
 // ListMessages returns up to 100 messages from a channel.
+// https://docs.discord.com/developers/resources/message#get-channel-messages
 func (c *RestClient) ListMessages(ctx context.Context, channelID discord.Snowflake, params GetMessagesParams) ([]*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -227,6 +228,7 @@ func (c *RestClient) ListMessages(ctx context.Context, channelID discord.Snowfla
 }
 
 // GetMessage returns a single message by ID.
+// https://docs.discord.com/developers/resources/message#get-channel-message
 func (c *RestClient) GetMessage(ctx context.Context, channelID, messageID discord.Snowflake) (*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -249,6 +251,7 @@ func (c *RestClient) GetMessage(ctx context.Context, channelID, messageID discor
 
 // CreateMessage sends a new message to a channel.
 // When params.Files is non-empty the request is sent as multipart/form-data.
+// https://docs.discord.com/developers/resources/message#create-message
 func (c *RestClient) CreateMessage(ctx context.Context, channelID discord.Snowflake, params CreateMessageParams) (*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -286,6 +289,7 @@ func (c *RestClient) CreateMessage(ctx context.Context, channelID discord.Snowfl
 
 // EditMessage edits a previously sent message. Only fields set in params are changed.
 // When params.Files is non-empty the request is sent as multipart/form-data.
+// https://docs.discord.com/developers/resources/message#edit-message
 func (c *RestClient) EditMessage(ctx context.Context, channelID, messageID discord.Snowflake, params EditMessageParams) (*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -326,6 +330,7 @@ func (c *RestClient) EditMessage(ctx context.Context, channelID, messageID disco
 }
 
 // DeleteMessage deletes a message.
+// https://docs.discord.com/developers/resources/message#delete-message
 func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID discord.Snowflake, opts *DeleteMessageOptions) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -345,7 +350,7 @@ func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID dis
 		return doRequestWithoutResponse(c, req)
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(&opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -355,6 +360,7 @@ func (c *RestClient) DeleteMessage(ctx context.Context, channelID, messageID dis
 
 // BulkDeleteMessages deletes 2–100 messages at once.
 // Messages older than 14 days cannot be bulk-deleted and will cause a Discord API error.
+// https://docs.discord.com/developers/resources/message#bulk-delete-messages
 func (c *RestClient) BulkDeleteMessages(ctx context.Context, channelID discord.Snowflake, messageIDs []discord.Snowflake, opts *BulkDeleteMessagesOptions) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -385,7 +391,7 @@ func (c *RestClient) BulkDeleteMessages(ctx context.Context, channelID discord.S
 		return doRequestWithoutResponse(c, req)
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPost, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(&opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -394,6 +400,7 @@ func (c *RestClient) BulkDeleteMessages(ctx context.Context, channelID discord.S
 }
 
 // CrosspostMessage publishes a message in an announcement channel to all following channels.
+// https://docs.discord.com/developers/resources/message#crosspost-message
 func (c *RestClient) CrosspostMessage(ctx context.Context, channelID, messageID discord.Snowflake) (*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -479,6 +486,7 @@ func (c *RestClient) GetChannelPins(ctx context.Context, channelID discord.Snowf
 // paginated Get Channel Pins endpoint until all pins are collected. Messages are
 // ordered newest pin first. For pin timestamps or page-by-page control, use
 // GetChannelPins.
+// https://docs.discord.com/developers/resources/message#get-channel-pins
 func (c *RestClient) ListPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -515,6 +523,7 @@ func (c *RestClient) ListPinnedMessages(ctx context.Context, channelID discord.S
 
 // PinMessage pins a message in a channel. Requires the PIN_MESSAGES permission.
 // Fires a Channel Pins Update gateway event.
+// https://docs.discord.com/developers/resources/message#pin-message
 func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID discord.Snowflake, opts *PinMessageOptions) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -534,7 +543,7 @@ func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID discor
 		return doRequestWithoutResponse(c, req)
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPut, path, nil, c.WithBotAuthorization(), WithAuditLogReason(&opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -544,6 +553,7 @@ func (c *RestClient) PinMessage(ctx context.Context, channelID, messageID discor
 
 // UnpinMessage unpins a message from a channel. Requires the PIN_MESSAGES
 // permission. Fires a Channel Pins Update gateway event.
+// https://docs.discord.com/developers/resources/message#unpin-message
 func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID discord.Snowflake, opts *UnpinMessageOptions) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -563,7 +573,7 @@ func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID disc
 		return doRequestWithoutResponse(c, req)
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(&opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -575,6 +585,7 @@ func (c *RestClient) UnpinMessage(ctx context.Context, channelID, messageID disc
 
 // AddReaction adds a reaction to a message.
 // emoji is a raw Unicode character (e.g. "👍") or a custom emoji in "name:id" form.
+// https://docs.discord.com/developers/resources/message#create-reaction
 func (c *RestClient) AddReaction(ctx context.Context, channelID, messageID discord.Snowflake, emoji string) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -594,6 +605,7 @@ func (c *RestClient) AddReaction(ctx context.Context, channelID, messageID disco
 }
 
 // DeleteOwnReaction removes the bot's own reaction from a message.
+// https://docs.discord.com/developers/resources/message#delete-own-reaction
 func (c *RestClient) DeleteOwnReaction(ctx context.Context, channelID, messageID discord.Snowflake, emoji string) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -613,6 +625,7 @@ func (c *RestClient) DeleteOwnReaction(ctx context.Context, channelID, messageID
 }
 
 // DeleteUserReaction removes another user's reaction from a message. Requires MANAGE_MESSAGES.
+// https://docs.discord.com/developers/resources/message#delete-user-reaction
 func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, userID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -636,6 +649,7 @@ func (c *RestClient) DeleteUserReaction(ctx context.Context, channelID, messageI
 }
 
 // ListReactions returns the users who reacted to a message with the given emoji.
+// https://docs.discord.com/developers/resources/message#get-reactions
 func (c *RestClient) ListReactions(ctx context.Context, channelID, messageID discord.Snowflake, emoji string, params GetReactionsParams) ([]*discord.User, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -657,6 +671,7 @@ func (c *RestClient) ListReactions(ctx context.Context, channelID, messageID dis
 }
 
 // DeleteAllReactions removes every reaction from a message. Requires MANAGE_MESSAGES.
+// https://docs.discord.com/developers/resources/message#delete-all-reactions
 func (c *RestClient) DeleteAllReactions(ctx context.Context, channelID, messageID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -676,6 +691,7 @@ func (c *RestClient) DeleteAllReactions(ctx context.Context, channelID, messageI
 }
 
 // DeleteAllReactionsForEmoji removes all reactions for a specific emoji. Requires MANAGE_MESSAGES.
+// https://docs.discord.com/developers/resources/message#delete-all-reactions-for-emoji
 func (c *RestClient) DeleteAllReactionsForEmoji(ctx context.Context, channelID, messageID discord.Snowflake, emoji string) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -757,6 +773,7 @@ func (p SearchGuildMessagesParams) toQuery() string {
 
 // SearchGuildMessages searches for messages in a guild. Returns 202 while the index is still
 // being built (result will be empty). Requires READ_MESSAGE_HISTORY.
+// https://docs.discord.com/developers/resources/message#search-guild-messages
 func (c *RestClient) SearchGuildMessages(ctx context.Context, guildID discord.Snowflake, params SearchGuildMessagesParams) (*discord.GuildSearchResponse, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err

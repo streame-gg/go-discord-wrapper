@@ -42,6 +42,7 @@ func (p ListSKUSubscriptionsParams) toQuery() string {
 // ── Subscription endpoints ────────────────────────────────────────────────────
 
 // ListSKUSubscriptions returns subscriptions for a SKU.
+// https://docs.discord.com/developers/resources/subscription#list-sku-subscriptions
 func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID discord.Snowflake, params ListSKUSubscriptionsParams) ([]*discord.Subscription, error) {
 	if err := skuID.Validate(); err != nil {
 		return nil, err
@@ -58,6 +59,7 @@ func (c *RestClient) ListSKUSubscriptions(ctx context.Context, skuID discord.Sno
 	})
 }
 
+// https://docs.discord.com/developers/resources/subscription#get-sku-subscription
 func (c *RestClient) GetSKUSubscription(ctx context.Context, skuID, subscriptionID discord.Snowflake) (*discord.Subscription, error) {
 	if err := skuID.Validate(); err != nil {
 		return nil, err

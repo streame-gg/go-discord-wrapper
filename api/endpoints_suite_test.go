@@ -213,8 +213,9 @@ func (s *endpointSuite) TestCreateGuildRole_SendsBodyAndReason() {
 
 	name := "Mods"
 	color := 5
-	params := CreateGuildRoleParams{Name: &name, Color: &color}
-	role, err := s.client.CreateGuildRole(context.Background(), testGuildID, params, &CreateGuildRoleOptions{Reason: "spring-cleanup"})
+	reason := "spring-cleanup"
+	params := CreateGuildRoleParams{Name: &name, Color: &color, AuditLogReason: &reason}
+	role, err := s.client.CreateGuildRole(context.Background(), testGuildID, params)
 
 	s.Require().NoError(err)
 	s.Require().NotNil(role)
@@ -233,7 +234,7 @@ func (s *endpointSuite) TestCreateGuildRole_SendsBodyAndReason() {
 func (s *endpointSuite) TestCreateGuildRole_NoReasonWhenOptsNil() {
 	s.respondWith(http.StatusOK, `{"id":"700000000000000003","name":"NoReason"}`)
 
-	_, err := s.client.CreateGuildRole(context.Background(), testGuildID, CreateGuildRoleParams{}, nil)
+	_, err := s.client.CreateGuildRole(context.Background(), testGuildID, CreateGuildRoleParams{})
 
 	s.Require().NoError(err)
 	s.Empty(s.last.Reason, "no audit-log header expected when opts is nil")

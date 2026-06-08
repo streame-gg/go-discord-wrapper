@@ -11,7 +11,7 @@ import (
 
 func applyReason(reason string) *http.Request {
 	req, _ := http.NewRequest(http.MethodPatch, "https://discord.com/api/v10/test", nil)
-	WithAuditLogReason(reason)(req)
+	WithAuditLogReason(&reason)(req)
 	return req
 }
 

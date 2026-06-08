@@ -87,11 +87,8 @@ func (d *Client) ModifyChannel(ctx context.Context, channelID discord.Snowflake,
 		DefaultSortOrder:              opts.DefaultSortOrder,
 		DefaultForumLayout:            opts.DefaultForumLayout,
 	}
-	var apiOpts *api.ModifyChannelOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.ModifyChannelOptions{Reason: *opts.AuditLogReason}
-	}
-	ch, err := d.RestClient.ModifyChannel(ctx, channelID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	ch, err := d.RestClient.ModifyChannel(ctx, channelID, params)
 	if err == nil {
 		d.cacheChannel(ch)
 	}
@@ -108,11 +105,8 @@ func (d *Client) CreateChannelInvite(ctx context.Context, channelID discord.Snow
 		TargetUserID:        opts.TargetUserID,
 		TargetApplicationID: opts.TargetApplicationID,
 	}
-	var apiOpts *api.CreateChannelInviteOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.CreateChannelInviteOptions{Reason: *opts.AuditLogReason}
-	}
-	invite, err := d.RestClient.CreateChannelInvite(ctx, channelID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	invite, err := d.RestClient.CreateChannelInvite(ctx, channelID, params)
 	if err == nil {
 		invite.Hydrate(d)
 		d.cacheInvite(invite)
@@ -145,11 +139,8 @@ func (d *Client) ModifyGuild(ctx context.Context, guildID discord.Snowflake, opt
 		PremiumProgressBarEnabled:   opts.PremiumProgressBarEnabled,
 		SafetyAlertsChannelID:       opts.SafetyAlertsChannelID,
 	}
-	var apiOpts *api.ModifyGuildOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.ModifyGuildOptions{Reason: *opts.AuditLogReason}
-	}
-	guild, err := d.RestClient.ModifyGuild(ctx, guildID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	guild, err := d.RestClient.ModifyGuild(ctx, guildID, params)
 	if err == nil {
 		d.cacheGuild(guild)
 	}
@@ -182,11 +173,8 @@ func (d *Client) CreateGuildRole(ctx context.Context, guildID discord.Snowflake,
 		UnicodeEmoji: opts.UnicodeEmoji,
 		Mentionable:  opts.Mentionable,
 	}
-	var apiOpts *api.CreateGuildRoleOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.CreateGuildRoleOptions{Reason: *opts.AuditLogReason}
-	}
-	role, err := d.RestClient.CreateGuildRole(ctx, guildID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	role, err := d.RestClient.CreateGuildRole(ctx, guildID, params)
 	if err == nil {
 		d.cacheRole(guildID, role)
 	}
@@ -214,11 +202,8 @@ func (d *Client) CreateGuildChannel(ctx context.Context, guildID discord.Snowfla
 		DefaultForumLayout:            opts.DefaultForumLayout,
 		DefaultThreadRateLimitPerUser: opts.DefaultThreadRateLimitPerUser,
 	}
-	var apiOpts *api.CreateGuildChannelOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.CreateGuildChannelOptions{Reason: *opts.AuditLogReason}
-	}
-	ch, err := d.RestClient.CreateGuildChannel(ctx, guildID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	ch, err := d.RestClient.CreateGuildChannel(ctx, guildID, params)
 	if err == nil {
 		d.cacheChannel(ch)
 	}
@@ -231,11 +216,8 @@ func (d *Client) CreateGuildEmoji(ctx context.Context, guildID discord.Snowflake
 		Image: opts.Image,
 		Roles: opts.Roles,
 	}
-	var apiOpts *api.CreateGuildEmojiOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.CreateGuildEmojiOptions{Reason: *opts.AuditLogReason}
-	}
-	return d.RestClient.CreateGuildEmoji(ctx, guildID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	return d.RestClient.CreateGuildEmoji(ctx, guildID, params)
 }
 
 func (d *Client) CreateGuildSticker(ctx context.Context, guildID discord.Snowflake, opts discord.StickerCreateOptions) (*discord.Sticker, error) {
@@ -246,11 +228,8 @@ func (d *Client) CreateGuildSticker(ctx context.Context, guildID discord.Snowfla
 		File:        opts.File,
 		ContentType: opts.ContentType,
 	}
-	var apiOpts *api.CreateGuildStickerOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.CreateGuildStickerOptions{Reason: *opts.AuditLogReason}
-	}
-	sticker, err := d.RestClient.CreateGuildSticker(ctx, guildID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	sticker, err := d.RestClient.CreateGuildSticker(ctx, guildID, params)
 	if err == nil {
 		sticker.GuildID = &guildID
 		sticker.Hydrate(d)
@@ -299,11 +278,8 @@ func (d *Client) ModifyGuildMember(ctx context.Context, guildID, userID discord.
 		CommunicationDisabledUntil: opts.CommunicationDisabledUntil,
 		Flags:                      opts.Flags,
 	}
-	var apiOpts *api.ModifyGuildMemberOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.ModifyGuildMemberOptions{Reason: *opts.AuditLogReason}
-	}
-	member, err := d.RestClient.ModifyGuildMember(ctx, guildID, userID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	member, err := d.RestClient.ModifyGuildMember(ctx, guildID, userID, params)
 	if err == nil {
 		d.cacheMember(guildID, member)
 	}
@@ -326,11 +302,8 @@ func (d *Client) CreateGuildBan(ctx context.Context, guildID, userID discord.Sno
 	params := api.CreateGuildBanParams{
 		DeleteMessageSeconds: opts.DeleteMessageSeconds,
 	}
-	var apiOpts *api.CreateGuildBanOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.CreateGuildBanOptions{Reason: *opts.AuditLogReason}
-	}
-	return d.RestClient.CreateGuildBan(ctx, guildID, userID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	return d.RestClient.CreateGuildBan(ctx, guildID, userID, params)
 }
 
 // ── Role ───────────────────────────────────────────────────────────────────────
@@ -345,11 +318,8 @@ func (d *Client) ModifyGuildRole(ctx context.Context, guildID, roleID discord.Sn
 		UnicodeEmoji: opts.UnicodeEmoji,
 		Mentionable:  opts.Mentionable,
 	}
-	var apiOpts *api.ModifyGuildRoleOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.ModifyGuildRoleOptions{Reason: *opts.AuditLogReason}
-	}
-	role, err := d.RestClient.ModifyGuildRole(ctx, guildID, roleID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	role, err := d.RestClient.ModifyGuildRole(ctx, guildID, roleID, params)
 	if err == nil {
 		d.cacheRole(guildID, role)
 	}
@@ -403,11 +373,8 @@ func (d *Client) ModifyGuildEmoji(ctx context.Context, guildID, emojiID discord.
 		Name:  opts.Name,
 		Roles: opts.Roles,
 	}
-	var apiOpts *api.ModifyGuildEmojiOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.ModifyGuildEmojiOptions{Reason: *opts.AuditLogReason}
-	}
-	return d.RestClient.ModifyGuildEmoji(ctx, guildID, emojiID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	return d.RestClient.ModifyGuildEmoji(ctx, guildID, emojiID, params)
 }
 
 func (d *Client) DeleteGuildEmoji(ctx context.Context, guildID, emojiID discord.Snowflake, reason *string) error {
@@ -426,11 +393,8 @@ func (d *Client) ModifyWebhook(ctx context.Context, webhookID discord.Snowflake,
 		Avatar:    opts.Avatar,
 		ChannelID: opts.ChannelID,
 	}
-	var apiOpts *api.ModifyWebhookOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.ModifyWebhookOptions{Reason: *opts.AuditLogReason}
-	}
-	return d.RestClient.ModifyWebhook(ctx, webhookID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	return d.RestClient.ModifyWebhook(ctx, webhookID, params)
 }
 
 func (d *Client) DeleteWebhook(ctx context.Context, webhookID discord.Snowflake, reason *string) error {
@@ -474,11 +438,8 @@ func (d *Client) ModifyStageInstance(ctx context.Context, channelID discord.Snow
 		Topic:        opts.Topic,
 		PrivacyLevel: opts.PrivacyLevel,
 	}
-	var apiOpts *api.ModifyStageInstanceOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.ModifyStageInstanceOptions{Reason: *opts.AuditLogReason}
-	}
-	return d.RestClient.ModifyStageInstance(ctx, channelID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	return d.RestClient.ModifyStageInstance(ctx, channelID, params)
 }
 
 func (d *Client) DeleteStageInstance(ctx context.Context, channelID discord.Snowflake, reason *string) error {
@@ -529,11 +490,8 @@ func (d *Client) ModifyGuildSticker(ctx context.Context, guildID, stickerID disc
 		Description: opts.Description,
 		Tags:        opts.Tags,
 	}
-	var apiOpts *api.ModifyGuildStickerOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.ModifyGuildStickerOptions{Reason: *opts.AuditLogReason}
-	}
-	sticker, err := d.RestClient.ModifyGuildSticker(ctx, guildID, stickerID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	sticker, err := d.RestClient.ModifyGuildSticker(ctx, guildID, stickerID, params)
 	if err == nil {
 		sticker.GuildID = &guildID
 		sticker.Hydrate(d)
@@ -570,11 +528,8 @@ func (d *Client) ModifyAutoModerationRule(ctx context.Context, guildID, ruleID d
 		ExemptRoles:     opts.ExemptRoles,
 		ExemptChannels:  opts.ExemptChannels,
 	}
-	var apiOpts *api.ModifyAutoModerationRuleOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.ModifyAutoModerationRuleOptions{Reason: *opts.AuditLogReason}
-	}
-	rule, err := d.RestClient.ModifyAutoModerationRule(ctx, guildID, ruleID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	rule, err := d.RestClient.ModifyAutoModerationRule(ctx, guildID, ruleID, params)
 	if err == nil {
 		d.cacheAutoModRule(guildID, rule)
 	}
@@ -600,11 +555,8 @@ func (d *Client) ModifyGuildSoundboardSound(ctx context.Context, guildID, soundI
 		EmojiID:   opts.EmojiID,
 		EmojiName: opts.EmojiName,
 	}
-	var apiOpts *api.ModifyGuildSoundboardSoundOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.ModifyGuildSoundboardSoundOptions{Reason: *opts.AuditLogReason}
-	}
-	sound, err := d.RestClient.ModifyGuildSoundboardSound(ctx, guildID, soundID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	sound, err := d.RestClient.ModifyGuildSoundboardSound(ctx, guildID, soundID, params)
 	if err == nil {
 		sound.GuildID = &guildID
 		sound.Hydrate(d)
@@ -728,11 +680,8 @@ func (d *Client) CreateStageInstance(ctx context.Context, opts discord.StageCrea
 		GuildScheduledEventID: opts.GuildScheduledEventID,
 		SendStartNotification: opts.SendStartNotification,
 	}
-	var apiOpts *api.CreateStageInstanceOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.CreateStageInstanceOptions{Reason: *opts.AuditLogReason}
-	}
-	return d.RestClient.CreateStageInstance(ctx, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	return d.RestClient.CreateStageInstance(ctx, params)
 }
 
 func (d *Client) ListGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
@@ -774,11 +723,8 @@ func (d *Client) CreateAutoModerationRule(ctx context.Context, guildID discord.S
 		ExemptRoles:     opts.ExemptRoles,
 		ExemptChannels:  opts.ExemptChannels,
 	}
-	var apiOpts *api.CreateAutoModerationRuleOptions
-	if opts.AuditLogReason != nil {
-		apiOpts = &api.CreateAutoModerationRuleOptions{Reason: *opts.AuditLogReason}
-	}
-	rule, err := d.RestClient.CreateAutoModerationRule(ctx, guildID, params, apiOpts)
+	params.AuditLogReason = opts.AuditLogReason
+	rule, err := d.RestClient.CreateAutoModerationRule(ctx, guildID, params)
 	if err == nil {
 		d.cacheAutoModRule(guildID, rule)
 	}

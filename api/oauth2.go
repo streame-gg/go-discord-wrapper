@@ -19,6 +19,7 @@ type UpdateRoleConnectionParams struct {
 
 // GetCurrentAuthorizationInformation returns the authorization info for the given bearer token.
 // Requires an OAuth2 bearer token; bot tokens will receive a 401.
+// https://docs.discord.com/developers/topics/oauth2#get-current-authorization-information
 func (c *RestClient) GetCurrentAuthorizationInformation(ctx context.Context, userToken string) (*discord.OAuth2Authorization, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/oauth2/@me", nil, WithUserAuthorization(userToken))
 	if err != nil {
@@ -32,6 +33,7 @@ func (c *RestClient) GetCurrentAuthorizationInformation(ctx context.Context, use
 
 // DeleteCurrentUserApplicationRoleConnection removes the role connection for the current user.
 // Requires an OAuth2 bearer token with the role_connections.write scope.
+// https://docs.discord.com/developers/resources/user#delete-current-user-application-role-connection
 func (c *RestClient) DeleteCurrentUserApplicationRoleConnection(ctx context.Context, appID discord.Snowflake, userToken string) error {
 	if err := appID.Validate(); err != nil {
 		return err
@@ -48,6 +50,7 @@ func (c *RestClient) DeleteCurrentUserApplicationRoleConnection(ctx context.Cont
 
 // ListCurrentUserConnections returns the connections linked to the current user's account.
 // Requires an OAuth2 bearer token with the connections scope.
+// https://docs.discord.com/developers/resources/user#get-current-user-connections
 func (c *RestClient) ListCurrentUserConnections(ctx context.Context, userToken string) ([]*discord.UserConnection, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/users/@me/connections", nil, WithUserAuthorization(userToken))
 	if err != nil {
@@ -61,6 +64,7 @@ func (c *RestClient) ListCurrentUserConnections(ctx context.Context, userToken s
 
 // GetCurrentUserApplicationRoleConnection returns the application role connection for the current user.
 // Requires an OAuth2 bearer token with the role_connections.write scope; bot tokens will receive a 401.
+// https://docs.discord.com/developers/resources/user#get-current-user-application-role-connection
 func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context, appID discord.Snowflake, userToken string) (*discord.ApplicationRoleConnection, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
@@ -79,6 +83,7 @@ func (c *RestClient) GetCurrentUserApplicationRoleConnection(ctx context.Context
 
 // UpdateCurrentUserApplicationRoleConnection updates the application role connection for the current user.
 // Requires an OAuth2 bearer token with the role_connections.write scope; bot tokens will receive a 401.
+// https://docs.discord.com/developers/resources/user#update-current-user-application-role-connection
 func (c *RestClient) UpdateCurrentUserApplicationRoleConnection(ctx context.Context, appID discord.Snowflake, userToken string, params UpdateRoleConnectionParams) (*discord.ApplicationRoleConnection, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
@@ -101,6 +106,7 @@ func (c *RestClient) UpdateCurrentUserApplicationRoleConnection(ctx context.Cont
 }
 
 // AddGuildMember adds a user to a guild using their OAuth2 access token.
+// https://docs.discord.com/developers/resources/guild#add-guild-member
 func (c *RestClient) AddGuildMember(ctx context.Context, guildID, userID discord.Snowflake, params AddGuildMemberParams) (*discord.GuildMember, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err

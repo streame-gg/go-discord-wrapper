@@ -19,11 +19,8 @@ type ModifyGuildStickerParams struct {
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Tags        *string `json:"tags,omitempty"`
-}
 
-// https://docs.discord.com/developers/resources/sticker#modify-guild-sticker
-type ModifyGuildStickerOptions struct {
-	Reason string
+	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/sticker#create-guild-sticker
@@ -33,11 +30,8 @@ type CreateGuildStickerParams struct {
 	Tags        string
 	File        []byte
 	ContentType string
-}
 
-// https://docs.discord.com/developers/resources/sticker#create-guild-sticker
-type CreateGuildStickerOptions struct {
-	Reason string
+	AuditLogReason *string
 }
 
 // https://docs.discord.com/developers/resources/sticker#delete-guild-sticker
@@ -48,6 +42,7 @@ type DeleteGuildStickerOptions struct {
 // ── Sticker endpoints ─────────────────────────────────────────────────────────
 
 // GetSticker returns the sticker object for the given sticker ID.
+// https://docs.discord.com/developers/resources/sticker#get-sticker
 func (c *RestClient) GetSticker(ctx context.Context, stickerID discord.Snowflake) (*discord.Sticker, error) {
 	if err := stickerID.Validate(); err != nil {
 		return nil, err
@@ -69,6 +64,7 @@ type ListStickerPacksResponse struct {
 }
 
 // ListStickerPacks returns the list of sticker packs available to Nitro subscribers.
+// https://docs.discord.com/developers/resources/sticker#list-sticker-packs
 func (c *RestClient) ListStickerPacks(ctx context.Context) (*ListStickerPacksResponse, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/sticker-packs", nil, c.WithBotAuthorization())
 	if err != nil {
@@ -81,6 +77,7 @@ func (c *RestClient) ListStickerPacks(ctx context.Context) (*ListStickerPacksRes
 }
 
 // ListGuildStickers returns all stickers for the given guild.
+// https://docs.discord.com/developers/resources/sticker#list-guild-stickers
 func (c *RestClient) ListGuildStickers(ctx context.Context, guildID discord.Snowflake) ([]*discord.Sticker, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
@@ -97,6 +94,7 @@ func (c *RestClient) ListGuildStickers(ctx context.Context, guildID discord.Snow
 }
 
 // GetGuildSticker returns a specific sticker from a guild.
+// https://docs.discord.com/developers/resources/sticker#get-guild-sticker
 func (c *RestClient) GetGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake) (*discord.Sticker, error) {
 	if err := stickerID.Validate(); err != nil {
 		return nil, err
@@ -118,7 +116,8 @@ func (c *RestClient) GetGuildSticker(ctx context.Context, guildID, stickerID dis
 }
 
 // ModifyGuildSticker updates the name, description, or tags of a guild sticker.
-func (c *RestClient) ModifyGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake, params ModifyGuildStickerParams, opts *ModifyGuildStickerOptions) (*discord.Sticker, error) {
+// https://docs.discord.com/developers/resources/sticker#modify-guild-sticker
+func (c *RestClient) ModifyGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake, params ModifyGuildStickerParams) (*discord.Sticker, error) {
 	if err := stickerID.Validate(); err != nil {
 		return nil, err
 	}
@@ -134,17 +133,7 @@ func (c *RestClient) ModifyGuildSticker(ctx context.Context, guildID, stickerID 
 
 	path := "/guilds/" + guildID.String() + "/stickers/" + stickerID.String()
 
-	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
-		if err != nil {
-			return nil, err
-		}
-		return doRequest[discord.Sticker](c, req, map[int]bool{
-			http.StatusOK: true,
-		})
-	}
-
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(params.AuditLogReason))
 	if err != nil {
 		return nil, err
 	}
@@ -155,6 +144,7 @@ func (c *RestClient) ModifyGuildSticker(ctx context.Context, guildID, stickerID 
 }
 
 // DeleteGuildSticker deletes a sticker from a guild.
+// https://docs.discord.com/developers/resources/sticker#delete-guild-sticker
 func (c *RestClient) DeleteGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake, opts *DeleteGuildStickerOptions) error {
 	if err := stickerID.Validate(); err != nil {
 		return err
@@ -174,7 +164,7 @@ func (c *RestClient) DeleteGuildSticker(ctx context.Context, guildID, stickerID 
 		return doRequestWithoutResponse(c, req)
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(&opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -183,6 +173,7 @@ func (c *RestClient) DeleteGuildSticker(ctx context.Context, guildID, stickerID 
 }
 
 // GetStickerPack returns the sticker pack object for the given pack ID.
+// https://docs.discord.com/developers/resources/sticker#get-sticker-pack
 func (c *RestClient) GetStickerPack(ctx context.Context, packID discord.Snowflake) (*discord.StickerPack, error) {
 	if err := packID.Validate(); err != nil {
 		return nil, err
@@ -206,7 +197,8 @@ var validStickerContentTypes = map[string]bool{
 }
 
 // CreateGuildSticker uploads a new sticker to a guild using multipart form encoding.
-func (c *RestClient) CreateGuildSticker(ctx context.Context, guildID discord.Snowflake, params CreateGuildStickerParams, opts *CreateGuildStickerOptions) (*discord.Sticker, error) {
+// https://docs.discord.com/developers/resources/sticker#create-guild-sticker
+func (c *RestClient) CreateGuildSticker(ctx context.Context, guildID discord.Snowflake, params CreateGuildStickerParams) (*discord.Sticker, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -234,18 +226,7 @@ func (c *RestClient) CreateGuildSticker(ctx context.Context, guildID discord.Sno
 	}
 	w.Close()
 
-	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/stickers", &buf, c.WithBotAuthorization())
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Content-Type", w.FormDataContentType())
-		return doRequest[discord.Sticker](c, req, map[int]bool{
-			http.StatusCreated: true,
-		})
-	}
-
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/stickers", &buf, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/stickers", &buf, c.WithBotAuthorization(), WithAuditLogReason(params.AuditLogReason))
 	if err != nil {
 		return nil, err
 	}

@@ -55,6 +55,7 @@ func (p GetCurrentUserGuildsParams) toQuery() string {
 // GetCurrentUser returns the user associated with the current token.
 // Pass nil for userToken to use the bot token; pass a non-nil OAuth2 bearer
 // token to fetch the user that token belongs to.
+// https://docs.discord.com/developers/resources/user#get-current-user
 func (c *RestClient) GetCurrentUser(ctx context.Context, userToken *string) (*discord.User, error) {
 	var authOption func(req *http.Request)
 	if userToken != nil {
@@ -74,6 +75,7 @@ func (c *RestClient) GetCurrentUser(ctx context.Context, userToken *string) (*di
 }
 
 // GetUser returns the user object for the given user ID.
+// https://docs.discord.com/developers/resources/user#get-user
 func (c *RestClient) GetUser(ctx context.Context, userID discord.Snowflake) (*discord.User, error) {
 	if err := userID.Validate(); err != nil {
 		return nil, err
@@ -90,6 +92,7 @@ func (c *RestClient) GetUser(ctx context.Context, userID discord.Snowflake) (*di
 }
 
 // ModifyCurrentUser updates the bot user's username or avatar.
+// https://docs.discord.com/developers/resources/user#modify-current-user
 func (c *RestClient) ModifyCurrentUser(ctx context.Context, params ModifyCurrentUserParams) (*discord.User, error) {
 	body, err := json.Marshal(params)
 	if err != nil {
@@ -107,6 +110,7 @@ func (c *RestClient) ModifyCurrentUser(ctx context.Context, params ModifyCurrent
 }
 
 // ListCurrentUserGuilds returns the guilds the current user is a member of.
+// https://docs.discord.com/developers/resources/user#get-current-user-guilds
 func (c *RestClient) ListCurrentUserGuilds(ctx context.Context, params GetCurrentUserGuildsParams) ([]*discord.CurrentUserGuild, error) {
 	var authOption func(req *http.Request)
 	if params.UserToken != nil {
@@ -129,6 +133,7 @@ func (c *RestClient) ListCurrentUserGuilds(ctx context.Context, params GetCurren
 // GetCurrentUserGuildMember returns the guild member object for the current user in the given guild.
 // Pass nil for userAccessToken to use the bot token; pass a non-nil OAuth2 bearer token
 // (with the guilds.members.read scope) to fetch the member for that token's user.
+// https://docs.discord.com/developers/resources/user#get-current-user-guild-member
 func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID discord.Snowflake, userAccessToken *string) (*discord.GuildMember, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
@@ -152,6 +157,7 @@ func (c *RestClient) GetCurrentUserGuildMember(ctx context.Context, guildID disc
 }
 
 // LeaveGuild makes the current user leave the given guild.
+// https://docs.discord.com/developers/resources/user#leave-guild
 func (c *RestClient) LeaveGuild(ctx context.Context, guildID discord.Snowflake) error {
 	if err := guildID.Validate(); err != nil {
 		return err
@@ -166,6 +172,7 @@ func (c *RestClient) LeaveGuild(ctx context.Context, guildID discord.Snowflake) 
 }
 
 // CreateDM opens a DM channel with the given user and returns it.
+// https://docs.discord.com/developers/resources/user#create-dm
 func (c *RestClient) CreateDM(ctx context.Context, recipientID discord.Snowflake) (*discord.Channel, error) {
 	if err := recipientID.Validate(); err != nil {
 		return nil, err
@@ -196,6 +203,7 @@ type CreateGroupDMParams struct {
 }
 
 // CreateGroupDM creates a new Group DM channel.
+// https://docs.discord.com/developers/resources/user#create-group-dm
 func (c *RestClient) CreateGroupDM(ctx context.Context, params CreateGroupDMParams) (*discord.Channel, error) {
 	var authOption func(req *http.Request)
 	if params.UserAccessToken != nil {

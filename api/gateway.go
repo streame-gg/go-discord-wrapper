@@ -8,6 +8,7 @@ import (
 )
 
 // GetGateway returns the WebSocket URL for connecting to the Discord gateway.
+// https://docs.discord.com/developers/events/gateway#get-gateway
 func (c *RestClient) GetGateway(ctx context.Context) (*discord.GatewayResponse, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/gateway", nil, c.WithBotAuthorization())
 	if err != nil {
@@ -21,6 +22,7 @@ func (c *RestClient) GetGateway(ctx context.Context) (*discord.GatewayResponse, 
 
 // GetBotGateway returns the WebSocket URL, recommended shard count, and session start
 // limit for the bot. Requires bot token authentication.
+// https://docs.discord.com/developers/events/gateway#get-gateway-bot
 func (c *RestClient) GetBotGateway(ctx context.Context) (*discord.BotRegisterResponse, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/gateway/bot", nil, c.WithBotAuthorization())
 	if err != nil {

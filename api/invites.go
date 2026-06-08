@@ -35,6 +35,7 @@ func (p GetInviteParams) toQuery() string {
 }
 
 // GetInvite returns the invite object for the given invite code.
+// https://docs.discord.com/developers/resources/invite#get-invite
 func (c *RestClient) GetInvite(ctx context.Context, code string, params GetInviteParams) (*discord.Invite, error) {
 	path := "/invites/" + url.PathEscape(code) + params.toQuery()
 	req, err := c.generateRequest(ctx, http.MethodGet, path, nil, c.WithBotAuthorization())
@@ -48,6 +49,7 @@ func (c *RestClient) GetInvite(ctx context.Context, code string, params GetInvit
 }
 
 // DeleteInvite deletes an invite by its code. Requires MANAGE_CHANNELS or MANAGE_GUILD.
+// https://docs.discord.com/developers/resources/invite#delete-invite
 func (c *RestClient) DeleteInvite(ctx context.Context, code string, opts *DeleteInviteOptions) (*discord.Invite, error) {
 	if opts == nil {
 		req, err := c.generateRequest(ctx, http.MethodDelete, "/invites/"+url.PathEscape(code), nil, c.WithBotAuthorization())
@@ -59,7 +61,7 @@ func (c *RestClient) DeleteInvite(ctx context.Context, code string, opts *Delete
 		})
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/invites/"+url.PathEscape(code), nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/invites/"+url.PathEscape(code), nil, c.WithBotAuthorization(), WithAuditLogReason(&opts.Reason))
 	if err != nil {
 		return nil, err
 	}

@@ -28,6 +28,7 @@ type ModifyUserVoiceStateParams struct {
 // ── Voice endpoints ───────────────────────────────────────────────────────────
 
 // ListVoiceRegions returns all available voice regions.
+// https://docs.discord.com/developers/resources/voice#list-voice-regions
 func (c *RestClient) ListVoiceRegions(ctx context.Context) ([]*discord.VoiceRegion, error) {
 	req, err := c.generateRequest(ctx, http.MethodGet, "/voice/regions", nil, c.WithBotAuthorization())
 	if err != nil {
@@ -40,6 +41,7 @@ func (c *RestClient) ListVoiceRegions(ctx context.Context) ([]*discord.VoiceRegi
 }
 
 // ListGuildVoiceRegions returns voice regions available for a guild, including VIP regions if applicable.
+// https://docs.discord.com/developers/resources/guild#get-guild-voice-regions
 func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID discord.Snowflake) ([]*discord.VoiceRegion, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
@@ -56,6 +58,7 @@ func (c *RestClient) ListGuildVoiceRegions(ctx context.Context, guildID discord.
 }
 
 // ModifyCurrentUserVoiceState updates the bot's voice state in a guild stage channel.
+// https://docs.discord.com/developers/resources/voice#modify-current-user-voice-state
 func (c *RestClient) ModifyCurrentUserVoiceState(ctx context.Context, guildID discord.Snowflake, params ModifyCurrentUserVoiceStateParams) error {
 	if err := guildID.Validate(); err != nil {
 		return err
@@ -75,6 +78,7 @@ func (c *RestClient) ModifyCurrentUserVoiceState(ctx context.Context, guildID di
 }
 
 // ModifyUserVoiceState updates another user's voice state in a guild stage channel. Requires MUTE_MEMBERS.
+// https://docs.discord.com/developers/resources/voice#modify-user-voice-state
 func (c *RestClient) ModifyUserVoiceState(ctx context.Context, guildID, userID discord.Snowflake, params ModifyUserVoiceStateParams) error {
 	if err := guildID.Validate(); err != nil {
 		return err
@@ -99,6 +103,7 @@ func (c *RestClient) ModifyUserVoiceState(ctx context.Context, guildID, userID d
 }
 
 // GetCurrentUserVoiceState returns the current user's voice state in a guild.
+// https://docs.discord.com/developers/resources/voice#get-current-user-voice-state
 func (c *RestClient) GetCurrentUserVoiceState(ctx context.Context, guildID discord.Snowflake) (*discord.VoiceState, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
@@ -115,6 +120,7 @@ func (c *RestClient) GetCurrentUserVoiceState(ctx context.Context, guildID disco
 }
 
 // GetUserVoiceState returns a specific user's voice state in a guild.
+// https://docs.discord.com/developers/resources/voice#get-user-voice-state
 func (c *RestClient) GetUserVoiceState(ctx context.Context, guildID, userID discord.Snowflake) (*discord.VoiceState, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err

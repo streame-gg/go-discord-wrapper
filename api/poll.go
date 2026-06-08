@@ -34,6 +34,7 @@ func (p GetPollAnswerVotersParams) toQuery() string {
 // ── Poll endpoints ────────────────────────────────────────────────────────────
 
 // CreatePoll creates a poll in a channel. Basically a wrapper for CreateMessage.
+// https://docs.discord.com/developers/resources/message#create-message
 func (c *RestClient) CreatePoll(ctx context.Context, channelID discord.Snowflake, poll discord.PollRequest) (*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -49,6 +50,7 @@ type GetPollAnswerVotersResponse struct {
 	Users []*discord.User `json:"users"`
 }
 
+// https://docs.discord.com/developers/resources/poll#get-answer-voters
 func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, messageID discord.Snowflake, answerID int, params GetPollAnswerVotersParams) (*GetPollAnswerVotersResponse, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -69,6 +71,7 @@ func (c *RestClient) GetPollAnswerVoters(ctx context.Context, channelID, message
 	})
 }
 
+// https://docs.discord.com/developers/resources/poll#end-poll
 func (c *RestClient) EndPoll(ctx context.Context, channelID, messageID discord.Snowflake) (*discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err

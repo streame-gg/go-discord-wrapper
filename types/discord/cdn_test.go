@@ -128,7 +128,7 @@ func (su *cdnSuite) TestStickerURL() {
 
 func (su *cdnSuite) TestApplicationImageURLs() {
 	t := su.T()
-	a := &Application{ID: 9, IconHash: strptr("ai"), CoverImage: strptr("cv")}
+	a := &Application{ID: 9, Icon: strptr("ai"), CoverImage: "cv"}
 	if got := a.IconURL(nil); got != "https://cdn.discordapp.com/app-icons/9/ai.webp" {
 		t.Errorf("app icon: got %q", got)
 	}

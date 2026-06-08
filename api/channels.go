@@ -10,6 +10,7 @@ import (
 )
 
 // GetChannel fetches a channel by ID.
+// https://docs.discord.com/developers/resources/channel#get-channel
 func (c *RestClient) GetChannel(ctx context.Context, channelID discord.Snowflake) (*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -48,11 +49,8 @@ type ModifyChannelParams struct {
 	DefaultThreadRateLimitPerUser *int                                 `json:"default_thread_rate_limit_per_user,omitempty"`
 	DefaultSortOrder              *discord.DefaultSortOrder            `json:"default_sort_order,omitempty"`
 	DefaultForumLayout            *discord.ChannelForumLayoutType      `json:"default_forum_layout,omitempty"`
-}
 
-// https://docs.discord.com/developers/resources/channel#modify-channel
-type ModifyChannelOptions struct {
-	Reason string
+	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/channel#edit-channel-permissions
@@ -60,11 +58,8 @@ type EditChannelPermissionsParams struct {
 	Allow *string                         `json:"allow,omitempty"`
 	Deny  *string                         `json:"deny,omitempty"`
 	Type  discord.PermissionOverwriteType `json:"type"`
-}
 
-// https://docs.discord.com/developers/resources/channel#edit-channel-permissions
-type EditChannelPermissionsOptions struct {
-	Reason string
+	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/channel#create-channel-invite
@@ -76,11 +71,8 @@ type CreateChannelInviteParams struct {
 	TargetType          *int               `json:"target_type,omitempty"`
 	TargetUserID        *discord.Snowflake `json:"target_user_id,omitempty"`
 	TargetApplicationID *discord.Snowflake `json:"target_application_id,omitempty"`
-}
 
-// https://docs.discord.com/developers/resources/channel#create-channel-invite
-type CreateChannelInviteOptions struct {
-	Reason string
+	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/channel#deleteclose-channel
@@ -111,7 +103,8 @@ type UnpinMessageOptions struct {
 // ── Channel endpoints ─────────────────────────────────────────────────────────
 
 // ModifyChannel updates settings for a channel. Returns the updated channel.
-func (c *RestClient) ModifyChannel(ctx context.Context, channelID discord.Snowflake, params ModifyChannelParams, opts *ModifyChannelOptions) (*discord.Channel, error) {
+// https://docs.discord.com/developers/resources/channel#modify-channel
+func (c *RestClient) ModifyChannel(ctx context.Context, channelID discord.Snowflake, params ModifyChannelParams) (*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -121,17 +114,7 @@ func (c *RestClient) ModifyChannel(ctx context.Context, channelID discord.Snowfl
 		return nil, err
 	}
 
-	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPatch, "/channels/"+channelID.String(), bytes.NewReader(body), c.WithBotAuthorization())
-		if err != nil {
-			return nil, err
-		}
-		return doRequest[discord.Channel](c, req, map[int]bool{
-			http.StatusOK: true,
-		})
-	}
-
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/channels/"+channelID.String(), bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/channels/"+channelID.String(), bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(params.AuditLogReason))
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +126,7 @@ func (c *RestClient) ModifyChannel(ctx context.Context, channelID discord.Snowfl
 
 // DeleteChannel deletes a channel by ID. For guild channels requires MANAGE_CHANNELS.
 // Returns the deleted channel object.
+// https://docs.discord.com/developers/resources/channel#deleteclose-channel
 func (c *RestClient) DeleteChannel(ctx context.Context, channelID discord.Snowflake, opts *DeleteChannelOptions) (*discord.Channel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -158,7 +142,7 @@ func (c *RestClient) DeleteChannel(ctx context.Context, channelID discord.Snowfl
 		})
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/channels/"+channelID.String(), nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/channels/"+channelID.String(), nil, c.WithBotAuthorization(), WithAuditLogReason(&opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -169,6 +153,7 @@ func (c *RestClient) DeleteChannel(ctx context.Context, channelID discord.Snowfl
 }
 
 // ListChannelInvites returns all invites for a channel. Requires MANAGE_CHANNELS.
+// https://docs.discord.com/developers/resources/channel#get-channel-invites
 func (c *RestClient) ListChannelInvites(ctx context.Context, channelID discord.Snowflake) ([]*discord.Invite, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -185,7 +170,8 @@ func (c *RestClient) ListChannelInvites(ctx context.Context, channelID discord.S
 }
 
 // CreateChannelInvite creates a new invite for a channel. Requires CREATE_INSTANT_INVITE.
-func (c *RestClient) CreateChannelInvite(ctx context.Context, channelID discord.Snowflake, params CreateChannelInviteParams, opts *CreateChannelInviteOptions) (*discord.Invite, error) {
+// https://docs.discord.com/developers/resources/channel#create-channel-invite
+func (c *RestClient) CreateChannelInvite(ctx context.Context, channelID discord.Snowflake, params CreateChannelInviteParams) (*discord.Invite, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -195,17 +181,7 @@ func (c *RestClient) CreateChannelInvite(ctx context.Context, channelID discord.
 		return nil, err
 	}
 
-	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/invites", bytes.NewReader(body), c.WithBotAuthorization())
-		if err != nil {
-			return nil, err
-		}
-		return doRequest[discord.Invite](c, req, map[int]bool{
-			http.StatusOK: true,
-		})
-	}
-
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/invites", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/invites", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(params.AuditLogReason))
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +193,8 @@ func (c *RestClient) CreateChannelInvite(ctx context.Context, channelID discord.
 
 // EditChannelPermissions creates or updates a permission overwrite for a user or role in a channel.
 // Requires MANAGE_ROLES. Use params.Type to specify whether overwriteID is a role or member.
-func (c *RestClient) EditChannelPermissions(ctx context.Context, channelID, overwriteID discord.Snowflake, params EditChannelPermissionsParams, opts *EditChannelPermissionsOptions) error {
+// https://docs.discord.com/developers/resources/channel#edit-channel-permissions
+func (c *RestClient) EditChannelPermissions(ctx context.Context, channelID, overwriteID discord.Snowflake, params EditChannelPermissionsParams) error {
 	if err := channelID.Validate(); err != nil {
 		return err
 	}
@@ -233,15 +210,7 @@ func (c *RestClient) EditChannelPermissions(ctx context.Context, channelID, over
 
 	path := "/channels/" + channelID.String() + "/permissions/" + overwriteID.String()
 
-	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization())
-		if err != nil {
-			return err
-		}
-		return doRequestWithoutResponse(c, req)
-	}
-
-	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPut, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(params.AuditLogReason))
 	if err != nil {
 		return err
 	}
@@ -251,6 +220,7 @@ func (c *RestClient) EditChannelPermissions(ctx context.Context, channelID, over
 
 // DeleteChannelPermission removes a permission overwrite for a user or role from a channel.
 // Requires MANAGE_ROLES.
+// https://docs.discord.com/developers/resources/channel#delete-channel-permission
 func (c *RestClient) DeleteChannelPermission(ctx context.Context, channelID, overwriteID discord.Snowflake, opts *DeleteChannelPermissionOptions) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -270,7 +240,7 @@ func (c *RestClient) DeleteChannelPermission(ctx context.Context, channelID, ove
 		return doRequestWithoutResponse(c, req)
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(&opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -279,6 +249,7 @@ func (c *RestClient) DeleteChannelPermission(ctx context.Context, channelID, ove
 }
 
 // TriggerTypingIndicator posts a typing indicator to the channel for ~10 seconds.
+// https://docs.discord.com/developers/resources/channel#trigger-typing-indicator
 func (c *RestClient) TriggerTypingIndicator(ctx context.Context, channelID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -302,6 +273,7 @@ type AddGroupDMRecipientParams struct {
 }
 
 // SetVoiceChannelStatus sets the status message of a voice channel.
+// https://docs.discord.com/developers/resources/channel#set-voice-channel-status
 func (c *RestClient) SetVoiceChannelStatus(ctx context.Context, channelID discord.Snowflake, status *string) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -324,6 +296,7 @@ func (c *RestClient) SetVoiceChannelStatus(ctx context.Context, channelID discor
 }
 
 // FollowAnnouncementChannel follows an announcement channel, publishing messages to webhookChannelID.
+// https://docs.discord.com/developers/resources/channel#follow-announcement-channel
 func (c *RestClient) FollowAnnouncementChannel(ctx context.Context, channelID, webhookChannelID discord.Snowflake, opts *FollowAnnouncementChannelOptions) (*discord.FollowedChannel, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -348,7 +321,7 @@ func (c *RestClient) FollowAnnouncementChannel(ctx context.Context, channelID, w
 		})
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/followers", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/followers", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(&opts.Reason))
 	if err != nil {
 		return nil, err
 	}
@@ -359,6 +332,7 @@ func (c *RestClient) FollowAnnouncementChannel(ctx context.Context, channelID, w
 }
 
 // AddGroupDMRecipient adds a user to a Group DM using their OAuth2 access token.
+// https://docs.discord.com/developers/resources/channel#group-dm-add-recipient
 func (c *RestClient) AddGroupDMRecipient(ctx context.Context, channelID, userID discord.Snowflake, params AddGroupDMRecipientParams) error {
 	if err := channelID.Validate(); err != nil {
 		return err
@@ -383,6 +357,7 @@ func (c *RestClient) AddGroupDMRecipient(ctx context.Context, channelID, userID 
 }
 
 // RemoveGroupDMRecipient removes a user from a Group DM.
+// https://docs.discord.com/developers/resources/channel#group-dm-remove-recipient
 func (c *RestClient) RemoveGroupDMRecipient(ctx context.Context, channelID, userID discord.Snowflake) error {
 	if err := channelID.Validate(); err != nil {
 		return err

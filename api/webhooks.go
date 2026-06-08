@@ -15,11 +15,8 @@ import (
 type CreateWebhookParams struct {
 	Name   string  `json:"name"`
 	Avatar *string `json:"avatar,omitempty"`
-}
 
-// https://docs.discord.com/developers/resources/webhook#create-webhook
-type CreateWebhookOptions struct {
-	Reason string
+	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/webhook#modify-webhook
@@ -27,11 +24,8 @@ type ModifyWebhookParams struct {
 	Name      *string            `json:"name,omitempty"`
 	Avatar    *string            `json:"avatar,omitempty"`
 	ChannelID *discord.Snowflake `json:"channel_id,omitempty"`
-}
 
-// https://docs.discord.com/developers/resources/webhook#modify-webhook
-type ModifyWebhookOptions struct {
-	Reason string
+	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/webhook#delete-webhook
@@ -87,7 +81,8 @@ func (p ExecuteWebhookQueryParams) toQuery() string {
 }
 
 // CreateWebhook creates a new webhook for a channel. Requires MANAGE_WEBHOOKS.
-func (c *RestClient) CreateWebhook(ctx context.Context, channelID discord.Snowflake, params CreateWebhookParams, opts *CreateWebhookOptions) (*discord.Webhook, error) {
+// https://docs.discord.com/developers/resources/webhook#create-webhook
+func (c *RestClient) CreateWebhook(ctx context.Context, channelID discord.Snowflake, params CreateWebhookParams) (*discord.Webhook, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -97,17 +92,7 @@ func (c *RestClient) CreateWebhook(ctx context.Context, channelID discord.Snowfl
 		return nil, err
 	}
 
-	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/webhooks", bytes.NewReader(body), c.WithBotAuthorization())
-		if err != nil {
-			return nil, err
-		}
-		return doRequest[discord.Webhook](c, req, map[int]bool{
-			http.StatusOK: true,
-		})
-	}
-
-	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/webhooks", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/channels/"+channelID.String()+"/webhooks", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(params.AuditLogReason))
 	if err != nil {
 		return nil, err
 	}
@@ -118,6 +103,7 @@ func (c *RestClient) CreateWebhook(ctx context.Context, channelID discord.Snowfl
 }
 
 // ListChannelWebhooks returns all webhooks for a channel. Requires MANAGE_WEBHOOKS.
+// https://docs.discord.com/developers/resources/webhook#get-channel-webhooks
 func (c *RestClient) ListChannelWebhooks(ctx context.Context, channelID discord.Snowflake) ([]*discord.Webhook, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
@@ -134,6 +120,7 @@ func (c *RestClient) ListChannelWebhooks(ctx context.Context, channelID discord.
 }
 
 // ListGuildWebhooks returns all webhooks in a guild.
+// https://docs.discord.com/developers/resources/webhook#get-guild-webhooks
 func (c *RestClient) ListGuildWebhooks(ctx context.Context, guildID discord.Snowflake) ([]*discord.Webhook, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
@@ -150,6 +137,7 @@ func (c *RestClient) ListGuildWebhooks(ctx context.Context, guildID discord.Snow
 }
 
 // GetWebhook returns the webhook object for the given ID.
+// https://docs.discord.com/developers/resources/webhook#get-webhook
 func (c *RestClient) GetWebhook(ctx context.Context, webhookID discord.Snowflake) (*discord.Webhook, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
@@ -166,6 +154,7 @@ func (c *RestClient) GetWebhook(ctx context.Context, webhookID discord.Snowflake
 }
 
 // GetWebhookWithToken returns a webhook without requiring authentication, using its token.
+// https://docs.discord.com/developers/resources/webhook#get-webhook-with-token
 func (c *RestClient) GetWebhookWithToken(ctx context.Context, webhookID discord.Snowflake, token string) (*discord.Webhook, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
@@ -182,7 +171,8 @@ func (c *RestClient) GetWebhookWithToken(ctx context.Context, webhookID discord.
 }
 
 // ModifyWebhook updates a webhook's name, avatar, or channel.
-func (c *RestClient) ModifyWebhook(ctx context.Context, webhookID discord.Snowflake, params ModifyWebhookParams, opts *ModifyWebhookOptions) (*discord.Webhook, error) {
+// https://docs.discord.com/developers/resources/webhook#modify-webhook
+func (c *RestClient) ModifyWebhook(ctx context.Context, webhookID discord.Snowflake, params ModifyWebhookParams) (*discord.Webhook, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
 	}
@@ -192,17 +182,7 @@ func (c *RestClient) ModifyWebhook(ctx context.Context, webhookID discord.Snowfl
 		return nil, err
 	}
 
-	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPatch, "/webhooks/"+webhookID.String(), bytes.NewReader(body), c.WithBotAuthorization())
-		if err != nil {
-			return nil, err
-		}
-		return doRequest[discord.Webhook](c, req, map[int]bool{
-			http.StatusOK: true,
-		})
-	}
-
-	req, err := c.generateRequest(ctx, http.MethodPatch, "/webhooks/"+webhookID.String(), bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPatch, "/webhooks/"+webhookID.String(), bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(params.AuditLogReason))
 	if err != nil {
 		return nil, err
 	}
@@ -213,6 +193,7 @@ func (c *RestClient) ModifyWebhook(ctx context.Context, webhookID discord.Snowfl
 }
 
 // ModifyWebhookWithToken updates a webhook using its token (no bot authentication required).
+// https://docs.discord.com/developers/resources/webhook#modify-webhook-with-token
 func (c *RestClient) ModifyWebhookWithToken(ctx context.Context, webhookID discord.Snowflake, token string, params ModifyWebhookParams) (*discord.Webhook, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
@@ -234,6 +215,7 @@ func (c *RestClient) ModifyWebhookWithToken(ctx context.Context, webhookID disco
 }
 
 // DeleteWebhook deletes a webhook permanently.
+// https://docs.discord.com/developers/resources/webhook#delete-webhook
 func (c *RestClient) DeleteWebhook(ctx context.Context, webhookID discord.Snowflake, opts *DeleteWebhookOptions) error {
 	if err := webhookID.Validate(); err != nil {
 		return err
@@ -247,7 +229,7 @@ func (c *RestClient) DeleteWebhook(ctx context.Context, webhookID discord.Snowfl
 		return doRequestWithoutResponse(c, req)
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, "/webhooks/"+webhookID.String(), nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodDelete, "/webhooks/"+webhookID.String(), nil, c.WithBotAuthorization(), WithAuditLogReason(&opts.Reason))
 	if err != nil {
 		return err
 	}
@@ -256,6 +238,7 @@ func (c *RestClient) DeleteWebhook(ctx context.Context, webhookID discord.Snowfl
 }
 
 // DeleteWebhookWithToken deletes a webhook using its token (no bot authentication required).
+// https://docs.discord.com/developers/resources/webhook#delete-webhook-with-token
 func (c *RestClient) DeleteWebhookWithToken(ctx context.Context, webhookID discord.Snowflake, token string) error {
 	if err := webhookID.Validate(); err != nil {
 		return err
@@ -271,6 +254,7 @@ func (c *RestClient) DeleteWebhookWithToken(ctx context.Context, webhookID disco
 
 // ExecuteWebhook sends a message via a webhook. Returns the created message when query.Wait is true.
 // When params.Files is non-empty the request is sent as multipart/form-data.
+// https://docs.discord.com/developers/resources/webhook#execute-webhook
 func (c *RestClient) ExecuteWebhook(ctx context.Context, webhookID discord.Snowflake, token string, params ExecuteWebhookParams, query ExecuteWebhookQueryParams) (*discord.Message, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
@@ -311,6 +295,7 @@ func (c *RestClient) ExecuteWebhook(ctx context.Context, webhookID discord.Snowf
 }
 
 // GetWebhookMessage returns a previously sent webhook message.
+// https://docs.discord.com/developers/resources/webhook#get-webhook-message
 func (c *RestClient) GetWebhookMessage(ctx context.Context, webhookID discord.Snowflake, token string, messageID discord.Snowflake) (*discord.Message, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
@@ -332,6 +317,7 @@ func (c *RestClient) GetWebhookMessage(ctx context.Context, webhookID discord.Sn
 }
 
 // EditWebhookMessage edits a previously sent webhook message.
+// https://docs.discord.com/developers/resources/webhook#edit-webhook-message
 func (c *RestClient) EditWebhookMessage(ctx context.Context, webhookID discord.Snowflake, token string, messageID discord.Snowflake, params EditMessageParams) (*discord.Message, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
@@ -358,6 +344,7 @@ func (c *RestClient) EditWebhookMessage(ctx context.Context, webhookID discord.S
 }
 
 // DeleteWebhookMessage deletes a previously sent webhook message.
+// https://docs.discord.com/developers/resources/webhook#delete-webhook-message
 func (c *RestClient) DeleteWebhookMessage(ctx context.Context, webhookID discord.Snowflake, token string, messageID discord.Snowflake) error {
 	if err := webhookID.Validate(); err != nil {
 		return err
@@ -377,6 +364,7 @@ func (c *RestClient) DeleteWebhookMessage(ctx context.Context, webhookID discord
 }
 
 // ExecuteSlackWebhook sends a Slack-compatible payload via a webhook.
+// https://docs.discord.com/developers/resources/webhook#execute-slack-compatible-webhook
 func (c *RestClient) ExecuteSlackWebhook(ctx context.Context, webhookID discord.Snowflake, token string, wait bool, body json.RawMessage) error {
 	if err := webhookID.Validate(); err != nil {
 		return err
@@ -400,6 +388,7 @@ func (c *RestClient) ExecuteSlackWebhook(ctx context.Context, webhookID discord.
 }
 
 // ExecuteGitHubWebhook sends a GitHub-compatible payload via a webhook.
+// https://docs.discord.com/developers/resources/webhook#execute-github-compatible-webhook
 func (c *RestClient) ExecuteGitHubWebhook(ctx context.Context, webhookID discord.Snowflake, token string, wait bool, body json.RawMessage) error {
 	if err := webhookID.Validate(); err != nil {
 		return err

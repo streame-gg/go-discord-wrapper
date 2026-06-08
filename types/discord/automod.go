@@ -63,7 +63,8 @@ const (
 
 // https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-rule-object
 type AutoModerationRule struct {
-	hClient         EntityClient
+	hClient EntityClient
+
 	ID              Snowflake                     `json:"id"`
 	GuildID         Snowflake                     `json:"guild_id"`
 	Name            string                        `json:"name"`

@@ -14,6 +14,7 @@ import (
 // CreateInteractionResponse sends a response to an interaction. Must be called within 3 seconds.
 // Set withResponse=true to receive the created message back; returns nil otherwise.
 // Pass optional files to send attachments; when present the request is encoded as multipart/form-data.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#create-interaction-response
 func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionID discord.Snowflake, token string, response responses.InteractionResponse, withResponse bool, files ...discord.MessageFile) (*responses.InteractionCallbackResponse, error) {
 	if err := interactionID.Validate(); err != nil {
 		return nil, err
@@ -57,6 +58,7 @@ func (c *RestClient) CreateInteractionResponse(ctx context.Context, interactionI
 }
 
 // GetOriginalInteractionResponse fetches the initial response message for an interaction.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#get-original-interaction-response
 func (c *RestClient) GetOriginalInteractionResponse(ctx context.Context, webhookID discord.Snowflake, token string) (*discord.Message, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
@@ -75,6 +77,7 @@ func (c *RestClient) GetOriginalInteractionResponse(ctx context.Context, webhook
 
 // EditOriginalInteractionResponse edits the initial response message for an interaction.
 // When params.Files is non-empty the request is sent as multipart/form-data.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#edit-original-interaction-response
 func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, webhookID discord.Snowflake, token string, params EditMessageParams) (*discord.Message, error) {
 	if err := webhookID.Validate(); err != nil {
 		return nil, err
@@ -111,6 +114,7 @@ func (c *RestClient) EditOriginalInteractionResponse(ctx context.Context, webhoo
 }
 
 // DeleteOriginalInteractionResponse deletes the initial response message for an interaction.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#delete-original-interaction-response
 func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, webhookID discord.Snowflake, token string) error {
 	if err := webhookID.Validate(); err != nil {
 		return err
@@ -127,6 +131,7 @@ func (c *RestClient) DeleteOriginalInteractionResponse(ctx context.Context, webh
 
 // CreateFollowupMessage sends a follow-up message to an interaction (usable up to 15 minutes after the initial response).
 // When params.Files is non-empty the request is sent as multipart/form-data.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#create-followup-message
 func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID discord.Snowflake, token string, params CreateMessageParams) (*discord.Message, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
@@ -163,6 +168,7 @@ func (c *RestClient) CreateFollowupMessage(ctx context.Context, appID discord.Sn
 }
 
 // GetFollowupMessage fetches a follow-up message sent for an interaction.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#get-followup-message
 func (c *RestClient) GetFollowupMessage(ctx context.Context, appID discord.Snowflake, token string, messageID discord.Snowflake) (*discord.Message, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
@@ -185,6 +191,7 @@ func (c *RestClient) GetFollowupMessage(ctx context.Context, appID discord.Snowf
 
 // EditFollowupMessage edits a follow-up message sent for an interaction.
 // When params.Files is non-empty the request is sent as multipart/form-data.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#edit-followup-message
 func (c *RestClient) EditFollowupMessage(ctx context.Context, appID discord.Snowflake, token string, messageID discord.Snowflake, params EditMessageParams) (*discord.Message, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
@@ -225,6 +232,7 @@ func (c *RestClient) EditFollowupMessage(ctx context.Context, appID discord.Snow
 }
 
 // DeleteFollowupMessage deletes a follow-up message sent for an interaction.
+// https://docs.discord.com/developers/interactions/receiving-and-responding#delete-followup-message
 func (c *RestClient) DeleteFollowupMessage(ctx context.Context, appID discord.Snowflake, token string, messageID discord.Snowflake) error {
 	if err := appID.Validate(); err != nil {
 		return err

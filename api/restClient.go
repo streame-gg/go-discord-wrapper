@@ -326,15 +326,16 @@ func WithUserAuthorization(token string) func(req *http.Request) {
 // WithAuditLogReason attaches an audit-log reason to the request.
 // The reason is URL-encoded so non-ASCII characters are transmitted safely.
 // Reasons longer than 512 characters (Discord's limit) are silently truncated.
-func WithAuditLogReason(reason string) func(req *http.Request) {
-	if reason == "" {
+func WithAuditLogReason(reason *string) func(req *http.Request) {
+	if reason == nil || *reason == "" {
 		return func(_ *http.Request) {}
 	}
-	runes := []rune(reason)
-	if len(runes) > 512 {
-		runes = runes[:512]
+	// Discord caps the audit-log reason at 512 characters; truncate before encoding.
+	r := *reason
+	if runes := []rune(r); len(runes) > 512 {
+		r = string(runes[:512])
 	}
-	encoded := url.PathEscape(string(runes))
+	encoded := url.PathEscape(r)
 	return func(req *http.Request) {
 		req.Header.Set("X-Audit-Log-Reason", encoded)
 	}

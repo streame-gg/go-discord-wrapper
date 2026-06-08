@@ -68,6 +68,7 @@ type CreateTestEntitlementParams struct {
 // ── Entitlement endpoints ─────────────────────────────────────────────────────
 
 // ListEntitlements returns entitlements for an application.
+// https://docs.discord.com/developers/resources/entitlement#list-entitlements
 func (c *RestClient) ListEntitlements(ctx context.Context, appID discord.Snowflake, params ListEntitlementsParams) ([]*discord.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
@@ -84,6 +85,7 @@ func (c *RestClient) ListEntitlements(ctx context.Context, appID discord.Snowfla
 	})
 }
 
+// https://docs.discord.com/developers/resources/entitlement#get-entitlement
 func (c *RestClient) GetEntitlement(ctx context.Context, appID, entitlementID discord.Snowflake) (*discord.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
@@ -104,6 +106,7 @@ func (c *RestClient) GetEntitlement(ctx context.Context, appID, entitlementID di
 	})
 }
 
+// https://docs.discord.com/developers/resources/entitlement#create-test-entitlement
 func (c *RestClient) CreateTestEntitlement(ctx context.Context, appID discord.Snowflake, params CreateTestEntitlementParams) (*discord.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
@@ -124,6 +127,7 @@ func (c *RestClient) CreateTestEntitlement(ctx context.Context, appID discord.Sn
 	})
 }
 
+// https://docs.discord.com/developers/resources/entitlement#consume-an-entitlement
 func (c *RestClient) ConsumeEntitlement(ctx context.Context, appID, entitlementID discord.Snowflake) error {
 	if err := appID.Validate(); err != nil {
 		return err
@@ -168,6 +172,7 @@ func (p GetCurrentUserApplicationEntitlementsParams) toQuery() string {
 
 // ListCurrentUserApplicationEntitlements returns entitlements for the current user for the given
 // application. Requires an OAuth2 bearer token.
+// https://docs.discord.com/developers/resources/entitlement#list-entitlements
 func (c *RestClient) ListCurrentUserApplicationEntitlements(ctx context.Context, appID discord.Snowflake, params GetCurrentUserApplicationEntitlementsParams, userToken string) ([]*discord.Entitlement, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
@@ -184,6 +189,7 @@ func (c *RestClient) ListCurrentUserApplicationEntitlements(ctx context.Context,
 	})
 }
 
+// https://docs.discord.com/developers/resources/entitlement#delete-test-entitlement
 func (c *RestClient) DeleteTestEntitlement(ctx context.Context, appID, entitlementID discord.Snowflake) error {
 	if err := appID.Validate(); err != nil {
 		return err

@@ -60,7 +60,7 @@ func (su *apiThreadsSuite) TestP0_10_CreateForumThreadWithFiles() {
 	}
 
 	channelID := discord.Snowflake(123456789012345678)
-	_, err := c.CreateForumThread(context.Background(), channelID, params, nil)
+	_, err := c.CreateForumThread(context.Background(), channelID, params)
 	require.NoError(t, err)
 
 	// Content-Type must be multipart/form-data when Files is non-empty.
@@ -103,7 +103,7 @@ func (su *apiThreadsSuite) TestP0_10_CreateForumThreadWithoutFiles() {
 	}
 
 	channelID := discord.Snowflake(123456789012345678)
-	_, err := c.CreateForumThread(context.Background(), channelID, params, nil)
+	_, err := c.CreateForumThread(context.Background(), channelID, params)
 	require.NoError(t, err)
 
 	assert.Contains(t, gotContentType, "application/json",
@@ -131,14 +131,15 @@ func (su *apiThreadsSuite) TestP0_10_CreateForumThreadWithReason() {
 	c := newTestClient(ts)
 	defer c.Close()
 
+	reason := "automated thread creation"
 	params := CreateForumThreadParams{
-		Name:    "reasoned-thread",
-		Message: CreateMessageParams{Content: "with reason"},
+		Name:           "reasoned-thread",
+		Message:        CreateMessageParams{Content: "with reason"},
+		AuditLogReason: &reason,
 	}
-	opts := &CreateForumThreadOptions{Reason: "automated thread creation"}
 
 	channelID := discord.Snowflake(123456789012345678)
-	_, err := c.CreateForumThread(context.Background(), channelID, params, opts)
+	_, err := c.CreateForumThread(context.Background(), channelID, params)
 	require.NoError(t, err)
 
 	assert.Equal(t, "automated%20thread%20creation", gotReason,

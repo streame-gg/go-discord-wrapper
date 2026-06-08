@@ -21,11 +21,8 @@ type CreateAutoModerationRuleParams struct {
 	Enabled         *bool                                  `json:"enabled,omitempty"`
 	ExemptRoles     []discord.Snowflake                    `json:"exempt_roles,omitempty"`
 	ExemptChannels  []discord.Snowflake                    `json:"exempt_channels,omitempty"`
-}
 
-// https://docs.discord.com/developers/resources/auto-moderation#create-auto-moderation-rule
-type CreateAutoModerationRuleOptions struct {
-	Reason string
+	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/auto-moderation#modify-auto-moderation-rule
@@ -37,11 +34,8 @@ type ModifyAutoModerationRuleParams struct {
 	Enabled         *bool                                  `json:"enabled,omitempty"`
 	ExemptRoles     []discord.Snowflake                    `json:"exempt_roles,omitempty"`
 	ExemptChannels  []discord.Snowflake                    `json:"exempt_channels,omitempty"`
-}
 
-// https://docs.discord.com/developers/resources/auto-moderation#modify-auto-moderation-rule
-type ModifyAutoModerationRuleOptions struct {
-	Reason string
+	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/auto-moderation#delete-auto-moderation-rule
@@ -52,6 +46,7 @@ type DeleteAutoModerationRuleOptions struct {
 // ── Auto moderation endpoints ─────────────────────────────────────────────────
 
 // ListAutoModerationRules returns all auto moderation rules for a guild.
+// https://docs.discord.com/developers/resources/auto-moderation#list-auto-moderation-rules-for-guild
 func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID discord.Snowflake) ([]*discord.AutoModerationRule, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
@@ -68,6 +63,7 @@ func (c *RestClient) ListAutoModerationRules(ctx context.Context, guildID discor
 }
 
 // GetAutoModerationRule returns a single auto moderation rule.
+// https://docs.discord.com/developers/resources/auto-moderation#get-auto-moderation-rule
 func (c *RestClient) GetAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake) (*discord.AutoModerationRule, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
@@ -89,7 +85,8 @@ func (c *RestClient) GetAutoModerationRule(ctx context.Context, guildID, ruleID 
 }
 
 // CreateAutoModerationRule creates a new auto moderation rule in a guild.
-func (c *RestClient) CreateAutoModerationRule(ctx context.Context, guildID discord.Snowflake, params CreateAutoModerationRuleParams, opts *CreateAutoModerationRuleOptions) (*discord.AutoModerationRule, error) {
+// https://docs.discord.com/developers/resources/auto-moderation#create-auto-moderation-rule
+func (c *RestClient) CreateAutoModerationRule(ctx context.Context, guildID discord.Snowflake, params CreateAutoModerationRuleParams) (*discord.AutoModerationRule, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -99,17 +96,7 @@ func (c *RestClient) CreateAutoModerationRule(ctx context.Context, guildID disco
 		return nil, err
 	}
 
-	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/auto-moderation/rules", bytes.NewReader(body), c.WithBotAuthorization())
-		if err != nil {
-			return nil, err
-		}
-		return doRequest[discord.AutoModerationRule](c, req, map[int]bool{
-			http.StatusOK: true,
-		})
-	}
-
-	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/auto-moderation/rules", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPost, "/guilds/"+guildID.String()+"/auto-moderation/rules", bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(params.AuditLogReason))
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +107,8 @@ func (c *RestClient) CreateAutoModerationRule(ctx context.Context, guildID disco
 }
 
 // ModifyAutoModerationRule updates an existing auto moderation rule.
-func (c *RestClient) ModifyAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake, params ModifyAutoModerationRuleParams, opts *ModifyAutoModerationRuleOptions) (*discord.AutoModerationRule, error) {
+// https://docs.discord.com/developers/resources/auto-moderation#modify-auto-moderation-rule
+func (c *RestClient) ModifyAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake, params ModifyAutoModerationRuleParams) (*discord.AutoModerationRule, error) {
 	if err := guildID.Validate(); err != nil {
 		return nil, err
 	}
@@ -136,17 +124,7 @@ func (c *RestClient) ModifyAutoModerationRule(ctx context.Context, guildID, rule
 
 	path := "/guilds/" + guildID.String() + "/auto-moderation/rules/" + ruleID.String()
 
-	if opts == nil {
-		req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization())
-		if err != nil {
-			return nil, err
-		}
-		return doRequest[discord.AutoModerationRule](c, req, map[int]bool{
-			http.StatusOK: true,
-		})
-	}
-
-	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodPatch, path, bytes.NewReader(body), c.WithBotAuthorization(), WithAuditLogReason(params.AuditLogReason))
 	if err != nil {
 		return nil, err
 	}
@@ -157,6 +135,7 @@ func (c *RestClient) ModifyAutoModerationRule(ctx context.Context, guildID, rule
 }
 
 // DeleteAutoModerationRule deletes an auto moderation rule.
+// https://docs.discord.com/developers/resources/auto-moderation#delete-auto-moderation-rule
 func (c *RestClient) DeleteAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake, opts *DeleteAutoModerationRuleOptions) error {
 	if err := guildID.Validate(); err != nil {
 		return err
@@ -176,7 +155,7 @@ func (c *RestClient) DeleteAutoModerationRule(ctx context.Context, guildID, rule
 		return doRequestWithoutResponse(c, req)
 	}
 
-	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(opts.Reason))
+	req, err := c.generateRequest(ctx, http.MethodDelete, path, nil, c.WithBotAuthorization(), WithAuditLogReason(&opts.Reason))
 	if err != nil {
 		return err
 	}
