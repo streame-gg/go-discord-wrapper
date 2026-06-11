@@ -13,19 +13,19 @@ import (
 
 // https://docs.discord.com/developers/resources/stage-instance#create-stage-instance
 type CreateStageInstanceParams struct {
-	ChannelID             discord.Snowflake                  `json:"channel_id"`
-	Topic                 string                             `json:"topic"`
-	PrivacyLevel          *discord.StageInstancePrivacyLevel `json:"privacy_level,omitempty"`
-	SendStartNotification *bool                              `json:"send_start_notification,omitempty"`
-	GuildScheduledEventID *discord.Snowflake                 `json:"guild_scheduled_event_id,omitempty"`
+	ChannelID             discord.Snowflake                                 `json:"channel_id"`
+	Topic                 string                                            `json:"topic"`
+	PrivacyLevel          discord.Option[discord.StageInstancePrivacyLevel] `json:"privacy_level,omitempty"`
+	SendStartNotification discord.Option[bool]                              `json:"send_start_notification,omitempty"`
+	GuildScheduledEventID discord.Option[discord.Snowflake]                 `json:"guild_scheduled_event_id,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/stage-instance#modify-stage-instance
 type ModifyStageInstanceParams struct {
-	Topic        *string                            `json:"topic,omitempty"`
-	PrivacyLevel *discord.StageInstancePrivacyLevel `json:"privacy_level,omitempty"`
+	Topic        discord.Option[string]                            `json:"topic,omitempty"`
+	PrivacyLevel discord.Option[discord.StageInstancePrivacyLevel] `json:"privacy_level,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }

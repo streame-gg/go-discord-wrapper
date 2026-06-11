@@ -22,25 +22,24 @@ type ReplyOptions struct {
 }
 
 func (o ReplyOptions) toResponseData() *responses.InteractionResponseDataDefault {
-	data := &responses.InteractionResponseDataDefault{
-		Flags: o.Flags,
+	data := &responses.InteractionResponseDataDefault{}
+	if o.Flags != 0 {
+		data.Flags = discord.Some(o.Flags)
 	}
 	if o.Content != "" {
-		data.Content = o.Content
+		data.Content = discord.Some(o.Content)
 	}
 	if len(o.Embeds) > 0 {
-		embeds := o.Embeds
-		data.Embeds = &embeds
+		data.Embeds = discord.Some(o.Embeds)
 	}
 	if len(o.Components) > 0 {
-		comps := o.Components
-		data.Components = &comps
+		data.Components = discord.Some(o.Components)
 	}
 	if o.AllowedMentions != nil {
-		data.AllowedMentions = o.AllowedMentions
+		data.AllowedMentions = discord.Some(*o.AllowedMentions)
 	}
 	if o.Poll != nil {
-		data.Poll = o.Poll
+		data.Poll = discord.Some(*o.Poll)
 	}
 
 	return data
@@ -67,18 +66,16 @@ type UpdateMessageOptions struct {
 func (o UpdateMessageOptions) toResponseData() *responses.InteractionResponseDataDefault {
 	data := &responses.InteractionResponseDataDefault{}
 	if o.Content != "" {
-		data.Content = o.Content
+		data.Content = discord.Some(o.Content)
 	}
 	if len(o.Embeds) > 0 {
-		embeds := o.Embeds
-		data.Embeds = &embeds
+		data.Embeds = discord.Some(o.Embeds)
 	}
 	if len(o.Components) > 0 {
-		comps := o.Components
-		data.Components = &comps
+		data.Components = discord.Some(o.Components)
 	}
 	if o.AllowedMentions != nil {
-		data.AllowedMentions = o.AllowedMentions
+		data.AllowedMentions = discord.Some(*o.AllowedMentions)
 	}
 
 	return data
@@ -101,14 +98,20 @@ type FollowUpOptions struct {
 
 func (o FollowUpOptions) toCreateParams() api.CreateMessageParams {
 	params := api.CreateMessageParams{
-		Content:         o.Content,
-		Embeds:          o.Embeds,
-		Components:      o.Components,
-		Files:           o.Files,
-		AllowedMentions: o.AllowedMentions,
+		Components: o.Components,
+		Files:      o.Files,
+	}
+	if o.Content != "" {
+		params.Content = discord.Some(o.Content)
+	}
+	if len(o.Embeds) > 0 {
+		params.Embeds = discord.Some(o.Embeds)
+	}
+	if o.AllowedMentions != nil {
+		params.AllowedMentions = discord.Some(*o.AllowedMentions)
 	}
 	if o.Poll != nil {
-		params.Poll = o.Poll
+		params.Poll = discord.Some(*o.Poll)
 	}
 	var flags discord.MessageFlag
 	if o.Ephemeral {
@@ -120,7 +123,9 @@ func (o FollowUpOptions) toCreateParams() api.CreateMessageParams {
 	if o.SuppressNotifications {
 		flags |= discord.MessageFlagSuppressNotification
 	}
-	params.Flags = flags
+	if flags != 0 {
+		params.Flags = discord.Some(flags)
+	}
 	return params
 }
 

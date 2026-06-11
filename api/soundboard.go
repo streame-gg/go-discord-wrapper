@@ -13,21 +13,21 @@ import (
 
 // https://docs.discord.com/developers/resources/soundboard#create-guild-soundboard-sound
 type CreateGuildSoundboardSoundParams struct {
-	Name      string             `json:"name"`
-	Sound     string             `json:"sound"` // base64 data URI
-	Volume    *float64           `json:"volume,omitempty"`
-	EmojiID   *discord.Snowflake `json:"emoji_id,omitempty"`
-	EmojiName *string            `json:"emoji_name,omitempty"`
+	Name      string                            `json:"name"`
+	Sound     string                            `json:"sound"` // base64 data URI
+	Volume    discord.Option[float64]           `json:"volume,omitempty"`
+	EmojiID   discord.Option[discord.Snowflake] `json:"emoji_id,omitempty"`
+	EmojiName discord.Option[string]            `json:"emoji_name,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/soundboard#modify-guild-soundboard-sound
 type ModifyGuildSoundboardSoundParams struct {
-	Name      *string            `json:"name,omitempty"`
-	Volume    *float64           `json:"volume,omitempty"`
-	EmojiID   *discord.Snowflake `json:"emoji_id,omitempty"`
-	EmojiName *string            `json:"emoji_name,omitempty"`
+	Name      discord.Option[string]            `json:"name,omitempty"`
+	Volume    discord.Option[float64]           `json:"volume,omitempty"`
+	EmojiID   discord.Option[discord.Snowflake] `json:"emoji_id,omitempty"`
+	EmojiName discord.Option[string]            `json:"emoji_name,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
@@ -39,8 +39,8 @@ type DeleteGuildSoundboardSoundOptions struct {
 
 // https://docs.discord.com/developers/resources/soundboard#send-soundboard-sound
 type SendSoundboardSoundParams struct {
-	SoundID       discord.Snowflake  `json:"sound_id"`
-	SourceGuildID *discord.Snowflake `json:"source_guild_id,omitempty"`
+	SoundID       discord.Snowflake                 `json:"sound_id"`
+	SourceGuildID discord.Option[discord.Snowflake] `json:"source_guild_id,omitempty"`
 }
 
 // ── Soundboard endpoints ──────────────────────────────────────────────────────

@@ -12,19 +12,19 @@ import (
 // ModifyCurrentApplicationParams holds the fields that can be updated on the current application.
 // https://docs.discord.com/developers/resources/application#edit-current-application
 type ModifyCurrentApplicationParams struct {
-	CoverImage                     *string                                                                                `json:"cover_image"`
-	CustomInstallURL               string                                                                                 `json:"custom_install_url,omitempty"`
-	Description                    string                                                                                 `json:"description,omitempty"`
-	EventWebhooksURL               string                                                                                 `json:"event_webhooks_url,omitempty"`
-	EventWebhooksStatus            discord.ApplicationEventWebhookStatus                                                  `json:"event_webhooks_status,omitempty"`
-	EventWebhooksTypes             []string                                                                               `json:"event_webhooks_types,omitempty"`
-	Flags                          discord.ApplicationFlags                                                               `json:"flags,omitempty"`
-	RoleConnectionsVerificationURL string                                                                                 `json:"role_connections_verification_url,omitempty"`
-	Icon                           *string                                                                                `json:"icon"`
-	InstallParams                  *discord.ApplicationInstallParams                                                      `json:"install_params,omitempty"`
-	IntegrationTypesConfig         map[discord.ApplicationIntegrationType]discord.ApplicationIntegrationTypeConfiguration `json:"integration_types_config,omitempty"`
-	InteractionsEndpointURL        string                                                                                 `json:"interactions_endpoint_url,omitempty"`
-	Tags                           []string                                                                               `json:"tags,omitempty"`
+	CoverImage                     discord.Option[string]                                                                                 `json:"cover_image,omitempty"`
+	CustomInstallURL               discord.Option[string]                                                                                 `json:"custom_install_url,omitempty"`
+	Description                    discord.Option[string]                                                                                 `json:"description,omitempty"`
+	EventWebhooksURL               discord.Option[string]                                                                                 `json:"event_webhooks_url,omitempty"`
+	EventWebhooksStatus            discord.Option[discord.ApplicationEventWebhookStatus]                                                  `json:"event_webhooks_status,omitempty"`
+	EventWebhooksTypes             discord.Option[[]string]                                                                               `json:"event_webhooks_types,omitempty"`
+	Flags                          discord.Option[discord.ApplicationFlags]                                                               `json:"flags,omitempty"`
+	RoleConnectionsVerificationURL discord.Option[string]                                                                                 `json:"role_connections_verification_url,omitempty"`
+	Icon                           discord.Option[string]                                                                                 `json:"icon,omitempty"`
+	InstallParams                  discord.Option[discord.ApplicationInstallParams]                                                       `json:"install_params,omitempty"`
+	IntegrationTypesConfig         discord.Option[map[discord.ApplicationIntegrationType]discord.ApplicationIntegrationTypeConfiguration] `json:"integration_types_config,omitempty"`
+	InteractionsEndpointURL        discord.Option[string]                                                                                 `json:"interactions_endpoint_url,omitempty"`
+	Tags                           discord.Option[[]string]                                                                               `json:"tags,omitempty"`
 }
 
 // GetCurrentApplication returns the application object for the bot's application.

@@ -16,9 +16,9 @@ import (
 
 // https://docs.discord.com/developers/resources/sticker#modify-guild-sticker
 type ModifyGuildStickerParams struct {
-	Name        *string `json:"name,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Tags        *string `json:"tags,omitempty"`
+	Name        discord.Option[string] `json:"name,omitempty"`
+	Description discord.Option[string] `json:"description,omitempty"`
+	Tags        discord.Option[string] `json:"tags,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }

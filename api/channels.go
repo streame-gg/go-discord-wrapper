@@ -30,33 +30,33 @@ func (c *RestClient) GetChannel(ctx context.Context, channelID discord.Snowflake
 
 // https://docs.discord.com/developers/resources/channel#modify-channel
 type ModifyChannelParams struct {
-	Name                          *string                              `json:"name,omitempty"`
-	Type                          *discord.ChannelType                 `json:"type,omitempty"`
-	Position                      *int                                 `json:"position,omitempty"`
-	Topic                         *string                              `json:"topic,omitempty"`
-	NSFW                          *bool                                `json:"nsfw,omitempty"`
-	RateLimitPerUser              *int                                 `json:"rate_limit_per_user,omitempty"`
-	Bitrate                       *int                                 `json:"bitrate,omitempty"`
-	UserLimit                     *int                                 `json:"user_limit,omitempty"`
-	PermissionOverwrites          []discord.ChannelPermissionOverwrite `json:"permission_overwrites,omitempty"`
-	ParentID                      *discord.Snowflake                   `json:"parent_id,omitempty"`
-	RTCRegion                     *string                              `json:"rtc_region,omitempty"`
-	VideoQualityMode              *discord.VideoQualityMode            `json:"video_quality_mode,omitempty"`
-	DefaultAutoArchiveDuration    *int                                 `json:"default_auto_archive_duration,omitempty"`
-	Flags                         *discord.ChannelFlags                `json:"flags,omitempty"`
-	AvailableTags                 []discord.ChannelTag                 `json:"available_tags,omitempty"`
-	DefaultReactionEmoji          *discord.DefaultReactionEmoji        `json:"default_reaction_emoji,omitempty"`
-	DefaultThreadRateLimitPerUser *int                                 `json:"default_thread_rate_limit_per_user,omitempty"`
-	DefaultSortOrder              *discord.DefaultSortOrder            `json:"default_sort_order,omitempty"`
-	DefaultForumLayout            *discord.ChannelForumLayoutType      `json:"default_forum_layout,omitempty"`
+	Name                          discord.Option[string]                               `json:"name,omitempty"`
+	Type                          discord.Option[discord.ChannelType]                  `json:"type,omitempty"`
+	Position                      discord.Option[int]                                  `json:"position,omitempty"`
+	Topic                         discord.Option[string]                               `json:"topic,omitempty"`
+	NSFW                          discord.Option[bool]                                 `json:"nsfw,omitempty"`
+	RateLimitPerUser              discord.Option[int]                                  `json:"rate_limit_per_user,omitempty"`
+	Bitrate                       discord.Option[int]                                  `json:"bitrate,omitempty"`
+	UserLimit                     discord.Option[int]                                  `json:"user_limit,omitempty"`
+	PermissionOverwrites          discord.Option[[]discord.ChannelPermissionOverwrite] `json:"permission_overwrites,omitempty"`
+	ParentID                      discord.Option[discord.Snowflake]                    `json:"parent_id,omitempty"`
+	RTCRegion                     discord.Option[string]                               `json:"rtc_region,omitempty"`
+	VideoQualityMode              discord.Option[discord.VideoQualityMode]             `json:"video_quality_mode,omitempty"`
+	DefaultAutoArchiveDuration    discord.Option[int]                                  `json:"default_auto_archive_duration,omitempty"`
+	Flags                         discord.Option[discord.ChannelFlags]                 `json:"flags,omitempty"`
+	AvailableTags                 discord.Option[[]discord.ChannelTag]                 `json:"available_tags,omitempty"`
+	DefaultReactionEmoji          discord.Option[discord.DefaultReactionEmoji]         `json:"default_reaction_emoji,omitempty"`
+	DefaultThreadRateLimitPerUser discord.Option[int]                                  `json:"default_thread_rate_limit_per_user,omitempty"`
+	DefaultSortOrder              discord.Option[discord.DefaultSortOrder]             `json:"default_sort_order,omitempty"`
+	DefaultForumLayout            discord.Option[discord.ChannelForumLayoutType]       `json:"default_forum_layout,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/channel#edit-channel-permissions
 type EditChannelPermissionsParams struct {
-	Allow *string                         `json:"allow,omitempty"`
-	Deny  *string                         `json:"deny,omitempty"`
+	Allow discord.Option[string]          `json:"allow,omitempty"`
+	Deny  discord.Option[string]          `json:"deny,omitempty"`
 	Type  discord.PermissionOverwriteType `json:"type"`
 
 	AuditLogReason *string `json:"-"`
@@ -64,13 +64,13 @@ type EditChannelPermissionsParams struct {
 
 // https://docs.discord.com/developers/resources/channel#create-channel-invite
 type CreateChannelInviteParams struct {
-	MaxAge              *int               `json:"max_age,omitempty"`
-	MaxUses             *int               `json:"max_uses,omitempty"`
-	Temporary           *bool              `json:"temporary,omitempty"`
-	Unique              *bool              `json:"unique,omitempty"`
-	TargetType          *int               `json:"target_type,omitempty"`
-	TargetUserID        *discord.Snowflake `json:"target_user_id,omitempty"`
-	TargetApplicationID *discord.Snowflake `json:"target_application_id,omitempty"`
+	MaxAge              discord.Option[int]               `json:"max_age,omitempty"`
+	MaxUses             discord.Option[int]               `json:"max_uses,omitempty"`
+	Temporary           discord.Option[bool]              `json:"temporary,omitempty"`
+	Unique              discord.Option[bool]              `json:"unique,omitempty"`
+	TargetType          discord.Option[int]               `json:"target_type,omitempty"`
+	TargetUserID        discord.Option[discord.Snowflake] `json:"target_user_id,omitempty"`
+	TargetApplicationID discord.Option[discord.Snowflake] `json:"target_application_id,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }

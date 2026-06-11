@@ -68,7 +68,7 @@ func (d *Client) DeferReply(ctx context.Context, i *interactions.Interaction, ep
 		Type: discord.InteractionCallbackTypeDeferredChannelMessageWithSource,
 	}
 	if ephemeral {
-		resp.Data = &responses.InteractionResponseDataDefault{Flags: discord.MessageFlagEphemeral}
+		resp.Data = &responses.InteractionResponseDataDefault{Flags: discord.Some(discord.MessageFlagEphemeral)}
 	}
 	_, err := d.RestClient.CreateInteractionResponse(ctx, i.ID, i.Token, resp, false)
 	return err
@@ -434,11 +434,11 @@ func (d *Client) EditChannelPermissions(ctx context.Context, channelID, overwrit
 				ID:   overwriteID,
 				Type: params.Type,
 			}
-			if params.Allow != nil {
-				ow.Allow = *params.Allow
+			if v, ok := params.Allow.Val(); ok {
+				ow.Allow = v
 			}
-			if params.Deny != nil {
-				ow.Deny = *params.Deny
+			if v, ok := params.Deny.Val(); ok {
+				ow.Deny = v
 			}
 			overwrites := make([]discord.ChannelPermissionOverwrite, 0, len(updated.PermissionOverwrites)+1)
 			found := false
@@ -553,11 +553,11 @@ func (d *Client) ModifyGuildChannelPositions(ctx context.Context, guildID discor
 		for _, entry := range entries {
 			if ch, ok := d.Cache.Channels().Get(entry.ID); ok {
 				updated := *ch
-				if entry.Position != nil {
-					updated.Position = entry.Position
+				if v, ok := entry.Position.Val(); ok {
+					updated.Position = &v
 				}
-				if entry.ParentID != nil {
-					updated.ParentID = entry.ParentID
+				if v, ok := entry.ParentID.Val(); ok {
+					updated.ParentID = &v
 				}
 				d.Cache.Channels().Set(&updated)
 			}

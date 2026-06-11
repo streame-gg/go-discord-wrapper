@@ -46,9 +46,9 @@ type Poll struct {
 
 // https://docs.discord.com/developers/resources/poll#poll-create-request-object
 type PollRequest struct {
-	Question         *PollQuestion  `json:"question"`
-	Answers          []PollAnswer   `json:"answers"`
-	Duration         *int           `json:"duration,omitempty"`
-	AllowMultiselect bool           `json:"allow_multiselect,omitempty"`
-	LayoutType       PollLayoutType `json:"layout_type,omitempty"`
+	Question         *PollQuestion          `json:"question"`
+	Answers          []PollAnswer           `json:"answers"`
+	Duration         Option[int]            `json:"duration,omitempty"`
+	AllowMultiselect Option[bool]           `json:"allow_multiselect,omitempty"`
+	LayoutType       Option[PollLayoutType] `json:"layout_type,omitempty"`
 }

@@ -50,13 +50,13 @@ func (p SearchGuildMembersParams) toQuery() string {
 
 // https://docs.discord.com/developers/resources/guild#modify-guild-member
 type ModifyGuildMemberParams struct {
-	Nick                       *string              `json:"nick,omitempty"`
-	Roles                      *[]discord.Snowflake `json:"roles,omitempty"`
-	Mute                       *bool                `json:"mute,omitempty"`
-	Deaf                       *bool                `json:"deaf,omitempty"`
-	ChannelID                  *discord.Snowflake   `json:"channel_id,omitempty"`
-	CommunicationDisabledUntil *string              `json:"communication_disabled_until,omitempty"`
-	Flags                      *int                 `json:"flags,omitempty"`
+	Nick                       discord.Option[string]              `json:"nick,omitempty"`
+	Roles                      discord.Option[[]discord.Snowflake] `json:"roles,omitempty"`
+	Mute                       discord.Option[bool]                `json:"mute,omitempty"`
+	Deaf                       discord.Option[bool]                `json:"deaf,omitempty"`
+	ChannelID                  discord.Option[discord.Snowflake]   `json:"channel_id,omitempty"`
+	CommunicationDisabledUntil discord.Option[string]              `json:"communication_disabled_until,omitempty"`
+	Flags                      discord.Option[int]                 `json:"flags,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
@@ -78,7 +78,7 @@ type RemoveGuildMemberRoleOptions struct {
 
 // https://docs.discord.com/developers/resources/guild#modify-current-member
 type ModifyCurrentMemberParams struct {
-	Nick *string `json:"nick,omitempty"`
+	Nick discord.Option[string] `json:"nick,omitempty"`
 }
 
 // ── Guild member endpoints ────────────────────────────────────────────────────

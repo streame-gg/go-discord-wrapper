@@ -14,14 +14,14 @@ type AnyInteractionResponseData interface {
 
 // https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-response-object-messages
 type InteractionResponseDataDefault struct {
-	TTS             bool                     `json:"tts,omitempty"`
-	Content         string                   `json:"content,omitempty"`
-	Embeds          *[]discord.Embed         `json:"embeds,omitempty"`
-	AllowedMentions *discord.AllowedMentions `json:"allowed_mentions,omitempty"`
-	Flags           discord.MessageFlag      `json:"flags,omitempty"`
-	Components      *[]discord.AnyComponent  `json:"components,omitempty"`
-	Attachments     *[]discord.Attachment    `json:"attachments,omitempty"`
-	Poll            *discord.PollRequest     `json:"poll,omitempty"`
+	TTS             discord.Option[bool]                    `json:"tts,omitempty"`
+	Content         discord.Option[string]                  `json:"content,omitempty"`
+	Embeds          discord.Option[[]discord.Embed]         `json:"embeds,omitempty"`
+	AllowedMentions discord.Option[discord.AllowedMentions] `json:"allowed_mentions,omitempty"`
+	Flags           discord.Option[discord.MessageFlag]     `json:"flags,omitempty"`
+	Components      discord.Option[[]discord.AnyComponent]  `json:"components,omitempty"`
+	Attachments     discord.Option[[]discord.Attachment]    `json:"attachments,omitempty"`
+	Poll            discord.Option[discord.PollRequest]     `json:"poll,omitempty"`
 
 	Files []discord.MessageFile `json:"-"`
 }

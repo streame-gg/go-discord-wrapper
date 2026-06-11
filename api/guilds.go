@@ -17,50 +17,50 @@ import (
 
 // https://docs.discord.com/developers/resources/guild#modify-guild
 type ModifyGuildParams struct {
-	Name                        *string                                  `json:"name,omitempty"`
-	VerificationLevel           *discord.GuildVerificationLevel          `json:"verification_level,omitempty"`
-	DefaultMessageNotifications *discord.DefaultMessageNotificationLevel `json:"default_message_notifications,omitempty"`
-	ExplicitContentFilter       *discord.GuildExplicitContentFilterLevel `json:"explicit_content_filter,omitempty"`
-	AFKChannelID                *discord.Snowflake                       `json:"afk_channel_id,omitempty"`
-	AFKTimeout                  *int                                     `json:"afk_timeout,omitempty"`
-	Icon                        *string                                  `json:"icon,omitempty"`
-	OwnerID                     *discord.Snowflake                       `json:"owner_id,omitempty"`
-	Splash                      *string                                  `json:"splash,omitempty"`
-	DiscoverySplash             *string                                  `json:"discovery_splash,omitempty"`
-	Banner                      *string                                  `json:"banner,omitempty"`
-	SystemChannelID             *discord.Snowflake                       `json:"system_channel_id,omitempty"`
-	SystemChannelFlags          *discord.GuildSystemChannelFlags         `json:"system_channel_flags,omitempty"`
-	RulesChannelID              *discord.Snowflake                       `json:"rules_channel_id,omitempty"`
-	PublicUpdatesChannelID      *discord.Snowflake                       `json:"public_updates_channel_id,omitempty"`
-	PreferredLocale             *discord.Locale                          `json:"preferred_locale,omitempty"`
-	Features                    []discord.GuildFeatures                  `json:"features,omitempty"`
-	Description                 *string                                  `json:"description,omitempty"`
-	PremiumProgressBarEnabled   *bool                                    `json:"premium_progress_bar_enabled,omitempty"`
-	SafetyAlertsChannelID       *discord.Snowflake                       `json:"safety_alerts_channel_id,omitempty"`
+	Name                        discord.Option[string]                                  `json:"name,omitempty"`
+	VerificationLevel           discord.Option[discord.GuildVerificationLevel]          `json:"verification_level,omitempty"`
+	DefaultMessageNotifications discord.Option[discord.DefaultMessageNotificationLevel] `json:"default_message_notifications,omitempty"`
+	ExplicitContentFilter       discord.Option[discord.GuildExplicitContentFilterLevel] `json:"explicit_content_filter,omitempty"`
+	AFKChannelID                discord.Option[discord.Snowflake]                       `json:"afk_channel_id,omitempty"`
+	AFKTimeout                  discord.Option[int]                                     `json:"afk_timeout,omitempty"`
+	Icon                        discord.Option[string]                                  `json:"icon,omitempty"`
+	OwnerID                     discord.Option[discord.Snowflake]                       `json:"owner_id,omitempty"`
+	Splash                      discord.Option[string]                                  `json:"splash,omitempty"`
+	DiscoverySplash             discord.Option[string]                                  `json:"discovery_splash,omitempty"`
+	Banner                      discord.Option[string]                                  `json:"banner,omitempty"`
+	SystemChannelID             discord.Option[discord.Snowflake]                       `json:"system_channel_id,omitempty"`
+	SystemChannelFlags          discord.Option[discord.GuildSystemChannelFlags]         `json:"system_channel_flags,omitempty"`
+	RulesChannelID              discord.Option[discord.Snowflake]                       `json:"rules_channel_id,omitempty"`
+	PublicUpdatesChannelID      discord.Option[discord.Snowflake]                       `json:"public_updates_channel_id,omitempty"`
+	PreferredLocale             discord.Option[discord.Locale]                          `json:"preferred_locale,omitempty"`
+	Features                    discord.Option[[]discord.GuildFeatures]                 `json:"features,omitempty"`
+	Description                 discord.Option[string]                                  `json:"description,omitempty"`
+	PremiumProgressBarEnabled   discord.Option[bool]                                    `json:"premium_progress_bar_enabled,omitempty"`
+	SafetyAlertsChannelID       discord.Option[discord.Snowflake]                       `json:"safety_alerts_channel_id,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/guild#create-guild-channel
 type CreateGuildChannelParams struct {
-	Name                          string                               `json:"name"`
-	Type                          *discord.ChannelType                 `json:"type,omitempty"`
-	Topic                         *string                              `json:"topic,omitempty"`
-	Bitrate                       *int                                 `json:"bitrate,omitempty"`
-	UserLimit                     *int                                 `json:"user_limit,omitempty"`
-	RateLimitPerUser              *int                                 `json:"rate_limit_per_user,omitempty"`
-	Position                      *int                                 `json:"position,omitempty"`
-	PermissionOverwrites          []discord.ChannelPermissionOverwrite `json:"permission_overwrites,omitempty"`
-	ParentID                      *discord.Snowflake                   `json:"parent_id,omitempty"`
-	NSFW                          *bool                                `json:"nsfw,omitempty"`
-	RTCRegion                     *string                              `json:"rtc_region,omitempty"`
-	VideoQualityMode              *discord.VideoQualityMode            `json:"video_quality_mode,omitempty"`
-	DefaultAutoArchiveDuration    *int                                 `json:"default_auto_archive_duration,omitempty"`
-	DefaultReactionEmoji          *discord.DefaultReactionEmoji        `json:"default_reaction_emoji,omitempty"`
-	AvailableTags                 []discord.ChannelTag                 `json:"available_tags,omitempty"`
-	DefaultSortOrder              *discord.DefaultSortOrder            `json:"default_sort_order,omitempty"`
-	DefaultForumLayout            *discord.ChannelForumLayoutType      `json:"default_forum_layout,omitempty"`
-	DefaultThreadRateLimitPerUser *int                                 `json:"default_thread_rate_limit_per_user,omitempty"`
+	Name                          string                                               `json:"name"`
+	Type                          discord.Option[discord.ChannelType]                  `json:"type,omitempty"`
+	Topic                         discord.Option[string]                               `json:"topic,omitempty"`
+	Bitrate                       discord.Option[int]                                  `json:"bitrate,omitempty"`
+	UserLimit                     discord.Option[int]                                  `json:"user_limit,omitempty"`
+	RateLimitPerUser              discord.Option[int]                                  `json:"rate_limit_per_user,omitempty"`
+	Position                      discord.Option[int]                                  `json:"position,omitempty"`
+	PermissionOverwrites          discord.Option[[]discord.ChannelPermissionOverwrite] `json:"permission_overwrites,omitempty"`
+	ParentID                      discord.Option[discord.Snowflake]                    `json:"parent_id,omitempty"`
+	NSFW                          discord.Option[bool]                                 `json:"nsfw,omitempty"`
+	RTCRegion                     discord.Option[string]                               `json:"rtc_region,omitempty"`
+	VideoQualityMode              discord.Option[discord.VideoQualityMode]             `json:"video_quality_mode,omitempty"`
+	DefaultAutoArchiveDuration    discord.Option[int]                                  `json:"default_auto_archive_duration,omitempty"`
+	DefaultReactionEmoji          discord.Option[discord.DefaultReactionEmoji]         `json:"default_reaction_emoji,omitempty"`
+	AvailableTags                 discord.Option[[]discord.ChannelTag]                 `json:"available_tags,omitempty"`
+	DefaultSortOrder              discord.Option[discord.DefaultSortOrder]             `json:"default_sort_order,omitempty"`
+	DefaultForumLayout            discord.Option[discord.ChannelForumLayoutType]       `json:"default_forum_layout,omitempty"`
+	DefaultThreadRateLimitPerUser discord.Option[int]                                  `json:"default_thread_rate_limit_per_user,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
@@ -72,42 +72,42 @@ type ModifyGuildChannelPositionsOptions struct {
 
 // https://docs.discord.com/developers/resources/guild#modify-guild-channel-positions
 type ModifyGuildChannelPositionsEntry struct {
-	ID              discord.Snowflake  `json:"id"`
-	Position        *int               `json:"position,omitempty"`
-	LockPermissions *bool              `json:"lock_permissions,omitempty"`
-	ParentID        *discord.Snowflake `json:"parent_id,omitempty"`
+	ID              discord.Snowflake                 `json:"id"`
+	Position        discord.Option[int]               `json:"position,omitempty"`
+	LockPermissions discord.Option[bool]              `json:"lock_permissions,omitempty"`
+	ParentID        discord.Option[discord.Snowflake] `json:"parent_id,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/guild#create-guild-role
 type CreateGuildRoleParams struct {
-	Name         *string             `json:"name,omitempty"`
-	Permissions  *discord.Permission `json:"permissions,omitempty"`
-	Color        *int                `json:"color,omitempty"`
-	Hoist        *bool               `json:"hoist,omitempty"`
-	Icon         *string             `json:"icon,omitempty"`
-	UnicodeEmoji *string             `json:"unicode_emoji,omitempty"`
-	Mentionable  *bool               `json:"mentionable,omitempty"`
+	Name         discord.Option[string]             `json:"name,omitempty"`
+	Permissions  discord.Option[discord.Permission] `json:"permissions,omitempty"`
+	Color        discord.Option[int]                `json:"color,omitempty"`
+	Hoist        discord.Option[bool]               `json:"hoist,omitempty"`
+	Icon         discord.Option[string]             `json:"icon,omitempty"`
+	UnicodeEmoji discord.Option[string]             `json:"unicode_emoji,omitempty"`
+	Mentionable  discord.Option[bool]               `json:"mentionable,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/guild#modify-guild-role
 type ModifyGuildRoleParams struct {
-	Name         *string             `json:"name,omitempty"`
-	Permissions  *discord.Permission `json:"permissions,omitempty"`
-	Color        *int                `json:"color,omitempty"`
-	Hoist        *bool               `json:"hoist,omitempty"`
-	Icon         *string             `json:"icon,omitempty"`
-	UnicodeEmoji *string             `json:"unicode_emoji,omitempty"`
-	Mentionable  *bool               `json:"mentionable,omitempty"`
+	Name         discord.Option[string]             `json:"name,omitempty"`
+	Permissions  discord.Option[discord.Permission] `json:"permissions,omitempty"`
+	Color        discord.Option[int]                `json:"color,omitempty"`
+	Hoist        discord.Option[bool]               `json:"hoist,omitempty"`
+	Icon         discord.Option[string]             `json:"icon,omitempty"`
+	UnicodeEmoji discord.Option[string]             `json:"unicode_emoji,omitempty"`
+	Mentionable  discord.Option[bool]               `json:"mentionable,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/guild#modify-guild-role-positions
 type ModifyGuildRolePositionsEntry struct {
-	ID       discord.Snowflake `json:"id"`
-	Position *int              `json:"position,omitempty"`
+	ID       discord.Snowflake   `json:"id"`
+	Position discord.Option[int] `json:"position,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/guild#modify-guild-role-positions
@@ -146,7 +146,7 @@ func (p GetGuildBansParams) toQuery() string {
 
 // https://docs.discord.com/developers/resources/guild#create-guild-ban
 type CreateGuildBanParams struct {
-	DeleteMessageSeconds *int `json:"delete_message_seconds,omitempty"`
+	DeleteMessageSeconds discord.Option[int] `json:"delete_message_seconds,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
@@ -182,9 +182,9 @@ func (p GetGuildPruneCountParams) toQuery() string {
 
 // https://docs.discord.com/developers/resources/guild#begin-guild-prune
 type BeginGuildPruneParams struct {
-	Days              *int                `json:"days,omitempty"`
-	ComputePruneCount *bool               `json:"compute_prune_count,omitempty"`
-	IncludeRoles      []discord.Snowflake `json:"include_roles,omitempty"`
+	Days              discord.Option[int]                 `json:"days,omitempty"`
+	ComputePruneCount discord.Option[bool]                `json:"compute_prune_count,omitempty"`
+	IncludeRoles      discord.Option[[]discord.Snowflake] `json:"include_roles,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
@@ -223,15 +223,15 @@ func (p GetGuildAuditLogParams) toQuery() string {
 
 // https://docs.discord.com/developers/resources/guild#modify-guild-widget
 type ModifyGuildWidgetParams struct {
-	Enabled   *bool              `json:"enabled,omitempty"`
-	ChannelID *discord.Snowflake `json:"channel_id,omitempty"`
+	Enabled   discord.Option[bool]              `json:"enabled,omitempty"`
+	ChannelID discord.Option[discord.Snowflake] `json:"channel_id,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/guild#modify-guild-welcome-screen
 type ModifyGuildWelcomeScreenParams struct {
-	Enabled         *bool                               `json:"enabled,omitempty"`
-	WelcomeChannels []discord.GuildWelcomeScreenChannel `json:"welcome_channels,omitempty"`
-	Description     *string                             `json:"description,omitempty"`
+	Enabled         discord.Option[bool]                                `json:"enabled,omitempty"`
+	WelcomeChannels discord.Option[[]discord.GuildWelcomeScreenChannel] `json:"welcome_channels,omitempty"`
+	Description     discord.Option[string]                              `json:"description,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
@@ -921,34 +921,34 @@ func (c *RestClient) ModifyGuildOnboarding(ctx context.Context, guildID discord.
 // CreateGuildParams holds params for creating a new guild.
 // https://docs.discord.com/developers/resources/guild#create-guild
 type CreateGuildParams struct {
-	Name                        string             `json:"name"`
-	Icon                        *string            `json:"icon,omitempty"`
-	VerificationLevel           *int               `json:"verification_level,omitempty"`
-	DefaultMessageNotifications *int               `json:"default_message_notifications,omitempty"`
-	ExplicitContentFilter       *int               `json:"explicit_content_filter,omitempty"`
-	Roles                       []discord.Role     `json:"roles,omitempty"`
-	Channels                    []discord.Channel  `json:"channels,omitempty"`
-	AFKChannelID                *discord.Snowflake `json:"afk_channel_id,omitempty"`
-	AFKTimeout                  *int               `json:"afk_timeout,omitempty"`
-	SystemChannelID             *discord.Snowflake `json:"system_channel_id,omitempty"`
-	SystemChannelFlags          *int               `json:"system_channel_flags,omitempty"`
+	Name                        string                            `json:"name"`
+	Icon                        discord.Option[string]            `json:"icon,omitempty"`
+	VerificationLevel           discord.Option[int]               `json:"verification_level,omitempty"`
+	DefaultMessageNotifications discord.Option[int]               `json:"default_message_notifications,omitempty"`
+	ExplicitContentFilter       discord.Option[int]               `json:"explicit_content_filter,omitempty"`
+	Roles                       discord.Option[[]discord.Role]    `json:"roles,omitempty"`
+	Channels                    discord.Option[[]discord.Channel] `json:"channels,omitempty"`
+	AFKChannelID                discord.Option[discord.Snowflake] `json:"afk_channel_id,omitempty"`
+	AFKTimeout                  discord.Option[int]               `json:"afk_timeout,omitempty"`
+	SystemChannelID             discord.Option[discord.Snowflake] `json:"system_channel_id,omitempty"`
+	SystemChannelFlags          discord.Option[int]               `json:"system_channel_flags,omitempty"`
 }
 
 // AddGuildMemberParams holds params for adding a member to a guild via OAuth2.
 // https://docs.discord.com/developers/resources/guild#add-guild-member
 type AddGuildMemberParams struct {
-	AccessToken string              `json:"access_token"`
-	Nick        *string             `json:"nick,omitempty"`
-	Roles       []discord.Snowflake `json:"roles,omitempty"`
-	Mute        *bool               `json:"mute,omitempty"`
-	Deaf        *bool               `json:"deaf,omitempty"`
+	AccessToken string                              `json:"access_token"`
+	Nick        discord.Option[string]              `json:"nick,omitempty"`
+	Roles       discord.Option[[]discord.Snowflake] `json:"roles,omitempty"`
+	Mute        discord.Option[bool]                `json:"mute,omitempty"`
+	Deaf        discord.Option[bool]                `json:"deaf,omitempty"`
 }
 
 // BulkBanParams holds params for bulk banning guild members.
 // https://docs.discord.com/developers/resources/guild#bulk-guild-ban
 type BulkBanParams struct {
 	UserIDs              []discord.Snowflake `json:"user_ids"`
-	DeleteMessageSeconds *int                `json:"delete_message_seconds,omitempty"`
+	DeleteMessageSeconds discord.Option[int] `json:"delete_message_seconds,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
@@ -1045,7 +1045,7 @@ type GuildJoinRequestsResponse struct {
 // https://docs.discord.com/developers/resources/guild
 type ActionGuildJoinRequestParams struct {
 	Action          discord.GuildJoinRequestApplicationStatus `json:"action"`
-	RejectionReason *string                                   `json:"rejection_reason,omitempty"`
+	RejectionReason discord.Option[string]                    `json:"rejection_reason,omitempty"`
 }
 
 // GetGuildJoinRequests returns the pending join requests for a guild. Requires MANAGE_GUILD.

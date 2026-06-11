@@ -36,8 +36,8 @@ type ChannelTag struct {
 	ID        Snowflake  `json:"id"`
 	Name      string     `json:"name"`
 	Moderated bool       `json:"moderated"`
-	EmojiID   *Snowflake `json:"emoji_id,omitempty"`
-	EmojiName *string    `json:"emoji_name,omitempty"`
+	EmojiID   *Snowflake `json:"emoji_id"`
+	EmojiName *string    `json:"emoji_name"`
 }
 
 // https://docs.discord.com/developers/resources/channel#channel-object

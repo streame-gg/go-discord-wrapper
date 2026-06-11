@@ -118,22 +118,22 @@ func buildMultipartMessage(payload []byte, files []discord.MessageFile) (*bytes.
 // CreateMessageParams are the parameters for sending a new message.
 // https://docs.discord.com/developers/resources/message#create-message
 type CreateMessageParams struct {
-	Content          string                           `json:"content,omitempty"`
-	TTS              bool                             `json:"tts,omitempty"`
-	Embeds           []discord.Embed                  `json:"embeds,omitempty"`
-	AllowedMentions  *discord.AllowedMentions         `json:"allowed_mentions,omitempty"`
-	MessageReference *discord.MessageMessageReference `json:"message_reference,omitempty"`
+	Content          discord.Option[string]                          `json:"content,omitempty"`
+	TTS              discord.Option[bool]                            `json:"tts,omitempty"`
+	Embeds           discord.Option[[]discord.Embed]                 `json:"embeds,omitempty"`
+	AllowedMentions  discord.Option[discord.AllowedMentions]         `json:"allowed_mentions,omitempty"`
+	MessageReference discord.Option[discord.MessageMessageReference] `json:"message_reference,omitempty"`
 	// Components holds message components (action rows, buttons, etc.).
-	Components   []discord.AnyComponent `json:"-"`
-	StickerIDs   []discord.Snowflake    `json:"sticker_ids,omitempty"`
-	Flags        discord.MessageFlag    `json:"flags,omitempty"`
-	Nonce        interface{}            `json:"nonce,omitempty"`
-	EnforceNonce bool                   `json:"enforce_nonce,omitempty"`
+	Components   []discord.AnyComponent              `json:"-"`
+	StickerIDs   discord.Option[[]discord.Snowflake] `json:"sticker_ids,omitempty"`
+	Flags        discord.Option[discord.MessageFlag] `json:"flags,omitempty"`
+	Nonce        discord.Option[any]                 `json:"nonce,omitempty"`
+	EnforceNonce discord.Option[bool]                `json:"enforce_nonce,omitempty"`
 	// Files are binary attachments sent via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
-	Files             []discord.MessageFile      `json:"-"`
-	Poll              *discord.PollRequest       `json:"poll_request,omitempty"`
-	SharedClientTheme *discord.SharedClientTheme `json:"shared_client_theme,omitempty"`
+	Files             []discord.MessageFile                     `json:"-"`
+	Poll              discord.Option[discord.PollRequest]       `json:"poll_request,omitempty"`
+	SharedClientTheme discord.Option[discord.SharedClientTheme] `json:"shared_client_theme,omitempty"`
 }
 
 func (p CreateMessageParams) MarshalJSON() ([]byte, error) {
@@ -152,14 +152,14 @@ func (p CreateMessageParams) MarshalJSON() ([]byte, error) {
 // Set Content to a pointer to "" to clear the message content.
 // https://docs.discord.com/developers/resources/message#edit-message
 type EditMessageParams struct {
-	Content         *string                  `json:"content,omitempty"`
-	Embeds          *[]discord.Embed         `json:"embeds,omitempty"`
-	Flags           *discord.MessageFlag     `json:"flags,omitempty"`
-	AllowedMentions *discord.AllowedMentions `json:"allowed_mentions,omitempty"`
+	Content         discord.Option[string]                  `json:"content,omitempty"`
+	Embeds          discord.Option[[]discord.Embed]         `json:"embeds,omitempty"`
+	Flags           discord.Option[discord.MessageFlag]     `json:"flags,omitempty"`
+	AllowedMentions discord.Option[discord.AllowedMentions] `json:"allowed_mentions,omitempty"`
 	// Components replaces the message's component list.
 	// Set to an empty (non-nil) slice to remove all components.
-	Components  []discord.AnyComponent `json:"-"`
-	Attachments *[]discord.Attachment  `json:"attachments,omitempty"`
+	Components  []discord.AnyComponent               `json:"-"`
+	Attachments discord.Option[[]discord.Attachment] `json:"attachments,omitempty"`
 	// Files are binary attachments added via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
 	Files []discord.MessageFile `json:"-"`

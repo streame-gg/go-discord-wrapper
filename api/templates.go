@@ -14,20 +14,20 @@ import (
 
 // https://docs.discord.com/developers/resources/guild-template#create-guild-template
 type CreateGuildTemplateParams struct {
-	Name        string  `json:"name"`
-	Description *string `json:"description,omitempty"`
+	Name        string                 `json:"name"`
+	Description discord.Option[string] `json:"description,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/guild-template#modify-guild-template
 type ModifyGuildTemplateParams struct {
-	Name        *string `json:"name,omitempty"`
-	Description *string `json:"description,omitempty"`
+	Name        discord.Option[string] `json:"name,omitempty"`
+	Description discord.Option[string] `json:"description,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/guild-template#create-guild-from-guild-template
 type CreateGuildFromTemplateParams struct {
-	Name string  `json:"name"`
-	Icon *string `json:"icon,omitempty"`
+	Name string                 `json:"name"`
+	Icon discord.Option[string] `json:"icon,omitempty"`
 }
 
 // ── Template endpoints ────────────────────────────────────────────────────────

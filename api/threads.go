@@ -16,20 +16,20 @@ import (
 
 // https://docs.discord.com/developers/resources/channel#start-thread-from-message
 type CreateThreadFromMessageParams struct {
-	Name                string `json:"name"`
-	AutoArchiveDuration *int   `json:"auto_archive_duration,omitempty"`
-	RateLimitPerUser    *int   `json:"rate_limit_per_user,omitempty"`
+	Name                string              `json:"name"`
+	AutoArchiveDuration discord.Option[int] `json:"auto_archive_duration,omitempty"`
+	RateLimitPerUser    discord.Option[int] `json:"rate_limit_per_user,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/channel#start-thread-without-message
 type CreateThreadParams struct {
-	Name                string               `json:"name"`
-	AutoArchiveDuration *int                 `json:"auto_archive_duration,omitempty"`
-	Type                *discord.ChannelType `json:"type,omitempty"`
-	Invitable           *bool                `json:"invitable,omitempty"`
-	RateLimitPerUser    *int                 `json:"rate_limit_per_user,omitempty"`
+	Name                string                              `json:"name"`
+	AutoArchiveDuration discord.Option[int]                 `json:"auto_archive_duration,omitempty"`
+	Type                discord.Option[discord.ChannelType] `json:"type,omitempty"`
+	Invitable           discord.Option[bool]                `json:"invitable,omitempty"`
+	RateLimitPerUser    discord.Option[int]                 `json:"rate_limit_per_user,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
@@ -37,11 +37,11 @@ type CreateThreadParams struct {
 // CreateForumThreadParams is used to start a thread in a forum or media channel.
 // https://docs.discord.com/developers/resources/channel#start-thread-in-forum-or-media-channel
 type CreateForumThreadParams struct {
-	Name                string              `json:"name"`
-	AutoArchiveDuration *int                `json:"auto_archive_duration,omitempty"`
-	RateLimitPerUser    *int                `json:"rate_limit_per_user,omitempty"`
-	Message             CreateMessageParams `json:"message"`
-	AppliedTags         []discord.Snowflake `json:"applied_tags,omitempty"`
+	Name                string                              `json:"name"`
+	AutoArchiveDuration discord.Option[int]                 `json:"auto_archive_duration,omitempty"`
+	RateLimitPerUser    discord.Option[int]                 `json:"rate_limit_per_user,omitempty"`
+	Message             CreateMessageParams                 `json:"message"`
+	AppliedTags         discord.Option[[]discord.Snowflake] `json:"applied_tags,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }

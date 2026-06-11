@@ -142,13 +142,11 @@ func (w *WebhookClient) ResetDefaults() *WebhookClient {
 func (w *WebhookClient) applyDefaults(p *ExecuteWebhookParams) {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
-	if p.Username == nil && w.defaultUsername != nil {
-		v := *w.defaultUsername
-		p.Username = &v
+	if !p.Username.IsSet() && w.defaultUsername != nil {
+		p.Username = discord.Some(*w.defaultUsername)
 	}
-	if p.AvatarURL == nil && w.defaultAvatarURL != nil {
-		v := *w.defaultAvatarURL
-		p.AvatarURL = &v
+	if !p.AvatarURL.IsSet() && w.defaultAvatarURL != nil {
+		p.AvatarURL = discord.Some(*w.defaultAvatarURL)
 	}
 }
 

@@ -15,9 +15,9 @@ import (
 
 // https://docs.discord.com/developers/resources/user#modify-current-user
 type ModifyCurrentUserParams struct {
-	Username *string `json:"username,omitempty"`
+	Username discord.Option[string] `json:"username,omitempty"`
 	// Avatar is a base64-encoded image data URI (e.g. "data:image/png;base64,...").
-	Avatar *string `json:"avatar,omitempty"`
+	Avatar discord.Option[string] `json:"avatar,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/user#get-current-user-guilds

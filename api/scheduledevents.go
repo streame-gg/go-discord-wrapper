@@ -16,30 +16,30 @@ import (
 
 // https://docs.discord.com/developers/resources/guild-scheduled-event#create-guild-scheduled-event
 type CreateGuildScheduledEventParams struct {
-	ChannelID          *discord.Snowflake                         `json:"channel_id,omitempty"`
-	EntityMetadata     *discord.GuildScheduledEventEntityMetadata `json:"entity_metadata,omitempty"`
-	Name               string                                     `json:"name"`
-	PrivacyLevel       discord.GuildScheduledEventPrivacyLevel    `json:"privacy_level"`
-	ScheduledStartTime time.Time                                  `json:"scheduled_start_time"`
-	ScheduledEndTime   *time.Time                                 `json:"scheduled_end_time,omitempty"`
-	Description        *string                                    `json:"description,omitempty"`
-	EntityType         discord.GuildScheduledEventEntityType      `json:"entity_type"`
+	ChannelID          discord.Option[discord.Snowflake]                         `json:"channel_id,omitempty"`
+	EntityMetadata     discord.Option[discord.GuildScheduledEventEntityMetadata] `json:"entity_metadata,omitempty"`
+	Name               string                                                    `json:"name"`
+	PrivacyLevel       discord.GuildScheduledEventPrivacyLevel                   `json:"privacy_level"`
+	ScheduledStartTime time.Time                                                 `json:"scheduled_start_time"`
+	ScheduledEndTime   discord.Option[time.Time]                                 `json:"scheduled_end_time,omitempty"`
+	Description        discord.Option[string]                                    `json:"description,omitempty"`
+	EntityType         discord.GuildScheduledEventEntityType                     `json:"entity_type"`
 	// Image is a base64-encoded image data URI for the event cover image.
-	Image *string `json:"image,omitempty"`
+	Image discord.Option[string] `json:"image,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/guild-scheduled-event#modify-guild-scheduled-event
 type ModifyGuildScheduledEventParams struct {
-	ChannelID          *discord.Snowflake                         `json:"channel_id,omitempty"`
-	EntityMetadata     *discord.GuildScheduledEventEntityMetadata `json:"entity_metadata,omitempty"`
-	Name               *string                                    `json:"name,omitempty"`
-	PrivacyLevel       *discord.GuildScheduledEventPrivacyLevel   `json:"privacy_level,omitempty"`
-	ScheduledStartTime *time.Time                                 `json:"scheduled_start_time,omitempty"`
-	ScheduledEndTime   *time.Time                                 `json:"scheduled_end_time,omitempty"`
-	Description        *string                                    `json:"description,omitempty"`
-	EntityType         *discord.GuildScheduledEventEntityType     `json:"entity_type,omitempty"`
-	Status             *discord.GuildScheduledEventStatus         `json:"status,omitempty"`
-	Image              *string                                    `json:"image,omitempty"`
+	ChannelID          discord.Option[discord.Snowflake]                         `json:"channel_id,omitempty"`
+	EntityMetadata     discord.Option[discord.GuildScheduledEventEntityMetadata] `json:"entity_metadata,omitempty"`
+	Name               discord.Option[string]                                    `json:"name,omitempty"`
+	PrivacyLevel       discord.Option[discord.GuildScheduledEventPrivacyLevel]   `json:"privacy_level,omitempty"`
+	ScheduledStartTime discord.Option[time.Time]                                 `json:"scheduled_start_time,omitempty"`
+	ScheduledEndTime   discord.Option[time.Time]                                 `json:"scheduled_end_time,omitempty"`
+	Description        discord.Option[string]                                    `json:"description,omitempty"`
+	EntityType         discord.Option[discord.GuildScheduledEventEntityType]     `json:"entity_type,omitempty"`
+	Status             discord.Option[discord.GuildScheduledEventStatus]         `json:"status,omitempty"`
+	Image              discord.Option[string]                                    `json:"image,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/guild-scheduled-event#get-guild-scheduled-event-users

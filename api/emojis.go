@@ -15,16 +15,16 @@ import (
 type CreateGuildEmojiParams struct {
 	Name string `json:"name"`
 	// Image is a base64-encoded image data URI (e.g. "data:image/png;base64,...").
-	Image string              `json:"image"`
-	Roles []discord.Snowflake `json:"roles,omitempty"`
+	Image string                              `json:"image"`
+	Roles discord.Option[[]discord.Snowflake] `json:"roles,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/emoji#modify-guild-emoji
 type ModifyGuildEmojiParams struct {
-	Name  *string             `json:"name,omitempty"`
-	Roles []discord.Snowflake `json:"roles,omitempty"`
+	Name  discord.Option[string]              `json:"name,omitempty"`
+	Roles discord.Option[[]discord.Snowflake] `json:"roles,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
@@ -167,7 +167,7 @@ type CreateEmojiParams struct {
 // ModifyEmojiParams holds params for modifying an application emoji.
 // https://docs.discord.com/developers/resources/emoji#modify-application-emoji
 type ModifyEmojiParams struct {
-	Name *string `json:"name,omitempty"`
+	Name discord.Option[string] `json:"name,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/emoji#list-application-emojis

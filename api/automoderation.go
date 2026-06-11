@@ -13,27 +13,27 @@ import (
 
 // https://docs.discord.com/developers/resources/auto-moderation#create-auto-moderation-rule
 type CreateAutoModerationRuleParams struct {
-	Name            string                                 `json:"name"`
-	EventType       discord.AutoModerationEventType        `json:"event_type"`
-	TriggerType     discord.AutoModerationTriggerType      `json:"trigger_type"`
-	TriggerMetadata *discord.AutoModerationTriggerMetadata `json:"trigger_metadata,omitempty"`
-	Actions         []discord.AutoModerationAction         `json:"actions"`
-	Enabled         *bool                                  `json:"enabled,omitempty"`
-	ExemptRoles     []discord.Snowflake                    `json:"exempt_roles,omitempty"`
-	ExemptChannels  []discord.Snowflake                    `json:"exempt_channels,omitempty"`
+	Name            string                                                `json:"name"`
+	EventType       discord.AutoModerationEventType                       `json:"event_type"`
+	TriggerType     discord.AutoModerationTriggerType                     `json:"trigger_type"`
+	TriggerMetadata discord.Option[discord.AutoModerationTriggerMetadata] `json:"trigger_metadata,omitempty"`
+	Actions         []discord.AutoModerationAction                        `json:"actions"`
+	Enabled         discord.Option[bool]                                  `json:"enabled,omitempty"`
+	ExemptRoles     discord.Option[[]discord.Snowflake]                   `json:"exempt_roles,omitempty"`
+	ExemptChannels  discord.Option[[]discord.Snowflake]                   `json:"exempt_channels,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/auto-moderation#modify-auto-moderation-rule
 type ModifyAutoModerationRuleParams struct {
-	Name            *string                                `json:"name,omitempty"`
-	EventType       *discord.AutoModerationEventType       `json:"event_type,omitempty"`
-	TriggerMetadata *discord.AutoModerationTriggerMetadata `json:"trigger_metadata,omitempty"`
-	Actions         []discord.AutoModerationAction         `json:"actions,omitempty"`
-	Enabled         *bool                                  `json:"enabled,omitempty"`
-	ExemptRoles     []discord.Snowflake                    `json:"exempt_roles,omitempty"`
-	ExemptChannels  []discord.Snowflake                    `json:"exempt_channels,omitempty"`
+	Name            discord.Option[string]                                `json:"name,omitempty"`
+	EventType       discord.Option[discord.AutoModerationEventType]       `json:"event_type,omitempty"`
+	TriggerMetadata discord.Option[discord.AutoModerationTriggerMetadata] `json:"trigger_metadata,omitempty"`
+	Actions         discord.Option[[]discord.AutoModerationAction]        `json:"actions,omitempty"`
+	Enabled         discord.Option[bool]                                  `json:"enabled,omitempty"`
+	ExemptRoles     discord.Option[[]discord.Snowflake]                   `json:"exempt_roles,omitempty"`
+	ExemptChannels  discord.Option[[]discord.Snowflake]                   `json:"exempt_channels,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }

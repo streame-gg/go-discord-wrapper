@@ -15,12 +15,12 @@ var _ discord.EntityClient = (*Client)(nil)
 
 func (d *Client) EditMessage(ctx context.Context, channelID, messageID discord.Snowflake, opts discord.MessageEditOptions) (*discord.Message, error) {
 	params := api.EditMessageParams{
-		Content:         opts.Content,
-		Embeds:          opts.Embeds,
-		Flags:           opts.Flags,
-		AllowedMentions: opts.AllowedMentions,
+		Content:         optPtr(opts.Content),
+		Embeds:          optPtr(opts.Embeds),
+		Flags:           optPtr(opts.Flags),
+		AllowedMentions: optPtr(opts.AllowedMentions),
 		Components:      opts.Components,
-		Attachments:     opts.Attachments,
+		Attachments:     optPtr(opts.Attachments),
 		Files:           opts.Files,
 	}
 	msg, err := d.RestClient.EditMessage(ctx, channelID, messageID, params)
@@ -32,14 +32,14 @@ func (d *Client) EditMessage(ctx context.Context, channelID, messageID discord.S
 
 func (d *Client) CreateMessage(ctx context.Context, channelID discord.Snowflake, opts discord.MessageCreateOptions) (*discord.Message, error) {
 	params := api.CreateMessageParams{
-		Content:          opts.Content,
-		TTS:              opts.TTS,
-		Embeds:           opts.Embeds,
-		AllowedMentions:  opts.AllowedMentions,
-		MessageReference: opts.MessageReference,
+		Content:          optVal(opts.Content),
+		TTS:              optVal(opts.TTS),
+		Embeds:           optSlice(opts.Embeds),
+		AllowedMentions:  optPtr(opts.AllowedMentions),
+		MessageReference: optPtr(opts.MessageReference),
 		Components:       opts.Components,
-		StickerIDs:       opts.StickerIDs,
-		Flags:            opts.Flags,
+		StickerIDs:       optSlice(opts.StickerIDs),
+		Flags:            optVal(opts.Flags),
 		Files:            opts.Files,
 	}
 	msg, err := d.RestClient.CreateMessage(ctx, channelID, params)
@@ -67,25 +67,25 @@ func (d *Client) ListChannelMessages(ctx context.Context, channelID discord.Snow
 
 func (d *Client) ModifyChannel(ctx context.Context, channelID discord.Snowflake, opts discord.ChannelEditOptions) (*discord.Channel, error) {
 	params := api.ModifyChannelParams{
-		Name:                          opts.Name,
-		Type:                          opts.Type,
-		Position:                      opts.Position,
-		Topic:                         opts.Topic,
-		NSFW:                          opts.NSFW,
-		RateLimitPerUser:              opts.RateLimitPerUser,
-		Bitrate:                       opts.Bitrate,
-		UserLimit:                     opts.UserLimit,
-		PermissionOverwrites:          opts.PermissionOverwrites,
-		ParentID:                      opts.ParentID,
-		RTCRegion:                     opts.RTCRegion,
-		VideoQualityMode:              opts.VideoQualityMode,
-		DefaultAutoArchiveDuration:    opts.DefaultAutoArchiveDuration,
-		Flags:                         opts.Flags,
-		AvailableTags:                 opts.AvailableTags,
-		DefaultReactionEmoji:          opts.DefaultReactionEmoji,
-		DefaultThreadRateLimitPerUser: opts.DefaultThreadRateLimitPerUser,
-		DefaultSortOrder:              opts.DefaultSortOrder,
-		DefaultForumLayout:            opts.DefaultForumLayout,
+		Name:                          optPtr(opts.Name),
+		Type:                          optPtr(opts.Type),
+		Position:                      optPtr(opts.Position),
+		Topic:                         optPtr(opts.Topic),
+		NSFW:                          optPtr(opts.NSFW),
+		RateLimitPerUser:              optPtr(opts.RateLimitPerUser),
+		Bitrate:                       optPtr(opts.Bitrate),
+		UserLimit:                     optPtr(opts.UserLimit),
+		PermissionOverwrites:          optSlice(opts.PermissionOverwrites),
+		ParentID:                      optPtr(opts.ParentID),
+		RTCRegion:                     optPtr(opts.RTCRegion),
+		VideoQualityMode:              optPtr(opts.VideoQualityMode),
+		DefaultAutoArchiveDuration:    optPtr(opts.DefaultAutoArchiveDuration),
+		Flags:                         optPtr(opts.Flags),
+		AvailableTags:                 optSlice(opts.AvailableTags),
+		DefaultReactionEmoji:          optPtr(opts.DefaultReactionEmoji),
+		DefaultThreadRateLimitPerUser: optPtr(opts.DefaultThreadRateLimitPerUser),
+		DefaultSortOrder:              optPtr(opts.DefaultSortOrder),
+		DefaultForumLayout:            optPtr(opts.DefaultForumLayout),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	ch, err := d.RestClient.ModifyChannel(ctx, channelID, params)
@@ -97,13 +97,13 @@ func (d *Client) ModifyChannel(ctx context.Context, channelID discord.Snowflake,
 
 func (d *Client) CreateChannelInvite(ctx context.Context, channelID discord.Snowflake, opts discord.InviteCreateOptions) (*discord.Invite, error) {
 	params := api.CreateChannelInviteParams{
-		MaxAge:              opts.MaxAge,
-		MaxUses:             opts.MaxUses,
-		Temporary:           opts.Temporary,
-		Unique:              opts.Unique,
-		TargetType:          opts.TargetType,
-		TargetUserID:        opts.TargetUserID,
-		TargetApplicationID: opts.TargetApplicationID,
+		MaxAge:              optPtr(opts.MaxAge),
+		MaxUses:             optPtr(opts.MaxUses),
+		Temporary:           optPtr(opts.Temporary),
+		Unique:              optPtr(opts.Unique),
+		TargetType:          optPtr(opts.TargetType),
+		TargetUserID:        optPtr(opts.TargetUserID),
+		TargetApplicationID: optPtr(opts.TargetApplicationID),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	invite, err := d.RestClient.CreateChannelInvite(ctx, channelID, params)
@@ -118,26 +118,26 @@ func (d *Client) CreateChannelInvite(ctx context.Context, channelID discord.Snow
 
 func (d *Client) ModifyGuild(ctx context.Context, guildID discord.Snowflake, opts discord.GuildEditOptions) (*discord.Guild, error) {
 	params := api.ModifyGuildParams{
-		Name:                        opts.Name,
-		VerificationLevel:           opts.VerificationLevel,
-		DefaultMessageNotifications: opts.DefaultMessageNotifications,
-		ExplicitContentFilter:       opts.ExplicitContentFilter,
-		AFKChannelID:                opts.AFKChannelID,
-		AFKTimeout:                  opts.AFKTimeout,
-		Icon:                        opts.Icon,
-		OwnerID:                     opts.OwnerID,
-		Splash:                      opts.Splash,
-		DiscoverySplash:             opts.DiscoverySplash,
-		Banner:                      opts.Banner,
-		SystemChannelID:             opts.SystemChannelID,
-		SystemChannelFlags:          opts.SystemChannelFlags,
-		RulesChannelID:              opts.RulesChannelID,
-		PublicUpdatesChannelID:      opts.PublicUpdatesChannelID,
-		PreferredLocale:             opts.PreferredLocale,
-		Features:                    opts.Features,
-		Description:                 opts.Description,
-		PremiumProgressBarEnabled:   opts.PremiumProgressBarEnabled,
-		SafetyAlertsChannelID:       opts.SafetyAlertsChannelID,
+		Name:                        optPtr(opts.Name),
+		VerificationLevel:           optPtr(opts.VerificationLevel),
+		DefaultMessageNotifications: optPtr(opts.DefaultMessageNotifications),
+		ExplicitContentFilter:       optPtr(opts.ExplicitContentFilter),
+		AFKChannelID:                optPtr(opts.AFKChannelID),
+		AFKTimeout:                  optPtr(opts.AFKTimeout),
+		Icon:                        optPtr(opts.Icon),
+		OwnerID:                     optPtr(opts.OwnerID),
+		Splash:                      optPtr(opts.Splash),
+		DiscoverySplash:             optPtr(opts.DiscoverySplash),
+		Banner:                      optPtr(opts.Banner),
+		SystemChannelID:             optPtr(opts.SystemChannelID),
+		SystemChannelFlags:          optPtr(opts.SystemChannelFlags),
+		RulesChannelID:              optPtr(opts.RulesChannelID),
+		PublicUpdatesChannelID:      optPtr(opts.PublicUpdatesChannelID),
+		PreferredLocale:             optPtr(opts.PreferredLocale),
+		Features:                    optSlice(opts.Features),
+		Description:                 optPtr(opts.Description),
+		PremiumProgressBarEnabled:   optPtr(opts.PremiumProgressBarEnabled),
+		SafetyAlertsChannelID:       optPtr(opts.SafetyAlertsChannelID),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	guild, err := d.RestClient.ModifyGuild(ctx, guildID, params)
@@ -165,13 +165,13 @@ func (d *Client) ListGuildMembers(ctx context.Context, guildID discord.Snowflake
 
 func (d *Client) CreateGuildRole(ctx context.Context, guildID discord.Snowflake, opts discord.RoleCreateOptions) (*discord.Role, error) {
 	params := api.CreateGuildRoleParams{
-		Name:         opts.Name,
-		Permissions:  opts.Permissions,
-		Color:        opts.Color,
-		Hoist:        opts.Hoist,
-		Icon:         opts.Icon,
-		UnicodeEmoji: opts.UnicodeEmoji,
-		Mentionable:  opts.Mentionable,
+		Name:         optPtr(opts.Name),
+		Permissions:  optPtr(opts.Permissions),
+		Color:        optPtr(opts.Color),
+		Hoist:        optPtr(opts.Hoist),
+		Icon:         optPtr(opts.Icon),
+		UnicodeEmoji: optPtr(opts.UnicodeEmoji),
+		Mentionable:  optPtr(opts.Mentionable),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	role, err := d.RestClient.CreateGuildRole(ctx, guildID, params)
@@ -184,23 +184,23 @@ func (d *Client) CreateGuildRole(ctx context.Context, guildID discord.Snowflake,
 func (d *Client) CreateGuildChannel(ctx context.Context, guildID discord.Snowflake, opts discord.ChannelCreateOptions) (*discord.Channel, error) {
 	params := api.CreateGuildChannelParams{
 		Name:                          opts.Name,
-		Type:                          opts.Type,
-		Topic:                         opts.Topic,
-		Bitrate:                       opts.Bitrate,
-		UserLimit:                     opts.UserLimit,
-		RateLimitPerUser:              opts.RateLimitPerUser,
-		Position:                      opts.Position,
-		PermissionOverwrites:          opts.PermissionOverwrites,
-		ParentID:                      opts.ParentID,
-		NSFW:                          opts.NSFW,
-		RTCRegion:                     opts.RTCRegion,
-		VideoQualityMode:              opts.VideoQualityMode,
-		DefaultAutoArchiveDuration:    opts.DefaultAutoArchiveDuration,
-		DefaultReactionEmoji:          opts.DefaultReactionEmoji,
-		AvailableTags:                 opts.AvailableTags,
-		DefaultSortOrder:              opts.DefaultSortOrder,
-		DefaultForumLayout:            opts.DefaultForumLayout,
-		DefaultThreadRateLimitPerUser: opts.DefaultThreadRateLimitPerUser,
+		Type:                          optPtr(opts.Type),
+		Topic:                         optPtr(opts.Topic),
+		Bitrate:                       optPtr(opts.Bitrate),
+		UserLimit:                     optPtr(opts.UserLimit),
+		RateLimitPerUser:              optPtr(opts.RateLimitPerUser),
+		Position:                      optPtr(opts.Position),
+		PermissionOverwrites:          optSlice(opts.PermissionOverwrites),
+		ParentID:                      optPtr(opts.ParentID),
+		NSFW:                          optPtr(opts.NSFW),
+		RTCRegion:                     optPtr(opts.RTCRegion),
+		VideoQualityMode:              optPtr(opts.VideoQualityMode),
+		DefaultAutoArchiveDuration:    optPtr(opts.DefaultAutoArchiveDuration),
+		DefaultReactionEmoji:          optPtr(opts.DefaultReactionEmoji),
+		AvailableTags:                 optSlice(opts.AvailableTags),
+		DefaultSortOrder:              optPtr(opts.DefaultSortOrder),
+		DefaultForumLayout:            optPtr(opts.DefaultForumLayout),
+		DefaultThreadRateLimitPerUser: optPtr(opts.DefaultThreadRateLimitPerUser),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	ch, err := d.RestClient.CreateGuildChannel(ctx, guildID, params)
@@ -214,7 +214,7 @@ func (d *Client) CreateGuildEmoji(ctx context.Context, guildID discord.Snowflake
 	params := api.CreateGuildEmojiParams{
 		Name:  opts.Name,
 		Image: opts.Image,
-		Roles: opts.Roles,
+		Roles: optSlice(opts.Roles),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	return d.RestClient.CreateGuildEmoji(ctx, guildID, params)
@@ -253,15 +253,15 @@ func (d *Client) GetGuildAuditLog(ctx context.Context, guildID discord.Snowflake
 
 func (d *Client) CreateGuildScheduledEvent(ctx context.Context, guildID discord.Snowflake, opts discord.ScheduledEventCreateOptions) (*discord.GuildScheduledEvent, error) {
 	params := api.CreateGuildScheduledEventParams{
-		ChannelID:          opts.ChannelID,
-		EntityMetadata:     opts.EntityMetadata,
+		ChannelID:          optPtr(opts.ChannelID),
+		EntityMetadata:     optPtr(opts.EntityMetadata),
 		Name:               opts.Name,
 		PrivacyLevel:       opts.PrivacyLevel,
 		ScheduledStartTime: opts.ScheduledStartTime,
-		ScheduledEndTime:   opts.ScheduledEndTime,
-		Description:        opts.Description,
+		ScheduledEndTime:   optPtr(opts.ScheduledEndTime),
+		Description:        optPtr(opts.Description),
 		EntityType:         opts.EntityType,
-		Image:              opts.Image,
+		Image:              optPtr(opts.Image),
 	}
 	return d.RestClient.CreateGuildScheduledEvent(ctx, guildID, params)
 }
@@ -270,13 +270,13 @@ func (d *Client) CreateGuildScheduledEvent(ctx context.Context, guildID discord.
 
 func (d *Client) ModifyGuildMember(ctx context.Context, guildID, userID discord.Snowflake, opts discord.MemberEditOptions) (*discord.GuildMember, error) {
 	params := api.ModifyGuildMemberParams{
-		Nick:                       opts.Nick,
-		Roles:                      opts.Roles,
-		Mute:                       opts.Mute,
-		Deaf:                       opts.Deaf,
-		ChannelID:                  opts.ChannelID,
-		CommunicationDisabledUntil: opts.CommunicationDisabledUntil,
-		Flags:                      opts.Flags,
+		Nick:                       optPtr(opts.Nick),
+		Roles:                      optPtr(opts.Roles),
+		Mute:                       optPtr(opts.Mute),
+		Deaf:                       optPtr(opts.Deaf),
+		ChannelID:                  optPtr(opts.ChannelID),
+		CommunicationDisabledUntil: optPtr(opts.CommunicationDisabledUntil),
+		Flags:                      optPtr(opts.Flags),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	member, err := d.RestClient.ModifyGuildMember(ctx, guildID, userID, params)
@@ -300,7 +300,7 @@ func (d *Client) KickGuildMember(ctx context.Context, guildID, userID discord.Sn
 
 func (d *Client) CreateGuildBan(ctx context.Context, guildID, userID discord.Snowflake, opts discord.BanOptions) error {
 	params := api.CreateGuildBanParams{
-		DeleteMessageSeconds: opts.DeleteMessageSeconds,
+		DeleteMessageSeconds: optPtr(opts.DeleteMessageSeconds),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	return d.RestClient.CreateGuildBan(ctx, guildID, userID, params)
@@ -310,13 +310,13 @@ func (d *Client) CreateGuildBan(ctx context.Context, guildID, userID discord.Sno
 
 func (d *Client) ModifyGuildRole(ctx context.Context, guildID, roleID discord.Snowflake, opts discord.RoleEditOptions) (*discord.Role, error) {
 	params := api.ModifyGuildRoleParams{
-		Name:         opts.Name,
-		Permissions:  opts.Permissions,
-		Color:        opts.Color,
-		Hoist:        opts.Hoist,
-		Icon:         opts.Icon,
-		UnicodeEmoji: opts.UnicodeEmoji,
-		Mentionable:  opts.Mentionable,
+		Name:         optPtr(opts.Name),
+		Permissions:  optPtr(opts.Permissions),
+		Color:        optPtr(opts.Color),
+		Hoist:        optPtr(opts.Hoist),
+		Icon:         optPtr(opts.Icon),
+		UnicodeEmoji: optPtr(opts.UnicodeEmoji),
+		Mentionable:  optPtr(opts.Mentionable),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	role, err := d.RestClient.ModifyGuildRole(ctx, guildID, roleID, params)
@@ -331,7 +331,7 @@ func (d *Client) ModifyGuildRolePositions(ctx context.Context, guildID discord.S
 	for i, e := range opts.Entries {
 		entries[i] = api.ModifyGuildRolePositionsEntry{
 			ID:       e.ID,
-			Position: e.Position,
+			Position: optPtr(e.Position),
 		}
 	}
 	var apiOpts *api.ModifyGuildRolePositionsOptions
@@ -370,8 +370,8 @@ func (d *Client) CreateDM(ctx context.Context, recipientID discord.Snowflake) (*
 
 func (d *Client) ModifyGuildEmoji(ctx context.Context, guildID, emojiID discord.Snowflake, opts discord.EmojiEditOptions) (*discord.Emoji, error) {
 	params := api.ModifyGuildEmojiParams{
-		Name:  opts.Name,
-		Roles: opts.Roles,
+		Name:  optPtr(opts.Name),
+		Roles: optSlice(opts.Roles),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	return d.RestClient.ModifyGuildEmoji(ctx, guildID, emojiID, params)
@@ -389,9 +389,9 @@ func (d *Client) DeleteGuildEmoji(ctx context.Context, guildID, emojiID discord.
 
 func (d *Client) ModifyWebhook(ctx context.Context, webhookID discord.Snowflake, opts discord.WebhookEditOptions) (*discord.Webhook, error) {
 	params := api.ModifyWebhookParams{
-		Name:      opts.Name,
-		Avatar:    opts.Avatar,
-		ChannelID: opts.ChannelID,
+		Name:      optPtr(opts.Name),
+		Avatar:    optPtr(opts.Avatar),
+		ChannelID: optPtr(opts.ChannelID),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	return d.RestClient.ModifyWebhook(ctx, webhookID, params)
@@ -407,15 +407,15 @@ func (d *Client) DeleteWebhook(ctx context.Context, webhookID discord.Snowflake,
 
 func (d *Client) ExecuteWebhook(ctx context.Context, webhookID discord.Snowflake, token string, opts discord.WebhookExecuteOptions) (*discord.Message, error) {
 	params := api.ExecuteWebhookParams{
-		Content:         opts.Content,
-		Username:        opts.Username,
-		AvatarURL:       opts.AvatarURL,
-		TTS:             opts.TTS,
-		Embeds:          opts.Embeds,
-		AllowedMentions: opts.AllowedMentions,
+		Content:         optVal(opts.Content),
+		Username:        optPtr(opts.Username),
+		AvatarURL:       optPtr(opts.AvatarURL),
+		TTS:             optVal(opts.TTS),
+		Embeds:          optSlice(opts.Embeds),
+		AllowedMentions: optPtr(opts.AllowedMentions),
 		Components:      opts.Components,
-		Flags:           opts.Flags,
-		ThreadName:      opts.ThreadName,
+		Flags:           optVal(opts.Flags),
+		ThreadName:      optPtr(opts.ThreadName),
 		Files:           opts.Files,
 	}
 	wait := opts.Wait
@@ -435,8 +435,8 @@ func (d *Client) GetWebhookMessage(ctx context.Context, webhookID discord.Snowfl
 
 func (d *Client) ModifyStageInstance(ctx context.Context, channelID discord.Snowflake, opts discord.StageEditOptions) (*discord.StageInstance, error) {
 	params := api.ModifyStageInstanceParams{
-		Topic:        opts.Topic,
-		PrivacyLevel: opts.PrivacyLevel,
+		Topic:        optPtr(opts.Topic),
+		PrivacyLevel: optPtr(opts.PrivacyLevel),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	return d.RestClient.ModifyStageInstance(ctx, channelID, params)
@@ -454,16 +454,16 @@ func (d *Client) DeleteStageInstance(ctx context.Context, channelID discord.Snow
 
 func (d *Client) ModifyGuildScheduledEvent(ctx context.Context, guildID, eventID discord.Snowflake, opts discord.ScheduledEventEditOptions) (*discord.GuildScheduledEvent, error) {
 	params := api.ModifyGuildScheduledEventParams{
-		ChannelID:          opts.ChannelID,
-		EntityMetadata:     opts.EntityMetadata,
-		Name:               opts.Name,
-		PrivacyLevel:       opts.PrivacyLevel,
-		ScheduledStartTime: opts.ScheduledStartTime,
-		ScheduledEndTime:   opts.ScheduledEndTime,
-		Description:        opts.Description,
-		EntityType:         opts.EntityType,
-		Status:             opts.Status,
-		Image:              opts.Image,
+		ChannelID:          optPtr(opts.ChannelID),
+		EntityMetadata:     optPtr(opts.EntityMetadata),
+		Name:               optPtr(opts.Name),
+		PrivacyLevel:       optPtr(opts.PrivacyLevel),
+		ScheduledStartTime: optPtr(opts.ScheduledStartTime),
+		ScheduledEndTime:   optPtr(opts.ScheduledEndTime),
+		Description:        optPtr(opts.Description),
+		EntityType:         optPtr(opts.EntityType),
+		Status:             optPtr(opts.Status),
+		Image:              optPtr(opts.Image),
 	}
 	return d.RestClient.ModifyGuildScheduledEvent(ctx, guildID, eventID, params)
 }
@@ -486,9 +486,9 @@ func (d *Client) ListGuildScheduledEventUsers(ctx context.Context, guildID, even
 
 func (d *Client) ModifyGuildSticker(ctx context.Context, guildID, stickerID discord.Snowflake, opts discord.StickerEditOptions) (*discord.Sticker, error) {
 	params := api.ModifyGuildStickerParams{
-		Name:        opts.Name,
-		Description: opts.Description,
-		Tags:        opts.Tags,
+		Name:        optPtr(opts.Name),
+		Description: optPtr(opts.Description),
+		Tags:        optPtr(opts.Tags),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	sticker, err := d.RestClient.ModifyGuildSticker(ctx, guildID, stickerID, params)
@@ -520,13 +520,13 @@ func (d *Client) DeleteGuildSticker(ctx context.Context, guildID, stickerID disc
 
 func (d *Client) ModifyAutoModerationRule(ctx context.Context, guildID, ruleID discord.Snowflake, opts discord.RuleEditOptions) (*discord.AutoModerationRule, error) {
 	params := api.ModifyAutoModerationRuleParams{
-		Name:            opts.Name,
-		EventType:       opts.EventType,
-		TriggerMetadata: opts.TriggerMetadata,
-		Actions:         opts.Actions,
-		Enabled:         opts.Enabled,
-		ExemptRoles:     opts.ExemptRoles,
-		ExemptChannels:  opts.ExemptChannels,
+		Name:            optPtr(opts.Name),
+		EventType:       optPtr(opts.EventType),
+		TriggerMetadata: optPtr(opts.TriggerMetadata),
+		Actions:         optSlice(opts.Actions),
+		Enabled:         optPtr(opts.Enabled),
+		ExemptRoles:     optSlice(opts.ExemptRoles),
+		ExemptChannels:  optSlice(opts.ExemptChannels),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	rule, err := d.RestClient.ModifyAutoModerationRule(ctx, guildID, ruleID, params)
@@ -550,10 +550,10 @@ func (d *Client) DeleteAutoModerationRule(ctx context.Context, guildID, ruleID d
 
 func (d *Client) ModifyGuildSoundboardSound(ctx context.Context, guildID, soundID discord.Snowflake, opts discord.SoundEditOptions) (*discord.SoundboardSound, error) {
 	params := api.ModifyGuildSoundboardSoundParams{
-		Name:      opts.Name,
-		Volume:    opts.Volume,
-		EmojiID:   opts.EmojiID,
-		EmojiName: opts.EmojiName,
+		Name:      optPtr(opts.Name),
+		Volume:    optPtr(opts.Volume),
+		EmojiID:   optPtr(opts.EmojiID),
+		EmojiName: optPtr(opts.EmojiName),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	sound, err := d.RestClient.ModifyGuildSoundboardSound(ctx, guildID, soundID, params)
@@ -676,9 +676,9 @@ func (d *Client) CreateStageInstance(ctx context.Context, opts discord.StageCrea
 	params := api.CreateStageInstanceParams{
 		ChannelID:             opts.ChannelID,
 		Topic:                 opts.Topic,
-		PrivacyLevel:          opts.PrivacyLevel,
-		GuildScheduledEventID: opts.GuildScheduledEventID,
-		SendStartNotification: opts.SendStartNotification,
+		PrivacyLevel:          optPtr(opts.PrivacyLevel),
+		GuildScheduledEventID: optPtr(opts.GuildScheduledEventID),
+		SendStartNotification: optPtr(opts.SendStartNotification),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	return d.RestClient.CreateStageInstance(ctx, params)
@@ -717,11 +717,11 @@ func (d *Client) CreateAutoModerationRule(ctx context.Context, guildID discord.S
 		Name:            opts.Name,
 		EventType:       opts.EventType,
 		TriggerType:     opts.TriggerType,
-		TriggerMetadata: opts.TriggerMetadata,
+		TriggerMetadata: optPtr(opts.TriggerMetadata),
 		Actions:         opts.Actions,
-		Enabled:         opts.Enabled,
-		ExemptRoles:     opts.ExemptRoles,
-		ExemptChannels:  opts.ExemptChannels,
+		Enabled:         optPtr(opts.Enabled),
+		ExemptRoles:     optSlice(opts.ExemptRoles),
+		ExemptChannels:  optSlice(opts.ExemptChannels),
 	}
 	params.AuditLogReason = opts.AuditLogReason
 	rule, err := d.RestClient.CreateAutoModerationRule(ctx, guildID, params)

@@ -13,17 +13,17 @@ import (
 
 // https://docs.discord.com/developers/resources/webhook#create-webhook
 type CreateWebhookParams struct {
-	Name   string  `json:"name"`
-	Avatar *string `json:"avatar,omitempty"`
+	Name   string                 `json:"name"`
+	Avatar discord.Option[string] `json:"avatar,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/webhook#modify-webhook
 type ModifyWebhookParams struct {
-	Name      *string            `json:"name,omitempty"`
-	Avatar    *string            `json:"avatar,omitempty"`
-	ChannelID *discord.Snowflake `json:"channel_id,omitempty"`
+	Name      discord.Option[string]            `json:"name,omitempty"`
+	Avatar    discord.Option[string]            `json:"avatar,omitempty"`
+	ChannelID discord.Option[discord.Snowflake] `json:"channel_id,omitempty"`
 
 	AuditLogReason *string `json:"-"`
 }
@@ -35,15 +35,15 @@ type DeleteWebhookOptions struct {
 
 // https://docs.discord.com/developers/resources/webhook#execute-webhook
 type ExecuteWebhookParams struct {
-	Content         string                   `json:"content,omitempty"`
-	Username        *string                  `json:"username,omitempty"`
-	AvatarURL       *string                  `json:"avatar_url,omitempty"`
-	TTS             bool                     `json:"tts,omitempty"`
-	Embeds          []discord.Embed          `json:"embeds,omitempty"`
-	AllowedMentions *discord.AllowedMentions `json:"allowed_mentions,omitempty"`
-	Components      []discord.AnyComponent   `json:"-"`
-	Flags           discord.MessageFlag      `json:"flags,omitempty"`
-	ThreadName      *string                  `json:"thread_name,omitempty"`
+	Content         discord.Option[string]                  `json:"content,omitempty"`
+	Username        discord.Option[string]                  `json:"username,omitempty"`
+	AvatarURL       discord.Option[string]                  `json:"avatar_url,omitempty"`
+	TTS             discord.Option[bool]                    `json:"tts,omitempty"`
+	Embeds          discord.Option[[]discord.Embed]         `json:"embeds,omitempty"`
+	AllowedMentions discord.Option[discord.AllowedMentions] `json:"allowed_mentions,omitempty"`
+	Components      []discord.AnyComponent                  `json:"-"`
+	Flags           discord.Option[discord.MessageFlag]     `json:"flags,omitempty"`
+	ThreadName      discord.Option[string]                  `json:"thread_name,omitempty"`
 	// Files are binary attachments sent via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
 	Files []discord.MessageFile `json:"-"`
