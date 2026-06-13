@@ -2,8 +2,9 @@ package commands
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/suite"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -130,7 +131,7 @@ func (su *commandSuite) TestSubCommand_NestedOptions() {
 	nested := []AnyApplicationCommandOption{
 		&ApplicationCommandOptionString{Name: "arg", Description: "an argument"},
 	}
-	sc := ApplicationCommandOptionSubCommand{Name: "sub", Description: "d", Options: &nested}
+	sc := ApplicationCommandOptionSubCommand{Name: "sub", Description: "d", Options: nested}
 
 	data, err := json.Marshal(&sc)
 	if err != nil {
@@ -141,10 +142,10 @@ func (su *commandSuite) TestSubCommand_NestedOptions() {
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if got.Options == nil || len(*got.Options) != 1 {
+	if got.Options == nil || len(got.Options) != 1 {
 		t.Fatalf("expected 1 nested option, got %v", got.Options)
 	}
-	if (*got.Options)[0].ApplicationCommandOptionType() != discord.ApplicationCommandOptionTypeString {
+	if (got.Options)[0].ApplicationCommandOptionType() != discord.ApplicationCommandOptionTypeString {
 		t.Fatal("nested option should be a string option")
 	}
 
@@ -240,7 +241,7 @@ func (su *commandSuite) TestCommand_MarshalRoundTripScalars() {
 		ID:            discord.Snowflake(1),
 		Type:          discord.ApplicationCommandType(1),
 		ApplicationID: discord.Snowflake(2),
-		GuildID:       &guild,
+		GuildID:       guild,
 		Name:          "name",
 		Description:   "desc",
 	}
@@ -252,7 +253,7 @@ func (su *commandSuite) TestCommand_MarshalRoundTripScalars() {
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if got.Name != "name" || got.Description != "desc" || got.GuildID == nil || *got.GuildID != 42 {
+	if got.Name != "name" || got.Description != "desc" || got.GuildID != 42 {
 		t.Fatalf("round-trip mismatch: %+v", got)
 	}
 }

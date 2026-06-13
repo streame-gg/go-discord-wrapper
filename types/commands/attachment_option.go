@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -12,7 +13,7 @@ type ApplicationCommandOptionAttachment struct {
 	NameLocalizations        map[discord.Locale]string            `json:"name_localizations,omitempty"`
 	Description              string                               `json:"description"`
 	DescriptionLocalizations map[discord.Locale]string            `json:"description_localizations,omitempty"`
-	Required                 *bool                                `json:"required,omitempty"`
+	Required                 bool                                 `json:"required"`
 }
 
 func (o *ApplicationCommandOptionAttachment) ApplicationCommandOptionType() discord.ApplicationCommandOptionType {

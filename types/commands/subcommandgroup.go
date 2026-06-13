@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -12,7 +13,7 @@ type ApplicationCommandOptionSubCommandGroup struct {
 	NameLocalizations        map[discord.Locale]string            `json:"name_localizations,omitempty"`
 	Description              string                               `json:"description"`
 	DescriptionLocalizations map[discord.Locale]string            `json:"description_localizations,omitempty"`
-	Options                  *[]AnyApplicationCommandOption       `json:"options,omitempty"`
+	Options                  []AnyApplicationCommandOption        `json:"options,omitempty"`
 }
 
 func (o *ApplicationCommandOptionSubCommandGroup) ApplicationCommandOptionType() discord.ApplicationCommandOptionType {
@@ -48,7 +49,7 @@ func (o *ApplicationCommandOptionSubCommandGroup) UnmarshalJSON(data []byte) err
 		if err != nil {
 			return err
 		}
-		o.Options = &opts
+		o.Options = opts
 	}
 
 	return nil

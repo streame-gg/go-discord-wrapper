@@ -9,16 +9,16 @@ import (
 
 // https://docs.discord.com/developers/interactions/application-commands#application-command-object
 type ApplicationCommand struct {
-	ID                       discord.Snowflake                               `json:"id,omitempty"`
-	Type                     discord.ApplicationCommandType                  `json:"type"`
+	ID                       discord.Snowflake                               `json:"id"`
+	Type                     discord.ApplicationCommandType                  `json:"type,omitempty"`
 	ApplicationID            discord.Snowflake                               `json:"application_id"`
-	GuildID                  *discord.Snowflake                              `json:"guild_id,omitempty"`
+	GuildID                  discord.Snowflake                               `json:"guild_id,omitempty"`
 	Name                     string                                          `json:"name"`
 	NameLocalizations        map[discord.Locale]string                       `json:"name_localizations,omitempty"`
 	Description              string                                          `json:"description"`
 	DescriptionLocalizations map[discord.Locale]string                       `json:"description_localizations,omitempty"`
-	DefaultMemberPermissions *discord.Permission                             `json:"default_member_permissions,omitempty"`
-	NSFW                     *bool                                           `json:"nsfw,omitempty"`
+	DefaultMemberPermissions *discord.Permission                             `json:"default_member_permissions"`
+	NSFW                     bool                                            `json:"nsfw,omitempty"`
 	IntegrationTypes         []discord.InteractionApplicationIntegrationType `json:"integration_types,omitempty"`
 	Contexts                 []discord.InteractionContextType                `json:"contexts,omitempty"`
 	Version                  discord.Snowflake                               `json:"version"`

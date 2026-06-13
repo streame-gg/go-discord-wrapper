@@ -178,7 +178,7 @@ func (c *Channel) URL() string {
 		return ""
 	}
 	guild := "@me"
-	if c.GuildID != nil && !c.GuildID.IsEmpty() {
+	if !c.GuildID.IsEmpty() {
 		guild = c.GuildID.String()
 	}
 	return "https://discord.com/channels/" + guild + "/" + c.ID.String()
@@ -197,7 +197,7 @@ func (i *Invite) URL() string {
 
 // IsNSFW reports whether the channel is marked age-restricted.
 func (c *Channel) IsNSFW() bool {
-	return c != nil && c.NSFW != nil && *c.NSFW
+	return c != nil && c.NSFW
 }
 
 // IsThreadOnly reports whether the channel only contains threads (forum and

@@ -275,10 +275,10 @@ func (m *Message) FlagBits() FlagBits[MessageFlag] {
 
 // FlagBits returns the channel's flags as a FlagBits (empty when unset).
 func (c *Channel) FlagBits() FlagBits[ChannelFlags] {
-	if c == nil || c.Flags == nil {
+	if c == nil {
 		return FlagBits[ChannelFlags]{}
 	}
-	return NewFlagBits(*c.Flags)
+	return NewFlagBits(c.Flags)
 }
 
 // FlagBits returns the role's flags as a FlagBits (empty when unset).

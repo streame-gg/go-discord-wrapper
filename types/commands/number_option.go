@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -12,11 +13,11 @@ type ApplicationCommandOptionNumber struct {
 	NameLocalizations        map[discord.Locale]string                 `json:"name_localizations,omitempty"`
 	Description              string                                    `json:"description"`
 	DescriptionLocalizations map[discord.Locale]string                 `json:"description_localizations,omitempty"`
-	Required                 *bool                                     `json:"required,omitempty"`
+	Required                 bool                                      `json:"required"`
 	Choices                  []ApplicationCommandOptionChoice[float64] `json:"choices,omitempty"`
 	MinValue                 *float64                                  `json:"min_value,omitempty"`
 	MaxValue                 *float64                                  `json:"max_value,omitempty"`
-	Autocomplete             *bool                                     `json:"autocomplete,omitempty"`
+	Autocomplete             bool                                      `json:"autocomplete"`
 }
 
 func (o *ApplicationCommandOptionNumber) ApplicationCommandOptionType() discord.ApplicationCommandOptionType {
