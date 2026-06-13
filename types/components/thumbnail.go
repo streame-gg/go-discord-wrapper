@@ -2,6 +2,7 @@ package components
 
 import (
 	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -10,8 +11,8 @@ type ThumbnailComponent struct {
 	Type        discord.ComponentType `json:"type"`
 	ID          *int                  `json:"id,omitempty"`
 	Description string                `json:"description,omitempty"`
-	Spoiler     bool                  `json:"spoiler,omitempty"`
-	Media       *UnfurledMediaItem    `json:"media,omitempty"`
+	Spoiler     bool                  `json:"spoiler"`
+	Media       UnfurledMediaItem     `json:"media"`
 }
 
 func (t *ThumbnailComponent) UnmarshalJSON(data []byte) error {

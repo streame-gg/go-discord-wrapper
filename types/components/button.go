@@ -21,14 +21,14 @@ const (
 // https://docs.discord.com/developers/components/reference#button
 type ButtonComponent struct {
 	Type     discord.ComponentType `json:"type"`
-	ID       *int                  `json:"id,omitempty"`
+	ID       int                   `json:"id,omitempty"`
 	Style    ButtonStyle           `json:"style"`
 	Label    string                `json:"label,omitempty"`
 	Emoji    *discord.Emoji        `json:"emoji,omitempty"`
 	CustomID string                `json:"custom_id,omitempty"`
-	SkuID    *discord.Snowflake    `json:"sku_id,omitempty"`
+	SkuID    discord.Snowflake     `json:"sku_id,omitempty"`
 	URL      string                `json:"url,omitempty"`
-	Disabled bool                  `json:"disabled,omitempty"`
+	Disabled bool                  `json:"disabled"`
 }
 
 func (b *ButtonComponent) UnmarshalJSON(data []byte) error {

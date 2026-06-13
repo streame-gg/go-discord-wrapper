@@ -8,19 +8,19 @@ import (
 
 // https://docs.discord.com/developers/components/reference#radio-group
 type RadioGroupComponent struct {
-	Type     discord.ComponentType        `json:"type"`
-	ID       *int                         `json:"id,omitempty"`
-	CustomID string                       `json:"custom_id"`
-	Options  *[]RadioGroupComponentOption `json:"options"`
-	Required *bool                        `json:"required,omitempty"`
+	Type     discord.ComponentType       `json:"type"`
+	ID       *int                        `json:"id,omitempty"`
+	CustomID string                      `json:"custom_id"`
+	Options  []RadioGroupComponentOption `json:"options"`
+	Required bool                        `json:"required"`
 }
 
-// https://docs.discord.com/developers/components/reference#radio-group
+// https://docs.discord.com/developers/components/reference#radio-group-option-structure
 type RadioGroupComponentOption struct {
-	Value       string  `json:"value"`
-	Label       string  `json:"label"`
-	Description *string `json:"description,omitempty"`
-	Default     *bool   `json:"default,omitempty"`
+	Value       string `json:"value"`
+	Label       string `json:"label"`
+	Description string `json:"description,omitempty"`
+	Default     bool   `json:"default"`
 }
 
 func (r *RadioGroupComponent) MarshalJSON() ([]byte, error) {
@@ -63,8 +63,8 @@ func (r *RadioGroupComponent) IsAnyLabelComponent() {
 type RadioGroupComponentInteractionResponse struct {
 	Type     discord.ComponentType `json:"type"`
 	ID       *int                  `json:"id,omitempty"`
-	CustomID string                `json:"custom_id,omitempty"`
-	Value    *string               `json:"value,omitempty"`
+	CustomID string                `json:"custom_id"`
+	Value    *string               `json:"value"`
 }
 
 func (r *RadioGroupComponentInteractionResponse) IsInteractionResponseDataComponent() {}

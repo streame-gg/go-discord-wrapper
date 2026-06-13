@@ -90,7 +90,7 @@ func (a *ApplicationCommand) UnmarshalJSON(data []byte) error {
 		if err != nil {
 			return err
 		}
-		a.Options = &opts
+		a.Options = opts
 	}
 
 	return nil

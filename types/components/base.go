@@ -48,7 +48,7 @@ const (
 	SelectDefaultValueTypeChannel SelectDefaultValueType = "channel"
 )
 
-// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-application-command-interaction-data-option-structure
+// https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-option-type
 type ApplicationCommandInteractionOptionType int
 
 const (
@@ -67,10 +67,20 @@ const (
 
 // https://docs.discord.com/developers/components/reference#unfurled-media-item-structure
 type UnfurledMediaItem struct {
-	URL          string             `json:"url"`
-	ProxyURL     string             `json:"proxy_url,omitempty"`
-	Height       int                `json:"height,omitempty"`
-	Width        int                `json:"width,omitempty"`
-	ContentType  string             `json:"content_type,omitempty"`
-	AttachmentID *discord.Snowflake `json:"attachment_id,omitempty"`
+	URL                string                 `json:"url"`
+	ProxyURL           string                 `json:"proxy_url,omitempty"`
+	Height             *int                   `json:"height,omitempty"`
+	Width              *int                   `json:"width,omitempty"`
+	ContentType        string                 `json:"content_type,omitempty"`
+	AttachmentID       discord.Snowflake      `json:"attachment_id,omitempty"`
+	PlaceholderVersion int                    `json:"placeholder_version,omitempty"`
+	Placeholder        string                 `json:"placeholder,omitempty"`
+	Flags              UnfurledMediaItemFlags `json:"flags,omitempty"`
 }
+
+// https://docs.discord.com/developers/components/reference#unfurled-media-item-unfurled-media-item-flags
+type UnfurledMediaItemFlags uint64
+
+const (
+	UnfurledMediaItemFlagIsAnimated UnfurledMediaItemFlags = 1 << 0
+)

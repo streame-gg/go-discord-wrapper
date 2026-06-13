@@ -2,10 +2,11 @@ package components
 
 import (
 	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-// https://docs.discord.com/developers/components/reference#separator-separator-spacing-size
+// https://docs.discord.com/developers/components/reference#separator-spacing-size
 type SeparatorComponentSpacing int
 
 const (
@@ -17,7 +18,7 @@ const (
 type SeparatorComponent struct {
 	Type                      discord.ComponentType     `json:"type"`
 	ID                        *int                      `json:"id,omitempty"`
-	Divider                   bool                      `json:"divider,omitempty"`
+	Divider                   bool                      `json:"divider"`
 	SeparatorComponentSpacing SeparatorComponentSpacing `json:"spacing,omitempty"`
 }
 

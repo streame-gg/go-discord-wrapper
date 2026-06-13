@@ -14,9 +14,9 @@ type UserSelectMenuComponent struct {
 	Placeholder   string                `json:"placeholder,omitempty"`
 	MinValues     *int                  `json:"min_values,omitempty"`
 	MaxValues     *int                  `json:"max_values,omitempty"`
-	Required      bool                  `json:"required,omitempty"`
-	Disabled      bool                  `json:"disabled,omitempty"`
-	DefaultValues *[]SelectDefaultValue `json:"default_values,omitempty"`
+	Required      bool                  `json:"required"`
+	Disabled      bool                  `json:"disabled"`
+	DefaultValues []SelectDefaultValue  `json:"default_values,omitempty"`
 }
 
 func (u *UserSelectMenuComponent) IsAnyContainerAccessory() bool {
@@ -63,9 +63,9 @@ type UserSelectComponentInteractionResponse struct {
 	Type          discord.ComponentType `json:"type"`
 	Values        []discord.Snowflake   `json:"values"`
 	ID            *int                  `json:"id,omitempty"`
-	CustomID      string                `json:"custom_id,omitempty"`
+	CustomID      string                `json:"custom_id"`
 	ComponentType discord.ComponentType `json:"component_type"`
-	Resolved      *discord.ResolvedData `json:"resolved,omitempty"`
+	Resolved      discord.ResolvedData  `json:"resolved"`
 }
 
 func (u *UserSelectComponentInteractionResponse) IsInteractionResponseDataComponent() {

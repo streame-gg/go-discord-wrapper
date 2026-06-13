@@ -14,9 +14,9 @@ type RoleSelectMenuComponent struct {
 	Placeholder   string                `json:"placeholder,omitempty"`
 	MinValues     *int                  `json:"min_values,omitempty"`
 	MaxValues     *int                  `json:"max_values,omitempty"`
-	Required      bool                  `json:"required,omitempty"`
-	Disabled      bool                  `json:"disabled,omitempty"`
-	DefaultValues *[]SelectDefaultValue `json:"default_values,omitempty"`
+	Required      bool                  `json:"required"`
+	Disabled      bool                  `json:"disabled"`
+	DefaultValues []SelectDefaultValue  `json:"default_values,omitempty"`
 }
 
 func (r *RoleSelectMenuComponent) IsAnyContainerAccessory() bool {

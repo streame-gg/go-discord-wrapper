@@ -2,26 +2,27 @@ package components
 
 import (
 	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // https://docs.discord.com/developers/components/reference#checkbox-group
 type CheckboxGroupComponent struct {
-	Type      discord.ComponentType           `json:"type"`
-	ID        *int                            `json:"id,omitempty"`
-	CustomID  string                          `json:"custom_id"`
-	Options   *[]CheckboxGroupComponentOption `json:"options"`
-	MinValues *int                            `json:"min_values,omitempty"`
-	MaxValues *int                            `json:"max_values,omitempty"`
-	Required  *bool                           `json:"required,omitempty"`
+	Type      discord.ComponentType          `json:"type"`
+	ID        *int                           `json:"id,omitempty"`
+	CustomID  string                         `json:"custom_id"`
+	Options   []CheckboxGroupComponentOption `json:"options"`
+	MinValues *int                           `json:"min_values,omitempty"`
+	MaxValues *int                           `json:"max_values,omitempty"`
+	Required  bool                           `json:"required"`
 }
 
-// https://docs.discord.com/developers/components/reference#checkbox-group
+// https://docs.discord.com/developers/components/reference#checkbox-group-option-structure
 type CheckboxGroupComponentOption struct {
-	Value       string  `json:"value"`
-	Label       string  `json:"label"`
-	Description *string `json:"description,omitempty"`
-	Default     *bool   `json:"default,omitempty"`
+	Value       string `json:"value"`
+	Label       string `json:"label"`
+	Description string `json:"description,omitempty"`
+	Default     bool   `json:"default"`
 }
 
 func (c *CheckboxGroupComponent) MarshalJSON() ([]byte, error) {
@@ -60,12 +61,12 @@ func (c *CheckboxGroupComponent) IsAnyLabelComponent() {
 
 }
 
-// https://docs.discord.com/developers/components/reference#checkbox-group
+// https://docs.discord.com/developers/components/reference#checkbox-group-interaction-response-structure
 type CheckboxGroupComponentInteractionResponse struct {
 	Type     discord.ComponentType `json:"type"`
 	Values   []string              `json:"values"`
 	ID       *int                  `json:"id,omitempty"`
-	CustomID string                `json:"custom_id,omitempty"`
+	CustomID string                `json:"custom_id"`
 }
 
 func (c *CheckboxGroupComponentInteractionResponse) IsInteractionResponseDataComponent() {}

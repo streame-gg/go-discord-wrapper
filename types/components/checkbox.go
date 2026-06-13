@@ -2,6 +2,7 @@ package components
 
 import (
 	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -10,7 +11,7 @@ type CheckboxComponent struct {
 	Type     discord.ComponentType `json:"type"`
 	ID       *int                  `json:"id,omitempty"`
 	CustomID string                `json:"custom_id"`
-	Default  *bool                 `json:"default,omitempty"`
+	Default  bool                  `json:"default"`
 }
 
 func (c *CheckboxComponent) MarshalJSON() ([]byte, error) {

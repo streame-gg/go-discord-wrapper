@@ -111,7 +111,7 @@ func (l *LabelComponent) GetType() discord.ComponentType {
 type LabelComponentInteractionResponse struct {
 	Type      discord.ComponentType           `json:"type"`
 	ID        *int                            `json:"id,omitempty"`
-	Component AnyComponentInteractionResponse `json:"component,omitempty"`
+	Component AnyComponentInteractionResponse `json:"component"`
 }
 
 func (l *LabelComponentInteractionResponse) IsInteractionResponseDataComponent() {}
@@ -188,8 +188,8 @@ func (l *LabelComponentInteractionResponse) UnmarshalJSON(data []byte) error {
 type ComponentLabelComponent struct {
 	Type        discord.ComponentType           `json:"type"`
 	ID          *int                            `json:"id,omitempty"`
-	Label       *string                         `json:"label"`
-	Description *string                         `json:"description,omitempty"`
+	Label       string                          `json:"label"`
+	Description string                          `json:"description,omitempty"`
 	Component   AnyComponentInteractionResponse `json:"component,omitempty"`
 }
 
@@ -197,8 +197,8 @@ func (l *ComponentLabelComponent) UnmarshalJSON(data []byte) error {
 	var raw struct {
 		Type        discord.ComponentType `json:"type"`
 		ID          *int                  `json:"id,omitempty"`
-		Label       *string               `json:"label"`
-		Description *string               `json:"description,omitempty"`
+		Label       string                `json:"label"`
+		Description string                `json:"description,omitempty"`
 		Component   *json.RawMessage      `json:"component,omitempty"`
 	}
 

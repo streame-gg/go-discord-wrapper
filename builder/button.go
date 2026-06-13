@@ -18,7 +18,13 @@ type ButtonBuilder struct {
 	btn components.ButtonComponent
 }
 
-func NewButton() *ButtonBuilder { return &ButtonBuilder{} }
+func NewButton() *ButtonBuilder {
+	return &ButtonBuilder{
+		btn: components.ButtonComponent{
+			Type: discord.ComponentTypeButton,
+		},
+	}
+}
 
 func (b *ButtonBuilder) SetStyle(style components.ButtonStyle) *ButtonBuilder {
 	b.btn.Style = style
@@ -48,7 +54,7 @@ func (b *ButtonBuilder) SetEmoji(emoji *discord.Emoji) *ButtonBuilder {
 
 // SetSKUID sets the SKU ID for premium-style buttons (ButtonStylePremium).
 func (b *ButtonBuilder) SetSKUID(id discord.Snowflake) *ButtonBuilder {
-	b.btn.SkuID = &id
+	b.btn.SkuID = id
 	return b
 }
 

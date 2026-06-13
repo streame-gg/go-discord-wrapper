@@ -11,7 +11,7 @@ type FileUploadComponent struct {
 	Type      discord.ComponentType `json:"type"`
 	ID        *int                  `json:"id,omitempty"`
 	CustomID  string                `json:"custom_id"`
-	Required  *bool                 `json:"required,omitempty"`
+	Required  bool                  `json:"required"`
 	MinValues *int                  `json:"min_values,omitempty"`
 	MaxValues *int                  `json:"max_values,omitempty"`
 }

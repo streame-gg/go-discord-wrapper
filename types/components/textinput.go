@@ -2,6 +2,7 @@ package components
 
 import (
 	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -21,7 +22,7 @@ type TextInputComponent struct {
 	Style       TextInputStyle        `json:"style"`
 	MinLength   *int                  `json:"min_length,omitempty"`
 	MaxLength   *int                  `json:"max_length,omitempty"`
-	Required    *bool                 `json:"required,omitempty"`
+	Required    bool                  `json:"required"`
 	Value       string                `json:"value,omitempty"`
 	Placeholder string                `json:"placeholder,omitempty"`
 }

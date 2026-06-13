@@ -2,6 +2,7 @@ package components
 
 import (
 	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -9,7 +10,7 @@ import (
 type MediaGalleryComponent struct {
 	Type  discord.ComponentType `json:"type"`
 	ID    *int                  `json:"id,omitempty"`
-	Items *[]MediaGalleryItem   `json:"items"`
+	Items []MediaGalleryItem    `json:"items"`
 }
 
 func (m *MediaGalleryComponent) UnmarshalJSON(data []byte) error {
@@ -50,7 +51,7 @@ func (m *MediaGalleryComponent) IsAnyContainerComponent() {
 
 // https://docs.discord.com/developers/components/reference#media-gallery-media-gallery-item-structure
 type MediaGalleryItem struct {
-	Media       *UnfurledMediaItem `json:"media"`
-	Description string             `json:"description,omitempty"`
-	Spoiler     bool               `json:"spoiler,omitempty"`
+	Media       UnfurledMediaItem `json:"media"`
+	Description *string           `json:"description,omitempty"`
+	Spoiler     bool              `json:"spoiler"`
 }

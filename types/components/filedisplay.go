@@ -2,6 +2,7 @@ package components
 
 import (
 	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -9,7 +10,7 @@ import (
 type FileComponent struct {
 	Type    discord.ComponentType `json:"type"`
 	ID      *int                  `json:"id,omitempty"`
-	Spoiler bool                  `json:"spoiler,omitempty"`
+	Spoiler bool                  `json:"spoiler"`
 	Name    string                `json:"name,omitempty"`
 	Size    int                   `json:"size,omitempty"`
 	File    *UnfurledMediaItem    `json:"file,omitempty"`
