@@ -43,3 +43,38 @@ func (o *ApplicationCommandOptionUser) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+func NewUserOptionBuilder() *ApplicationCommandOptionUser {
+	return &ApplicationCommandOptionUser{
+		Type: discord.ApplicationCommandOptionTypeUser,
+	}
+}
+
+func (o *ApplicationCommandOptionUser) SetName(name string) *ApplicationCommandOptionUser {
+	o.Name = name
+	return o
+}
+
+func (o *ApplicationCommandOptionUser) SetNameLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionUser {
+	o.NameLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionUser) SetDescription(description string) *ApplicationCommandOptionUser {
+	o.Description = description
+	return o
+}
+
+func (o *ApplicationCommandOptionUser) SetDescriptionLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionUser {
+	o.DescriptionLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionUser) SetRequired(required bool) *ApplicationCommandOptionUser {
+	o.Required = required
+	return o
+}
+
+func (o *ApplicationCommandOptionUser) Build() ApplicationCommandOptionUser {
+	return *o
+}

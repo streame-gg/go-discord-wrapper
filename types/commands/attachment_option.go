@@ -43,3 +43,38 @@ func (o *ApplicationCommandOptionAttachment) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+func NewAttachmentOptionBuilder() *ApplicationCommandOptionAttachment {
+	return &ApplicationCommandOptionAttachment{
+		Type: discord.ApplicationCommandOptionTypeAttachment,
+	}
+}
+
+func (o *ApplicationCommandOptionAttachment) SetName(name string) *ApplicationCommandOptionAttachment {
+	o.Name = name
+	return o
+}
+
+func (o *ApplicationCommandOptionAttachment) SetNameLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionAttachment {
+	o.NameLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionAttachment) SetDescription(description string) *ApplicationCommandOptionAttachment {
+	o.Description = description
+	return o
+}
+
+func (o *ApplicationCommandOptionAttachment) SetDescriptionLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionAttachment {
+	o.DescriptionLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionAttachment) SetRequired(required bool) *ApplicationCommandOptionAttachment {
+	o.Required = required
+	return o
+}
+
+func (o *ApplicationCommandOptionAttachment) Build() ApplicationCommandOptionAttachment {
+	return *o
+}

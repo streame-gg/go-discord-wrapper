@@ -43,3 +43,38 @@ func (o *ApplicationCommandOptionMentionable) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+func NewMentionableOptionBuilder() *ApplicationCommandOptionMentionable {
+	return &ApplicationCommandOptionMentionable{
+		Type: discord.ApplicationCommandOptionTypeMentionable,
+	}
+}
+
+func (o *ApplicationCommandOptionMentionable) SetName(name string) *ApplicationCommandOptionMentionable {
+	o.Name = name
+	return o
+}
+
+func (o *ApplicationCommandOptionMentionable) SetNameLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionMentionable {
+	o.NameLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionMentionable) SetDescription(description string) *ApplicationCommandOptionMentionable {
+	o.Description = description
+	return o
+}
+
+func (o *ApplicationCommandOptionMentionable) SetDescriptionLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionMentionable {
+	o.DescriptionLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionMentionable) SetRequired(required bool) *ApplicationCommandOptionMentionable {
+	o.Required = required
+	return o
+}
+
+func (o *ApplicationCommandOptionMentionable) Build() ApplicationCommandOptionMentionable {
+	return *o
+}

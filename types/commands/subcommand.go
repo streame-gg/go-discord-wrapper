@@ -54,3 +54,48 @@ func (o *ApplicationCommandOptionSubCommand) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+func NewSubCommandOptionBuilder() *ApplicationCommandOptionSubCommand {
+	return &ApplicationCommandOptionSubCommand{
+		Type: discord.ApplicationCommandOptionTypeSubCommand,
+	}
+}
+
+func (o *ApplicationCommandOptionSubCommand) SetName(name string) *ApplicationCommandOptionSubCommand {
+	o.Name = name
+	return o
+}
+
+func (o *ApplicationCommandOptionSubCommand) SetNameLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionSubCommand {
+	o.NameLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionSubCommand) SetDescription(description string) *ApplicationCommandOptionSubCommand {
+	o.Description = description
+	return o
+}
+
+func (o *ApplicationCommandOptionSubCommand) SetDescriptionLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionSubCommand {
+	o.DescriptionLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionSubCommand) AddOptions(opt ...AnyApplicationCommandOption) *ApplicationCommandOptionSubCommand {
+	o.Options = append(o.Options, opt...)
+	return o
+}
+
+func (o *ApplicationCommandOptionSubCommand) AddOption(opt AnyApplicationCommandOption) *ApplicationCommandOptionSubCommand {
+	o.Options = append(o.Options, opt)
+	return o
+}
+
+func (o *ApplicationCommandOptionSubCommand) SetOptions(opt ...AnyApplicationCommandOption) *ApplicationCommandOptionSubCommand {
+	o.Options = opt
+	return o
+}
+
+func (o *ApplicationCommandOptionSubCommand) Build() ApplicationCommandOptionSubCommand {
+	return *o
+}

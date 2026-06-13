@@ -43,3 +43,38 @@ func (o *ApplicationCommandOptionRole) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+func NewRoleOptionBuilder() *ApplicationCommandOptionRole {
+	return &ApplicationCommandOptionRole{
+		Type: discord.ApplicationCommandOptionTypeRole,
+	}
+}
+
+func (o *ApplicationCommandOptionRole) SetName(name string) *ApplicationCommandOptionRole {
+	o.Name = name
+	return o
+}
+
+func (o *ApplicationCommandOptionRole) SetNameLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionRole {
+	o.NameLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionRole) SetDescription(description string) *ApplicationCommandOptionRole {
+	o.Description = description
+	return o
+}
+
+func (o *ApplicationCommandOptionRole) SetDescriptionLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionRole {
+	o.DescriptionLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionRole) SetRequired(required bool) *ApplicationCommandOptionRole {
+	o.Required = required
+	return o
+}
+
+func (o *ApplicationCommandOptionRole) Build() ApplicationCommandOptionRole {
+	return *o
+}

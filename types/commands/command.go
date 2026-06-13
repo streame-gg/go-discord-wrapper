@@ -23,7 +23,7 @@ type ApplicationCommand struct {
 	Contexts                 []discord.InteractionContextType                `json:"contexts,omitempty"`
 	Version                  discord.Snowflake                               `json:"version"`
 	Handler                  CommandHandlerType                              `json:"handler_type,omitempty"`
-	Options                  *[]AnyApplicationCommandOption                  `json:"options,omitempty"`
+	Options                  []AnyApplicationCommandOption                   `json:"options,omitempty"`
 }
 
 func unmarshalApplicationCommandOption(data []byte) (AnyApplicationCommandOption, error) {

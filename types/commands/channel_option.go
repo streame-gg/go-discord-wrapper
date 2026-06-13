@@ -44,3 +44,43 @@ func (o *ApplicationCommandOptionChannel) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+func NewChannelOptionBuilder() *ApplicationCommandOptionChannel {
+	return &ApplicationCommandOptionChannel{
+		Type: discord.ApplicationCommandOptionTypeChannel,
+	}
+}
+
+func (o *ApplicationCommandOptionChannel) SetName(name string) *ApplicationCommandOptionChannel {
+	o.Name = name
+	return o
+}
+
+func (o *ApplicationCommandOptionChannel) SetNameLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionChannel {
+	o.NameLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionChannel) SetDescription(description string) *ApplicationCommandOptionChannel {
+	o.Description = description
+	return o
+}
+
+func (o *ApplicationCommandOptionChannel) SetDescriptionLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionChannel {
+	o.DescriptionLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionChannel) SetRequired(required bool) *ApplicationCommandOptionChannel {
+	o.Required = required
+	return o
+}
+
+func (o *ApplicationCommandOptionChannel) SetChannelTypes(channelTypes []discord.ChannelType) *ApplicationCommandOptionChannel {
+	o.ChannelTypes = channelTypes
+	return o
+}
+
+func (o *ApplicationCommandOptionChannel) Build() ApplicationCommandOptionChannel {
+	return *o
+}

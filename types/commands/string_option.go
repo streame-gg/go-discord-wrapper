@@ -47,3 +47,58 @@ func (o *ApplicationCommandOptionString) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+func NewStringOptionBuilder() *ApplicationCommandOptionString {
+	return &ApplicationCommandOptionString{
+		Type: discord.ApplicationCommandOptionTypeString,
+	}
+}
+
+func (o *ApplicationCommandOptionString) SetName(name string) *ApplicationCommandOptionString {
+	o.Name = name
+	return o
+}
+
+func (o *ApplicationCommandOptionString) SetNameLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionString {
+	o.NameLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionString) SetDescription(description string) *ApplicationCommandOptionString {
+	o.Description = description
+	return o
+}
+
+func (o *ApplicationCommandOptionString) SetDescriptionLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionString {
+	o.DescriptionLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionString) SetRequired(required bool) *ApplicationCommandOptionString {
+	o.Required = required
+	return o
+}
+
+func (o *ApplicationCommandOptionString) SetMinLength(minValue int64) *ApplicationCommandOptionString {
+	o.MinLength = &minValue
+	return o
+}
+
+func (o *ApplicationCommandOptionString) SetMaxLength(maxValue int64) *ApplicationCommandOptionString {
+	o.MaxLength = &maxValue
+	return o
+}
+
+func (o *ApplicationCommandOptionString) SetAutocomplete(autocomplete bool) *ApplicationCommandOptionString {
+	o.Autocomplete = autocomplete
+	return o
+}
+
+func (o *ApplicationCommandOptionString) SetChoices(choices []ApplicationCommandOptionChoice[string]) *ApplicationCommandOptionString {
+	o.Choices = choices
+	return o
+}
+
+func (o *ApplicationCommandOptionString) Build() ApplicationCommandOptionString {
+	return *o
+}

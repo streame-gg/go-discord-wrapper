@@ -43,3 +43,38 @@ func (o *ApplicationCommandOptionBoolean) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+func NewBooleanOptionBuilder() *ApplicationCommandOptionBoolean {
+	return &ApplicationCommandOptionBoolean{
+		Type: discord.ApplicationCommandOptionTypeBoolean,
+	}
+}
+
+func (o *ApplicationCommandOptionBoolean) SetName(name string) *ApplicationCommandOptionBoolean {
+	o.Name = name
+	return o
+}
+
+func (o *ApplicationCommandOptionBoolean) SetNameLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionBoolean {
+	o.NameLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionBoolean) SetDescription(description string) *ApplicationCommandOptionBoolean {
+	o.Description = description
+	return o
+}
+
+func (o *ApplicationCommandOptionBoolean) SetDescriptionLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionBoolean {
+	o.DescriptionLocalizations = localizations
+	return o
+}
+
+func (o *ApplicationCommandOptionBoolean) SetRequired(required bool) *ApplicationCommandOptionBoolean {
+	o.Required = required
+	return o
+}
+
+func (o *ApplicationCommandOptionBoolean) Build() ApplicationCommandOptionBoolean {
+	return *o
+}
