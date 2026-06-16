@@ -1,18 +1,16 @@
-package commands
+package discord
 
 import (
 	"encoding/json"
-
-	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-option-structure
 type ApplicationCommandOptionString struct {
-	Type                     discord.ApplicationCommandOptionType     `json:"type"`
+	Type                     ApplicationCommandOptionType             `json:"type"`
 	Name                     string                                   `json:"name"`
-	NameLocalizations        map[discord.Locale]string                `json:"name_localizations,omitempty"`
+	NameLocalizations        map[Locale]string                        `json:"name_localizations,omitempty"`
 	Description              string                                   `json:"description"`
-	DescriptionLocalizations map[discord.Locale]string                `json:"description_localizations,omitempty"`
+	DescriptionLocalizations map[Locale]string                        `json:"description_localizations,omitempty"`
 	Required                 bool                                     `json:"required"`
 	Choices                  []ApplicationCommandOptionChoice[string] `json:"choices,omitempty"`
 	Autocomplete             bool                                     `json:"autocomplete"`
@@ -20,15 +18,15 @@ type ApplicationCommandOptionString struct {
 	MaxLength                *int64                                   `json:"max_length,omitempty"`
 }
 
-func (o *ApplicationCommandOptionString) ApplicationCommandOptionType() discord.ApplicationCommandOptionType {
-	return discord.ApplicationCommandOptionTypeString
+func (o *ApplicationCommandOptionString) ApplicationCommandOptionType() ApplicationCommandOptionType {
+	return ApplicationCommandOptionTypeString
 }
 
 func (o *ApplicationCommandOptionString) MarshalJSON() ([]byte, error) {
 	type Alias ApplicationCommandOptionString
 	return json.Marshal(struct {
 		Alias
-		Type discord.ApplicationCommandOptionType `json:"type"`
+		Type ApplicationCommandOptionType `json:"type"`
 	}{
 		Alias: Alias(*o),
 		Type:  o.ApplicationCommandOptionType(),
@@ -50,7 +48,7 @@ func (o *ApplicationCommandOptionString) UnmarshalJSON(data []byte) error {
 
 func NewStringOptionBuilder() *ApplicationCommandOptionString {
 	return &ApplicationCommandOptionString{
-		Type: discord.ApplicationCommandOptionTypeString,
+		Type: ApplicationCommandOptionTypeString,
 	}
 }
 
@@ -59,7 +57,7 @@ func (o *ApplicationCommandOptionString) SetName(name string) *ApplicationComman
 	return o
 }
 
-func (o *ApplicationCommandOptionString) SetNameLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionString {
+func (o *ApplicationCommandOptionString) SetNameLocalizations(localizations map[Locale]string) *ApplicationCommandOptionString {
 	o.NameLocalizations = localizations
 	return o
 }
@@ -69,7 +67,7 @@ func (o *ApplicationCommandOptionString) SetDescription(description string) *App
 	return o
 }
 
-func (o *ApplicationCommandOptionString) SetDescriptionLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionString {
+func (o *ApplicationCommandOptionString) SetDescriptionLocalizations(localizations map[Locale]string) *ApplicationCommandOptionString {
 	o.DescriptionLocalizations = localizations
 	return o
 }

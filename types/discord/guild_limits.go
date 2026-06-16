@@ -12,9 +12,6 @@ import "strings"
 // each of the static and animated buckets. Guilds with the MORE_EMOJI feature
 // get a flat raised cap regardless of tier.
 func (g *Guild) MaxEmojis() int {
-	if g.HasFeature(GuildFeatures("MORE_EMOJI")) {
-		return 200
-	}
 	switch g.PremiumTier {
 	case GuildPremiumTierTier1:
 		return 100

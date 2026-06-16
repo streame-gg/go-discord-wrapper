@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/cache"
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/stretchr/testify/suite"
 )
@@ -30,7 +31,7 @@ func guild(id string) *discord.Guild {
 }
 
 func channel(id string) *discord.Channel {
-	return &discord.Channel{ID: mustSnowflake(id), Name: "chan-" + id}
+	return &discord.Channel{ID: mustSnowflake(id), Name: util.PointerOf("chan-" + id)}
 }
 
 func user(id string) *discord.User {

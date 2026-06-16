@@ -79,6 +79,7 @@ type ScheduledEventCreateOptions struct {
 func (g *Guild) Hydrate(c EntityClient) {
 	g.hClient = c
 	g.hydrateNested(c)
+	c.SetGuildManagers(g)
 }
 
 // WithClient returns a shallow copy of the Guild with the client replaced.

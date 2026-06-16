@@ -1,9 +1,10 @@
 package builder
 
 import (
-	"github.com/stretchr/testify/suite"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/stretchr/testify/assert"
@@ -108,7 +109,7 @@ func (su *embedSuite) TestBug134_BuildChecked_ReturnsEmbedOnSuccess() {
 	embed, err := b.BuildChecked()
 	require.NoError(t, err)
 	require.NotNil(t, embed.Title)
-	assert.Equal(t, "ok", *embed.Title)
+	assert.Equal(t, "ok", embed.Title)
 }
 
 func (su *embedSuite) TestBug134_BuildChecked_ReturnsErrorOnViolation() {
@@ -124,7 +125,7 @@ func (su *embedSuite) TestBug134_Build_StillWorksWithoutValidation() {
 	b := NewEmbed().SetTitle(strings.Repeat("x", 257))
 	embed := b.Build()
 	require.NotNil(t, embed.Title)
-	assert.Equal(t, 257, len([]rune(*embed.Title)), "Build() must not truncate (Bug 134)")
+	assert.Equal(t, 257, len([]rune(embed.Title)), "Build() must not truncate (Bug 134)")
 }
 
 // TestEmbedBuilder_TwoBuildsAreIndependent checks that two Build() calls on

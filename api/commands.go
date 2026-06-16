@@ -6,13 +6,12 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // RegisterCommand registers a single application command for the given application ID.
 // https://docs.discord.com/developers/interactions/application-commands#create-global-application-command
-func (c *RestClient) RegisterCommand(ctx context.Context, appID discord.Snowflake, cmd *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+func (c *RestClient) RegisterCommand(ctx context.Context, appID discord.Snowflake, cmd *discord.ApplicationCommand) (*discord.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -27,7 +26,7 @@ func (c *RestClient) RegisterCommand(ctx context.Context, appID discord.Snowflak
 		return nil, err
 	}
 
-	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
+	return doRequest[discord.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK:      true,
 		http.StatusCreated: true,
 	})
@@ -36,7 +35,7 @@ func (c *RestClient) RegisterCommand(ctx context.Context, appID discord.Snowflak
 // BulkRegisterCommands overwrites all global application commands for the given application ID.
 // Any commands not included in cmds are deleted.
 // https://docs.discord.com/developers/interactions/application-commands#bulk-overwrite-global-application-commands
-func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID discord.Snowflake, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
+func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID discord.Snowflake, cmds []*discord.ApplicationCommand) ([]*discord.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -51,7 +50,7 @@ func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID discord.Sno
 		return nil, err
 	}
 
-	return doRequestSlice[commands.ApplicationCommand](c, req, map[int]bool{
+	return doRequestSlice[discord.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -61,7 +60,7 @@ func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID discord.Sno
 // ListGlobalApplicationCommands returns all global application commands for the given application ID.
 // Set withLocalizations to true to include localization dictionaries.
 // https://docs.discord.com/developers/interactions/application-commands#get-global-application-commands
-func (c *RestClient) ListGlobalApplicationCommands(ctx context.Context, appID discord.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
+func (c *RestClient) ListGlobalApplicationCommands(ctx context.Context, appID discord.Snowflake, withLocalizations bool) ([]*discord.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -76,14 +75,14 @@ func (c *RestClient) ListGlobalApplicationCommands(ctx context.Context, appID di
 		return nil, err
 	}
 
-	return doRequestSlice[commands.ApplicationCommand](c, req, map[int]bool{
+	return doRequestSlice[discord.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // GetGlobalApplicationCommand returns a single global application command.
 // https://docs.discord.com/developers/interactions/application-commands#get-global-application-command
-func (c *RestClient) GetGlobalApplicationCommand(ctx context.Context, appID, cmdID discord.Snowflake) (*commands.ApplicationCommand, error) {
+func (c *RestClient) GetGlobalApplicationCommand(ctx context.Context, appID, cmdID discord.Snowflake) (*discord.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -98,14 +97,14 @@ func (c *RestClient) GetGlobalApplicationCommand(ctx context.Context, appID, cmd
 		return nil, err
 	}
 
-	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
+	return doRequest[discord.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // EditGlobalApplicationCommand updates a global application command.
 // https://docs.discord.com/developers/interactions/application-commands#edit-global-application-command
-func (c *RestClient) EditGlobalApplicationCommand(ctx context.Context, appID, cmdID discord.Snowflake, params *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+func (c *RestClient) EditGlobalApplicationCommand(ctx context.Context, appID, cmdID discord.Snowflake, params *discord.ApplicationCommand) (*discord.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -125,7 +124,7 @@ func (c *RestClient) EditGlobalApplicationCommand(ctx context.Context, appID, cm
 		return nil, err
 	}
 
-	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
+	return doRequest[discord.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -154,7 +153,7 @@ func (c *RestClient) DeleteGlobalApplicationCommand(ctx context.Context, appID, 
 
 // ListGuildApplicationCommands returns all application commands registered to a specific guild.
 // https://docs.discord.com/developers/interactions/application-commands#get-guild-application-commands
-func (c *RestClient) ListGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, withLocalizations bool) ([]*commands.ApplicationCommand, error) {
+func (c *RestClient) ListGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, withLocalizations bool) ([]*discord.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -173,14 +172,14 @@ func (c *RestClient) ListGuildApplicationCommands(ctx context.Context, appID, gu
 		return nil, err
 	}
 
-	return doRequestSlice[commands.ApplicationCommand](c, req, map[int]bool{
+	return doRequestSlice[discord.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // CreateGuildApplicationCommand registers a command in a specific guild.
 // https://docs.discord.com/developers/interactions/application-commands#create-guild-application-command
-func (c *RestClient) CreateGuildApplicationCommand(ctx context.Context, appID, guildID discord.Snowflake, cmd *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+func (c *RestClient) CreateGuildApplicationCommand(ctx context.Context, appID, guildID discord.Snowflake, cmd *discord.ApplicationCommand) (*discord.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -200,7 +199,7 @@ func (c *RestClient) CreateGuildApplicationCommand(ctx context.Context, appID, g
 		return nil, err
 	}
 
-	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
+	return doRequest[discord.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK:      true,
 		http.StatusCreated: true,
 	})
@@ -208,7 +207,7 @@ func (c *RestClient) CreateGuildApplicationCommand(ctx context.Context, appID, g
 
 // GetGuildApplicationCommand returns a single guild-specific application command.
 // https://docs.discord.com/developers/interactions/application-commands#get-guild-application-command
-func (c *RestClient) GetGuildApplicationCommand(ctx context.Context, appID, guildID, cmdID discord.Snowflake) (*commands.ApplicationCommand, error) {
+func (c *RestClient) GetGuildApplicationCommand(ctx context.Context, appID, guildID, cmdID discord.Snowflake) (*discord.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -227,14 +226,14 @@ func (c *RestClient) GetGuildApplicationCommand(ctx context.Context, appID, guil
 		return nil, err
 	}
 
-	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
+	return doRequest[discord.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
 
 // EditGuildApplicationCommand updates a guild-specific application command.
 // https://docs.discord.com/developers/interactions/application-commands#edit-guild-application-command
-func (c *RestClient) EditGuildApplicationCommand(ctx context.Context, appID, guildID, cmdID discord.Snowflake, params *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+func (c *RestClient) EditGuildApplicationCommand(ctx context.Context, appID, guildID, cmdID discord.Snowflake, params *discord.ApplicationCommand) (*discord.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -258,7 +257,7 @@ func (c *RestClient) EditGuildApplicationCommand(ctx context.Context, appID, gui
 		return nil, err
 	}
 
-	return doRequest[commands.ApplicationCommand](c, req, map[int]bool{
+	return doRequest[discord.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }
@@ -290,7 +289,7 @@ func (c *RestClient) DeleteGuildApplicationCommand(ctx context.Context, appID, g
 // BulkOverwriteGuildApplicationCommands overwrites all guild-specific commands for the given guild.
 // Any commands not included in cmds are deleted.
 // https://docs.discord.com/developers/interactions/application-commands#bulk-overwrite-guild-application-commands
-func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
+func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, cmds []*discord.ApplicationCommand) ([]*discord.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -310,7 +309,7 @@ func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, 
 		return nil, err
 	}
 
-	return doRequestSlice[commands.ApplicationCommand](c, req, map[int]bool{
+	return doRequestSlice[discord.ApplicationCommand](c, req, map[int]bool{
 		http.StatusOK: true,
 	})
 }

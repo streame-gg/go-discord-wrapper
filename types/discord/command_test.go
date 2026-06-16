@@ -1,12 +1,10 @@
-package commands
+package discord
 
 import (
 	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
-
-	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // optionTypeCases lists every concrete option type alongside the discriminator
@@ -14,24 +12,24 @@ import (
 func optionTypeCases() []struct {
 	name string
 	opt  AnyApplicationCommandOption
-	typ  discord.ApplicationCommandOptionType
+	typ  ApplicationCommandOptionType
 } {
 	return []struct {
 		name string
 		opt  AnyApplicationCommandOption
-		typ  discord.ApplicationCommandOptionType
+		typ  ApplicationCommandOptionType
 	}{
-		{"string", &ApplicationCommandOptionString{Name: "s", Description: "d"}, discord.ApplicationCommandOptionTypeString},
-		{"integer", &ApplicationCommandOptionInteger{Name: "i", Description: "d"}, discord.ApplicationCommandOptionTypeInteger},
-		{"number", &ApplicationCommandOptionNumber{Name: "n", Description: "d"}, discord.ApplicationCommandOptionTypeNumber},
-		{"boolean", &ApplicationCommandOptionBoolean{Name: "b", Description: "d"}, discord.ApplicationCommandOptionTypeBoolean},
-		{"user", &ApplicationCommandOptionUser{Name: "u", Description: "d"}, discord.ApplicationCommandOptionTypeUser},
-		{"channel", &ApplicationCommandOptionChannel{Name: "c", Description: "d"}, discord.ApplicationCommandOptionTypeChannel},
-		{"role", &ApplicationCommandOptionRole{Name: "r", Description: "d"}, discord.ApplicationCommandOptionTypeRole},
-		{"mentionable", &ApplicationCommandOptionMentionable{Name: "m", Description: "d"}, discord.ApplicationCommandOptionTypeMentionable},
-		{"attachment", &ApplicationCommandOptionAttachment{Name: "a", Description: "d"}, discord.ApplicationCommandOptionTypeAttachment},
-		{"subcommand", &ApplicationCommandOptionSubCommand{Name: "sc", Description: "d"}, discord.ApplicationCommandOptionTypeSubCommand},
-		{"subcommandgroup", &ApplicationCommandOptionSubCommandGroup{Name: "scg", Description: "d"}, discord.ApplicationCommandOptionTypeSubCommandGroup},
+		{"string", &ApplicationCommandOptionString{Name: "s", Description: "d"}, ApplicationCommandOptionTypeString},
+		{"integer", &ApplicationCommandOptionInteger{Name: "i", Description: "d"}, ApplicationCommandOptionTypeInteger},
+		{"number", &ApplicationCommandOptionNumber{Name: "n", Description: "d"}, ApplicationCommandOptionTypeNumber},
+		{"boolean", &ApplicationCommandOptionBoolean{Name: "b", Description: "d"}, ApplicationCommandOptionTypeBoolean},
+		{"user", &ApplicationCommandOptionUser{Name: "u", Description: "d"}, ApplicationCommandOptionTypeUser},
+		{"channel", &ApplicationCommandOptionChannel{Name: "c", Description: "d"}, ApplicationCommandOptionTypeChannel},
+		{"role", &ApplicationCommandOptionRole{Name: "r", Description: "d"}, ApplicationCommandOptionTypeRole},
+		{"mentionable", &ApplicationCommandOptionMentionable{Name: "m", Description: "d"}, ApplicationCommandOptionTypeMentionable},
+		{"attachment", &ApplicationCommandOptionAttachment{Name: "a", Description: "d"}, ApplicationCommandOptionTypeAttachment},
+		{"subcommand", &ApplicationCommandOptionSubCommand{Name: "sc", Description: "d"}, ApplicationCommandOptionTypeSubCommand},
+		{"subcommandgroup", &ApplicationCommandOptionSubCommandGroup{Name: "scg", Description: "d"}, ApplicationCommandOptionTypeSubCommandGroup},
 	}
 }
 
@@ -58,7 +56,7 @@ func (su *commandSuite) TestOptionType_MarshalInjectsType() {
 				t.Fatalf("marshal: %v", err)
 			}
 			var meta struct {
-				Type discord.ApplicationCommandOptionType `json:"type"`
+				Type ApplicationCommandOptionType `json:"type"`
 			}
 			if err := json.Unmarshal(b, &meta); err != nil {
 				t.Fatalf("unmarshal meta: %v", err)
@@ -84,7 +82,7 @@ func (su *commandSuite) TestCommand_RoundTripAllOptionTypes() {
 	cmd := ApplicationCommand{
 		Name:        "test",
 		Description: "a test command",
-		Options:     &opts,
+		Options:     opts,
 	}
 
 	data, err := json.Marshal(&cmd)
@@ -100,13 +98,13 @@ func (su *commandSuite) TestCommand_RoundTripAllOptionTypes() {
 	if got.Options == nil {
 		t.Fatal("expected options to be present")
 	}
-	if len(*got.Options) != len(cases) {
-		t.Fatalf("got %d options, want %d", len(*got.Options), len(cases))
+	if len(got.Options) != len(cases) {
+		t.Fatalf("got %d options, want %d", len(got.Options), len(cases))
 	}
 	for i, tc := range cases {
-		if (*got.Options)[i].ApplicationCommandOptionType() != tc.typ {
+		if (got.Options)[i].ApplicationCommandOptionType() != tc.typ {
 			t.Errorf("option %d (%s): type = %d, want %d", i, tc.name,
-				(*got.Options)[i].ApplicationCommandOptionType(), tc.typ)
+				(got.Options)[i].ApplicationCommandOptionType(), tc.typ)
 		}
 	}
 }
@@ -145,7 +143,7 @@ func (su *commandSuite) TestSubCommand_NestedOptions() {
 	if got.Options == nil || len(got.Options) != 1 {
 		t.Fatalf("expected 1 nested option, got %v", got.Options)
 	}
-	if (got.Options)[0].ApplicationCommandOptionType() != discord.ApplicationCommandOptionTypeString {
+	if (got.Options)[0].ApplicationCommandOptionType() != ApplicationCommandOptionTypeString {
 		t.Fatal("nested option should be a string option")
 	}
 
@@ -236,11 +234,11 @@ func (su *commandSuite) TestSubCommand_UnmarshalInvalidNestedOption() {
 // marshal round-trip.
 func (su *commandSuite) TestCommand_MarshalRoundTripScalars() {
 	t := su.T()
-	guild := discord.Snowflake(42)
+	guild := Snowflake(42)
 	cmd := ApplicationCommand{
-		ID:            discord.Snowflake(1),
-		Type:          discord.ApplicationCommandType(1),
-		ApplicationID: discord.Snowflake(2),
+		ID:            Snowflake(1),
+		Type:          ApplicationCommandType(1),
+		ApplicationID: Snowflake(2),
 		GuildID:       guild,
 		Name:          "name",
 		Description:   "desc",

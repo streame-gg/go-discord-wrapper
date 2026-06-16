@@ -5,8 +5,6 @@ import (
 
 	"github.com/streame-gg/go-discord-wrapper/builder"
 	"github.com/streame-gg/go-discord-wrapper/connection"
-	"github.com/streame-gg/go-discord-wrapper/options"
-	dcmd "github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions"
@@ -18,8 +16,8 @@ func init() { Register(serverinfo{}) }
 // replies with an embed. It demonstrates reading cached state inside a command.
 type serverinfo struct{}
 
-func (serverinfo) Definition() *dcmd.ApplicationCommand {
-	return &dcmd.ApplicationCommand{
+func (serverinfo) Definition() *discord.ApplicationCommand {
+	return &discord.ApplicationCommand{
 		Name:        "serverinfo",
 		Description: "Show cached stats about this server",
 		Type:        discord.ApplicationCommandTypeChatInput,
@@ -42,14 +40,13 @@ func (serverinfo) Handle(c *connection.Client, ev *events.InteractionCreateEvent
 		roles = c.Cache.Roles().GetByGuild(gid).Len()
 	}
 
-	inline := options.Ptr(true)
 	embed := builder.NewEmbed().
 		SetTitle("Server info").
 		SetColor(0x5865F2).
 		AddFields(
-			discord.EmbedFields{Name: "Cached members", Value: strconv.Itoa(members), Inline: inline},
-			discord.EmbedFields{Name: "Channels", Value: strconv.Itoa(channels), Inline: inline},
-			discord.EmbedFields{Name: "Roles", Value: strconv.Itoa(roles), Inline: inline},
+			discord.EmbedFields{Name: "Cached members", Value: strconv.Itoa(members), Inline: true},
+			discord.EmbedFields{Name: "Channels", Value: strconv.Itoa(channels), Inline: true},
+			discord.EmbedFields{Name: "Roles", Value: strconv.Itoa(roles), Inline: true},
 		).
 		SetFooter("Counts reflect what the cache has seen so far", "").
 		Build()

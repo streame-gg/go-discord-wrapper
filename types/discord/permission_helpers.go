@@ -1,10 +1,5 @@
 package discord
 
-import (
-	"strconv"
-	"strings"
-)
-
 // permissionNames maps each defined Permission bit to its Discord flag name, in
 // ascending bit order. It also defines the set of bits that make up PermissionAll.
 var permissionNames = []struct {
@@ -117,39 +112,14 @@ func (p Permission) Names() []string {
 	return names
 }
 
-// String returns the set permission flag names joined by "|", or "None" when no
-// known bits are set.
-func (p Permission) String() string {
-	names := p.Names()
-	if len(names) == 0 {
-		return "None"
-	}
-	return strings.Join(names, "|")
-}
-
-// ── Overwrite helpers ─────────────────────────────────────────────────────────
-
-// parsePermissionString parses a decimal permission bitmask string (Discord's
-// wire format). An empty or malformed value yields 0.
-func parsePermissionString(s string) Permission {
-	if s == "" {
-		return 0
-	}
-	n, err := strconv.ParseUint(s, 10, 64)
-	if err != nil {
-		return 0
-	}
-	return Permission(n)
-}
-
 // AllowPermissions returns the overwrite's allowed permission bits.
 func (o ChannelPermissionOverwrite) AllowPermissions() Permission {
-	return parsePermissionString(o.Allow)
+	return o.Allow
 }
 
 // DenyPermissions returns the overwrite's denied permission bits.
 func (o ChannelPermissionOverwrite) DenyPermissions() Permission {
-	return parsePermissionString(o.Deny)
+	return o.Deny
 }
 
 // ── Permission calculation ────────────────────────────────────────────────────

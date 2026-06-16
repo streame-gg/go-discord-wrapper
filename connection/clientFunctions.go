@@ -7,7 +7,6 @@ import (
 
 	"github.com/streame-gg/go-discord-wrapper/api"
 	"github.com/streame-gg/go-discord-wrapper/cache"
-	"github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/components"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions"
@@ -30,7 +29,7 @@ func (d *Client) applicationID() (*discord.Snowflake, error) {
 
 // RegisterCommand registers a single application command.
 // Must be called after Login() so that the application ID is available.
-func (d *Client) RegisterCommand(ctx context.Context, cmd *commands.ApplicationCommand) (*commands.ApplicationCommand, error) {
+func (d *Client) RegisterCommand(ctx context.Context, cmd *discord.ApplicationCommand) (*discord.ApplicationCommand, error) {
 	appID, err := d.applicationID()
 	if err != nil {
 		return nil, err
@@ -41,7 +40,7 @@ func (d *Client) RegisterCommand(ctx context.Context, cmd *commands.ApplicationC
 // BulkRegisterCommands overwrites all application commands with the provided list.
 // Any existing commands not included will be deleted.
 // Must be called after Login() so that the application ID is available.
-func (d *Client) BulkRegisterCommands(ctx context.Context, cmds []*commands.ApplicationCommand) ([]*commands.ApplicationCommand, error) {
+func (d *Client) BulkRegisterCommands(ctx context.Context, cmds []*discord.ApplicationCommand) ([]*discord.ApplicationCommand, error) {
 	appID, err := d.applicationID()
 	if err != nil {
 		return nil, err
@@ -489,6 +488,7 @@ func (d *Client) GetGuild(ctx context.Context, guildID discord.Snowflake) (*disc
 	guild, err := d.RestClient.GetGuild(ctx, guildID, false)
 	if err == nil {
 		guild.Hydrate(d)
+		d.SetGuildManagers(guild)
 		d.cacheGuild(guild)
 	}
 	return guild, err
@@ -554,7 +554,7 @@ func (d *Client) ModifyGuildChannelPositions(ctx context.Context, guildID discor
 			if ch, ok := d.Cache.Channels().Get(entry.ID); ok {
 				updated := *ch
 				if v, ok := entry.Position.Val(); ok {
-					updated.Position = &v
+					updated.Position = v
 				}
 				if v, ok := entry.ParentID.Val(); ok {
 					updated.ParentID = &v

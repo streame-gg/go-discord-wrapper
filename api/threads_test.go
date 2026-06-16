@@ -3,12 +3,13 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/suite"
 	"io"
 	"mime"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,7 +49,7 @@ func (su *apiThreadsSuite) TestP0_10_CreateForumThreadWithFiles() {
 	params := CreateForumThreadParams{
 		Name: "my-forum-thread",
 		Message: CreateMessageParams{
-			Content: "hello from forum thread",
+			Content: discord.Some("hello from forum thread"),
 			Files: []discord.MessageFile{
 				{
 					Name:        "hello.txt",
@@ -98,7 +99,7 @@ func (su *apiThreadsSuite) TestP0_10_CreateForumThreadWithoutFiles() {
 	params := CreateForumThreadParams{
 		Name: "text-only-thread",
 		Message: CreateMessageParams{
-			Content: "no attachments",
+			Content: discord.Some("no attachments"),
 		},
 	}
 
@@ -134,7 +135,7 @@ func (su *apiThreadsSuite) TestP0_10_CreateForumThreadWithReason() {
 	reason := "automated thread creation"
 	params := CreateForumThreadParams{
 		Name:           "reasoned-thread",
-		Message:        CreateMessageParams{Content: "with reason"},
+		Message:        CreateMessageParams{Content: discord.Some("with reason")},
 		AuditLogReason: &reason,
 	}
 

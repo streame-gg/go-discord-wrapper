@@ -12,7 +12,6 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/api"
 	"github.com/streame-gg/go-discord-wrapper/cache"
 	"github.com/streame-gg/go-discord-wrapper/options"
-	"github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/components"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions"
@@ -116,11 +115,11 @@ func (s *clientExtrasSuite) TestCommandRegistration() {
 	c, ctx := s.client, context.Background()
 
 	s.setResp(http.StatusOK, `{"id":"175928847299117063","name":"x","type":1}`)
-	_, err := c.RegisterCommand(ctx, &commands.ApplicationCommand{Name: "x"})
+	_, err := c.RegisterCommand(ctx, &discord.ApplicationCommand{Name: "x"})
 	s.NoError(err)
 
 	s.setResp(http.StatusOK, `[{"id":"175928847299117063","name":"x","type":1}]`)
-	_, err = c.BulkRegisterCommands(ctx, []*commands.ApplicationCommand{{Name: "x"}})
+	_, err = c.BulkRegisterCommands(ctx, []*discord.ApplicationCommand{{Name: "x"}})
 	s.NoError(err)
 }
 
@@ -138,8 +137,8 @@ func (s *clientExtrasSuite) TestManagerHelpers() {
 	s.Equal(0, c.ChannelsForGuild(id).Len())
 
 	// Seed a channel + index entries so the lookup loops run their body.
-	parent := &discord.Channel{ID: id, GuildID: &id, Type: discord.ChannelTypeGuildText}
-	thread := &discord.Channel{ID: id + 1, GuildID: &id, ParentID: &id, Type: discord.ChannelTypePublicThread}
+	parent := &discord.Channel{ID: id, GuildID: id, Type: discord.ChannelTypeGuildText}
+	thread := &discord.Channel{ID: id + 1, GuildID: id, ParentID: &id, Type: discord.ChannelTypePublicThread}
 	c.Cache.Channels().Set(parent)
 	c.Cache.Channels().Set(thread)
 	c.threadIndexMu.Lock()

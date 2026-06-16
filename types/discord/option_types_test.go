@@ -1,10 +1,11 @@
-package commands
+package discord
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/suite"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
 // TestIntegerOptionChoicesMarshalAsInt verifies that IntegerOption choices

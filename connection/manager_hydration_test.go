@@ -332,7 +332,7 @@ func (cs *ConnectionSuite) TestNestedHydration_MessageCreate() {
 // is non-nil after a full GUILD_CREATE → cache round-trip.
 //
 // This catches regressions where a new sub-manager is added to Guild but
-// setGuildManagers is not updated.
+// SetGuildManagers is not updated.
 func (cs *ConnectionSuite) TestEntityHydrationCompleteness_Guild_Reflection() {
 	t := cs.T()
 	c := newClientWithCache(t)
@@ -364,7 +364,7 @@ func (cs *ConnectionSuite) TestEntityHydrationCompleteness_Guild_Reflection() {
 		}
 		rv := result[0]
 		assert.False(t, rv.IsNil(),
-			"Guild.%s() returned nil — is it missing from setGuildManagers?", method.Name)
+			"Guild.%s() returned nil — is it missing from SetGuildManagers?", method.Name)
 	}
 }
 

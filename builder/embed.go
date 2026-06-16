@@ -26,17 +26,17 @@ type EmbedBuilder struct {
 func NewEmbed() *EmbedBuilder { return &EmbedBuilder{} }
 
 func (b *EmbedBuilder) SetTitle(title string) *EmbedBuilder {
-	b.embed.Title = &title
+	b.embed.Title = title
 	return b
 }
 
 func (b *EmbedBuilder) SetDescription(description string) *EmbedBuilder {
-	b.embed.Description = &description
+	b.embed.Description = description
 	return b
 }
 
 func (b *EmbedBuilder) SetURL(url string) *EmbedBuilder {
-	b.embed.URL = &url
+	b.embed.URL = url
 	return b
 }
 
@@ -68,10 +68,10 @@ func (b *EmbedBuilder) SetThumbnail(url string) *EmbedBuilder {
 func (b *EmbedBuilder) SetAuthor(name, url, iconURL string) *EmbedBuilder {
 	a := &discord.EmbedAuthor{Name: name}
 	if url != "" {
-		a.URL = &url
+		a.URL = url
 	}
 	if iconURL != "" {
-		a.IconURL = &iconURL
+		a.IconURL = iconURL
 	}
 	b.embed.Author = a
 	return b
@@ -109,16 +109,16 @@ func (b *EmbedBuilder) Validate() error {
 	e := &b.embed
 	total := 0
 
-	if e.Title != nil {
-		n := utf8.RuneCountInString(*e.Title)
+	if e.Title != "" {
+		n := utf8.RuneCountInString(e.Title)
 		if n > 256 {
 			return fmt.Errorf("embed title exceeds 256 characters (%d)", n)
 		}
 		total += n
 	}
 
-	if e.Description != nil {
-		n := utf8.RuneCountInString(*e.Description)
+	if e.Description != "" {
+		n := utf8.RuneCountInString(e.Description)
 		if n > 4096 {
 			return fmt.Errorf("embed description exceeds 4096 characters (%d)", n)
 		}

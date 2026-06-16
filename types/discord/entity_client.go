@@ -45,6 +45,10 @@ type EntityClient interface {
 	GetGuildAuditLog(ctx context.Context, guildID Snowflake, opts AuditLogOptions) (*AuditLog, error)
 	CreateGuildScheduledEvent(ctx context.Context, guildID Snowflake, opts ScheduledEventCreateOptions) (*GuildScheduledEvent, error)
 
+	//Managers
+	SetGuildManagers(g *Guild)
+	SetChannelManagers(c *Channel)
+
 	// ── GuildMember ───────────────────────────────────────────────────────
 	ModifyGuildMember(ctx context.Context, guildID, userID Snowflake, opts MemberEditOptions) (*GuildMember, error)
 	KickGuildMember(ctx context.Context, guildID, userID Snowflake, reason *string) error

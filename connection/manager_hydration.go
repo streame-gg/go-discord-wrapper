@@ -5,9 +5,9 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord/managers"
 )
 
-// setGuildManagers injects all sub-managers into a hydrated Guild.
+// SetGuildManagers injects all sub-managers into a hydrated Guild.
 // Called by the connection layer after guild.Hydrate(d).
-func (d *Client) setGuildManagers(g *discord.Guild) {
+func (d *Client) SetGuildManagers(g *discord.Guild) {
 	g.SetMembersManager(managers.NewMemberManager(g.ID, d))
 	g.SetRolesManager(managers.NewRoleManager(g.ID, d))
 	g.SetChannelsManager(managers.NewGuildChannelManager(g.ID, d))
@@ -24,9 +24,9 @@ func (d *Client) setGuildManagers(g *discord.Guild) {
 	g.SetIntegrationsManager(managers.NewIntegrationManager(g.ID, d))
 }
 
-// setChannelManagers injects all sub-managers into a hydrated Channel.
+// SetChannelManagers injects all sub-managers into a hydrated Channel.
 // Called by the connection layer after ch.Hydrate(d).
-func (d *Client) setChannelManagers(ch *discord.Channel) {
+func (d *Client) SetChannelManagers(ch *discord.Channel) {
 	ch.SetMessagesManager(managers.NewMessageManager(ch.ID, d))
 	ch.SetThreadsManager(managers.NewThreadManager(ch.ID, d))
 }

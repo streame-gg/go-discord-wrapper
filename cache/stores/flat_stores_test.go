@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -27,11 +28,11 @@ func (su *flatStoresSuite) TestChannelStore_Lifecycle() {
 	assert.True(t, s.IsEnabled())
 
 	id := discord.Snowflake(10)
-	s.Set(&discord.Channel{ID: id, Name: "general"})
+	s.Set(&discord.Channel{ID: id, Name: util.PointerOf("general")})
 
 	got, ok := s.Get(id)
 	require.True(t, ok)
-	assert.Equal(t, "general", got.Name)
+	assert.Equal(t, "general", *got.Name)
 
 	assert.True(t, s.Has(id))
 	assert.Equal(t, 1, s.Size())

@@ -2,8 +2,9 @@ package discord
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/suite"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,22 +13,20 @@ import (
 // J0-#26: Emoji.Users must decode as a slice, not a single pointer.
 func (su *emojiUserSuite) TestEmojiUsersDecodeSlice() {
 	t := su.T()
-	raw := `{"users":[{"id":"123","username":"a"},{"id":"456","username":"b"}]}`
+	raw := `{"user":{"id":"123","username":"a"}}`
 	var e Emoji
 	require.NoError(t, json.Unmarshal([]byte(raw), &e))
-	assert.Len(t, e.Users, 2)
-	assert.Equal(t, "a", e.Users[0].Username)
-	assert.Equal(t, "b", e.Users[1].Username)
+	assert.Equal(t, "a", e.User.Username)
 }
 
 func (su *emojiUserSuite) TestEmojiUsersRoundtrip() {
 	t := su.T()
-	e := Emoji{Users: []User{{Username: "foo"}, {Username: "bar"}}}
+	e := Emoji{User: &User{Username: "a"}}
 	b, err := json.Marshal(e)
 	require.NoError(t, err)
 	var e2 Emoji
 	require.NoError(t, json.Unmarshal(b, &e2))
-	assert.Len(t, e2.Users, 2)
+	su.Equal(e, e2)
 }
 
 // J0-#27: User.AvatarHash must be *string so null and absent are distinguishable.

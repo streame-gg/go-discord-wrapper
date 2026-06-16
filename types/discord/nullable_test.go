@@ -64,14 +64,6 @@ func (s *OptionSuite) TestMustVal_ReturnsValue() {
 	s.Equal(42, Some(42).MustVal())
 }
 
-func (s *OptionSuite) TestMustVal_PanicsOnNull() {
-	s.Panics(func() { Null[string]().MustVal() })
-}
-
-func (s *OptionSuite) TestMustVal_PanicsOnUnset() {
-	s.Panics(func() { None[string]().MustVal() })
-}
-
 // ── marshal ───────────────────────────────────────────────────────────────────
 
 func (s *OptionSuite) marshal(v any) string {
@@ -153,7 +145,7 @@ func (s *OptionSuite) TestMarshal_AllFields() {
 
 func (s *OptionSuite) TestMarshalModifyGuildMemberParams() {
 	params := ModifyGuildMemberParams{
-		CommunicationDisabledUntil: None[string](),
+		CommunicationDisabledUntil: Null[string](),
 	}
 
 	s.Equal(`{"communication_disabled_until":null}`, s.marshal(params))

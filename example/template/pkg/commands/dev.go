@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/connection"
-	"github.com/streame-gg/go-discord-wrapper/options"
-	dcmd "github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions"
@@ -30,23 +28,23 @@ func init() { Register(dev{}) }
 // command refuses to run for anyone.
 type dev struct{}
 
-func (dev) Definition() *dcmd.ApplicationCommand {
-	return &dcmd.ApplicationCommand{
+func (dev) Definition() *discord.ApplicationCommand {
+	return &discord.ApplicationCommand{
 		Name:        "dev",
 		Description: "Owner-only developer tools",
 		Type:        discord.ApplicationCommandTypeChatInput,
-		Options: &[]dcmd.AnyApplicationCommandOption{
-			&dcmd.ApplicationCommandOptionSubCommand{
+		Options: []discord.AnyApplicationCommandOption{
+			&discord.ApplicationCommandOptionSubCommand{
 				Type:        discord.ApplicationCommandOptionTypeSubCommand,
 				Name:        "reload",
 				Description: "Reload commands, events, or components",
-				Options: &[]dcmd.AnyApplicationCommandOption{
-					&dcmd.ApplicationCommandOptionString{
+				Options: []discord.AnyApplicationCommandOption{
+					&discord.ApplicationCommandOptionString{
 						Type:        discord.ApplicationCommandOptionTypeString,
 						Name:        "choice",
 						Description: "What to reload",
-						Required:    options.Ptr(true),
-						Choices: []dcmd.ApplicationCommandOptionChoice[string]{
+						Required:    true,
+						Choices: []discord.ApplicationCommandOptionChoice[string]{
 							{Name: "Commands", Value: "commands"},
 							{Name: "Events", Value: "events"},
 							{Name: "Components", Value: "components"},

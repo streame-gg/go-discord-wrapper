@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	tc "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -130,7 +131,7 @@ func guild(id string) *discord.Guild {
 }
 
 func channel(id string) *discord.Channel {
-	return &discord.Channel{ID: mustSnowflake(id), Name: "chan-" + id}
+	return &discord.Channel{ID: mustSnowflake(id), Name: util.PointerOf("chan-" + id)}
 }
 
 func user(id string) *discord.User {

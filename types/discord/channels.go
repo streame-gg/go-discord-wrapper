@@ -48,49 +48,50 @@ type Channel struct {
 	messages MessageManager
 	threads  ThreadManager
 
-	ID                            Snowflake                    `json:"id"`
-	Type                          ChannelType                  `json:"type"`
-	GuildID                       Snowflake                    `json:"guild_id,omitempty"`
-	Position                      int                          `json:"position,omitempty"`
-	PermissionOverwrites          []ChannelPermissionOverwrite `json:"permission_overwrites,omitempty"`
-	Name                          *string                      `json:"name,omitempty"`
-	Topic                         *string                      `json:"topic,omitempty"`
-	NSFW                          bool                         `json:"nsfw,omitempty"`
-	LastMessageID                 *Snowflake                   `json:"last_message_id,omitempty"`
-	Bitrate                       int                          `json:"bitrate,omitempty"`
-	UserLimit                     int                          `json:"user_limit,omitempty"`
-	RateLimitPerUser              int                          `json:"rate_limit_per_user,omitempty"`
-	Recipients                    []User                       `json:"recipients,omitempty"`
-	IconHash                      *string                      `json:"icon,omitempty"`
-	OwnerID                       Snowflake                    `json:"owner_id,omitempty"`
-	ApplicationID                 Snowflake                    `json:"application_id,omitempty"`
-	Managed                       bool                         `json:"managed,omitempty"`
-	ParentID                      *Snowflake                   `json:"parent_id,omitempty"`
-	LastPinTimestamp              *time.Time                   `json:"last_pin_timestamp,omitempty"`
-	RtcRegion                     *string                      `json:"rtc_region,omitempty"`
-	VideoQualityMode              VideoQualityMode             `json:"video_quality_mode,omitempty"`
-	MessageCount                  int                          `json:"message_count,omitempty"`
-	MemberCount                   int                          `json:"member_count,omitempty"`
-	ThreadMetadata                *ThreadMetadata              `json:"thread_metadata,omitempty"`
-	Member                        *ThreadMember                `json:"member,omitempty"`
-	DefaultAutoArchiveDuration    int                          `json:"default_auto_archive_duration,omitempty"`
-	Permissions                   Permission                   `json:"permissions,omitempty"`
-	Flags                         ChannelFlags                 `json:"flags,omitempty"`
-	TotalMessageSent              int                          `json:"total_message_sent,omitempty"`
-	AvailableTags                 []ChannelTag                 `json:"available_tags,omitempty"`
-	AppliedTags                   []Snowflake                  `json:"applied_tags,omitempty"`
-	DefaultReactionEmoji          *DefaultReactionEmoji        `json:"default_reaction_emoji,omitempty"`
-	DefaultThreadRateLimitPerUser int                          `json:"default_thread_rate_limit_per_user,omitempty"`
-	DefaultSortOrder              *DefaultSortOrder            `json:"default_sort_order,omitempty"`
-	DefaultForumLayout            ChannelForumLayoutType       `json:"default_forum_layout,omitempty"`
+	ID                   Snowflake                    `json:"id"`
+	Type                 ChannelType                  `json:"type"`
+	GuildID              Snowflake                    `json:"guild_id,omitempty"`
+	Position             int                          `json:"position,omitempty"`
+	PermissionOverwrites []ChannelPermissionOverwrite `json:"permission_overwrites,omitempty"`
+	Name                 *string                      `json:"name,omitempty"`
+	Topic                *string                      `json:"topic,omitempty"`
+	//TODO ask discord dev server when this is null. crucial due to the IsNSFW() helper. this can now falsely return false.
+	NSFW                          *bool                  `json:"nsfw,omitempty"`
+	LastMessageID                 *Snowflake             `json:"last_message_id,omitempty"`
+	Bitrate                       int                    `json:"bitrate,omitempty"`
+	UserLimit                     int                    `json:"user_limit,omitempty"`
+	RateLimitPerUser              int                    `json:"rate_limit_per_user,omitempty"`
+	Recipients                    []User                 `json:"recipients,omitempty"`
+	IconHash                      *string                `json:"icon,omitempty"`
+	OwnerID                       Snowflake              `json:"owner_id,omitempty"`
+	ApplicationID                 Snowflake              `json:"application_id,omitempty"`
+	Managed                       bool                   `json:"managed,omitempty"`
+	ParentID                      *Snowflake             `json:"parent_id,omitempty"`
+	LastPinTimestamp              *time.Time             `json:"last_pin_timestamp,omitempty"`
+	RtcRegion                     *string                `json:"rtc_region,omitempty"`
+	VideoQualityMode              VideoQualityMode       `json:"video_quality_mode,omitempty"`
+	MessageCount                  int                    `json:"message_count,omitempty"`
+	MemberCount                   int                    `json:"member_count,omitempty"`
+	ThreadMetadata                *ThreadMetadata        `json:"thread_metadata,omitempty"`
+	Member                        *ThreadMember          `json:"member,omitempty"`
+	DefaultAutoArchiveDuration    int                    `json:"default_auto_archive_duration,omitempty"`
+	Permissions                   Permission             `json:"permissions,omitempty"`
+	Flags                         ChannelFlags           `json:"flags,omitempty"`
+	TotalMessageSent              int                    `json:"total_message_sent,omitempty"`
+	AvailableTags                 []ChannelTag           `json:"available_tags,omitempty"`
+	AppliedTags                   []Snowflake            `json:"applied_tags,omitempty"`
+	DefaultReactionEmoji          *DefaultReactionEmoji  `json:"default_reaction_emoji,omitempty"`
+	DefaultThreadRateLimitPerUser int                    `json:"default_thread_rate_limit_per_user,omitempty"`
+	DefaultSortOrder              *DefaultSortOrder      `json:"default_sort_order,omitempty"`
+	DefaultForumLayout            ChannelForumLayoutType `json:"default_forum_layout,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/channel#overwrite-object
 type ChannelPermissionOverwrite struct {
 	ID    Snowflake               `json:"id"`
 	Type  PermissionOverwriteType `json:"type"`
-	Allow string                  `json:"allow"`
-	Deny  string                  `json:"deny"`
+	Allow Permission              `json:"allow"`
+	Deny  Permission              `json:"deny"`
 }
 
 // https://docs.discord.com/developers/resources/channel#channel-object-channel-flags

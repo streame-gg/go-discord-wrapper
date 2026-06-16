@@ -2,8 +2,8 @@ package discord
 
 // ── Channel sub-manager setters (called by connection layer) ──────────────────
 
-func (ch *Channel) SetMessagesManager(m MessageManager) { ch.messages = m }
-func (ch *Channel) SetThreadsManager(m ThreadManager)   { ch.threads = m }
+func (c *Channel) SetMessagesManager(m MessageManager) { c.messages = m }
+func (c *Channel) SetThreadsManager(m ThreadManager)   { c.threads = m }
 
 // ── Channel sub-manager getters ───────────────────────────────────────────────
 
@@ -12,10 +12,10 @@ func (ch *Channel) SetThreadsManager(m ThreadManager)   { ch.threads = m }
 // (e.g. a channel returned from a REST call or constructed directly).
 // Only channels hydrated by the gateway client via GUILD_CREATE / CHANNEL_CREATE
 // or retrieved from the cache have this manager populated.
-func (ch *Channel) Messages() MessageManager { return ch.messages }
+func (c *Channel) Messages() MessageManager { return c.messages }
 
 // Threads returns the manager for this channel's active threads.
 // Returns nil when the channel was not obtained from the gateway cache.
 // Only channels hydrated by the gateway client via GUILD_CREATE / CHANNEL_CREATE
 // or retrieved from the cache have this manager populated.
-func (ch *Channel) Threads() ThreadManager { return ch.threads }
+func (c *Channel) Threads() ThreadManager { return c.threads }

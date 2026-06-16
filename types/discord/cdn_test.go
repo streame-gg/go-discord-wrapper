@@ -3,10 +3,21 @@ package discord
 import (
 	"testing"
 
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/stretchr/testify/suite"
 )
 
 func strptr(s string) *string { return &s }
+
+func (su *cdnSuite) TestEmojiURL_AnimatedIsNil() {
+	em := Emoji{
+		ID:   123,
+		Name: "1231231231",
+	}
+
+	url := em.URL(nil)
+	su.Require().NotNil(url)
+}
 
 func (su *cdnSuite) TestUserAvatarURL() {
 	t := su.T()
@@ -97,7 +108,7 @@ func (su *cdnSuite) TestRoleAndEmojiURL() {
 	if got := staticEmoji.URL(nil); got != "https://cdn.discordapp.com/emojis/42.webp" {
 		t.Errorf("static emoji: got %q", got)
 	}
-	animEmoji := &Emoji{ID: 42, Animated: true}
+	animEmoji := &Emoji{ID: 42, Animated: util.PointerOf(true)}
 	if got := animEmoji.URL(nil); got != "https://cdn.discordapp.com/emojis/42.gif" {
 		t.Errorf("animated emoji: got %q", got)
 	}

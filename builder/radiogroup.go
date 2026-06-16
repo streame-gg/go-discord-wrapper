@@ -18,12 +18,12 @@ func NewRadioGroupOption(label, value string) *RadioGroupOptionBuilder {
 }
 
 func (b *RadioGroupOptionBuilder) SetDescription(desc string) *RadioGroupOptionBuilder {
-	b.opt.Description = &desc
+	b.opt.Description = desc
 	return b
 }
 
 func (b *RadioGroupOptionBuilder) SetDefault(def bool) *RadioGroupOptionBuilder {
-	b.opt.Default = &def
+	b.opt.Default = def
 	return b
 }
 
@@ -47,8 +47,8 @@ type RadioGroupBuilder struct {
 }
 
 func NewRadioGroup(customID string) *RadioGroupBuilder {
-	opts := []components.RadioGroupComponentOption{}
-	return &RadioGroupBuilder{rg: components.RadioGroupComponent{CustomID: customID, Options: &opts}}
+	var opts []components.RadioGroupComponentOption
+	return &RadioGroupBuilder{rg: components.RadioGroupComponent{CustomID: customID, Options: opts}}
 }
 
 func (b *RadioGroupBuilder) SetCustomID(id string) *RadioGroupBuilder {
@@ -57,12 +57,12 @@ func (b *RadioGroupBuilder) SetCustomID(id string) *RadioGroupBuilder {
 }
 
 func (b *RadioGroupBuilder) AddOptions(opts ...components.RadioGroupComponentOption) *RadioGroupBuilder {
-	*b.rg.Options = append(*b.rg.Options, opts...)
+	b.rg.Options = append(b.rg.Options, opts...)
 	return b
 }
 
 func (b *RadioGroupBuilder) SetRequired(required bool) *RadioGroupBuilder {
-	b.rg.Required = &required
+	b.rg.Required = required
 	return b
 }
 
@@ -86,12 +86,12 @@ func NewCheckboxGroupOption(label, value string) *CheckboxGroupOptionBuilder {
 }
 
 func (b *CheckboxGroupOptionBuilder) SetDescription(desc string) *CheckboxGroupOptionBuilder {
-	b.opt.Description = &desc
+	b.opt.Description = desc
 	return b
 }
 
 func (b *CheckboxGroupOptionBuilder) SetDefault(def bool) *CheckboxGroupOptionBuilder {
-	b.opt.Default = &def
+	b.opt.Default = def
 	return b
 }
 
@@ -116,8 +116,8 @@ type CheckboxGroupBuilder struct {
 }
 
 func NewCheckboxGroup(customID string) *CheckboxGroupBuilder {
-	opts := []components.CheckboxGroupComponentOption{}
-	return &CheckboxGroupBuilder{cg: components.CheckboxGroupComponent{CustomID: customID, Options: &opts}}
+	var opts []components.CheckboxGroupComponentOption
+	return &CheckboxGroupBuilder{cg: components.CheckboxGroupComponent{CustomID: customID, Options: opts}}
 }
 
 func (b *CheckboxGroupBuilder) SetCustomID(id string) *CheckboxGroupBuilder {
@@ -126,7 +126,7 @@ func (b *CheckboxGroupBuilder) SetCustomID(id string) *CheckboxGroupBuilder {
 }
 
 func (b *CheckboxGroupBuilder) AddOptions(opts ...components.CheckboxGroupComponentOption) *CheckboxGroupBuilder {
-	*b.cg.Options = append(*b.cg.Options, opts...)
+	b.cg.Options = append(b.cg.Options, opts...)
 	return b
 }
 
@@ -141,7 +141,7 @@ func (b *CheckboxGroupBuilder) SetMaxValues(max int) *CheckboxGroupBuilder {
 }
 
 func (b *CheckboxGroupBuilder) SetRequired(required bool) *CheckboxGroupBuilder {
-	b.cg.Required = &required
+	b.cg.Required = required
 	return b
 }
 
@@ -170,7 +170,7 @@ func (b *CheckboxBuilder) SetCustomID(id string) *CheckboxBuilder {
 }
 
 func (b *CheckboxBuilder) SetDefault(def bool) *CheckboxBuilder {
-	b.cb.Default = &def
+	b.cb.Default = def
 	return b
 }
 

@@ -47,8 +47,8 @@ func (cs *ConnectionSuite) TestBug25GetGuildChannelsEvictsStaleChannels() {
 	chA := mustSnowflake("aaa222333444555")
 	chB := mustSnowflake("bbb222333444555")
 
-	c.cacheChannel(&discord.Channel{ID: chA, GuildID: &guildID})
-	c.cacheChannel(&discord.Channel{ID: chB, GuildID: &guildID})
+	c.cacheChannel(&discord.Channel{ID: chA, GuildID: guildID})
+	c.cacheChannel(&discord.Channel{ID: chB, GuildID: guildID})
 
 	_, okB := c.Cache.Channels().Get(chB)
 	require.True(t, okB, "channelB must be in cache before the refresh")
@@ -60,7 +60,7 @@ func (cs *ConnectionSuite) TestBug25GetGuildChannelsEvictsStaleChannels() {
 		c.Cache.Messages().DeleteChannel(oldID)
 	}
 	// Only chA is returned by the API this time.
-	c.cacheChannels([]*discord.Channel{{ID: chA, GuildID: &guildID}})
+	c.cacheChannels([]*discord.Channel{{ID: chA, GuildID: guildID}})
 
 	_, okB = c.Cache.Channels().Get(chB)
 	assert.False(t, okB, "stale channelB must be evicted by ListGuildChannels refresh (Bug 25)")

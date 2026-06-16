@@ -3,6 +3,8 @@ package discord
 import (
 	"strconv"
 	"strings"
+
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 )
 
 // CDN base hosts. Most assets are served from cdnBaseURL; animated stickers
@@ -32,7 +34,7 @@ type ImageOptions struct {
 	// animated assets and WebP otherwise.
 	Format ImageFormat
 	// Size requests a specific square size via the ?size query parameter. Discord
-	// only honours powers of two in the range [16, 4096]; zero omits the
+	// only honors powers of two in the range [16, 4096]; zero omits the
 	// parameter and returns the asset's default size.
 	Size int
 }
@@ -202,7 +204,10 @@ func (e *Emoji) URL(opts *ImageOptions) string {
 	if e == nil || e.ID.IsEmpty() {
 		return ""
 	}
-	return imageURL(cdnBaseURL, "/emojis/"+e.ID.String(), e.Animated, opts)
+	if e.Animated == nil {
+		e.Animated = util.PointerOf(false)
+	}
+	return imageURL(cdnBaseURL, "/emojis/"+e.ID.String(), *e.Animated, opts)
 }
 
 // ── Sticker ───────────────────────────────────────────────────────────────────

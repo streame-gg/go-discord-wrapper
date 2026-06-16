@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/stretchr/testify/suite"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -99,7 +100,7 @@ func (su *restSuite) TestGetChannel() {
 				require.NoError(t, err)
 				require.NotNil(t, ch)
 				assert.Equal(t, tc.wantID, ch.ID)
-				assert.Equal(t, tc.wantName, ch.Name)
+				assert.Equal(t, tc.wantName, *ch.Name)
 			}
 		})
 	}
@@ -128,7 +129,7 @@ func (su *restSuite) TestCreateMessage() {
 		defer ts.Close()
 
 		client := newTestClient(ts)
-		params := CreateMessageParams{Content: "hello world"}
+		params := CreateMessageParams{Content: discord.Some("hello world")}
 		msg, err := client.CreateMessage(context.Background(), discord.Snowflake(111222333444555666), params)
 
 		require.NoError(t, err)
@@ -150,7 +151,7 @@ func (su *restSuite) TestCreateMessage() {
 		defer ts.Close()
 
 		client := newTestClient(ts)
-		msg, err := client.CreateMessage(context.Background(), discord.Snowflake(111222333444555666), CreateMessageParams{Content: "hello"})
+		msg, err := client.CreateMessage(context.Background(), discord.Snowflake(111222333444555666), CreateMessageParams{Content: discord.Some("hello")})
 
 		require.Error(t, err)
 		assert.Nil(t, msg)
@@ -314,7 +315,7 @@ func (su *restSuite) TestBug3a_EventHandlerBodyCloseDoesNotBreakDecode() {
 	ch, err := client.GetChannel(context.Background(), discord.Snowflake(111222333444555666))
 	require.NoError(t, err, "decode must succeed even after event handler closes resp.Body (Bug 3a)")
 	require.NotNil(t, ch)
-	assert.Equal(t, "bug3-channel", ch.Name)
+	assert.Equal(t, "bug3-channel", *ch.Name)
 }
 
 // Bug 3b: a server that returns invalid JSON must produce a non-nil error;

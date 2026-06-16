@@ -2,8 +2,6 @@ package commands
 
 import (
 	"github.com/streame-gg/go-discord-wrapper/connection"
-	"github.com/streame-gg/go-discord-wrapper/options"
-	dcmd "github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions"
@@ -15,17 +13,17 @@ func init() { Register(echo{}) }
 // GetStringOption helper on the interaction.
 type echo struct{}
 
-func (echo) Definition() *dcmd.ApplicationCommand {
-	return &dcmd.ApplicationCommand{
+func (echo) Definition() *discord.ApplicationCommand {
+	return &discord.ApplicationCommand{
 		Name:        "echo",
 		Description: "Repeat back what you say",
 		Type:        discord.ApplicationCommandTypeChatInput,
-		Options: &[]dcmd.AnyApplicationCommandOption{
-			&dcmd.ApplicationCommandOptionString{
+		Options: []discord.AnyApplicationCommandOption{
+			&discord.ApplicationCommandOptionString{
 				Type:        discord.ApplicationCommandOptionTypeString,
 				Name:        "text",
 				Description: "What to echo",
-				Required:    options.Ptr(true),
+				Required:    true,
 			},
 		},
 	}

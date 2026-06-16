@@ -308,7 +308,7 @@ func (s *mongoStoresSuite) TestMarshalErrorBranches() {
 	badMsg := &discord.Message{
 		ID:          5,
 		ChannelID:   9,
-		Attachments: []discord.Attachment{{ID: 1, DurationSecs: &nan}},
+		Attachments: []discord.Attachment{{ID: 1, DurationSecs: nan}},
 	}
 	c.Messages().Add(badMsg)    // Add marshal-error
 	c.Messages().Update(badMsg) // Update marshal-error

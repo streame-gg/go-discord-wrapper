@@ -1,14 +1,10 @@
 package discord
 
 import (
-	"github.com/stretchr/testify/suite"
-	"strconv"
 	"testing"
-)
 
-func permString(p Permission) string {
-	return strconv.FormatUint(uint64(p), 10)
-}
+	"github.com/stretchr/testify/suite"
+)
 
 func (su *permissionHelpersSuite) TestPermissionBitmaskHelpers() {
 	t := su.T()
@@ -63,12 +59,6 @@ func (su *permissionHelpersSuite) TestPermissionNamesAndString() {
 	if len(names) != 2 || names[0] != "BanMembers" || names[1] != "ViewChannel" {
 		t.Errorf("Names: got %v, want [BanMembers ViewChannel] in bit order", names)
 	}
-	if got := p.String(); got != "BanMembers|ViewChannel" {
-		t.Errorf("String: got %q", got)
-	}
-	if got := Permission(0).String(); got != "None" {
-		t.Errorf("String(0): got %q, want None", got)
-	}
 }
 
 func (su *permissionHelpersSuite) TestPermissionAll() {
@@ -84,8 +74,8 @@ func (su *permissionHelpersSuite) TestPermissionAll() {
 func (su *permissionHelpersSuite) TestOverwritePermissionParsing() {
 	t := su.T()
 	ow := ChannelPermissionOverwrite{
-		Allow: permString(PermissionSendMessages),
-		Deny:  permString(PermissionAddReactions),
+		Allow: PermissionSendMessages,
+		Deny:  PermissionAddReactions,
 	}
 	if ow.AllowPermissions() != PermissionSendMessages {
 		t.Errorf("AllowPermissions: got %d", ow.AllowPermissions())
@@ -97,11 +87,6 @@ func (su *permissionHelpersSuite) TestOverwritePermissionParsing() {
 	empty := ChannelPermissionOverwrite{}
 	if empty.AllowPermissions() != 0 || empty.DenyPermissions() != 0 {
 		t.Error("empty overwrite should parse to 0")
-	}
-
-	bad := ChannelPermissionOverwrite{Allow: "not-a-number"}
-	if bad.AllowPermissions() != 0 {
-		t.Error("malformed overwrite should parse to 0")
 	}
 }
 
@@ -142,7 +127,7 @@ func (su *permissionHelpersSuite) TestPermissionsFor() {
 		m := &GuildMember{UserID: testUserID}
 		got := PermissionsFor(g, m)
 		if got != PermissionViewChannel|PermissionSendMessages {
-			t.Errorf("got %s", got)
+			t.Errorf("got %d", got)
 		}
 	})
 
@@ -152,7 +137,7 @@ func (su *permissionHelpersSuite) TestPermissionsFor() {
 		got := PermissionsFor(g, m)
 		want := PermissionViewChannel | PermissionSendMessages | PermissionBanMembers
 		if got != want {
-			t.Errorf("got %s, want %s", got, want)
+			t.Errorf("got %d, want %d", got, want)
 		}
 	})
 
@@ -193,7 +178,7 @@ func (su *permissionHelpersSuite) TestPermissionsInChannel() {
 		g := makeGuild(PermissionViewChannel|PermissionSendMessages, 0, 0)
 		m := &GuildMember{UserID: testUserID}
 		ch := &Channel{PermissionOverwrites: []ChannelPermissionOverwrite{
-			{ID: testGuildID, Type: PermissionOverwriteTypeRole, Deny: permString(PermissionSendMessages)},
+			{ID: testGuildID, Type: PermissionOverwriteTypeRole, Deny: PermissionSendMessages},
 		}}
 		got := PermissionsInChannel(g, m, ch)
 		if got.Has(PermissionSendMessages) {
@@ -208,8 +193,8 @@ func (su *permissionHelpersSuite) TestPermissionsInChannel() {
 		g := makeGuild(PermissionViewChannel|PermissionSendMessages, 0, 0)
 		m := &GuildMember{UserID: testUserID, Roles: []Snowflake{testRoleA}}
 		ch := &Channel{PermissionOverwrites: []ChannelPermissionOverwrite{
-			{ID: testGuildID, Type: PermissionOverwriteTypeRole, Deny: permString(PermissionSendMessages)},
-			{ID: testRoleA, Type: PermissionOverwriteTypeRole, Allow: permString(PermissionSendMessages)},
+			{ID: testGuildID, Type: PermissionOverwriteTypeRole, Deny: PermissionSendMessages},
+			{ID: testRoleA, Type: PermissionOverwriteTypeRole, Allow: PermissionSendMessages},
 		}}
 		if !PermissionsInChannel(g, m, ch).Has(PermissionSendMessages) {
 			t.Error("role allow should re-grant SendMessages denied at @everyone level")
@@ -220,8 +205,8 @@ func (su *permissionHelpersSuite) TestPermissionsInChannel() {
 		g := makeGuild(PermissionViewChannel, 0, 0)
 		m := &GuildMember{UserID: testUserID, Roles: []Snowflake{testRoleA, testRoleB}}
 		ch := &Channel{PermissionOverwrites: []ChannelPermissionOverwrite{
-			{ID: testRoleA, Type: PermissionOverwriteTypeRole, Deny: permString(PermissionSendMessages)},
-			{ID: testRoleB, Type: PermissionOverwriteTypeRole, Allow: permString(PermissionSendMessages)},
+			{ID: testRoleA, Type: PermissionOverwriteTypeRole, Deny: PermissionSendMessages},
+			{ID: testRoleB, Type: PermissionOverwriteTypeRole, Allow: PermissionSendMessages},
 		}}
 		if !PermissionsInChannel(g, m, ch).Has(PermissionSendMessages) {
 			t.Error("within role tier, an allow on any role wins over a deny on another")
@@ -232,8 +217,8 @@ func (su *permissionHelpersSuite) TestPermissionsInChannel() {
 		g := makeGuild(PermissionViewChannel|PermissionSendMessages, 0, 0)
 		m := &GuildMember{UserID: testUserID, Roles: []Snowflake{testRoleA}}
 		ch := &Channel{PermissionOverwrites: []ChannelPermissionOverwrite{
-			{ID: testRoleA, Type: PermissionOverwriteTypeRole, Allow: permString(PermissionSendMessages)},
-			{ID: testUserID, Type: PermissionOverwriteTypeUser, Deny: permString(PermissionSendMessages)},
+			{ID: testRoleA, Type: PermissionOverwriteTypeRole, Allow: PermissionSendMessages},
+			{ID: testUserID, Type: PermissionOverwriteTypeUser, Deny: PermissionSendMessages},
 		}}
 		if PermissionsInChannel(g, m, ch).Has(PermissionSendMessages) {
 			t.Error("member-specific deny must override role allow")
@@ -244,7 +229,7 @@ func (su *permissionHelpersSuite) TestPermissionsInChannel() {
 		g := makeGuild(PermissionAdministrator, 0, 0)
 		m := &GuildMember{UserID: testUserID}
 		ch := &Channel{PermissionOverwrites: []ChannelPermissionOverwrite{
-			{ID: testGuildID, Type: PermissionOverwriteTypeRole, Deny: permString(PermissionViewChannel)},
+			{ID: testGuildID, Type: PermissionOverwriteTypeRole, Deny: PermissionViewChannel},
 		}}
 		if PermissionsInChannel(g, m, ch) != PermissionAll {
 			t.Error("Administrator should yield PermissionAll regardless of overwrites")
@@ -262,7 +247,7 @@ func (su *permissionHelpersSuite) TestGuildMemberPermissionMethods() {
 	}
 
 	ch := &Channel{PermissionOverwrites: []ChannelPermissionOverwrite{
-		{ID: testGuildID, Type: PermissionOverwriteTypeRole, Deny: permString(PermissionSendMessages)},
+		{ID: testGuildID, Type: PermissionOverwriteTypeRole, Deny: PermissionSendMessages},
 	}}
 	if m.PermissionsIn(g, ch) != PermissionsInChannel(g, m, ch) {
 		t.Error("PermissionsIn method should match PermissionsInChannel")

@@ -302,7 +302,7 @@ func (s *RedisCacheTestSuite) TestMarshalErrorBranches() {
 	badMsg := &discord.Message{
 		ID:          5,
 		ChannelID:   9,
-		Attachments: []discord.Attachment{{ID: 1, DurationSecs: &nan}},
+		Attachments: []discord.Attachment{{ID: 1, DurationSecs: nan}},
 	}
 	c.Messages().Add(badMsg)
 	c.Messages().Update(badMsg)

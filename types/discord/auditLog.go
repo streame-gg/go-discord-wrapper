@@ -1,20 +1,8 @@
 package discord
 
-import "encoding/json"
-
-// AuditLog is the response wrapper returned by the Get Guild Audit Log endpoint.
-//
-// ApplicationCommands holds the raw JSON for each application command object.
-// Decode individual elements into *commands.ApplicationCommand as needed:
-//
-//	var cmd commands.ApplicationCommand
-//	if err := json.Unmarshal(auditLog.ApplicationCommands[i], &cmd); err != nil { ... }
-//
-// A direct reference is not possible because types/commands imports types/discord.
-//
 // https://docs.discord.com/developers/resources/audit-log#audit-log-object
 type AuditLog struct {
-	ApplicationCommands  []json.RawMessage     `json:"application_commands"`
+	ApplicationCommands  []ApplicationCommand  `json:"application_commands"`
 	AuditLogEntries      []AuditLogEntry       `json:"audit_log_entries"`
 	AutoModerationRules  []AutoModerationRule  `json:"auto_moderation_rules"`
 	GuildScheduledEvents []GuildScheduledEvent `json:"guild_scheduled_events"`
@@ -24,38 +12,39 @@ type AuditLog struct {
 	Webhooks             []Webhook             `json:"webhooks"`
 }
 
-// AuditLogEntry // https://docs.discord.com/developers/resources/audit-log#audit-log-entry-object
+// https://docs.discord.com/developers/resources/audit-log#audit-log-entry-object
 type AuditLogEntry struct {
-	TargetID   Snowflake             `json:"target_id"`
+	TargetID   *Snowflake            `json:"target_id"`
 	Changes    []AuditLogEntryChange `json:"changes"`
-	UserID     *Snowflake            `json:"user_id,omitempty"`
+	UserID     *Snowflake            `json:"user_id"`
 	ID         Snowflake             `json:"id"`
 	ActionType AuditLogActionType    `json:"action_type"`
 	Options    *AuditLogEntryOptions `json:"options,omitempty"`
-	Reason     *string               `json:"reason,omitempty"`
+	Reason     string                `json:"reason,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/audit-log#audit-log-change-object
 type AuditLogEntryChange struct {
 	Key      string `json:"key"`
-	NewValue any    `json:"new_value,omitempty"`
-	OldValue any    `json:"old_value,omitempty"`
+	NewValue any    `json:"new_value"`
+	OldValue any    `json:"old_value"`
 }
 
 // AuditLogEntryOptions // https://docs.discord.com/developers/resources/audit-log#audit-log-entry-object-optional-audit-entry-info
 type AuditLogEntryOptions struct {
-	ApplicationID                 *Snowflake                             `json:"application_id,omitempty"`
-	AutoModerationRuleName        *string                                `json:"auto_moderation_rule_name,omitempty"`
-	AutoModerationRuleTriggerType *AutoModerationTriggerType             `json:"auto_moderation_rule_trigger_type,omitempty"`
-	ChannelID                     *Snowflake                             `json:"channel_id,omitempty"`
-	Count                         *string                                `json:"count,omitempty"`
-	DeleteMemberDays              *string                                `json:"delete_member_days,omitempty"`
-	ID                            *Snowflake                             `json:"id,omitempty"`
-	MembersRemoved                *string                                `json:"members_removed,omitempty"`
-	MessageID                     *Snowflake                             `json:"message_id,omitempty"`
-	RoleName                      *string                                `json:"role_name,omitempty"`
-	Type                          *PermissionOverwriteType               `json:"type,omitempty"`
-	IntegrationType               *InteractionApplicationIntegrationType `json:"integration_type,omitempty"`
+	ApplicationID                 Snowflake                             `json:"application_id,omitempty"`
+	AutoModerationRuleName        string                                `json:"auto_moderation_rule_name,omitempty"`
+	AutoModerationRuleTriggerType AutoModerationTriggerType             `json:"auto_moderation_rule_trigger_type,omitempty"`
+	ChannelID                     Snowflake                             `json:"channel_id,omitempty"`
+	Count                         string                                `json:"count,omitempty"`
+	DeleteMemberDays              string                                `json:"delete_member_days,omitempty"`
+	ID                            Snowflake                             `json:"id,omitempty"`
+	MembersRemoved                string                                `json:"members_removed,omitempty"`
+	MessageID                     Snowflake                             `json:"message_id,omitempty"`
+	RoleName                      string                                `json:"role_name,omitempty"`
+	Type                          PermissionOverwriteType               `json:"type,omitempty"`
+	IntegrationType               InteractionApplicationIntegrationType `json:"integration_type,omitempty"`
+	Status                        string                                `json:"status,omitempty"`
 }
 
 // AuditLogActionType // https://docs.discord.com/developers/resources/audit-log#audit-log-entry-object-audit-log-events
@@ -72,8 +61,8 @@ const (
 
 	AuditLogActionTypeMemberKick       AuditLogActionType = 20
 	AuditLogActionTypeMemberPrune      AuditLogActionType = 21
-	AuditLogActionTypeMemberBan        AuditLogActionType = 22
-	AuditLogActionTypeMemberUnban      AuditLogActionType = 23
+	AuditLogActionTypeMemberBanAdd     AuditLogActionType = 22
+	AuditLogActionTypeMemberBanRemove  AuditLogActionType = 23
 	AuditLogActionTypeMemberUpdate     AuditLogActionType = 24
 	AuditLogActionTypeMemberRoleUpdate AuditLogActionType = 25
 	AuditLogActionTypeMemberMove       AuditLogActionType = 26
@@ -105,9 +94,9 @@ const (
 	AuditLogActionTypeIntegrationUpdate AuditLogActionType = 81
 	AuditLogActionTypeIntegrationDelete AuditLogActionType = 82
 
-	AuditLogActionTypeStageInstanceCreate AuditLogActionType = 85
-	AuditLogActionTypeStageInstanceUpdate AuditLogActionType = 86
-	AuditLogActionTypeStageInstanceDelete AuditLogActionType = 87
+	AuditLogActionTypeStageInstanceCreate AuditLogActionType = 83
+	AuditLogActionTypeStageInstanceUpdate AuditLogActionType = 84
+	AuditLogActionTypeStageInstanceDelete AuditLogActionType = 85
 
 	AuditLogActionTypeStickerCreate AuditLogActionType = 90
 	AuditLogActionTypeStickerUpdate AuditLogActionType = 91
@@ -146,4 +135,7 @@ const (
 
 	AuditLogActionTypeHomeSettingsCreate AuditLogActionType = 190
 	AuditLogActionTypeHomeSettingsUpdate AuditLogActionType = 191
+
+	AuditLogActionTypeVoiceChannelStatusUpdate AuditLogActionType = 192
+	AuditLogActionTypeVoiceChannelStatusDelete AuditLogActionType = 193
 )

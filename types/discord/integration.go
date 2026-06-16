@@ -56,5 +56,5 @@ type Integration struct {
 	SubscriberCount   *int                       `json:"subscriber_count,omitempty"`
 	Revoked           *bool                      `json:"revoked,omitempty"`
 	Application       *IntegrationApplication    `json:"application,omitempty"`
-	Scopes            *[]string                  `json:"scopes,omitempty"`
+	Scopes            *[]Scope                   `json:"scopes,omitempty"`
 }

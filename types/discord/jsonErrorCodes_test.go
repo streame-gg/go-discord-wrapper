@@ -56,10 +56,3 @@ func (s *jsonErrorCodesSuite) TestCorrectedValues() {
 		s.Equalf(c.want, int(c.got), "%s", name)
 	}
 }
-
-func (s *jsonErrorCodesSuite) TestGatewayErrorCodeAlias() {
-	// The deprecated alias must remain assignable to/from JSONErrorCode.
-	var g GatewayErrorCode = JSONErrorCodeUnknownChannel
-	s.Equal(JSONErrorCodeUnknownChannel, g)
-	s.Equal(10003, int(g))
-}

@@ -18,11 +18,11 @@ type MediaGalleryBuilder struct {
 
 func NewMediaGallery() *MediaGalleryBuilder {
 	items := []components.MediaGalleryItem{}
-	return &MediaGalleryBuilder{mg: components.MediaGalleryComponent{Items: &items}}
+	return &MediaGalleryBuilder{mg: components.MediaGalleryComponent{Items: items}}
 }
 
 func (b *MediaGalleryBuilder) AddItems(items ...components.MediaGalleryItem) *MediaGalleryBuilder {
-	*b.mg.Items = append(*b.mg.Items, items...)
+	b.mg.Items = append(b.mg.Items, items...)
 	return b
 }
 
@@ -41,12 +41,12 @@ type MediaGalleryItemBuilder struct {
 
 func NewMediaGalleryItem(url string) *MediaGalleryItemBuilder {
 	return &MediaGalleryItemBuilder{item: components.MediaGalleryItem{
-		Media: &components.UnfurledMediaItem{URL: url},
+		Media: components.UnfurledMediaItem{URL: url},
 	}}
 }
 
 func (b *MediaGalleryItemBuilder) SetDescription(desc string) *MediaGalleryItemBuilder {
-	b.item.Description = desc
+	b.item.Description = &desc
 	return b
 }
 

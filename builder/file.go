@@ -57,7 +57,7 @@ func (b *FileUploadBuilder) SetCustomID(id string) *FileUploadBuilder {
 }
 
 func (b *FileUploadBuilder) SetRequired(required bool) *FileUploadBuilder {
-	b.fu.Required = &required
+	b.fu.Required = required
 	return b
 }
 

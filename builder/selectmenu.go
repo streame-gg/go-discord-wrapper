@@ -56,8 +56,8 @@ type StringSelectMenuBuilder struct {
 }
 
 func NewStringSelectMenu() *StringSelectMenuBuilder {
-	opts := []components.StringSelectMenuComponentOption{}
-	return &StringSelectMenuBuilder{menu: components.StringSelectMenuComponent{Options: &opts}}
+	var opts []components.StringSelectMenuComponentOption
+	return &StringSelectMenuBuilder{menu: components.StringSelectMenuComponent{Options: opts}}
 }
 
 func (b *StringSelectMenuBuilder) SetCustomID(id string) *StringSelectMenuBuilder {
@@ -86,7 +86,7 @@ func (b *StringSelectMenuBuilder) SetDisabled(disabled bool) *StringSelectMenuBu
 }
 
 func (b *StringSelectMenuBuilder) AddOptions(opts ...components.StringSelectMenuComponentOption) *StringSelectMenuBuilder {
-	*b.menu.Options = append(*b.menu.Options, opts...)
+	b.menu.Options = append(b.menu.Options, opts...)
 	return b
 }
 
@@ -132,9 +132,9 @@ func (b *UserSelectMenuBuilder) SetDisabled(disabled bool) *UserSelectMenuBuilde
 func (b *UserSelectMenuBuilder) AddDefaultValues(values ...components.SelectDefaultValue) *UserSelectMenuBuilder {
 	if b.menu.DefaultValues == nil {
 		dv := []components.SelectDefaultValue{}
-		b.menu.DefaultValues = &dv
+		b.menu.DefaultValues = dv
 	}
-	*b.menu.DefaultValues = append(*b.menu.DefaultValues, values...)
+	b.menu.DefaultValues = append(b.menu.DefaultValues, values...)
 	return b
 }
 
@@ -180,9 +180,9 @@ func (b *RoleSelectMenuBuilder) SetDisabled(disabled bool) *RoleSelectMenuBuilde
 func (b *RoleSelectMenuBuilder) AddDefaultValues(values ...components.SelectDefaultValue) *RoleSelectMenuBuilder {
 	if b.menu.DefaultValues == nil {
 		dv := []components.SelectDefaultValue{}
-		b.menu.DefaultValues = &dv
+		b.menu.DefaultValues = dv
 	}
-	*b.menu.DefaultValues = append(*b.menu.DefaultValues, values...)
+	b.menu.DefaultValues = append(b.menu.DefaultValues, values...)
 	return b
 }
 
@@ -228,9 +228,9 @@ func (b *ChannelSelectMenuBuilder) SetDisabled(disabled bool) *ChannelSelectMenu
 func (b *ChannelSelectMenuBuilder) AddDefaultValues(values ...components.SelectDefaultValue) *ChannelSelectMenuBuilder {
 	if b.menu.DefaultValues == nil {
 		dv := []components.SelectDefaultValue{}
-		b.menu.DefaultValues = &dv
+		b.menu.DefaultValues = dv
 	}
-	*b.menu.DefaultValues = append(*b.menu.DefaultValues, values...)
+	b.menu.DefaultValues = append(b.menu.DefaultValues, values...)
 	return b
 }
 
@@ -278,9 +278,9 @@ func (b *MentionableSelectMenuBuilder) SetDisabled(disabled bool) *MentionableSe
 func (b *MentionableSelectMenuBuilder) AddDefaultValues(values ...components.SelectDefaultValue) *MentionableSelectMenuBuilder {
 	if b.menu.DefaultValues == nil {
 		dv := []components.SelectDefaultValue{}
-		b.menu.DefaultValues = &dv
+		b.menu.DefaultValues = dv
 	}
-	*b.menu.DefaultValues = append(*b.menu.DefaultValues, values...)
+	b.menu.DefaultValues = append(b.menu.DefaultValues, values...)
 	return b
 }
 

@@ -79,92 +79,93 @@ type InviteCreateOptions struct {
 
 // Hydrate injects the gateway client so that the convenience methods can be
 // called without passing ctx and client explicitly.
-func (ch *Channel) Hydrate(c EntityClient) {
-	ch.hClient = c
+func (c *Channel) Hydrate(ec EntityClient) {
+	c.hClient = ec
+	ec.SetChannelManagers(c)
 }
 
 // WithClient returns a shallow copy of the Channel with the client replaced.
-func (ch *Channel) WithClient(c EntityClient) *Channel {
-	cp := *ch
-	cp.hClient = c
+func (c *Channel) WithClient(ec EntityClient) *Channel {
+	cp := *c
+	cp.hClient = ec
 	return &cp
 }
 
 // IsHydrated reports whether the channel has an associated client.
-func (ch *Channel) IsHydrated() bool { return ch.hClient != nil }
+func (c *Channel) IsHydrated() bool { return c.hClient != nil }
 
 // ── Entity methods ────────────────────────────────────────────────────────────
 
 // Send sends a new message to this channel.
-func (ch *Channel) Send(ctx context.Context, opts MessageCreateOptions) (*Message, error) {
-	c, err := ensureClient(ch.hClient)
+func (c *Channel) Send(ctx context.Context, opts MessageCreateOptions) (*Message, error) {
+	cl, err := ensureClient(c.hClient)
 	if err != nil {
 		return nil, err
 	}
-	return c.CreateMessage(ctx, ch.ID, opts)
+	return cl.CreateMessage(ctx, c.ID, opts)
 }
 
 // Edit modifies this channel's settings. Requires MANAGE_CHANNELS.
-func (ch *Channel) Edit(ctx context.Context, opts ChannelEditOptions) (*Channel, error) {
-	c, err := ensureClient(ch.hClient)
+func (c *Channel) Edit(ctx context.Context, opts ChannelEditOptions) (*Channel, error) {
+	cl, err := ensureClient(c.hClient)
 	if err != nil {
 		return nil, err
 	}
-	return c.ModifyChannel(ctx, ch.ID, opts)
+	return cl.ModifyChannel(ctx, c.ID, opts)
 }
 
 // Delete deletes this channel. Requires MANAGE_CHANNELS or MANAGE_THREADS.
 // Pass a non-nil reason for the audit log.
-func (ch *Channel) Delete(ctx context.Context, reason *string) (*Channel, error) {
-	c, err := ensureClient(ch.hClient)
+func (c *Channel) Delete(ctx context.Context, reason *string) (*Channel, error) {
+	cl, err := ensureClient(c.hClient)
 	if err != nil {
 		return nil, err
 	}
-	return c.DeleteChannel(ctx, ch.ID, reason)
+	return cl.DeleteChannel(ctx, c.ID, reason)
 }
 
 // BulkDelete deletes multiple messages at once. Requires MANAGE_MESSAGES.
 // Messages must be ≤ 14 days old.
-func (ch *Channel) BulkDelete(ctx context.Context, messageIDs []Snowflake, reason *string) error {
-	c, err := ensureClient(ch.hClient)
+func (c *Channel) BulkDelete(ctx context.Context, messageIDs []Snowflake, reason *string) error {
+	cl, err := ensureClient(c.hClient)
 	if err != nil {
 		return err
 	}
-	return c.BulkDeleteMessages(ctx, ch.ID, messageIDs, reason)
+	return cl.BulkDeleteMessages(ctx, c.ID, messageIDs, reason)
 }
 
 // FetchMessages retrieves up to 100 messages from this channel.
-func (ch *Channel) FetchMessages(ctx context.Context, opts FetchMessagesOptions) ([]*Message, error) {
-	c, err := ensureClient(ch.hClient)
+func (c *Channel) FetchMessages(ctx context.Context, opts FetchMessagesOptions) ([]*Message, error) {
+	cl, err := ensureClient(c.hClient)
 	if err != nil {
 		return nil, err
 	}
-	return c.ListChannelMessages(ctx, ch.ID, opts)
+	return cl.ListChannelMessages(ctx, c.ID, opts)
 }
 
 // TriggerTyping posts a typing indicator for ~10 seconds.
-func (ch *Channel) TriggerTyping(ctx context.Context) error {
-	c, err := ensureClient(ch.hClient)
+func (c *Channel) TriggerTyping(ctx context.Context) error {
+	cl, err := ensureClient(c.hClient)
 	if err != nil {
 		return err
 	}
-	return c.TriggerTypingIndicator(ctx, ch.ID)
+	return cl.TriggerTypingIndicator(ctx, c.ID)
 }
 
 // SetVoiceStatus sets the voice channel status string. Pass nil to clear it.
-func (ch *Channel) SetVoiceStatus(ctx context.Context, status *string) error {
-	c, err := ensureClient(ch.hClient)
+func (c *Channel) SetVoiceStatus(ctx context.Context, status *string) error {
+	cl, err := ensureClient(c.hClient)
 	if err != nil {
 		return err
 	}
-	return c.SetVoiceChannelStatus(ctx, ch.ID, status)
+	return cl.SetVoiceChannelStatus(ctx, c.ID, status)
 }
 
 // CreateInvite creates a new invite for this channel. Requires CREATE_INSTANT_INVITE.
-func (ch *Channel) CreateInvite(ctx context.Context, opts InviteCreateOptions) (*Invite, error) {
-	c, err := ensureClient(ch.hClient)
+func (c *Channel) CreateInvite(ctx context.Context, opts InviteCreateOptions) (*Invite, error) {
+	cl, err := ensureClient(c.hClient)
 	if err != nil {
 		return nil, err
 	}
-	return c.CreateChannelInvite(ctx, ch.ID, opts)
+	return cl.CreateChannelInvite(ctx, c.ID, opts)
 }

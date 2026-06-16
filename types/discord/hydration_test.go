@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/stretchr/testify/suite"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -27,6 +28,14 @@ type stubClient struct {
 	kickMemberFn    func(ctx context.Context, guildID, userID discord.Snowflake, reason *string) error
 	modifyChannelFn func(ctx context.Context, channelID discord.Snowflake, opts discord.ChannelEditOptions) (*discord.Channel, error)
 	deleteChannelFn func(ctx context.Context, channelID discord.Snowflake, reason *string) (*discord.Channel, error)
+}
+
+func (s *stubClient) SetGuildManagers(g *discord.Guild) {
+
+}
+
+func (s *stubClient) SetChannelManagers(c *discord.Channel) {
+
 }
 
 func (s *stubClient) EditMessage(ctx context.Context, chID, msgID discord.Snowflake, opts discord.MessageEditOptions) (*discord.Message, error) {

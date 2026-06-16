@@ -41,7 +41,7 @@ func (b *TextInputBuilder) SetMaxLength(max int) *TextInputBuilder {
 }
 
 func (b *TextInputBuilder) SetRequired(required bool) *TextInputBuilder {
-	b.input.Required = &required
+	b.input.Required = required
 	return b
 }
 

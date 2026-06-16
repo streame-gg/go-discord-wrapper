@@ -130,11 +130,11 @@ type BotRegisterResponse struct {
 
 // https://docs.discord.com/developers/topics/opcodes-and-status-codes#json
 type GatewayError struct {
-	Code    int                    `json:"code"`
+	Code    JSONErrorCode          `json:"code"`
 	Errors  map[string]interface{} `json:"errors"`
 	Message string                 `json:"message"`
 }
 
 func (g GatewayError) Error() string {
-	return strconv.Itoa(g.Code) + " " + g.Message
+	return strconv.Itoa(int(g.Code)) + " " + g.Message
 }

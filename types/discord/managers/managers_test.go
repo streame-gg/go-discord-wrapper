@@ -2,9 +2,10 @@ package managers_test
 
 import (
 	"context"
-	"github.com/stretchr/testify/suite"
 	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/collection"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -203,6 +204,14 @@ type stubEntityClient struct {
 	listEmojis   func(guildID discord.Snowflake) ([]*discord.Emoji, error)
 	listStickers func(guildID discord.Snowflake) ([]*discord.Sticker, error)
 	listEvents   func(guildID discord.Snowflake) ([]*discord.GuildScheduledEvent, error)
+}
+
+func (s *stubEntityClient) SetGuildManagers(g *discord.Guild) {
+
+}
+
+func (s *stubEntityClient) SetChannelManagers(c *discord.Channel) {
+
 }
 
 func (s *stubEntityClient) ClientCache() discord.Cache { return s.cache }

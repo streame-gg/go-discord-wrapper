@@ -159,18 +159,18 @@ func (s *clientSuite) TestReply() {
 	})
 	s.Require().NoError(err)
 	s.Equal("Reply", m.lastMethod)
-	s.Equal("hi", m.lastData.Content)
-	s.NotNil(m.lastData.Embeds)
-	s.Equal(mentions, m.lastData.AllowedMentions)
-	s.Equal(poll, m.lastData.Poll)
+	s.Equal("hi", m.lastData.Content.MustVal())
+	s.NotNil(m.lastData.Embeds.MustVal())
+	s.Equal(*mentions, m.lastData.AllowedMentions.MustVal())
+	s.Equal(*poll, m.lastData.Poll.MustVal())
 }
 
 func (s *clientSuite) TestReply_Empty() {
 	i, m := s.hydrated()
 	_, err := i.Reply(interactions.ReplyOptions{})
 	s.Require().NoError(err)
-	s.Equal("", m.lastData.Content)
-	s.Nil(m.lastData.Embeds)
+	s.Equal("", m.lastData.Content.MustVal())
+	s.Nil(m.lastData.Embeds.MustVal())
 }
 
 func (s *clientSuite) TestDeferReply() {
@@ -196,16 +196,16 @@ func (s *clientSuite) TestUpdateMessage() {
 		AllowedMentions: mentions,
 	}))
 	s.Equal("UpdateMessage", m.lastMethod)
-	s.Equal("edit", m.lastData.Content)
-	s.NotNil(m.lastData.Components)
-	s.Equal(mentions, m.lastData.AllowedMentions)
+	s.Equal("edit", m.lastData.Content.MustVal())
+	s.NotNil(m.lastData.Components.MustVal())
+	s.Equal(*mentions, m.lastData.AllowedMentions.MustVal())
 }
 
 func (s *clientSuite) TestUpdateMessage_Empty() {
 	i, m := s.hydrated()
 	s.Require().NoError(i.UpdateMessage(interactions.UpdateMessageOptions{}))
-	s.Equal("", m.lastData.Content)
-	s.Nil(m.lastData.Embeds)
+	s.Equal("", m.lastData.Content.MustVal())
+	s.Nil(m.lastData.Embeds.MustVal())
 }
 
 func (s *clientSuite) TestModal() {
@@ -262,10 +262,10 @@ func (s *clientSuite) TestFollowUp() {
 	s.Require().NoError(err)
 	s.Equal("CreateFollowup", m.lastMethod)
 	params := m.lastParams.(api.CreateMessageParams)
-	s.Equal("follow", params.Content)
-	s.NotZero(params.Flags & discord.MessageFlagEphemeral)
-	s.NotZero(params.Flags & discord.MessageFlagSuppressEmbeds)
-	s.NotZero(params.Flags & discord.MessageFlagSuppressNotification)
+	s.Equal("follow", params.Content.MustVal())
+	s.NotZero(params.Flags.MustVal() & discord.MessageFlagEphemeral)
+	s.NotZero(params.Flags.MustVal() & discord.MessageFlagSuppressEmbeds)
+	s.NotZero(params.Flags.MustVal() & discord.MessageFlagSuppressNotification)
 }
 
 func (s *clientSuite) TestFollowUp_NoFlags() {
@@ -273,7 +273,7 @@ func (s *clientSuite) TestFollowUp_NoFlags() {
 	_, err := i.FollowUp(interactions.FollowUpOptions{Content: "plain"})
 	s.Require().NoError(err)
 	params := m.lastParams.(api.CreateMessageParams)
-	s.Zero(params.Flags)
+	s.Zero(params.Flags.MustVal())
 }
 
 func (s *clientSuite) TestGetFollowup() {

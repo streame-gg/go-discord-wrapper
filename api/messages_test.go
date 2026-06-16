@@ -169,7 +169,7 @@ func (su *apiMessagesSuite) TestCreateMessage_NoPollOrClientThemeSetIfNotProvide
 
 	su.Require().Nil(marshaled.Poll)
 	su.Require().Nil(marshaled.SharedClientTheme)
-	su.Require().Equal("hello", marshaled.Content)
+	su.Require().Equal("hello", marshaled.Content.MustVal())
 }
 
 type apiMessagesSuite struct{ suite.Suite }

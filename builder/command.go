@@ -1,17 +1,16 @@
 package builder
 
 import (
-	"github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 type CommandBuilder struct {
-	cmd *commands.ApplicationCommand
+	cmd *discord.ApplicationCommand
 }
 
 func NewCommandBuilder() *CommandBuilder {
 	return &CommandBuilder{
-		cmd: &commands.ApplicationCommand{
+		cmd: &discord.ApplicationCommand{
 			Type: discord.ApplicationCommandTypeChatInput,
 		},
 	}
@@ -62,21 +61,21 @@ func (b *CommandBuilder) SetContexts(contexts []discord.InteractionContextType) 
 	return b
 }
 
-func (b *CommandBuilder) AddOption(option commands.AnyApplicationCommandOption) *CommandBuilder {
+func (b *CommandBuilder) AddOption(option discord.AnyApplicationCommandOption) *CommandBuilder {
 	b.cmd.Options = append(b.cmd.Options, option)
 	return b
 }
 
-func (b *CommandBuilder) AddOptions(option ...commands.AnyApplicationCommandOption) *CommandBuilder {
+func (b *CommandBuilder) AddOptions(option ...discord.AnyApplicationCommandOption) *CommandBuilder {
 	b.cmd.Options = append(b.cmd.Options, option...)
 	return b
 }
 
-func (b *CommandBuilder) SetOptions(options ...commands.AnyApplicationCommandOption) *CommandBuilder {
+func (b *CommandBuilder) SetOptions(options ...discord.AnyApplicationCommandOption) *CommandBuilder {
 	b.cmd.Options = options
 	return b
 }
 
-func (b *CommandBuilder) Build() commands.ApplicationCommand {
+func (b *CommandBuilder) Build() discord.ApplicationCommand {
 	return *b.cmd
 }

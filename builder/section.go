@@ -28,7 +28,7 @@ func (b *SectionBuilder) AddComponents(c ...components.AnySectionComponent) *Sec
 }
 
 func (b *SectionBuilder) SetAccessory(a components.AnySectionAccessory) *SectionBuilder {
-	b.s.Accessory = a
+	b.s.Accessory = &a
 	return b
 }
 
@@ -50,7 +50,7 @@ type ThumbnailBuilder struct {
 func NewThumbnail() *ThumbnailBuilder { return &ThumbnailBuilder{} }
 
 func (b *ThumbnailBuilder) SetURL(url string) *ThumbnailBuilder {
-	b.t.Media = &components.UnfurledMediaItem{URL: url}
+	b.t.Media = components.UnfurledMediaItem{URL: url}
 	return b
 }
 

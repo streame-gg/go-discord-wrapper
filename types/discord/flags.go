@@ -5,18 +5,6 @@ import (
 	"strconv"
 )
 
-// Generic bitfield helpers, modelled on discord.js' BitField. Discord encodes
-// many things as integer bitmasks (message flags, channel flags, role flags,
-// user badges, application flags, the system-channel suppression mask, …).
-// FlagBits wraps any of them so you can ask Has/Any/Missing and build new masks
-// with Add/Remove/Toggle without hand-writing bit twiddling at every call site.
-//
-// Permission is also a bitfield but ships its own dedicated methods
-// (Permission.Has / HasAny / Missing) because it has named-permission semantics;
-// FlagBits works on it too if you want the generic surface.
-
-// BitFlag constrains the integer-based named types Discord uses for bitfields.
-// Example bitfield: https://docs.discord.com/developers/resources/message#message-object-message-flags
 type BitFlag interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 |
 		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64
@@ -45,7 +33,7 @@ func (f FlagBits[T]) IsEmpty() bool { var zero T; return f.bits == zero }
 // all of them.
 func (f FlagBits[T]) Has(flag T) bool { return f.bits&flag == flag }
 
-// HasAll reports whether all of the given flags are set.
+// HasAll reports whether all the given flags are set.
 func (f FlagBits[T]) HasAll(flags ...T) bool {
 	for _, fl := range flags {
 		if f.bits&fl != fl {
@@ -147,7 +135,6 @@ const (
 	UserFlagVerifiedDeveloper     UserFlags = 1 << 17 // Early Verified Bot Developer
 	UserFlagCertifiedModerator    UserFlags = 1 << 18 // Moderator Programs Alumni
 	UserFlagBotHTTPInteractions   UserFlags = 1 << 19 // Uses only HTTP interactions
-	UserFlagActiveDeveloper       UserFlags = 1 << 22 // Active Developer
 )
 
 // PublicFlagBits returns the user's public badge flags as a FlagBits, e.g.
@@ -186,6 +173,7 @@ const (
 	GuildMemberFlagCompletedHomeActions       GuildMemberFlags = 1 << 6
 	GuildMemberFlagAutomodQuarantinedUsername GuildMemberFlags = 1 << 7
 	GuildMemberFlagDmSettingsUpsellAcked      GuildMemberFlags = 1 << 9
+	GuildMemberFlagAutomodQuarantinedGuildTag GuildMemberFlags = 1 << 10
 )
 
 // FlagBits returns the member's state flags as a FlagBits, e.g.

@@ -920,7 +920,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				if d.cacheEnabled() {
 					if !guild.ID.IsEmpty() {
 						guild.Hydrate(d)
-						d.setGuildManagers(&guild)
+						d.SetGuildManagers(&guild)
 					}
 
 					if !guild.ID.IsEmpty() && d.cacheStoreEnabled(cache.CategoryGuilds) {
@@ -976,15 +976,15 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 							gid := guildCreateEvent.Guild.GetID()
 							for i := range gatewayGuild.Channels {
 								ch := gatewayGuild.Channels[i]
-								if ch.GuildID == nil {
-									ch.GuildID = &gid
+								if ch.GuildID.IsEmpty() {
+									ch.GuildID = gid
 								}
 								d.cacheChannel(&ch)
 							}
 							for i := range gatewayGuild.Threads {
 								ch := gatewayGuild.Threads[i]
-								if ch.GuildID == nil {
-									ch.GuildID = &gid
+								if ch.GuildID.IsEmpty() {
+									ch.GuildID = gid
 								}
 								d.cacheChannel(&ch)
 								d.trackThread(&ch)
@@ -1185,7 +1185,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			}
 			g := ev.NewGuild
 			g.Hydrate(d)
-			d.setGuildManagers(&g)
+			d.SetGuildManagers(&g)
 			ev.NewGuild = g
 			if d.cacheStoreEnabled(cache.CategoryGuilds) {
 				if old, exists := d.Cache.Guilds().Get(g.ID); exists {
@@ -1785,7 +1785,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				if ch, ok := d.Cache.Channels().Get(ev.ID); ok {
 					updated := *ch
-					updated.MemberCount = &ev.MemberCount
+					updated.MemberCount = ev.MemberCount
 					d.Cache.Channels().Set(&updated)
 				}
 			}
@@ -1952,7 +1952,6 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				if ch, ok := d.Cache.Channels().Get(ev.ChannelID); ok {
 					// Copy before mutating — never modify the cached pointer in-place.
 					updated := *ch
-					updated.Status = ev.Status
 					d.Cache.Channels().Set(&updated)
 				}
 			}
@@ -2005,7 +2004,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						resolvedGuild = &discord.Guild{ID: *ev.GuildID}
 					}
 					resolvedGuild.Hydrate(d)
-					d.setGuildManagers(resolvedGuild)
+					d.SetGuildManagers(resolvedGuild)
 				}
 				ev.Guild = resolvedGuild
 			}
@@ -2024,7 +2023,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			}
 			if ev.Channel != nil {
 				ev.Channel.Hydrate(d)
-				d.setChannelManagers(ev.Channel)
+				d.SetChannelManagers(ev.Channel)
 			}
 		}
 		return true
@@ -2137,33 +2136,33 @@ func (d *Client) hydrateEvent(event events.Event) {
 		ev.NewMessage.Hydrate(d)
 	case *events.ChannelCreateEvent:
 		ev.Hydrate(d)
-		d.setChannelManagers(&ev.Channel)
+		d.SetChannelManagers(&ev.Channel)
 	case *events.ChannelUpdateEvent:
 		ev.NewChannel.Hydrate(d)
-		d.setChannelManagers(&ev.NewChannel)
+		d.SetChannelManagers(&ev.NewChannel)
 	case *events.ChannelDeleteEvent:
 		ev.Hydrate(d)
-		d.setChannelManagers(&ev.Channel)
+		d.SetChannelManagers(&ev.Channel)
 	case *events.ThreadCreateEvent:
 		ev.Hydrate(d)
-		d.setChannelManagers(&ev.Channel)
+		d.SetChannelManagers(&ev.Channel)
 	case *events.ThreadUpdateEvent:
 		ev.NewThread.Hydrate(d)
-		d.setChannelManagers(&ev.NewThread)
+		d.SetChannelManagers(&ev.NewThread)
 	case *events.GuildCreateEvent:
 		switch g := ev.Guild.(type) {
 		case discord.GatewayGuild:
 			g.Hydrate(d)
-			d.setGuildManagers(&g.Guild)
+			d.SetGuildManagers(&g.Guild)
 			ev.Guild = g
 		case discord.Guild:
 			g.Hydrate(d)
-			d.setGuildManagers(&g)
+			d.SetGuildManagers(&g)
 			ev.Guild = g
 		}
 	case *events.GuildUpdateEvent:
 		ev.NewGuild.Hydrate(d)
-		d.setGuildManagers(&ev.NewGuild)
+		d.SetGuildManagers(&ev.NewGuild)
 	case *events.GuildMemberAddEvent:
 		ev.GuildMember.GuildID = ev.GuildID
 		if ev.User != nil {
@@ -2210,7 +2209,7 @@ func (d *Client) hydrateEvent(event events.Event) {
 	case *events.ThreadListSyncEvent:
 		for i := range ev.Threads {
 			ev.Threads[i].Hydrate(d)
-			d.setChannelManagers(&ev.Threads[i])
+			d.SetChannelManagers(&ev.Threads[i])
 		}
 	}
 }

@@ -48,7 +48,7 @@ func (cs *ConnectionSuite) TestGuildDelete_CleansCacheChannels() {
 
 	ch := &discord.Channel{
 		ID:      chID,
-		GuildID: &guildID,
+		GuildID: guildID,
 	}
 	c.cacheChannel(ch)
 
@@ -71,8 +71,8 @@ func (cs *ConnectionSuite) TestGuildDelete_CleansChannelIndex() {
 	ch1 := discord.Snowflake(444000444000444)
 	ch2 := discord.Snowflake(555000555000555)
 
-	c.trackChannel(&discord.Channel{ID: ch1, GuildID: &guildID})
-	c.trackChannel(&discord.Channel{ID: ch2, GuildID: &guildID})
+	c.trackChannel(&discord.Channel{ID: ch1, GuildID: guildID})
+	c.trackChannel(&discord.Channel{ID: ch2, GuildID: guildID})
 
 	c.channelIndexMu.RLock()
 	assert.Len(t, c.channelsByGuild[guildID], 2, "expected 2 channels before delete")
@@ -100,7 +100,7 @@ func (cs *ConnectionSuite) TestGuildDelete_CleansMessageCache() {
 	chID := discord.Snowflake(777000777000777)
 	msgID := discord.Snowflake(888000888000888)
 
-	ch := &discord.Channel{ID: chID, GuildID: &guildID}
+	ch := &discord.Channel{ID: chID, GuildID: guildID}
 	c.cacheChannel(ch)
 	c.cacheMessage(&discord.Message{ID: msgID, ChannelID: chID})
 

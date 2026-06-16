@@ -21,7 +21,7 @@ func TestResponsesSuite(t *testing.T) {
 }
 
 func (s *responsesSuite) TestDefaultDataMarshalJSON() {
-	d := &InteractionResponseDataDefault{Content: "hello", Flags: discord.MessageFlagEphemeral}
+	d := &InteractionResponseDataDefault{Content: discord.Some("hello"), Flags: discord.Some(discord.MessageFlagEphemeral)}
 	s.True(d.IsInteractionResponseData())
 
 	b, err := json.Marshal(d)
@@ -57,7 +57,7 @@ func (s *responsesSuite) TestAutocompleteDataMarshalJSON() {
 func (s *responsesSuite) TestInteractionResponseEnvelopeMarshal() {
 	resp := InteractionResponse{
 		Type: discord.InteractionCallbackTypeChannelMessageWithSource,
-		Data: &InteractionResponseDataDefault{Content: "hi"},
+		Data: &InteractionResponseDataDefault{Content: discord.Some("hi")},
 	}
 	b, err := json.Marshal(resp)
 	s.Require().NoError(err)

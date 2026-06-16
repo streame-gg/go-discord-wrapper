@@ -20,14 +20,14 @@ func (d *Client) cacheChannel(channel *discord.Channel) {
 	}
 
 	channel.Hydrate(d)
-	d.setChannelManagers(channel)
+	d.SetChannelManagers(channel)
 	d.trackChannel(channel)
 	d.Cache.Channels().Set(channel)
 	if channel.Recipients == nil {
 		return
 	}
 
-	recipients := *channel.Recipients
+	recipients := channel.Recipients
 	for i := range recipients {
 		u := recipients[i]
 		d.cacheUser(&u)
@@ -46,7 +46,7 @@ func (d *Client) cacheGuild(guild *discord.Guild) {
 	}
 
 	guild.Hydrate(d)
-	d.setGuildManagers(guild)
+	d.SetGuildManagers(guild)
 	d.Cache.Guilds().Set(guild)
 	for i := range guild.RawRoles {
 		role := guild.RawRoles[i]
@@ -335,7 +335,7 @@ func (d *Client) trackChannel(channel *discord.Channel) {
 	defer d.channelIndexMu.Unlock()
 
 	if oldGuildID, ok := d.guildByChannel[channel.ID]; ok {
-		if channel.GuildID == nil || oldGuildID != *channel.GuildID {
+		if channel.GuildID.IsEmpty() || oldGuildID != channel.GuildID {
 			if set := d.channelsByGuild[oldGuildID]; set != nil {
 				delete(set, channel.ID)
 				if len(set) == 0 {
@@ -346,11 +346,11 @@ func (d *Client) trackChannel(channel *discord.Channel) {
 		}
 	}
 
-	if channel.GuildID == nil || channel.IsThread() {
+	if channel.GuildID.IsEmpty() || channel.IsThread() {
 		return
 	}
 
-	guildID := *channel.GuildID
+	guildID := channel.GuildID
 	set := d.channelsByGuild[guildID]
 	if set == nil {
 		set = make(map[discord.Snowflake]struct{})

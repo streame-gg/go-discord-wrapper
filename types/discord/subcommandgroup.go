@@ -1,30 +1,28 @@
-package commands
+package discord
 
 import (
 	"encoding/json"
-
-	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-option-structure
 type ApplicationCommandOptionSubCommandGroup struct {
-	Type                     discord.ApplicationCommandOptionType `json:"type"`
-	Name                     string                               `json:"name"`
-	NameLocalizations        map[discord.Locale]string            `json:"name_localizations,omitempty"`
-	Description              string                               `json:"description"`
-	DescriptionLocalizations map[discord.Locale]string            `json:"description_localizations,omitempty"`
-	Options                  []AnyApplicationCommandOption        `json:"options,omitempty"`
+	Type                     ApplicationCommandOptionType  `json:"type"`
+	Name                     string                        `json:"name"`
+	NameLocalizations        map[Locale]string             `json:"name_localizations,omitempty"`
+	Description              string                        `json:"description"`
+	DescriptionLocalizations map[Locale]string             `json:"description_localizations,omitempty"`
+	Options                  []AnyApplicationCommandOption `json:"options,omitempty"`
 }
 
-func (o *ApplicationCommandOptionSubCommandGroup) ApplicationCommandOptionType() discord.ApplicationCommandOptionType {
-	return discord.ApplicationCommandOptionTypeSubCommandGroup
+func (o *ApplicationCommandOptionSubCommandGroup) ApplicationCommandOptionType() ApplicationCommandOptionType {
+	return ApplicationCommandOptionTypeSubCommandGroup
 }
 
 func (o *ApplicationCommandOptionSubCommandGroup) MarshalJSON() ([]byte, error) {
 	type Alias ApplicationCommandOptionSubCommandGroup
 	return json.Marshal(struct {
 		Alias
-		Type discord.ApplicationCommandOptionType `json:"type"`
+		Type ApplicationCommandOptionType `json:"type"`
 	}{
 		Alias: Alias(*o),
 		Type:  o.ApplicationCommandOptionType(),
@@ -57,7 +55,7 @@ func (o *ApplicationCommandOptionSubCommandGroup) UnmarshalJSON(data []byte) err
 
 func NewSubCommandGroupOptionBuilder() *ApplicationCommandOptionSubCommandGroup {
 	return &ApplicationCommandOptionSubCommandGroup{
-		Type: discord.ApplicationCommandOptionTypeSubCommandGroup,
+		Type: ApplicationCommandOptionTypeSubCommandGroup,
 	}
 }
 
@@ -66,7 +64,7 @@ func (o *ApplicationCommandOptionSubCommandGroup) SetName(name string) *Applicat
 	return o
 }
 
-func (o *ApplicationCommandOptionSubCommandGroup) SetNameLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionSubCommandGroup {
+func (o *ApplicationCommandOptionSubCommandGroup) SetNameLocalizations(localizations map[Locale]string) *ApplicationCommandOptionSubCommandGroup {
 	o.NameLocalizations = localizations
 	return o
 }
@@ -76,7 +74,7 @@ func (o *ApplicationCommandOptionSubCommandGroup) SetDescription(description str
 	return o
 }
 
-func (o *ApplicationCommandOptionSubCommandGroup) SetDescriptionLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionSubCommandGroup {
+func (o *ApplicationCommandOptionSubCommandGroup) SetDescriptionLocalizations(localizations map[Locale]string) *ApplicationCommandOptionSubCommandGroup {
 	o.DescriptionLocalizations = localizations
 	return o
 }

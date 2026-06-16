@@ -70,7 +70,7 @@ type UserConnection struct {
 type OAuth2Authorization struct {
 	Application Application `json:"application"`
 	Expires     string      `json:"expires"`
-	Scopes      []string    `json:"scopes"`
+	Scopes      []Scope     `json:"scopes"`
 	User        *User       `json:"user,omitempty"`
 }
 

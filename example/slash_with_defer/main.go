@@ -16,7 +16,6 @@ import (
 
 	"github.com/streame-gg/go-discord-wrapper/api"
 	"github.com/streame-gg/go-discord-wrapper/connection"
-	"github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions"
@@ -124,7 +123,7 @@ func main() {
 		panic(err)
 	}
 
-	_, err := bot.BulkRegisterCommands(context.Background(), []*commands.ApplicationCommand{
+	_, err := bot.BulkRegisterCommands(context.Background(), []*discord.ApplicationCommand{
 		{Name: "slow", Description: "Simulate a slow operation with DeferAndFollowup", Type: discord.ApplicationCommandTypeChatInput},
 		{Name: "ban", Description: "Ban a member (typed-error example)", Type: discord.ApplicationCommandTypeChatInput},
 	})

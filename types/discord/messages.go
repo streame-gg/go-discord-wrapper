@@ -37,10 +37,16 @@ type ChannelPins struct {
 	HasMore bool          `json:"has_more"`
 }
 
+// https://docs.discord.com/developers/resources/message#message-object-message-activity-structure
+type MessageActivity struct {
+	Type    int     `json:"type"`
+	PartyID *string `json:"party_id,omitempty"`
+}
+
 // https://docs.discord.com/developers/resources/message#message-object
 type Message struct {
 	hClient              EntityClient
-	Activity             *Activity                   `json:"activity,omitempty"`
+	Activity             *MessageActivity            `json:"activity,omitempty"`
 	Application          *Application                `json:"application,omitempty"`
 	ApplicationID        *Snowflake                  `json:"application_id,omitempty"`
 	Attachments          []Attachment                `json:"attachments,omitempty"`
@@ -75,6 +81,14 @@ type Message struct {
 	TTS                  bool                        `json:"tts"`
 	Type                 MessageType                 `json:"type"`
 	WebhookID            *Snowflake                  `json:"webhook_id,omitempty"`
+}
+
+// https://docs.discord.com/developers/resources/message#role-subscription-data-object
+type RoleSubscriptionData struct {
+	RoleSubscriptionListingID Snowflake `json:"role_subscription_listing_id"`
+	TierName                  string    `json:"tier_name"`
+	TotalMonthsSubscribed     int       `json:"total_months_subscribed"`
+	IsRenewal                 bool      `json:"is_renewal"`
 }
 
 func (m *Message) UnmarshalJSON(data []byte) error {

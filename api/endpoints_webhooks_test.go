@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/options"
@@ -46,7 +47,7 @@ func (s *endpointSuite) TestWebhookRestEndpoints() {
 			return s.client.DeleteWebhookWithToken(ctx, testWebhookID, "tok")
 		}},
 		{name: "ExecuteWebhook", method: "POST", path: "/webhooks/" + wh + "/tok", call: func() error {
-			return drop(s.client.ExecuteWebhook(ctx, testWebhookID, "tok", ExecuteWebhookParams{Content: "hi"}, ExecuteWebhookQueryParams{Wait: &waitTrue}))
+			return drop(s.client.ExecuteWebhook(ctx, testWebhookID, "tok", ExecuteWebhookParams{Content: discord.Some("hi")}, ExecuteWebhookQueryParams{Wait: &waitTrue}))
 		}},
 		{name: "GetWebhookMessage", method: "GET", path: "/webhooks/" + wh + "/tok/messages/" + testMsgID.String(), call: func() error {
 			return drop(s.client.GetWebhookMessage(ctx, testWebhookID, "tok", testMsgID))

@@ -2,16 +2,16 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/suite"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 func (su *membersSuite) TestModifyGuildMemberParams_RolesJSON() {
 	t := su.T()
-	roleID := discord.Snowflake(754246997266923571)
 
 	cases := []struct {
 		name        string
@@ -26,13 +26,13 @@ func (su *membersSuite) TestModifyGuildMemberParams_RolesJSON() {
 		},
 		{
 			name:        "empty slice sends roles:[] - removes all roles",
-			params:      ModifyGuildMemberParams{Roles: &[]discord.Snowflake{}},
+			params:      ModifyGuildMemberParams{Roles: discord.Some([]discord.Snowflake{})},
 			wantKey:     true,
 			wantPayload: `"roles":[]`,
 		},
 		{
 			name:        "non-empty slice sends role IDs",
-			params:      ModifyGuildMemberParams{Roles: &[]discord.Snowflake{roleID}},
+			params:      ModifyGuildMemberParams{Roles: discord.Some([]discord.Snowflake{754246997266923571})},
 			wantKey:     true,
 			wantPayload: `"roles":["754246997266923571"]`,
 		},

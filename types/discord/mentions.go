@@ -3,6 +3,8 @@ package discord
 import (
 	"fmt"
 	"time"
+
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 )
 
 // This file collects the small, dependency-free convenience helpers on the
@@ -65,7 +67,10 @@ func (e *Emoji) Mention() string {
 	if e.ID.IsEmpty() {
 		return e.Name
 	}
-	if e.Animated {
+	if e.Animated == nil {
+		return ""
+	}
+	if *e.Animated {
 		return "<a:" + e.Name + ":" + e.ID.String() + ">"
 	}
 	return "<:" + e.Name + ":" + e.ID.String() + ">"
@@ -75,17 +80,20 @@ func (e *Emoji) Mention() string {
 // routes: "name:id" for custom emoji ("a:name:id" when animated) and the raw
 // unicode character(s) for standard emoji. Callers must URL-encode the result
 // before placing it in a request path.
-func (e *Emoji) Identifier() string {
+func (e *Emoji) Identifier() *string {
 	if e == nil {
-		return ""
+		return nil
 	}
 	if e.ID.IsEmpty() {
-		return e.Name
+		return &e.Name
 	}
-	if e.Animated {
-		return "a:" + e.Name + ":" + e.ID.String()
+	if e.Animated == nil {
+		return nil
 	}
-	return e.Name + ":" + e.ID.String()
+	if *e.Animated {
+		return util.PointerOf("a:" + e.Name + ":" + e.ID.String())
+	}
+	return util.PointerOf(e.Name + ":" + e.ID.String())
 }
 
 // ── Identity / tags ─────────────────────────────────────────────────────────
@@ -196,8 +204,9 @@ func (i *Invite) URL() string {
 // ── Channel classification ──────────────────────────────────────────────────
 
 // IsNSFW reports whether the channel is marked age-restricted.
+// FIXME can return false values if c.NSFW just isn't set
 func (c *Channel) IsNSFW() bool {
-	return c != nil && c.NSFW
+	return c != nil && c.NSFW != nil && *c.NSFW
 }
 
 // IsThreadOnly reports whether the channel only contains threads (forum and

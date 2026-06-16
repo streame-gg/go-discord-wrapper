@@ -4,6 +4,7 @@ package connection
 // and channel position cache updates.
 
 import (
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -87,15 +88,15 @@ func (cs *ConnectionSuite) TestBug80_EditChannelPermissions_UpsertOverwrite() {
 	channelID := discord.Snowflake(2000)
 	overwriteID := discord.Snowflake(3000)
 
-	ch := &discord.Channel{ID: channelID, GuildID: &guildID}
+	ch := &discord.Channel{ID: channelID, GuildID: guildID}
 	c.cacheChannel(ch)
 
 	// Simulate the fixed EditChannelPermissions cache update.
-	allow := "8"
-	deny := "0"
+	allow := discord.Permission(8)
+	deny := discord.Permission(0)
 	params := api.EditChannelPermissionsParams{
-		Allow: &allow,
-		Deny:  &deny,
+		Allow: discord.Some(allow),
+		Deny:  discord.Some(deny),
 		Type:  discord.PermissionOverwriteTypeRole,
 	}
 	if cached, ok := c.Cache.Channels().Get(channelID); ok {
@@ -127,7 +128,7 @@ func (cs *ConnectionSuite) TestBug80_EditChannelPermissions_UpsertOverwrite() {
 	require.True(t, ok)
 	require.Len(t, got.PermissionOverwrites, 1, "one overwrite must be present after EditChannelPermissions (Bug 80)")
 	assert.Equal(t, overwriteID, got.PermissionOverwrites[0].ID)
-	assert.Equal(t, "8", got.PermissionOverwrites[0].Allow)
+	assert.Equal(t, discord.Permission(8), got.PermissionOverwrites[0].Allow)
 }
 
 func (cs *ConnectionSuite) TestBug80_EditChannelPermissions_UpdatesExistingOverwrite() {
@@ -141,10 +142,10 @@ func (cs *ConnectionSuite) TestBug80_EditChannelPermissions_UpdatesExistingOverw
 
 	ch := &discord.Channel{
 		ID:      channelID,
-		GuildID: &guildID,
+		GuildID: guildID,
 		PermissionOverwrites: []discord.ChannelPermissionOverwrite{
-			{ID: overwriteID, Allow: "0", Deny: "0", Type: discord.PermissionOverwriteTypeRole},
-			{ID: other, Allow: "4", Deny: "0", Type: discord.PermissionOverwriteTypeRole},
+			{ID: overwriteID, Allow: 0, Deny: 0, Type: discord.PermissionOverwriteTypeRole},
+			{ID: other, Allow: 4, Deny: 0, Type: discord.PermissionOverwriteTypeRole},
 		},
 	}
 	c.cacheChannel(ch)
@@ -152,7 +153,7 @@ func (cs *ConnectionSuite) TestBug80_EditChannelPermissions_UpdatesExistingOverw
 	// Update existing overwrite.
 	if cached, ok := c.Cache.Channels().Get(channelID); ok {
 		updated := *cached
-		newOw := discord.ChannelPermissionOverwrite{ID: overwriteID, Allow: "8", Deny: "0", Type: discord.PermissionOverwriteTypeRole}
+		newOw := discord.ChannelPermissionOverwrite{ID: overwriteID, Allow: 8, Deny: 0, Type: discord.PermissionOverwriteTypeRole}
 		overwrites := make([]discord.ChannelPermissionOverwrite, 0, len(updated.PermissionOverwrites))
 		for _, o := range updated.PermissionOverwrites {
 			if o.ID == overwriteID {
@@ -170,7 +171,7 @@ func (cs *ConnectionSuite) TestBug80_EditChannelPermissions_UpdatesExistingOverw
 	require.Len(t, got.PermissionOverwrites, 2, "other overwrite must be preserved")
 	for _, o := range got.PermissionOverwrites {
 		if o.ID == overwriteID {
-			assert.Equal(t, "8", o.Allow, "overwrite allow must be updated (Bug 80)")
+			assert.Equal(t, discord.Permission(8), o.Allow, "overwrite allow must be updated (Bug 80)")
 		}
 	}
 }
@@ -186,10 +187,10 @@ func (cs *ConnectionSuite) TestBug80_DeleteChannelPermission_RemovesOverwrite() 
 
 	ch := &discord.Channel{
 		ID:      channelID,
-		GuildID: &guildID,
+		GuildID: guildID,
 		PermissionOverwrites: []discord.ChannelPermissionOverwrite{
-			{ID: overwriteID, Allow: "8", Deny: "0", Type: discord.PermissionOverwriteTypeRole},
-			{ID: other, Allow: "4", Deny: "0", Type: discord.PermissionOverwriteTypeRole},
+			{ID: overwriteID, Allow: 8, Deny: 0, Type: discord.PermissionOverwriteTypeRole},
+			{ID: other, Allow: 4, Deny: 0, Type: discord.PermissionOverwriteTypeRole},
 		},
 	}
 	c.cacheChannel(ch)
@@ -223,19 +224,19 @@ func (cs *ConnectionSuite) TestBug81_ModifyGuildChannelPositions_UpdatesPosition
 	channelID := discord.Snowflake(2000)
 	pos := 0
 
-	ch := &discord.Channel{ID: channelID, GuildID: &guildID, Position: &pos}
+	ch := &discord.Channel{ID: channelID, GuildID: guildID, Position: pos}
 	c.cacheChannel(ch)
 
 	// Simulate the fixed ModifyGuildChannelPositions cache update.
 	newPos := 5
 	entries := []api.ModifyGuildChannelPositionsEntry{
-		{ID: channelID, Position: &newPos},
+		{ID: channelID, Position: discord.Some(newPos)},
 	}
 	for _, entry := range entries {
 		if cached, ok := c.Cache.Channels().Get(entry.ID); ok {
 			updated := *cached
 			if entry.Position != nil {
-				updated.Position = entry.Position
+				updated.Position = entry.Position.MustVal()
 			}
 			c.Cache.Channels().Set(&updated)
 		}
@@ -244,7 +245,7 @@ func (cs *ConnectionSuite) TestBug81_ModifyGuildChannelPositions_UpdatesPosition
 	got, ok := c.Cache.Channels().Get(channelID)
 	require.True(t, ok)
 	require.NotNil(t, got.Position)
-	assert.Equal(t, 5, *got.Position, "Position must be updated after ModifyGuildChannelPositions (Bug 81)")
+	assert.Equal(t, 5, got.Position, "Position must be updated after ModifyGuildChannelPositions (Bug 81)")
 }
 
 func (cs *ConnectionSuite) TestBug81_ModifyGuildChannelPositions_UpdatesParentID() {
@@ -256,18 +257,18 @@ func (cs *ConnectionSuite) TestBug81_ModifyGuildChannelPositions_UpdatesParentID
 	oldParent := discord.Snowflake(3000)
 	newParent := discord.Snowflake(4000)
 
-	ch := &discord.Channel{ID: channelID, GuildID: &guildID, ParentID: &oldParent}
+	ch := &discord.Channel{ID: channelID, GuildID: guildID, ParentID: &oldParent}
 	c.cacheChannel(ch)
 
 	// Simulate the fixed ModifyGuildChannelPositions cache update.
 	entries := []api.ModifyGuildChannelPositionsEntry{
-		{ID: channelID, ParentID: &newParent},
+		{ID: channelID, ParentID: discord.Some(newParent)},
 	}
 	for _, entry := range entries {
 		if cached, ok := c.Cache.Channels().Get(entry.ID); ok {
 			updated := *cached
 			if entry.ParentID != nil {
-				updated.ParentID = entry.ParentID
+				updated.ParentID = util.PointerOf(entry.ParentID.MustVal())
 			}
 			c.Cache.Channels().Set(&updated)
 		}
@@ -285,13 +286,13 @@ func (cs *ConnectionSuite) TestBug81_ModifyGuildChannelPositions_UncachedChannel
 
 	newPos := 5
 	entries := []api.ModifyGuildChannelPositionsEntry{
-		{ID: discord.Snowflake(9999), Position: &newPos},
+		{ID: discord.Snowflake(9999), Position: discord.Some(newPos)},
 	}
 	// Should not panic or insert phantom entry.
 	for _, entry := range entries {
 		if cached, ok := c.Cache.Channels().Get(entry.ID); ok {
 			updated := *cached
-			updated.Position = entry.Position
+			updated.Position = entry.Position.MustVal()
 			c.Cache.Channels().Set(&updated)
 		}
 	}

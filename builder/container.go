@@ -25,7 +25,7 @@ func NewContainer() *ContainerBuilder {
 }
 
 func (b *ContainerBuilder) SetAccentColor(color int) *ContainerBuilder {
-	b.c.AccentColor = color
+	b.c.AccentColor = &color
 	return b
 }
 

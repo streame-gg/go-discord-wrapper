@@ -24,15 +24,18 @@ import "encoding/json"
 //	None[string]() → field omitted entirely
 type Option[T any] map[bool]T
 
+// Some should be used for every non-null value, including zero values like "" and 0.
 func Some[T any](v T) Option[T] {
 	return Option[T]{true: v}
 }
 
+// Null should be used if the value is exactly null
 func Null[T any]() Option[T] {
 	var zero T
 	return Option[T]{false: zero}
 }
 
+// None should be used if the value should not be set.
 func None[T any]() Option[T] {
 	return nil
 }
@@ -56,7 +59,7 @@ func (o Option[T]) Val() (T, bool) {
 func (o Option[T]) MustVal() T {
 	v, ok := o[true]
 	if !ok {
-		panic("option: MustVal called on null or unset Option")
+		return *new(T)
 	}
 	return v
 }

@@ -3,7 +3,6 @@ package commands
 import (
 	"github.com/streame-gg/go-discord-wrapper/builder"
 	"github.com/streame-gg/go-discord-wrapper/connection"
-	dcmd "github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/components"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
@@ -18,8 +17,8 @@ func init() { Register(ping{}) }
 // attaches a "Ping again" button handled in the components package.
 type ping struct{}
 
-func (ping) Definition() *dcmd.ApplicationCommand {
-	return &dcmd.ApplicationCommand{
+func (ping) Definition() *discord.ApplicationCommand {
+	return &discord.ApplicationCommand{
 		Name:        "ping",
 		Description: "Check that the bot is alive",
 		Type:        discord.ApplicationCommandTypeChatInput,

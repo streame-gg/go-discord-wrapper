@@ -71,8 +71,7 @@ func (s *flagsSuite) TestDecompose() {
 
 func (s *flagsSuite) TestEntityAccessors() {
 	// User public flags.
-	u := &User{PublicFlags: UserFlagActiveDeveloper | UserFlagVerifiedBot}
-	s.True(u.PublicFlagBits().Has(UserFlagActiveDeveloper))
+	u := &User{PublicFlags: UserFlagVerifiedBot}
 	s.True(u.PublicFlagBits().Has(UserFlagVerifiedBot))
 	s.False(u.PublicFlagBits().Has(UserFlagStaff))
 	s.True((*User)(nil).PublicFlagBits().IsEmpty())
@@ -91,7 +90,7 @@ func (s *flagsSuite) TestEntityAccessors() {
 	// Channel flags (pointer field, may be nil).
 	s.True((&Channel{}).FlagBits().IsEmpty())
 	cf := ChannelFlagPinned
-	s.True((&Channel{Flags: &cf}).FlagBits().Has(ChannelFlagPinned))
+	s.True((&Channel{Flags: cf}).FlagBits().Has(ChannelFlagPinned))
 
 	// Role flags (pointer field).
 	s.True((&Role{}).FlagBits().IsEmpty())

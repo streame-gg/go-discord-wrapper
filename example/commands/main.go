@@ -14,8 +14,6 @@ import (
 	"syscall"
 
 	"github.com/streame-gg/go-discord-wrapper/connection"
-	"github.com/streame-gg/go-discord-wrapper/options"
-	"github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions"
@@ -74,17 +72,17 @@ func main() {
 	// BulkRegisterCommands overwrites the application's global command set. Global
 	// commands can take up to an hour to propagate; for instant iteration during
 	// development, register guild-scoped commands instead.
-	if _, err := bot.BulkRegisterCommands(context.Background(), []*commands.ApplicationCommand{
+	if _, err := bot.BulkRegisterCommands(context.Background(), []*discord.ApplicationCommand{
 		{
 			Name:        "echo",
 			Description: "Repeat back what you say",
 			Type:        discord.ApplicationCommandTypeChatInput,
-			Options: &[]commands.AnyApplicationCommandOption{
-				&commands.ApplicationCommandOptionString{
+			Options: []discord.AnyApplicationCommandOption{
+				&discord.ApplicationCommandOptionString{
 					Type:        discord.ApplicationCommandOptionTypeString,
 					Name:        "text",
 					Description: "What to echo",
-					Required:    options.Ptr(true),
+					Required:    true,
 				},
 			},
 		},
@@ -97,17 +95,17 @@ func main() {
 			Name:        "config",
 			Description: "Manage settings",
 			Type:        discord.ApplicationCommandTypeChatInput,
-			Options: &[]commands.AnyApplicationCommandOption{
-				&commands.ApplicationCommandOptionSubCommand{
+			Options: []discord.AnyApplicationCommandOption{
+				&discord.ApplicationCommandOptionSubCommand{
 					Type:        discord.ApplicationCommandOptionTypeSubCommand,
 					Name:        "set",
 					Description: "Set a configuration value",
-					Options: &[]commands.AnyApplicationCommandOption{
-						&commands.ApplicationCommandOptionString{
+					Options: []discord.AnyApplicationCommandOption{
+						&discord.ApplicationCommandOptionString{
 							Type:        discord.ApplicationCommandOptionTypeString,
 							Name:        "key",
 							Description: "Which setting to change",
-							Required:    options.Ptr(true),
+							Required:    true,
 						},
 					},
 				},

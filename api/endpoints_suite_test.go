@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/options"
-	"github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
@@ -142,7 +141,7 @@ func (s *endpointSuite) TestRegisterCommand() {
 	// Discord answers command creation with 201 Created; the helper must accept it.
 	s.respondWith(http.StatusCreated, `{"id":"400000000000000006","name":"ping","description":"pong"}`)
 
-	cmd := &commands.ApplicationCommand{Name: "ping", Description: "pong"}
+	cmd := &discord.ApplicationCommand{Name: "ping", Description: "pong"}
 	got, err := s.client.RegisterCommand(context.Background(), testAppID, cmd)
 
 	s.Require().NoError(err)
@@ -211,10 +210,8 @@ func (s *endpointSuite) TestGetGuildRole() {
 func (s *endpointSuite) TestCreateGuildRole_SendsBodyAndReason() {
 	s.respondWith(http.StatusOK, `{"id":"700000000000000003","name":"Mods","color":5}`)
 
-	name := "Mods"
-	color := 5
 	reason := "spring-cleanup"
-	params := CreateGuildRoleParams{Name: &name, Color: &color, AuditLogReason: &reason}
+	params := CreateGuildRoleParams{Name: discord.Some("Mods"), Color: discord.Some(5), AuditLogReason: &reason}
 	role, err := s.client.CreateGuildRole(context.Background(), testGuildID, params)
 
 	s.Require().NoError(err)

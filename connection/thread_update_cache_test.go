@@ -6,6 +6,7 @@ package connection
 import (
 	"encoding/json"
 
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -26,9 +27,9 @@ func (cs *ConnectionSuite) TestBug82_ThreadUpdate_FallbackSetsOldThread() {
 	// Pre-seed thread in cache.
 	c.cacheChannel(&discord.Channel{
 		ID:       threadID,
-		GuildID:  &guildID,
+		GuildID:  guildID,
 		ParentID: &parentID,
-		Name:     "old-name",
+		Name:     util.PointerOf("old-name"),
 	})
 
 	payload := map[string]any{
@@ -49,8 +50,8 @@ func (cs *ConnectionSuite) TestBug82_ThreadUpdate_FallbackSetsOldThread() {
 
 	// OldThread must have been populated from cache before overwrite.
 	require.NotNil(t, ev.OldThread, "OldThread must be set from cache (Bug 82)")
-	assert.Equal(t, "old-name", ev.OldThread.Name)
-	assert.Equal(t, "new-name", ev.NewThread.Name)
+	assert.Equal(t, "old-name", *ev.OldThread.Name)
+	assert.Equal(t, "new-name", *ev.NewThread.Name)
 }
 
 func (cs *ConnectionSuite) TestBug82_ThreadUpdate_FallbackWithNilEvent_UpdatesCache() {
@@ -63,9 +64,9 @@ func (cs *ConnectionSuite) TestBug82_ThreadUpdate_FallbackWithNilEvent_UpdatesCa
 
 	c.cacheChannel(&discord.Channel{
 		ID:       threadID,
-		GuildID:  &guildID,
+		GuildID:  guildID,
 		ParentID: &parentID,
-		Name:     "old-name",
+		Name:     util.PointerOf("old-name"),
 	})
 
 	payload := map[string]any{
@@ -83,7 +84,7 @@ func (cs *ConnectionSuite) TestBug82_ThreadUpdate_FallbackWithNilEvent_UpdatesCa
 
 	got, ok := c.Cache.Channels().Get(threadID)
 	require.True(t, ok)
-	assert.Equal(t, "updated-name", got.Name, "cache must reflect updated thread name after fallback path (Bug 82)")
+	assert.Equal(t, "updated-name", *got.Name, "cache must reflect updated thread name after fallback path (Bug 82)")
 }
 
 // ── Bug 83: GUILD_DELETE cleans up threadsByParent index ─────────────────────
@@ -97,9 +98,9 @@ func (cs *ConnectionSuite) TestBug83_GuildDelete_CleansThreadsByParentIndex() {
 	threadID := discord.Snowflake(3000)
 
 	// Register a parent channel and a thread under it.
-	c.cacheChannel(&discord.Channel{ID: parentID, GuildID: &guildID})
-	c.cacheChannel(&discord.Channel{ID: threadID, GuildID: &guildID, ParentID: &parentID})
-	c.trackThread(&discord.Channel{ID: threadID, GuildID: &guildID, ParentID: &parentID})
+	c.cacheChannel(&discord.Channel{ID: parentID, GuildID: guildID})
+	c.cacheChannel(&discord.Channel{ID: threadID, GuildID: guildID, ParentID: &parentID})
+	c.trackThread(&discord.Channel{ID: threadID, GuildID: guildID, ParentID: &parentID})
 
 	// Verify the thread is indexed.
 	c.threadIndexMu.RLock()
@@ -128,8 +129,8 @@ func (cs *ConnectionSuite) TestBug84_ThreadUpdate_ReparentCleansOldIndex() {
 	threadID := discord.Snowflake(4000)
 
 	// Seed thread under oldParent.
-	c.cacheChannel(&discord.Channel{ID: threadID, GuildID: &guildID, ParentID: &oldParentID})
-	c.trackThread(&discord.Channel{ID: threadID, GuildID: &guildID, ParentID: &oldParentID})
+	c.cacheChannel(&discord.Channel{ID: threadID, GuildID: guildID, ParentID: &oldParentID})
+	c.trackThread(&discord.Channel{ID: threadID, GuildID: guildID, ParentID: &oldParentID})
 
 	c.threadIndexMu.RLock()
 	assert.Contains(t, c.threadsByParent[oldParentID], threadID, "thread must be in old parent index")
@@ -168,8 +169,8 @@ func (cs *ConnectionSuite) TestBug84_ThreadUpdate_SameParent_IndexUnchanged() {
 	parentID := discord.Snowflake(2000)
 	threadID := discord.Snowflake(3000)
 
-	c.cacheChannel(&discord.Channel{ID: threadID, GuildID: &guildID, ParentID: &parentID})
-	c.trackThread(&discord.Channel{ID: threadID, GuildID: &guildID, ParentID: &parentID})
+	c.cacheChannel(&discord.Channel{ID: threadID, GuildID: guildID, ParentID: &parentID})
+	c.trackThread(&discord.Channel{ID: threadID, GuildID: guildID, ParentID: &parentID})
 
 	// Same parent — no reparent.
 	payload := map[string]any{

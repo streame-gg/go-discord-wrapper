@@ -167,7 +167,7 @@ func (su *mergeSuite) TestMergePartial_EmptyMessageKeepsOld() {
 		Content:   "hello world",
 		Timestamp: &ts,
 		Author:    &discord.User{ID: 789},
-		Embeds:    []discord.Embed{{Title: strPtr("embed")}},
+		Embeds:    []discord.Embed{{Title: "embed"}},
 	}
 
 	result := util.MergePartial(old, discord.Message{})
@@ -201,7 +201,7 @@ func (su *mergeSuite) TestMergePartial_OldMessageIsEmpty() {
 		Content:   "hello world",
 		Timestamp: &ts,
 		Author:    &discord.User{ID: 789},
-		Embeds:    []discord.Embed{{Title: strPtr("embed")}},
+		Embeds:    []discord.Embed{{Title: "embed"}},
 	}
 
 	result := util.MergePartial(discord.Message{}, newMsg)

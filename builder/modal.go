@@ -22,7 +22,7 @@ type ModalBuilder struct {
 
 func NewModal() *ModalBuilder {
 	comps := []components.LabelComponent{}
-	return &ModalBuilder{modal: components.Modal{Components: &comps}}
+	return &ModalBuilder{modal: components.Modal{Components: comps}}
 }
 
 func (b *ModalBuilder) SetCustomID(id string) *ModalBuilder {
@@ -37,7 +37,7 @@ func (b *ModalBuilder) SetTitle(title string) *ModalBuilder {
 
 func (b *ModalBuilder) AddComponents(c ...*components.LabelComponent) *ModalBuilder {
 	for _, comp := range c {
-		*b.modal.Components = append(*b.modal.Components, *comp)
+		b.modal.Components = append(b.modal.Components, *comp)
 	}
 	return b
 }
@@ -45,9 +45,9 @@ func (b *ModalBuilder) AddComponents(c ...*components.LabelComponent) *ModalBuil
 func (b *ModalBuilder) Build() *components.Modal {
 	modal := b.modal
 	if b.modal.Components != nil {
-		comps := make([]components.LabelComponent, len(*b.modal.Components))
-		copy(comps, *b.modal.Components)
-		modal.Components = &comps
+		comps := make([]components.LabelComponent, len(b.modal.Components))
+		copy(comps, b.modal.Components)
+		modal.Components = comps
 	}
 	return &modal
 }

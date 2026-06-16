@@ -1,8 +1,9 @@
 package builder
 
 import (
-	"github.com/stretchr/testify/suite"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/types/components"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -26,15 +27,15 @@ func (su *modalSuite) TestModalBuilder_BuildNoAlias() {
 
 	first := b.Build()
 	require.NotNil(t, first.Components)
-	assert.Len(t, *first.Components, 1)
+	assert.Len(t, first.Components, 1)
 
 	// Add a second component and build again.
 	b.AddComponents(labelComp("second"))
 	second := b.Build()
 
 	// first must still have exactly one component.
-	assert.Len(t, *first.Components, 1, "first modal must not be mutated after second Build()")
-	assert.Len(t, *second.Components, 2)
+	assert.Len(t, first.Components, 1, "first modal must not be mutated after second Build()")
+	assert.Len(t, second.Components, 2)
 }
 
 // TestModalBuilder_TwoBuildsAreIndependent verifies that two consecutive
@@ -45,7 +46,7 @@ func (su *modalSuite) TestModalBuilder_TwoBuildsAreIndependent() {
 	a := b.Build()
 	c := b.Build()
 	assert.NotSame(t, a, c)
-	assert.NotSame(t, a.Components, c.Components)
+	assert.NotSame(t, &a.Components, &c.Components)
 }
 
 type modalSuite struct{ suite.Suite }

@@ -1,30 +1,28 @@
-package commands
+package discord
 
 import (
 	"encoding/json"
-
-	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-option-structure
 type ApplicationCommandOptionRole struct {
-	Type                     discord.ApplicationCommandOptionType `json:"type"`
-	Name                     string                               `json:"name"`
-	NameLocalizations        map[discord.Locale]string            `json:"name_localizations,omitempty"`
-	Description              string                               `json:"description"`
-	DescriptionLocalizations map[discord.Locale]string            `json:"description_localizations,omitempty"`
-	Required                 bool                                 `json:"required"`
+	Type                     ApplicationCommandOptionType `json:"type"`
+	Name                     string                       `json:"name"`
+	NameLocalizations        map[Locale]string            `json:"name_localizations,omitempty"`
+	Description              string                       `json:"description"`
+	DescriptionLocalizations map[Locale]string            `json:"description_localizations,omitempty"`
+	Required                 bool                         `json:"required"`
 }
 
-func (o *ApplicationCommandOptionRole) ApplicationCommandOptionType() discord.ApplicationCommandOptionType {
-	return discord.ApplicationCommandOptionTypeRole
+func (o *ApplicationCommandOptionRole) ApplicationCommandOptionType() ApplicationCommandOptionType {
+	return ApplicationCommandOptionTypeRole
 }
 
 func (o *ApplicationCommandOptionRole) MarshalJSON() ([]byte, error) {
 	type Alias ApplicationCommandOptionRole
 	return json.Marshal(struct {
 		Alias
-		Type discord.ApplicationCommandOptionType `json:"type"`
+		Type ApplicationCommandOptionType `json:"type"`
 	}{
 		Alias: Alias(*o),
 		Type:  o.ApplicationCommandOptionType(),
@@ -46,7 +44,7 @@ func (o *ApplicationCommandOptionRole) UnmarshalJSON(data []byte) error {
 
 func NewRoleOptionBuilder() *ApplicationCommandOptionRole {
 	return &ApplicationCommandOptionRole{
-		Type: discord.ApplicationCommandOptionTypeRole,
+		Type: ApplicationCommandOptionTypeRole,
 	}
 }
 
@@ -55,7 +53,7 @@ func (o *ApplicationCommandOptionRole) SetName(name string) *ApplicationCommandO
 	return o
 }
 
-func (o *ApplicationCommandOptionRole) SetNameLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionRole {
+func (o *ApplicationCommandOptionRole) SetNameLocalizations(localizations map[Locale]string) *ApplicationCommandOptionRole {
 	o.NameLocalizations = localizations
 	return o
 }
@@ -65,7 +63,7 @@ func (o *ApplicationCommandOptionRole) SetDescription(description string) *Appli
 	return o
 }
 
-func (o *ApplicationCommandOptionRole) SetDescriptionLocalizations(localizations map[discord.Locale]string) *ApplicationCommandOptionRole {
+func (o *ApplicationCommandOptionRole) SetDescriptionLocalizations(localizations map[Locale]string) *ApplicationCommandOptionRole {
 	o.DescriptionLocalizations = localizations
 	return o
 }

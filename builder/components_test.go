@@ -1,8 +1,9 @@
 package builder
 
 import (
-	"github.com/stretchr/testify/suite"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/types/components"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -33,7 +34,7 @@ func (su *builderComponentsSuite) TestButtonBuilder_AllSetters() {
 	assert.Equal(t, "https://example.com", btn.URL)
 	assert.Same(t, emoji, btn.Emoji)
 	require.NotNil(t, btn.SkuID)
-	assert.Equal(t, sku, *btn.SkuID)
+	assert.Equal(t, sku, btn.SkuID)
 	assert.True(t, btn.Disabled)
 }
 
@@ -88,7 +89,7 @@ func (su *builderComponentsSuite) TestStringSelectMenuBuilder_AllSetters() {
 	assert.Equal(t, 2, *menu.MaxValues)
 	assert.True(t, menu.Disabled)
 	require.NotNil(t, menu.Options)
-	assert.Len(t, *menu.Options, 2)
+	assert.Len(t, menu.Options, 2)
 }
 
 // ── Entity selects (user/role/channel/mentionable) ────────────────────────────
@@ -120,7 +121,7 @@ func (su *builderComponentsSuite) TestUserSelectMenuBuilder_AllSetters() {
 	assert.Equal(t, 5, *menu.MaxValues)
 	assert.True(t, menu.Disabled)
 	require.NotNil(t, menu.DefaultValues)
-	assert.Len(t, *menu.DefaultValues, 2)
+	assert.Len(t, menu.DefaultValues, 2)
 }
 
 func (su *builderComponentsSuite) TestRoleSelectMenuBuilder_AllSetters() {
@@ -137,7 +138,7 @@ func (su *builderComponentsSuite) TestRoleSelectMenuBuilder_AllSetters() {
 
 	assert.Equal(t, "r", menu.CustomID)
 	require.NotNil(t, menu.DefaultValues)
-	assert.Len(t, *menu.DefaultValues, 2)
+	assert.Len(t, menu.DefaultValues, 2)
 	assert.False(t, menu.Disabled)
 }
 
@@ -155,7 +156,7 @@ func (su *builderComponentsSuite) TestChannelSelectMenuBuilder_AllSetters() {
 
 	assert.Equal(t, "c", menu.CustomID)
 	require.NotNil(t, menu.DefaultValues)
-	assert.Len(t, *menu.DefaultValues, 2)
+	assert.Len(t, menu.DefaultValues, 2)
 }
 
 func (su *builderComponentsSuite) TestMentionableSelectMenuBuilder_AllSetters() {
@@ -172,7 +173,7 @@ func (su *builderComponentsSuite) TestMentionableSelectMenuBuilder_AllSetters() 
 
 	assert.Equal(t, "m", menu.CustomID)
 	require.NotNil(t, menu.DefaultValues)
-	assert.Len(t, *menu.DefaultValues, 2)
+	assert.Len(t, menu.DefaultValues, 2)
 }
 
 // ── Text input + Label ────────────────────────────────────────────────────────
@@ -196,7 +197,7 @@ func (su *builderComponentsSuite) TestTextInputBuilder_AllSetters() {
 	require.NotNil(t, in.MaxLength)
 	assert.Equal(t, 10, *in.MaxLength)
 	require.NotNil(t, in.Required)
-	assert.True(t, *in.Required)
+	assert.True(t, in.Required)
 	assert.Equal(t, "preset", in.Value)
 	assert.Equal(t, "Your name", in.Placeholder)
 }
@@ -227,7 +228,7 @@ func (su *builderComponentsSuite) TestSectionBuilder_AllSetters() {
 		Build()
 
 	assert.Len(t, s.Components, 2)
-	assert.Equal(t, thumb, s.Accessory)
+	assert.Equal(t, thumb, *s.Accessory)
 }
 
 func (su *builderComponentsSuite) TestThumbnailBuilder_AllSetters() {
@@ -255,7 +256,7 @@ func (su *builderComponentsSuite) TestContainerBuilder_AllSetters() {
 		AddComponents(NewTextDisplay().SetContent("Again").Build()).
 		Build()
 
-	assert.Equal(t, 0x5865F2, c.AccentColor)
+	assert.Equal(t, 0x5865F2, *c.AccentColor)
 	assert.True(t, c.Spoiler)
 	assert.Len(t, c.Components, 2)
 }
@@ -303,7 +304,7 @@ func (su *builderComponentsSuite) TestFileUploadBuilder_AllSetters() {
 
 	assert.Equal(t, "attachment2", fu.CustomID)
 	require.NotNil(t, fu.Required)
-	assert.True(t, *fu.Required)
+	assert.True(t, fu.Required)
 	require.NotNil(t, fu.MinValues)
 	assert.Equal(t, 1, *fu.MinValues)
 	require.NotNil(t, fu.MaxValues)
@@ -321,7 +322,7 @@ func (su *builderComponentsSuite) TestMediaGalleryBuilder_AllSetters() {
 
 	require.NotNil(t, item.Media)
 	assert.Equal(t, "https://example.com/img.png", item.Media.URL)
-	assert.Equal(t, "A photo", item.Description)
+	assert.Equal(t, "A photo", *item.Description)
 	assert.True(t, item.Spoiler)
 
 	gallery := NewMediaGallery().
@@ -330,7 +331,7 @@ func (su *builderComponentsSuite) TestMediaGalleryBuilder_AllSetters() {
 		Build()
 
 	require.NotNil(t, gallery.Items)
-	assert.Len(t, *gallery.Items, 2)
+	assert.Len(t, gallery.Items, 2)
 }
 
 // ── Radio group ───────────────────────────────────────────────────────────────
@@ -345,9 +346,9 @@ func (su *builderComponentsSuite) TestRadioGroupOptionBuilder_AllSetters() {
 	assert.Equal(t, "Yes", opt.Label)
 	assert.Equal(t, "yes", opt.Value)
 	require.NotNil(t, opt.Description)
-	assert.Equal(t, "Confirm", *opt.Description)
+	assert.Equal(t, "Confirm", opt.Description)
 	require.NotNil(t, opt.Default)
-	assert.True(t, *opt.Default)
+	assert.True(t, opt.Default)
 }
 
 func (su *builderComponentsSuite) TestRadioGroupBuilder_AllSetters() {
@@ -361,9 +362,9 @@ func (su *builderComponentsSuite) TestRadioGroupBuilder_AllSetters() {
 
 	assert.Equal(t, "size_pick2", rg.CustomID)
 	require.NotNil(t, rg.Options)
-	assert.Len(t, *rg.Options, 2)
+	assert.Len(t, rg.Options, 2)
 	require.NotNil(t, rg.Required)
-	assert.True(t, *rg.Required)
+	assert.True(t, rg.Required)
 }
 
 // ── Checkbox group + checkbox ─────────────────────────────────────────────────
@@ -378,9 +379,9 @@ func (su *builderComponentsSuite) TestCheckboxGroupOptionBuilder_AllSetters() {
 	assert.Equal(t, "Notifications", opt.Label)
 	assert.Equal(t, "notif", opt.Value)
 	require.NotNil(t, opt.Description)
-	assert.Equal(t, "email me", *opt.Description)
+	assert.Equal(t, "email me", opt.Description)
 	require.NotNil(t, opt.Default)
-	assert.True(t, *opt.Default)
+	assert.True(t, opt.Default)
 }
 
 func (su *builderComponentsSuite) TestCheckboxGroupBuilder_AllSetters() {
@@ -396,13 +397,13 @@ func (su *builderComponentsSuite) TestCheckboxGroupBuilder_AllSetters() {
 
 	assert.Equal(t, "prefs2", cg.CustomID)
 	require.NotNil(t, cg.Options)
-	assert.Len(t, *cg.Options, 2)
+	assert.Len(t, cg.Options, 2)
 	require.NotNil(t, cg.MinValues)
 	assert.Equal(t, 1, *cg.MinValues)
 	require.NotNil(t, cg.MaxValues)
 	assert.Equal(t, 2, *cg.MaxValues)
 	require.NotNil(t, cg.Required)
-	assert.True(t, *cg.Required)
+	assert.True(t, cg.Required)
 }
 
 func (su *builderComponentsSuite) TestCheckboxBuilder_AllSetters() {
@@ -414,7 +415,7 @@ func (su *builderComponentsSuite) TestCheckboxBuilder_AllSetters() {
 
 	assert.Equal(t, "agree2", cb.CustomID)
 	require.NotNil(t, cb.Default)
-	assert.True(t, *cb.Default)
+	assert.True(t, cb.Default)
 }
 
 type builderComponentsSuite struct{ suite.Suite }

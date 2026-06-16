@@ -35,7 +35,7 @@ func (su *restSuite) TestMaxResponseBodySize_UnlimitedReadsFullBody() {
 	ch, err := rc.GetChannel(context.Background(), discord.Snowflake(175928847299117063))
 	su.Require().NoError(err, "unlimited body size must not truncate the response")
 	su.Require().NotNil(ch)
-	su.Len(ch.Name, len(big), "the full (large) body should have been read and decoded")
+	su.Len(*ch.Name, len(big), "the full (large) body should have been read and decoded")
 }
 
 // TestSetVoiceChannelStatus_NilClearsWithNull is a regression test for the

@@ -16,7 +16,7 @@ func seedThread(t *testing.T, c *Client, guildID, parentID, threadID discord.Sno
 	t.Helper()
 	ch := &discord.Channel{
 		ID:       threadID,
-		GuildID:  &guildID,
+		GuildID:  guildID,
 		ParentID: &parentID,
 		Type:     discord.ChannelTypePublicThread,
 	}
@@ -49,7 +49,7 @@ func (cs *ConnectionSuite) TestBug43ThreadListSync_EvictsStaleThreads() {
 		GuildID:    guildID,
 		ChannelIDs: []discord.Snowflake{parentA},
 		Threads: []discord.Channel{
-			{ID: keepA, GuildID: &guildID, ParentID: &parentA, Type: discord.ChannelTypePublicThread},
+			{ID: keepA, GuildID: guildID, ParentID: &parentA, Type: discord.ChannelTypePublicThread},
 		},
 	}
 	raw, err := json.Marshal(ev)
@@ -81,8 +81,8 @@ func (cs *ConnectionSuite) TestBug43ThreadListSync_NoChannelIDsEvictsGuild() {
 	keep := discord.Snowflake(4101)
 
 	// Seed parents and threads.
-	c.cacheChannel(&discord.Channel{ID: parentA, GuildID: &guildID})
-	c.cacheChannel(&discord.Channel{ID: parentB, GuildID: &guildID})
+	c.cacheChannel(&discord.Channel{ID: parentA, GuildID: guildID})
+	c.cacheChannel(&discord.Channel{ID: parentB, GuildID: guildID})
 	seedThread(t, c, guildID, parentA, staleA)
 	seedThread(t, c, guildID, parentB, staleB)
 	seedThread(t, c, guildID, parentA, keep)
@@ -91,7 +91,7 @@ func (cs *ConnectionSuite) TestBug43ThreadListSync_NoChannelIDsEvictsGuild() {
 	ev := events.ThreadListSyncEvent{
 		GuildID: guildID, // no ChannelIDs → guild-wide
 		Threads: []discord.Channel{
-			{ID: keep, GuildID: &guildID, ParentID: &parentA, Type: discord.ChannelTypePublicThread},
+			{ID: keep, GuildID: guildID, ParentID: &parentA, Type: discord.ChannelTypePublicThread},
 		},
 	}
 	raw, err := json.Marshal(ev)

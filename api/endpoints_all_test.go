@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
@@ -256,7 +255,7 @@ func (s *endpointSuite) TestCommandEndpoints() {
 	ctx := context.Background()
 	app := testAppID.String()
 	g := testGuildID.String()
-	cmd := &commands.ApplicationCommand{Name: "c", Description: "d"}
+	cmd := &discord.ApplicationCommand{Name: "c", Description: "d"}
 	s.runEndpoints([]epCase{
 		{name: "BulkRegisterCommands", method: "PUT", path: "/applications/" + app + "/commands", body: "[]", call: func() error {
 			return drop(s.client.BulkRegisterCommands(ctx, testAppID, nil))

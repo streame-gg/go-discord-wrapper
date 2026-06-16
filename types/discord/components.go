@@ -30,18 +30,6 @@ const (
 	ComponentTypeCheckbox          ComponentType = 23
 )
 
-// Deprecated aliases — use the canonical ...Select names above.
-const (
-	// Deprecated: use ComponentTypeStringSelect.
-	ComponentTypeStringSelectMenu = ComponentTypeStringSelect
-	// Deprecated: use ComponentTypeUserSelect.
-	ComponentTypeUserSelectMenu = ComponentTypeUserSelect
-	// Deprecated: use ComponentTypeRoleSelect.
-	ComponentTypeRoleSelectMenu = ComponentTypeRoleSelect
-	// Deprecated: use ComponentTypeMentionableSelect.
-	ComponentTypeMentionableMenu = ComponentTypeMentionableSelect
-)
-
 func (c ComponentType) IsAnySelectMenu() bool {
 	return c == ComponentTypeStringSelect ||
 		c == ComponentTypeUserSelect ||

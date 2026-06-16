@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -48,18 +49,18 @@ func (s *mentionsSuite) TestChannelMention() {
 func (s *mentionsSuite) TestEmojiMentionAndIdentifier() {
 	unicode := &Emoji{Name: "🔥"}
 	s.Equal("🔥", unicode.Mention())
-	s.Equal("🔥", unicode.Identifier())
+	s.Equal("🔥", *unicode.Identifier())
 
-	custom := &Emoji{ID: 100, Name: "blob"}
+	custom := &Emoji{ID: 100, Name: "blob", Animated: util.PointerOf(false)}
 	s.Equal("<:blob:100>", custom.Mention())
-	s.Equal("blob:100", custom.Identifier())
+	s.Equal("blob:100", *custom.Identifier())
 
-	animated := &Emoji{ID: 200, Name: "spin", Animated: true}
+	animated := &Emoji{ID: 200, Name: "spin", Animated: util.PointerOf(true)}
 	s.Equal("<a:spin:200>", animated.Mention())
-	s.Equal("a:spin:200", animated.Identifier())
+	s.Equal("a:spin:200", *animated.Identifier())
 
-	s.Equal("", (*Emoji)(nil).Mention())
-	s.Equal("", (*Emoji)(nil).Identifier())
+	s.Empty((*Emoji)(nil).Mention())
+	s.Nil((*Emoji)(nil).Identifier())
 }
 
 // ── Tag ─────────────────────────────────────────────────────────────────────
@@ -136,7 +137,7 @@ func (s *mentionsSuite) TestChannelPredicates() {
 func (s *mentionsSuite) TestChannelURL() {
 	s.Equal("", (*Channel)(nil).URL())
 	gid := Snowflake(10)
-	s.Equal("https://discord.com/channels/10/20", (&Channel{ID: 20, GuildID: &gid}).URL())
+	s.Equal("https://discord.com/channels/10/20", (&Channel{ID: 20, GuildID: gid}).URL())
 	// DM channel has no guild → "@me".
 	s.Equal("https://discord.com/channels/@me/20", (&Channel{ID: 20}).URL())
 }
@@ -151,7 +152,7 @@ func (s *mentionsSuite) TestInviteURL() {
 
 func (s *mentionsSuite) TestChannelNSFWAndThreadOnly() {
 	s.False((&Channel{}).IsNSFW())
-	s.True((&Channel{NSFW: boolptr(true)}).IsNSFW())
+	s.True((&Channel{NSFW: util.PointerOf(true)}).IsNSFW())
 	s.True((&Channel{Type: ChannelTypeGuildForum}).IsThreadOnly())
 	s.True((&Channel{Type: ChannelTypeGuildMedia}).IsThreadOnly())
 	s.False((&Channel{Type: ChannelTypeGuildText}).IsThreadOnly())

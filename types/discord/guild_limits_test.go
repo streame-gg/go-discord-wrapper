@@ -21,8 +21,6 @@ func (s *guildLimitsSuite) TestMaxEmojis() {
 	s.Equal(100, (&Guild{PremiumTier: GuildPremiumTierTier1}).MaxEmojis())
 	s.Equal(150, (&Guild{PremiumTier: GuildPremiumTierTier2}).MaxEmojis())
 	s.Equal(250, (&Guild{PremiumTier: GuildPremiumTierTier3}).MaxEmojis())
-	// MORE_EMOJI overrides the tier baseline.
-	s.Equal(200, (&Guild{Features: []GuildFeatures{"MORE_EMOJI"}}).MaxEmojis())
 }
 
 func (s *guildLimitsSuite) TestMaxStickers() {

@@ -20,8 +20,8 @@ const (
 // https://docs.discord.com/developers/topics/teams#data-models-team-member-object
 type ApplicationTeamMember struct {
 	MembershipState ApplicationTeamMemberMembershipState `json:"membership_state"`
-	TeamID          *Snowflake                           `json:"team_id"`
-	User            *User                                `json:"user"`
+	TeamID          Snowflake                            `json:"team_id"`
+	User            User                                 `json:"user"`
 	Role            string                               `json:"role"`
 }
 
@@ -36,8 +36,8 @@ type ApplicationTeam struct {
 
 // https://docs.discord.com/developers/resources/application#install-params-object
 type ApplicationInstallParams struct {
-	Scopes      []string `json:"scopes"`
-	Permissions string   `json:"permissions"`
+	Scopes      []Scope    `json:"scopes"`
+	Permissions Permission `json:"permissions"`
 }
 
 // https://docs.discord.com/developers/resources/application-role-connection-metadata#application-role-connection-metadata-object-application-role-connection-metadata-type

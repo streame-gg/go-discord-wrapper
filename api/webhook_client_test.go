@@ -3,11 +3,12 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/suite"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/options"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -113,7 +114,7 @@ func (su *apiWebhookClientSuite) TestWebhookClientSendAndManage() {
 
 	t.Run("send with wait returns message", func(t *testing.T) {
 		msg, err := wc.Send(ctx,
-			ExecuteWebhookParams{Content: "hi"},
+			ExecuteWebhookParams{Content: discord.Some("hi")},
 			ExecuteWebhookQueryParams{Wait: &wait},
 		)
 		if err != nil {
@@ -179,7 +180,7 @@ func (su *apiWebhookClientSuite) TestWebhookClientSendDefaults() {
 
 	// Chaining returns the client; defaults applied when params omit the fields.
 	wc.SetUsername("Logger").SetAvatarURL("https://example.com/a.png")
-	if _, err := wc.Send(ctx, ExecuteWebhookParams{Content: "hi"}, ExecuteWebhookQueryParams{}); err != nil {
+	if _, err := wc.Send(ctx, ExecuteWebhookParams{Content: discord.Some("hi")}, ExecuteWebhookQueryParams{}); err != nil {
 		t.Fatalf("Send: %v", err)
 	}
 	if gotBody.Username == nil || *gotBody.Username != "Logger" {
@@ -191,7 +192,7 @@ func (su *apiWebhookClientSuite) TestWebhookClientSendDefaults() {
 
 	// Per-message values take precedence over defaults.
 	override := "Override"
-	if _, err := wc.Send(ctx, ExecuteWebhookParams{Content: "hi", Username: &override}, ExecuteWebhookQueryParams{}); err != nil {
+	if _, err := wc.Send(ctx, ExecuteWebhookParams{Content: discord.Some("hi"), Username: discord.Some(override)}, ExecuteWebhookQueryParams{}); err != nil {
 		t.Fatalf("Send: %v", err)
 	}
 	if gotBody.Username == nil || *gotBody.Username != "Override" {
@@ -200,7 +201,7 @@ func (su *apiWebhookClientSuite) TestWebhookClientSendDefaults() {
 
 	// Reset clears defaults.
 	wc.ResetDefaults()
-	if _, err := wc.Send(ctx, ExecuteWebhookParams{Content: "hi"}, ExecuteWebhookQueryParams{}); err != nil {
+	if _, err := wc.Send(ctx, ExecuteWebhookParams{Content: discord.Some("hi")}, ExecuteWebhookQueryParams{}); err != nil {
 		t.Fatalf("Send: %v", err)
 	}
 	if gotBody.Username != nil || gotBody.AvatarURL != nil {

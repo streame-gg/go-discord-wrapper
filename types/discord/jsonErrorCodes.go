@@ -6,15 +6,6 @@ package discord
 // https://docs.discord.com/developers/topics/opcodes-and-status-codes#json.
 type JSONErrorCode int
 
-// GatewayErrorCode is the former name of JSONErrorCode, kept as an alias for
-// backwards compatibility.
-//
-// Deprecated: these are REST/JSON error codes, not gateway codes — use
-// JSONErrorCode.
-//
-// https://docs.discord.com/developers/topics/opcodes-and-status-codes#json
-type GatewayErrorCode = JSONErrorCode
-
 const (
 	// General error
 	JSONErrorCodeGeneral JSONErrorCode = 0

@@ -3,7 +3,6 @@ package commands
 import (
 	"github.com/streame-gg/go-discord-wrapper/builder"
 	"github.com/streame-gg/go-discord-wrapper/connection"
-	dcmd "github.com/streame-gg/go-discord-wrapper/types/commands"
 	"github.com/streame-gg/go-discord-wrapper/types/components"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/events"
@@ -18,8 +17,8 @@ func init() { Register(demo{}) }
 // handlers' CustomID values.
 type demo struct{}
 
-func (demo) Definition() *dcmd.ApplicationCommand {
-	return &dcmd.ApplicationCommand{
+func (demo) Definition() *discord.ApplicationCommand {
+	return &discord.ApplicationCommand{
 		Name:        "demo",
 		Description: "Show a select menu and a modal button",
 		Type:        discord.ApplicationCommandTypeChatInput,

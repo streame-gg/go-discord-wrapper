@@ -50,7 +50,7 @@ type AutoModerationTriggerMetadata struct {
 	Presets                      []KeywordPresetType `json:"presets,omitempty"`
 	AllowList                    []string            `json:"allow_list,omitempty"`
 	MentionTotalLimit            *int                `json:"mention_total_limit,omitempty"`
-	MentionRaidProtectionEnabled *bool               `json:"mention_raid_protection_enabled,omitempty"`
+	MentionRaidProtectionEnabled bool                `json:"mention_raid_protection_enabled,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-rule-object-event-types

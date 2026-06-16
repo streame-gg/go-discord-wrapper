@@ -55,9 +55,9 @@ type ModifyChannelParams struct {
 
 // https://docs.discord.com/developers/resources/channel#edit-channel-permissions
 type EditChannelPermissionsParams struct {
-	Allow discord.Option[string]          `json:"allow,omitempty"`
-	Deny  discord.Option[string]          `json:"deny,omitempty"`
-	Type  discord.PermissionOverwriteType `json:"type"`
+	Allow discord.Option[discord.Permission] `json:"allow,omitempty"`
+	Deny  discord.Option[discord.Permission] `json:"deny,omitempty"`
+	Type  discord.PermissionOverwriteType    `json:"type"`
 
 	AuditLogReason *string `json:"-"`
 }
