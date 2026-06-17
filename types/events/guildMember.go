@@ -75,10 +75,10 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	e.NewMember.Roles = make([]discord.Snowflake, len(w.Roles))
 	copy(e.NewMember.Roles, w.Roles)
 	if w.JoinedAt != nil {
-		e.NewMember.JoinedAt = *w.JoinedAt
+		e.NewMember.JoinedAt = w.JoinedAt
 	}
-	e.NewMember.Deaf = w.Deaf
-	e.NewMember.Mute = w.Mute
+	e.NewMember.Deaf = *w.Deaf
+	e.NewMember.Mute = *w.Mute
 	if w.Pending != nil {
 		e.NewMember.Pending = *w.Pending
 	}
@@ -109,7 +109,7 @@ func (e GuildMemberUpdateEvent) MarshalJSON() ([]byte, error) {
 	}
 	var jat *time.Time
 	if !m.JoinedAt.IsZero() {
-		jat = &m.JoinedAt
+		jat = m.JoinedAt
 	}
 	return json.Marshal(wire{
 		GuildID:                    e.GuildID,
@@ -120,8 +120,8 @@ func (e GuildMemberUpdateEvent) MarshalJSON() ([]byte, error) {
 		JoinedAt:                   jat,
 		PremiumSince:               m.PremiumSince,
 		CommunicationDisabledUntil: m.CommunicationDisabledUntil,
-		Deaf:                       m.Deaf,
-		Mute:                       m.Mute,
+		Deaf:                       &m.Deaf,
+		Mute:                       &m.Mute,
 		Pending:                    m.Pending,
 		Flags:                      m.Flags,
 		OldMember:                  e.OldMember,
