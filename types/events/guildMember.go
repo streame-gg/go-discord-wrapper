@@ -77,8 +77,12 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	if w.JoinedAt != nil {
 		e.NewMember.JoinedAt = w.JoinedAt
 	}
-	e.NewMember.Deaf = *w.Deaf
-	e.NewMember.Mute = *w.Mute
+	if w.Deaf != nil {
+		e.NewMember.Deaf = *w.Deaf
+	}
+	if w.Mute != nil {
+		e.NewMember.Mute = *w.Mute
+	}
 	if w.Pending != nil {
 		e.NewMember.Pending = *w.Pending
 	}

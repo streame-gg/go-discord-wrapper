@@ -407,7 +407,7 @@ const (
 //
 // https://docs.discord.com/developers/resources/message#search-guild-messages
 type GuildSearchResponse struct {
-	Messages                 [][]*Message   `json:"messages"`
+	Messages                 [][]Message    `json:"messages"`
 	DoingDeepHistoricalIndex bool           `json:"doing_deep_historical_index"`
 	TotalResults             int            `json:"total_results"`
 	Threads                  []*Channel     `json:"threads,omitempty"`

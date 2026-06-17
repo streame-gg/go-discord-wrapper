@@ -725,6 +725,8 @@ type SearchGuildMessagesParams struct {
 	IncludeNSFW    *bool
 	Limit          *int
 	Offset         *int
+	SortBy         *string
+	SortOrder      *string
 }
 
 func (p SearchGuildMessagesParams) toQuery() string {
@@ -764,6 +766,12 @@ func (p SearchGuildMessagesParams) toQuery() string {
 	}
 	if p.Offset != nil {
 		q.Set("offset", strconv.Itoa(*p.Offset))
+	}
+	if p.SortBy != nil {
+		q.Set("sort_by", *p.SortBy)
+	}
+	if p.SortOrder != nil {
+		q.Set("sort_order", *p.SortOrder)
 	}
 	if len(q) == 0 {
 		return ""
