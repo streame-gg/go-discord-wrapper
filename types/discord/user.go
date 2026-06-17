@@ -17,6 +17,36 @@ type Clan struct {
 	Tag             string `json:"tag"`
 }
 
+// https://docs.discord.com/developers/resources/user#collectibles
+type Collectible struct {
+	Nameplate *Nameplate `json:"nameplate,omitempty"`
+}
+
+// https://docs.discord.com/developers/resources/user#nameplate-nameplate-structure
+type Nameplate struct {
+	SkuID   string           `json:"sku_id"`
+	Asset   string           `json:"asset"`
+	Label   string           `json:"label"`
+	Palette NameplatePalette `json:"palette"`
+}
+
+// https://docs.discord.com/developers/resources/user#nameplate-nameplate-structure
+type NameplatePalette string
+
+const (
+	NameplatePaletteCrimson   NameplatePalette = "crimson"
+	NameplatePaletteBerry     NameplatePalette = "berry"
+	NameplatePaletteSky       NameplatePalette = "sky"
+	NameplatePaletteTeal      NameplatePalette = "teal"
+	NameplatePaletteForest    NameplatePalette = "forest"
+	NameplatePaletteBubbleGum NameplatePalette = "bubble_gum"
+	NameplatePaletteViolet    NameplatePalette = "violet"
+	NameplatePaletteCobalt    NameplatePalette = "cobalt"
+	NameplatePaletteClover    NameplatePalette = "clover"
+	NameplatePaletteLemon     NameplatePalette = "lemon"
+	NameplatePaletteWhite     NameplatePalette = "white"
+)
+
 // https://docs.discord.com/developers/resources/user#user-object
 type User struct {
 	hClient              EntityClient

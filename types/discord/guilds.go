@@ -64,7 +64,7 @@ type Guild struct {
 
 	ID                          Snowflake                       `json:"id"`
 	Name                        string                          `json:"name"`
-	IconHash                    *string                         `json:"icon,omitempty"`
+	IconHash                    *string                         `json:"icon"`
 	Splash                      *string                         `json:"splash,omitempty"`
 	DiscoverySplash             *string                         `json:"discovery_splash,omitempty"`
 	Owner                       bool                            `json:"owner,omitempty"`

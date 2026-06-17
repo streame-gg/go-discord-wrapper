@@ -204,9 +204,12 @@ func (i *Invite) URL() string {
 // ── Channel classification ──────────────────────────────────────────────────
 
 // IsNSFW reports whether the channel is marked age-restricted.
-// FIXME can return false values if c.NSFW just isn't set
-func (c *Channel) IsNSFW() bool {
-	return c != nil && c.NSFW != nil && *c.NSFW
+func (c *Channel) IsNSFW() *bool {
+	if c == nil {
+		return nil
+	}
+
+	return c.NSFW
 }
 
 // IsThreadOnly reports whether the channel only contains threads (forum and

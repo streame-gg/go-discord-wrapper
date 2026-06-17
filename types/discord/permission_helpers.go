@@ -246,9 +246,9 @@ func PermissionsInChannel(guild *Guild, member *GuildMember, channel *Channel) P
 	return perms
 }
 
-// Permissions returns the member's guild-level permissions within guild.
+// PermissionsFor returns the member's guild-level permissions within guild.
 // It is a convenience wrapper around PermissionsFor.
-func (m *GuildMember) Permissions(guild *Guild) Permission {
+func (m *GuildMember) PermissionsFor(guild *Guild) Permission {
 	return PermissionsFor(guild, m)
 }
 
