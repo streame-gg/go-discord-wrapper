@@ -189,10 +189,10 @@ func (g *Guild) DiscoverySplashURL(opts *ImageOptions) string {
 
 // IconURL returns the role's icon URL, or "" if it has none.
 func (r *Role) IconURL(opts *ImageOptions) string {
-	if r == nil || r.IconHash == nil {
+	if r == nil || r.Icon == nil {
 		return ""
 	}
-	h := *r.IconHash
+	h := *r.Icon
 	return imageURL(cdnBaseURL, "/role-icons/"+r.ID.String()+"/"+h, hashIsAnimated(h), opts)
 }
 

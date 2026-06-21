@@ -955,8 +955,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						for i := range guild.RawStickers {
 							sticker := guild.RawStickers[i]
 							if !sticker.ID.IsEmpty() {
-								if sticker.GuildID == nil {
-									sticker.GuildID = &guild.ID
+								if !sticker.GuildID.IsNil() {
+									sticker.GuildID = guild.ID
 								}
 								sticker.Hydrate(d)
 								stickers = append(stickers, &sticker)
@@ -1232,8 +1232,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					ev.OldStickers = col.Values()
 				}
 				for _, sticker := range ev.NewStickers {
-					if sticker.GuildID == nil {
-						sticker.GuildID = &ev.GuildID
+					if !sticker.GuildID.IsNil() {
+						sticker.GuildID = ev.GuildID
 					}
 					sticker.Hydrate(d)
 				}
@@ -1803,8 +1803,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					msg.Hydrate(d)
 					d.Cache.Messages().Add(&msg)
 				}
-				if ev.Author != nil && d.cacheStoreEnabled(cache.CategoryUsers) {
-					d.cacheUser(ev.Author)
+				if d.cacheStoreEnabled(cache.CategoryUsers) {
+					d.cacheUser(&ev.Author)
 				}
 			}
 		}
@@ -1857,8 +1857,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			if d.cacheStoreEnabled(cache.CategoryMessages) {
 				if m, ok := d.Cache.Messages().Get(ev.ChannelID, ev.MessageID); ok {
 					updated := *m
-					reactions := appendOrIncrementReaction(updated.Reactions, ev.Emoji)
-					updated.Reactions = &reactions
+					reactions := appendOrIncrementReaction(&updated.Reactions, ev.Emoji)
+					updated.Reactions = reactions
 					d.Cache.Messages().Update(&updated)
 				}
 			}
@@ -1876,8 +1876,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				if m, ok := d.Cache.Messages().Get(ev.ChannelID, ev.MessageID); ok {
 					updated := *m
-					reactions := decrementOrRemoveReaction(updated.Reactions, ev.Emoji)
-					updated.Reactions = &reactions
+					reactions := decrementOrRemoveReaction(&updated.Reactions, ev.Emoji)
+					updated.Reactions = reactions
 					d.Cache.Messages().Update(&updated)
 				}
 			}
@@ -1907,8 +1907,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				}
 				if m, ok := d.Cache.Messages().Get(ev.ChannelID, ev.MessageID); ok {
 					updated := *m
-					reactions := removeEmojiReaction(updated.Reactions, ev.Emoji)
-					updated.Reactions = &reactions
+					reactions := removeEmojiReaction(&updated.Reactions, ev.Emoji)
+					updated.Reactions = reactions
 					d.Cache.Messages().Update(&updated)
 				}
 			}
@@ -2124,8 +2124,8 @@ func (d *Client) hydrateEvent(event events.Event) {
 			if ev.GuildID != nil {
 				ev.Member.GuildID = *ev.GuildID
 			}
-			if ev.Member.User == nil && ev.Author != nil {
-				copyOfAuthor := *ev.Author
+			if ev.Member.User == nil {
+				copyOfAuthor := ev.Author
 				ev.Member.User = &copyOfAuthor
 				ev.Member.UserID = (&copyOfAuthor).ID
 				ev.Member.User.Hydrate(d)

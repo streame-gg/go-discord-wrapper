@@ -53,7 +53,7 @@ func (m *Message) IsHydrated() bool { return m.hClient != nil }
 
 // hydrateNested injects the client into sub-entities embedded in this message.
 func (m *Message) hydrateNested(c EntityClient) {
-	if m.Author != nil {
+	if !m.IsWebhookMessage() {
 		m.Author.Hydrate(c)
 	}
 	for i := range m.Mentions {
@@ -92,7 +92,7 @@ func (m *Message) Reply(ctx context.Context, opts MessageCreateOptions) (*Messag
 	if err != nil {
 		return nil, err
 	}
-	ref := MessageMessageReference{MessageID: &m.ID, ChannelID: &m.ChannelID}
+	ref := MessageMessageReference{MessageID: m.ID, ChannelID: m.ChannelID}
 	opts.MessageReference = &ref
 	return c.CreateMessage(ctx, m.ChannelID, opts)
 }
@@ -134,3 +134,5 @@ func (m *Message) React(ctx context.Context, emoji string) error {
 	}
 	return c.AddReaction(ctx, m.ChannelID, m.ID, emoji)
 }
+
+func (m *Message) IsWebhookMessage() bool { return !m.WebhookID.IsEmpty() }

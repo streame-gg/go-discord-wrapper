@@ -446,7 +446,7 @@ func (su *hydrationSuite) TestHydrate_PropagatesAuthorHydration() {
 	t := su.T()
 	c := &stubClient{}
 	author := &discord.User{ID: 9}
-	msg := &discord.Message{Author: author}
+	msg := &discord.Message{Author: *author}
 	msg.Hydrate(c)
 
 	if !author.IsHydrated() {

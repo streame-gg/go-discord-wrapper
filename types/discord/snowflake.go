@@ -13,6 +13,10 @@ const Epoch uint64 = 1420070400000
 // https://docs.discord.com/developers/reference#snowflakes
 type Snowflake uint64
 
+func (s *Snowflake) IsNil() bool {
+	return s == nil || *s == 0
+}
+
 func (s *Snowflake) UnmarshalJSON(data []byte) error {
 	if len(data) > 0 && data[0] == '"' {
 		var str string

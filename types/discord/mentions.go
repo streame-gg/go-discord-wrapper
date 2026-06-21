@@ -119,10 +119,7 @@ func (r *Role) HexColor() string {
 	if r == nil {
 		return ""
 	}
-	c := 0
-	if r.Colors.PrimaryColor != nil {
-		c = *r.Colors.PrimaryColor
-	}
+	c := r.Colors.PrimaryColor
 	return colorToHex(c)
 }
 

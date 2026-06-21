@@ -103,7 +103,7 @@ func (g *Guild) hydrateNested(c EntityClient) {
 		g.RawEmojis[i].Hydrate(c)
 	}
 	for i := range g.RawStickers {
-		g.RawStickers[i].GuildID = &g.ID
+		g.RawStickers[i].GuildID = g.ID
 		g.RawStickers[i].Hydrate(c)
 	}
 }

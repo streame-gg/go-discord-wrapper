@@ -242,7 +242,7 @@ func (su *permissionHelpersSuite) TestGuildMemberPermissionMethods() {
 	g := makeGuild(PermissionViewChannel|PermissionSendMessages, 0, 0)
 	m := &GuildMember{UserID: testUserID}
 
-	if m.Permissions(g) != PermissionsFor(g, m) {
+	if *m.Permissions != PermissionsFor(g, m) {
 		t.Error("Permissions method should match PermissionsFor")
 	}
 

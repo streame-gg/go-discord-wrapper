@@ -365,38 +365,6 @@ func (c *RestClient) FetchAllSKUSubscriptions(ctx context.Context, skuID discord
 	}
 }
 
-// FetchAllGuildJoinRequests fetches every join request for a guild, paginating
-// forward by request ID (max 100 per request). The Status filter is preserved;
-// Before/After/Limit are managed internally.
-func (c *RestClient) FetchAllGuildJoinRequests(ctx context.Context, guildID discord.Snowflake, filter GetGuildJoinRequestsParams) ([]*discord.GuildJoinRequest, error) {
-	if err := guildID.Validate(); err != nil {
-		return nil, err
-	}
-
-	const pageSize = 100
-
-	filter.Limit = util.PointerOf(pageSize)
-	filter.Before = nil
-	filter.After = nil
-
-	var all []*discord.GuildJoinRequest
-
-	for {
-		resp, err := c.GetGuildJoinRequests(ctx, guildID, filter)
-		if err != nil {
-			return nil, err
-		}
-
-		all = append(all, resp.GuildJoinRequests...)
-
-		if len(resp.GuildJoinRequests) < pageSize {
-			return all, nil
-		}
-
-		filter.After = &resp.GuildJoinRequests[len(resp.GuildJoinRequests)-1].ID
-	}
-}
-
 // FetchAllPublicArchivedThreads fetches every public archived thread in a
 // channel, paginating backwards by archive timestamp until has_more is false.
 func (c *RestClient) FetchAllPublicArchivedThreads(ctx context.Context, channelID discord.Snowflake) ([]*discord.Channel, error) {

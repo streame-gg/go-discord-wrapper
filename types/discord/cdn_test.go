@@ -99,7 +99,7 @@ func (su *cdnSuite) TestGuildImageURLs() {
 
 func (su *cdnSuite) TestRoleAndEmojiURL() {
 	t := su.T()
-	r := &Role{ID: 3, IconHash: strptr("ri")}
+	r := &Role{ID: 3, Icon: strptr("ri")}
 	if got := r.IconURL(nil); got != "https://cdn.discordapp.com/role-icons/3/ri.webp" {
 		t.Errorf("role icon: got %q", got)
 	}

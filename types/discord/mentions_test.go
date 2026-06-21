@@ -77,7 +77,7 @@ func (s *mentionsSuite) TestUserTag() {
 func (s *mentionsSuite) TestRoleHexColor() {
 	s.Equal("", (*Role)(nil).HexColor())
 	s.Equal("#000000", (&Role{}).HexColor())
-	s.Equal("#5865f2", (&Role{Colors: RoleColors{PrimaryColor: intptr(0x5865F2)}}).HexColor())
+	s.Equal("#5865f2", (&Role{Colors: RoleColors{PrimaryColor: 0x5865F2}}).HexColor())
 }
 
 func (s *mentionsSuite) TestUserHexAccentColor() {
@@ -151,8 +151,8 @@ func (s *mentionsSuite) TestInviteURL() {
 // ── Predicates ──────────────────────────────────────────────────────────────
 
 func (s *mentionsSuite) TestChannelNSFWAndThreadOnly() {
-	s.False((&Channel{}).IsNSFW())
-	s.True((&Channel{NSFW: util.PointerOf(true)}).IsNSFW())
+	s.False(*(&Channel{}).IsNSFW())
+	s.True(*(&Channel{NSFW: util.PointerOf(true)}).IsNSFW())
 	s.True((&Channel{Type: ChannelTypeGuildForum}).IsThreadOnly())
 	s.True((&Channel{Type: ChannelTypeGuildMedia}).IsThreadOnly())
 	s.False((&Channel{Type: ChannelTypeGuildText}).IsThreadOnly())

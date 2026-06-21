@@ -84,9 +84,7 @@ func (d *Client) cacheMessage(msg *discord.Message) {
 
 	msg.Hydrate(d)
 	d.Cache.Messages().Add(msg)
-	if msg.Author != nil {
-		d.cacheUser(msg.Author)
-	}
+	d.cacheUser(&msg.Author)
 }
 
 func (d *Client) cacheMessages(messages []*discord.Message) {

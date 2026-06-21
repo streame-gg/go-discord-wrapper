@@ -159,9 +159,9 @@ func (f FullActivity) MarshalJSON() ([]byte, error) {
 
 // https://docs.discord.com/developers/events/gateway-events#client-status-object
 type ClientStatus struct {
-	Desktop *PresenceStatus `json:"desktop,omitempty"`
-	Mobile  *PresenceStatus `json:"mobile,omitempty"`
-	Web     *PresenceStatus `json:"web,omitempty"`
+	Desktop PresenceStatus `json:"desktop,omitempty"`
+	Mobile  PresenceStatus `json:"mobile,omitempty"`
+	Web     PresenceStatus `json:"web,omitempty"`
 }
 
 // https://docs.discord.com/developers/events/gateway-events#update-presence-status-types

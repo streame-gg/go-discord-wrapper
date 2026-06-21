@@ -39,7 +39,9 @@ const (
 	InteractionCallbackTypeUpdateMessage                        InteractionCallbackType = 7
 	InteractionCallbackTypeApplicationCommandAutocompleteResult InteractionCallbackType = 8
 	InteractionCallbackTypeModal                                InteractionCallbackType = 9
-	InteractionCallbackTypeLaunchActivity                       InteractionCallbackType = 12
+	// InteractionCallbackTypePremiumRequired is deprecated
+	InteractionCallbackTypePremiumRequired InteractionCallbackType = 10
+	InteractionCallbackTypeLaunchActivity  InteractionCallbackType = 12
 )
 
 // https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-interaction-data

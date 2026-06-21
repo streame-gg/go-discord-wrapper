@@ -39,22 +39,23 @@ type IntegrationApplication struct {
 
 // https://docs.discord.com/developers/resources/guild#integration-object
 type Integration struct {
-	hClient           EntityClient
-	GuildID           Snowflake                  `json:"-"`
+	hClient EntityClient
+	GuildID Snowflake `json:"-"`
+
 	ID                Snowflake                  `json:"id"`
 	Name              string                     `json:"name"`
 	Type              IntegrationType            `json:"type"`
 	Enabled           bool                       `json:"enabled"`
-	Syncing           *bool                      `json:"syncing,omitempty"`
-	RoleID            *Snowflake                 `json:"role_id,omitempty"`
-	EnableEmoticons   *bool                      `json:"enable_emoticons,omitempty"`
+	Syncing           bool                       `json:"syncing,omitempty"`
+	RoleID            Snowflake                  `json:"role_id,omitempty"`
+	EnableEmoticons   bool                       `json:"enable_emoticons,omitempty"`
 	ExpireBehavior    *IntegrationExpireBehavior `json:"expire_behavior,omitempty"`
-	ExpireGracePeriod *int                       `json:"expire_grace_period,omitempty"`
+	ExpireGracePeriod int                        `json:"expire_grace_period,omitempty"`
 	User              *User                      `json:"user,omitempty"`
 	Account           IntegrationAccount         `json:"account"`
 	SyncedAt          *time.Time                 `json:"synced_at,omitempty"`
-	SubscriberCount   *int                       `json:"subscriber_count,omitempty"`
-	Revoked           *bool                      `json:"revoked,omitempty"`
+	SubscriberCount   int                        `json:"subscriber_count,omitempty"`
+	Revoked           bool                       `json:"revoked,omitempty"`
 	Application       *IntegrationApplication    `json:"application,omitempty"`
-	Scopes            *[]Scope                   `json:"scopes,omitempty"`
+	Scopes            []Scope                    `json:"scopes,omitempty"`
 }

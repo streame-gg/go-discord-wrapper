@@ -182,7 +182,7 @@ func (s *jsonRoundtripSuite) TestFullActivityCodec() {
 func (s *jsonRoundtripSuite) TestPartialMessageCodec() {
 	raw := []byte(`{"id":"175928847299117063","content":"hi","components":[{"type":1}]}`)
 
-	var pm PartialMessage
+	var pm Message
 	s.Require().NoError(json.Unmarshal(raw, &pm))
 	s.Equal("hi", pm.Content)
 	s.Require().Len(pm.Components, 1)

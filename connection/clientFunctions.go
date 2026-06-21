@@ -285,21 +285,19 @@ func (d *Client) GetChannelPins(ctx context.Context, channelID discord.Snowflake
 	pins, err := d.RestClient.GetChannelPins(ctx, channelID, params)
 	if err == nil && pins != nil {
 		for _, pin := range pins.Items {
-			if pin.Message != nil {
-				pin.Message.Hydrate(d)
-				d.cacheMessage(pin.Message)
-			}
+			pin.Message.Hydrate(d)
+			d.cacheMessage(&pin.Message)
 		}
 	}
 	return pins, err
 }
 
-func (d *Client) ListPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
+func (d *Client) ListPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]discord.Message, error) {
 	msgs, err := d.RestClient.ListPinnedMessages(ctx, channelID)
 	if err == nil {
 		for _, msg := range msgs {
 			msg.Hydrate(d)
-			d.cacheMessage(msg)
+			d.cacheMessage(&msg)
 		}
 	}
 	return msgs, err
@@ -1279,7 +1277,7 @@ func (d *Client) GetStickerPack(ctx context.Context, packID discord.Snowflake) (
 func (d *Client) CreateGuildStickerRaw(ctx context.Context, guildID discord.Snowflake, params api.CreateGuildStickerParams) (*discord.Sticker, error) {
 	sticker, err := d.RestClient.CreateGuildSticker(ctx, guildID, params)
 	if err == nil {
-		sticker.GuildID = &guildID
+		sticker.GuildID = guildID
 		sticker.Hydrate(d)
 		if d.cacheStoreEnabled(cache.CategoryStickers) {
 			d.Cache.Stickers().Set(guildID, sticker)

@@ -102,9 +102,6 @@ func main() {
 
 	// A single-entity lookup returns (value, ok) — no Collection needed.
 	bot.OnMessageCreate(func(c *connection.Client, e *events.MessageCreateEvent) {
-		if e.Author == nil {
-			return
-		}
 		if ch, ok := c.Cache.Channels().Get(e.ChannelID); ok {
 			c.Logger.Info("message", "channel", ch.Name, "author", e.Author.Username)
 		}

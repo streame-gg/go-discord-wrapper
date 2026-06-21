@@ -487,7 +487,7 @@ func (c *RestClient) GetChannelPins(ctx context.Context, channelID discord.Snowf
 // ordered newest pin first. For pin timestamps or page-by-page control, use
 // GetChannelPins.
 // https://docs.discord.com/developers/resources/message#get-channel-pins
-func (c *RestClient) ListPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]*discord.Message, error) {
+func (c *RestClient) ListPinnedMessages(ctx context.Context, channelID discord.Snowflake) ([]discord.Message, error) {
 	if err := channelID.Validate(); err != nil {
 		return nil, err
 	}
@@ -495,7 +495,7 @@ func (c *RestClient) ListPinnedMessages(ctx context.Context, channelID discord.S
 	const pageSize = 50
 
 	limit := pageSize
-	var all []*discord.Message
+	var all []discord.Message
 	params := GetChannelPinsParams{Limit: &limit}
 
 	for {
@@ -505,9 +505,7 @@ func (c *RestClient) ListPinnedMessages(ctx context.Context, channelID discord.S
 		}
 
 		for _, pin := range page.Items {
-			if pin.Message != nil {
-				all = append(all, pin.Message)
-			}
+			all = append(all, pin.Message)
 		}
 
 		if !page.HasMore || len(page.Items) == 0 {

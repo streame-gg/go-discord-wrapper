@@ -10,7 +10,7 @@ import (
 func init() {
 	On(devents.EventMessageCreate, func(c *connection.Client, e *devents.MessageCreateEvent) {
 		// Ignore our own and other bots' messages.
-		if e.Author == nil || e.Author.Bot {
+		if e.Author.Bot {
 			return
 		}
 		c.Logger.Info("message",

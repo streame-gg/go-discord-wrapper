@@ -9,12 +9,12 @@ import (
 
 // https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-resolved-data-structure
 type ResolvedData struct {
-	Users       map[Snowflake]*User        `json:"users"`
-	Members     map[Snowflake]*GuildMember `json:"members,omitempty"`
-	Messages    map[Snowflake]*Message     `json:"messages,omitempty"`
-	Channels    map[Snowflake]*Channel     `json:"channels,omitempty"`
-	Roles       map[Snowflake]*Role        `json:"roles,omitempty"`
-	Attachments map[Snowflake]*Attachment  `json:"attachments,omitempty"`
+	Users       map[Snowflake]User        `json:"users,omitempty"`
+	Members     map[Snowflake]GuildMember `json:"members,omitempty"`
+	Messages    map[Snowflake]Message     `json:"messages,omitempty"`
+	Channels    map[Snowflake]Channel     `json:"channels,omitempty"`
+	Roles       map[Snowflake]Role        `json:"roles,omitempty"`
+	Attachments map[Snowflake]Attachment  `json:"attachments,omitempty"`
 }
 
 // MessagePin is one entry returned by Get Channel Pins: a pinned message and
@@ -24,7 +24,7 @@ type MessagePin struct {
 	// PinnedAt is when the message was pinned.
 	PinnedAt time.Time `json:"pinned_at"`
 	// Message is the pinned message.
-	Message *Message `json:"message"`
+	Message Message `json:"message"`
 }
 
 // ChannelPins is the paginated response from Get Channel Pins. Items are ordered
@@ -33,54 +33,67 @@ type MessagePin struct {
 //
 // https://docs.discord.com/developers/resources/message#get-channel-pins
 type ChannelPins struct {
-	Items   []*MessagePin `json:"items"`
-	HasMore bool          `json:"has_more"`
+	Items   []MessagePin `json:"items"`
+	HasMore bool         `json:"has_more"`
 }
+
+// https://docs.discord.com/developers/resources/message#message-object-message-activity-types
+type MessageActivityType uint64
+
+const (
+	MessageActivityTypeJoin        MessageActivityType = 1
+	MessageActivityTypeSpectate    MessageActivityType = 2
+	MessageActivityTypeListen      MessageActivityType = 3
+	MessageActivityTypeJoinRequest MessageActivityType = 4
+)
 
 // https://docs.discord.com/developers/resources/message#message-object-message-activity-structure
 type MessageActivity struct {
-	Type    int     `json:"type"`
-	PartyID *string `json:"party_id,omitempty"`
+	Type    MessageActivityType `json:"type"`
+	PartyID string              `json:"party_id,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/message#message-object
 type Message struct {
-	hClient              EntityClient
-	Activity             *MessageActivity            `json:"activity,omitempty"`
-	Application          *Application                `json:"application,omitempty"`
-	ApplicationID        *Snowflake                  `json:"application_id,omitempty"`
-	Attachments          []Attachment                `json:"attachments,omitempty"`
-	Author               *User                       `json:"author,omitempty"`
-	Call                 *Call                       `json:"call,omitempty"`
-	ChannelID            Snowflake                   `json:"channel_id"`
-	ChannelType          ChannelType                 `json:"channel_type"`
-	Components           []AnyComponent              `json:"-"`
-	Content              string                      `json:"content"`
-	EditedTimestamp      *time.Time                  `json:"edited_timestamp,omitempty"`
-	Embeds               []Embed                     `json:"embeds,omitempty"`
-	Flags                MessageFlag                 `json:"flags"`
-	ID                   Snowflake                   `json:"id"`
-	InteractionMetadata  *MessageInteractionMetadata `json:"interaction_metadata,omitempty"`
-	MentionEveryone      bool                        `json:"mention_everyone"`
-	MentionChannels      *[]MessageChannelMention    `json:"mention_channels,omitempty"`
-	MentionRoles         []Snowflake                 `json:"mention_roles"`
-	Mentions             []User                      `json:"mentions"`
-	MessageReference     *MessageMessageReference    `json:"message_reference,omitempty"`
-	MessageSnapshots     []MessageMessageSnapshot    `json:"message_snapshots,omitempty"`
-	Nonce                interface{}                 `json:"nonce,omitempty"`
-	Pinned               bool                        `json:"pinned"`
-	Poll                 *Poll                       `json:"poll,omitempty"`
-	Position             *int                        `json:"position,omitempty"`
-	Reactions            *[]Reaction                 `json:"reactions,omitempty"`
-	Resolved             *ResolvedData               `json:"resolved,omitempty"`
-	ReferencedMessage    *Message                    `json:"referenced_message,omitempty"`
-	RoleSubscriptionData *RoleSubscriptionData       `json:"role_subscription_data,omitempty"`
-	StickerItems         []MessageStickerItem        `json:"sticker_items,omitempty"`
-	Thread               *Channel                    `json:"thread,omitempty"`
-	Timestamp            *time.Time                  `json:"timestamp,omitempty"`
-	TTS                  bool                        `json:"tts"`
-	Type                 MessageType                 `json:"type"`
-	WebhookID            *Snowflake                  `json:"webhook_id,omitempty"`
+	hClient EntityClient
+
+	Activity      *MessageActivity `json:"activity,omitempty"`
+	Application   *Application     `json:"application,omitempty"`
+	ApplicationID Snowflake        `json:"application_id,omitempty"`
+	Attachments   []Attachment     `json:"attachments,omitempty"`
+	Author        User             `json:"author"`
+	Call          *Call            `json:"call,omitempty"`
+	ChannelID     Snowflake        `json:"channel_id"`
+	// Components has custom marshal und unmarshal due to some issues with the default MarshalJSON and UnmarshalJSON.
+	Components          []AnyComponent              `json:"-"`
+	Content             string                      `json:"content"`
+	EditedTimestamp     *time.Time                  `json:"edited_timestamp"`
+	Embeds              []Embed                     `json:"embeds,omitempty"`
+	Flags               MessageFlag                 `json:"flags,omitempty"`
+	ID                  Snowflake                   `json:"id"`
+	InteractionMetadata *MessageInteractionMetadata `json:"interaction_metadata,omitempty"`
+	MentionEveryone     bool                        `json:"mention_everyone"`
+	MentionChannels     []MessageChannelMention     `json:"mention_channels,omitempty"`
+	MentionRoles        []Snowflake                 `json:"mention_roles"`
+	Mentions            []User                      `json:"mentions"`
+	MessageReference    *MessageMessageReference    `json:"message_reference,omitempty"`
+	MessageSnapshots    []MessageMessageSnapshot    `json:"message_snapshots,omitempty"`
+	// Nonce is either an integer or a string
+	Nonce                interface{}           `json:"nonce,omitempty"`
+	Pinned               bool                  `json:"pinned"`
+	Poll                 *Poll                 `json:"poll,omitempty"`
+	Position             *int                  `json:"position,omitempty"`
+	Reactions            []Reaction            `json:"reactions,omitempty"`
+	Resolved             *ResolvedData         `json:"resolved,omitempty"`
+	ReferencedMessage    *Message              `json:"referenced_message,omitempty"`
+	RoleSubscriptionData *RoleSubscriptionData `json:"role_subscription_data,omitempty"`
+	StickerItems         []MessageStickerItem  `json:"sticker_items,omitempty"`
+	Thread               *Channel              `json:"thread,omitempty"`
+	Timestamp            time.Time             `json:"timestamp"`
+	TTS                  bool                  `json:"tts"`
+	Type                 MessageType           `json:"type"`
+	WebhookID            Snowflake             `json:"webhook_id,omitempty"`
+	SharedClientTheme    *SharedClientTheme    `json:"shared_client_theme,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/message#role-subscription-data-object
@@ -157,7 +170,7 @@ const (
 	MessageTypeChannelNameChange                       MessageType = 4
 	MessageTypeChannelIconChange                       MessageType = 5
 	MessageTypeChannelPinnedMessage                    MessageType = 6
-	MessageTypeGuildMemberJoin                         MessageType = 7
+	MessageTypeGuildUserJoin                           MessageType = 7
 	MessageTypeGuildBoost                              MessageType = 8
 	MessageTypeGuildBoostTier1                         MessageType = 9
 	MessageTypeGuildBoostTier2                         MessageType = 10
@@ -197,32 +210,22 @@ type Call struct {
 
 // https://docs.discord.com/developers/resources/message#channel-mention-object
 type MessageChannelMention struct {
-	ID      string `json:"id"`
-	GuildID string `json:"guild_id"`
-	Type    int    `json:"type"`
-	Name    string `json:"name"`
+	ID      string      `json:"id"`
+	GuildID string      `json:"guild_id"`
+	Type    ChannelType `json:"type"`
+	Name    string      `json:"name"`
 }
-
-// https://docs.discord.com/developers/resources/sticker#sticker-object-sticker-format-types
-type MessageStickerItemFormatType int
-
-const (
-	MessageStickerItemFormatTypePNG    MessageStickerItemFormatType = 1
-	MessageStickerItemFormatTypeAPNG   MessageStickerItemFormatType = 2
-	MessageStickerItemFormatTypeLottie MessageStickerItemFormatType = 3
-	MessageStickerItemFormatTypeGIF    MessageStickerItemFormatType = 4
-)
 
 // https://docs.discord.com/developers/resources/sticker#sticker-item-object
 type MessageStickerItem struct {
-	ID         Snowflake                    `json:"id"`
-	Name       string                       `json:"name"`
-	FormatType MessageStickerItemFormatType `json:"format_type"`
+	ID         Snowflake         `json:"id"`
+	Name       string            `json:"name"`
+	FormatType StickerFormatType `json:"format_type"`
 }
 
 // https://docs.discord.com/developers/resources/message#message-snapshot-object
 type MessageMessageSnapshot struct {
-	Message PartialMessage `json:"message,omitempty"`
+	Message Message `json:"message"`
 }
 
 // https://docs.discord.com/developers/resources/message#message-reference-types
@@ -233,84 +236,34 @@ const (
 	MessageMessageReferenceTypeForward MessageMessageReferenceType = 1
 )
 
-// https://docs.discord.com/developers/resources/message#message-snapshot-object-message-snapshot-structure
-type PartialMessage struct {
-	Type            MessageType          `json:"type"`
-	Content         string               `json:"content"`
-	Embeds          []Embed              `json:"embeds,omitempty"`
-	Attachments     []Attachment         `json:"attachments,omitempty"`
-	Timestamp       *time.Time           `json:"timestamp,omitempty"`
-	EditedTimestamp *time.Time           `json:"edited_timestamp,omitempty"`
-	Flags           MessageFlag          `json:"flags,omitempty"`
-	Mentions        []User               `json:"mentions"`
-	MentionRoles    []Snowflake          `json:"mention_roles"`
-	StickerItems    []MessageStickerItem `json:"sticker_items,omitempty"`
-	Components      []AnyComponent       `json:"-"`
-}
-
-func (p *PartialMessage) UnmarshalJSON(data []byte) error {
-	type Alias PartialMessage
-	aux := &struct {
-		Components []json.RawMessage `json:"components"`
-		*Alias
-	}{
-		Alias: (*Alias)(p),
-	}
-
-	if err := json.Unmarshal(data, aux); err != nil {
-		return err
-	}
-
-	for _, comp := range aux.Components {
-		var raw RawComponent
-		if err := json.Unmarshal(comp, &raw); err != nil {
-			return fmt.Errorf("failed to unmarshal component: %w", err)
-		}
-		p.Components = append(p.Components, &raw)
-	}
-
-	return nil
-}
-
-func (p *PartialMessage) MarshalJSON() ([]byte, error) {
-	type Alias PartialMessage
-	return json.Marshal(&struct {
-		Components []AnyComponent `json:"components,omitempty"`
-		*Alias
-	}{
-		Components: p.Components,
-		Alias:      (*Alias)(p),
-	})
-}
-
 // https://docs.discord.com/developers/resources/message#message-reference-structure
 type MessageMessageReference struct {
 	Type            *MessageMessageReferenceType `json:"type,omitempty"`
-	MessageID       *Snowflake                   `json:"message_id,omitempty"`
-	ChannelID       *Snowflake                   `json:"channel_id,omitempty"`
-	GuildID         *Snowflake                   `json:"guild_id,omitempty"`
+	MessageID       Snowflake                    `json:"message_id,omitempty"`
+	ChannelID       Snowflake                    `json:"channel_id,omitempty"`
+	GuildID         Snowflake                    `json:"guild_id,omitempty"`
 	FailIfNotExists *bool                        `json:"fail_if_not_exists,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/message#message-interaction-metadata-object-application-command-interaction-metadata-structure
 type MessageInteractionMetadataApplicationCommand struct {
-	ID                           Snowflake                                             `json:"id"`
-	Type                         InteractionType                                       `json:"type"`
-	User                         User                                                  `json:"user,omitempty"`
-	AuthorizingIntegrationOwners map[InteractionApplicationIntegrationType]interface{} `json:"authorizing_integration_owners,omitempty"`
-	OriginalResponseMessageID    *Snowflake                                            `json:"original_response_message_id,omitempty"`
-	TargetUser                   *User                                                 `json:"target_user,omitempty"`
-	TargetMessageID              *Snowflake                                            `json:"target_message_id,omitempty"`
+	ID                           Snowflake                                                            `json:"id"`
+	Type                         InteractionType                                                      `json:"type"`
+	User                         User                                                                 `json:"user"`
+	AuthorizingIntegrationOwners map[InteractionApplicationIntegrationType]ApplicationIntegrationType `json:"authorizing_integration_owners"`
+	OriginalResponseMessageID    Snowflake                                                            `json:"original_response_message_id,omitempty"`
+	TargetUser                   *User                                                                `json:"target_user,omitempty"`
+	TargetMessageID              *Snowflake                                                           `json:"target_message_id,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/message#message-interaction-metadata-object-message-component-interaction-metadata-structure
 type MessageInteractionMetadataMessageComponent struct {
 	ID                           Snowflake                                             `json:"id"`
 	Type                         InteractionType                                       `json:"type"`
-	User                         User                                                  `json:"user,omitempty"`
-	AuthorizingIntegrationOwners map[InteractionApplicationIntegrationType]interface{} `json:"authorizing_integration_owners,omitempty"`
+	User                         User                                                  `json:"user"`
+	AuthorizingIntegrationOwners map[InteractionApplicationIntegrationType]interface{} `json:"authorizing_integration_owners"`
 	OriginalResponseMessageID    *Snowflake                                            `json:"original_response_message_id,omitempty"`
-	InteractedMessageID          *Snowflake                                            `json:"interacted_message_id,omitempty"`
+	InteractedMessageID          Snowflake                                             `json:"interacted_message_id"`
 }
 
 // https://docs.discord.com/developers/resources/message#message-interaction-metadata-object
@@ -376,10 +329,10 @@ func (d *MessageInteractionMetadata) UnmarshalJSON(data []byte) error {
 type MessageInteractionMetadataModalSubmit struct {
 	ID                            Snowflake                                             `json:"id"`
 	Type                          InteractionType                                       `json:"type"`
-	User                          User                                                  `json:"user,omitempty"`
-	AuthorizingIntegrationOwners  map[InteractionApplicationIntegrationType]interface{} `json:"authorizing_integration_owners,omitempty"`
+	User                          User                                                  `json:"user"`
+	AuthorizingIntegrationOwners  map[InteractionApplicationIntegrationType]interface{} `json:"authorizing_integration_owners"`
 	OriginalResponseMessageID     *Snowflake                                            `json:"original_response_message_id,omitempty"`
-	TriggeringInteractionMetadata *MessageInteractionMetadataModalSubmitTriggering      `json:"triggering_interaction_metadata,omitempty"`
+	TriggeringInteractionMetadata MessageInteractionMetadataModalSubmitTriggering       `json:"triggering_interaction_metadata"`
 }
 
 // SharedClientTheme https://docs.discord.com/developers/resources/message#shared-client-theme-object
@@ -407,21 +360,20 @@ const (
 //
 // https://docs.discord.com/developers/resources/message#search-guild-messages
 type GuildSearchResponse struct {
-	Messages                 [][]Message    `json:"messages"`
-	DoingDeepHistoricalIndex bool           `json:"doing_deep_historical_index"`
-	TotalResults             int            `json:"total_results"`
-	Threads                  []*Channel     `json:"threads,omitempty"`
-	Members                  []*GuildMember `json:"members,omitempty"`
-	DocumentsIndexed         *int           `json:"documents_indexed,omitempty"`
+	// Messages is a double array because it used to provide surrounding context. The surrounding context is no longer returned.
+	Messages                 [][]Message   `json:"messages"`
+	DoingDeepHistoricalIndex bool          `json:"doing_deep_historical_index"`
+	TotalResults             int           `json:"total_results"`
+	Threads                  []Channel     `json:"threads,omitempty"`
+	Members                  []GuildMember `json:"members,omitempty"`
+	DocumentsIndexed         *int          `json:"documents_indexed,omitempty"`
 }
 
 // ThreadSearchResponse is returned by the thread search endpoint.
 //
 // https://docs.discord.com/developers/resources/channel#list-public-archived-threads
 type ThreadSearchResponse struct {
-	Threads       []*Channel      `json:"threads"`
-	Members       []*ThreadMember `json:"members"`
-	HasMore       bool            `json:"has_more"`
-	FirstMessages []*Message      `json:"first_messages"`
-	TotalResults  int             `json:"total_results"`
+	Threads []Channel      `json:"threads"`
+	Members []ThreadMember `json:"members"`
+	HasMore bool           `json:"has_more"`
 }
