@@ -329,7 +329,7 @@ func (c *RestClient) FetchAllThreadMembers(ctx context.Context, channelID discor
 		if last.UserID.IsEmpty() {
 			return nil, fmt.Errorf("go-discord-wrapper: thread member returned by API has nil UserID; cannot paginate")
 		}
-		params.After = &last.UserID
+		params.After = last.UserID
 	}
 }
 

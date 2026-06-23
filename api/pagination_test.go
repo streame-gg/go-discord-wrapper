@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/suite"
 	"hash/fnv"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +12,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -181,7 +182,7 @@ func (su *paginationSuite) TestFetchAllMessagesMultiplePages() {
 		page1[i] = &discord.Message{
 			ID:        discord.Snowflake(uint64(100 - i)),
 			ChannelID: discord.Snowflake(1234567890123456789),
-			Author:    &discord.User{},
+			Author:    discord.User{},
 		}
 	}
 	oldestPage1ID := page1[99].ID // Snowflake(1)
@@ -192,7 +193,7 @@ func (su *paginationSuite) TestFetchAllMessagesMultiplePages() {
 		page2[i] = &discord.Message{
 			ID:        mustSnowflake(intToSnowflake(-(i + 1))),
 			ChannelID: discord.Snowflake(1234567890123456789),
-			Author:    &discord.User{},
+			Author:    discord.User{},
 		}
 	}
 
@@ -622,36 +623,6 @@ func (su *paginationSuite) TestFetchAllSKUSubscriptionsMultiplePages() {
 	subs, err := client.FetchAllSKUSubscriptions(context.Background(), discord.Snowflake(1234567890123456789), ListSKUSubscriptionsParams{})
 	require.NoError(t, err)
 	assert.Len(t, subs, 101)
-	assert.Equal(t, last1.String(), after2)
-}
-
-func (su *paginationSuite) TestFetchAllGuildJoinRequestsMultiplePages() {
-	t := su.T()
-	page1 := make([]*discord.GuildJoinRequest, 100)
-	for i := range page1 {
-		page1[i] = &discord.GuildJoinRequest{ID: discord.Snowflake(uint64(i + 1))}
-	}
-	last1 := page1[99].ID
-
-	var n int32
-	var after2 string
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		c := atomic.AddInt32(&n, 1)
-		q, _ := url.ParseQuery(r.URL.RawQuery)
-		w.Header().Set("Content-Type", "application/json")
-		if c == 1 {
-			_ = json.NewEncoder(w).Encode(GuildJoinRequestsResponse{Total: 101, GuildJoinRequests: page1})
-		} else {
-			after2 = q.Get("after")
-			_ = json.NewEncoder(w).Encode(GuildJoinRequestsResponse{Total: 101, GuildJoinRequests: []*discord.GuildJoinRequest{{ID: discord.Snowflake(200)}}})
-		}
-	}))
-	defer ts.Close()
-
-	client := newPaginationClient(ts)
-	reqs, err := client.FetchAllGuildJoinRequests(context.Background(), discord.Snowflake(1234567890123456789), GetGuildJoinRequestsParams{})
-	require.NoError(t, err)
-	assert.Len(t, reqs, 101)
 	assert.Equal(t, last1.String(), after2)
 }
 

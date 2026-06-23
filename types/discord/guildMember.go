@@ -48,8 +48,8 @@ func (m *GuildMember) DisplayName() string {
 
 // https://docs.discord.com/developers/resources/channel#thread-member-object
 type ThreadMember struct {
-	ID            Snowflake    `json:"id,omitempty"`
-	UserID        Snowflake    `json:"user_id,omitempty"`
+	ID            *Snowflake   `json:"id,omitempty"`
+	UserID        *Snowflake   `json:"user_id,omitempty"`
 	JoinTimestamp time.Time    `json:"join_timestamp"`
 	Flags         int          `json:"flags,omitempty"`
 	Member        *GuildMember `json:"member,omitempty"`

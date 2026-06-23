@@ -7,10 +7,10 @@ import (
 
 // https://docs.discord.com/developers/interactions/application-commands#application-command-object
 type ApplicationCommand struct {
-	ID                       Snowflake                               `json:"id,omitempty"`
+	ID                       Snowflake                               `json:"id"`
 	Type                     ApplicationCommandType                  `json:"type,omitempty"`
-	ApplicationID            Snowflake                               `json:"application_id"`
-	GuildID                  Snowflake                               `json:"guild_id,omitempty"`
+	ApplicationID            *Snowflake                              `json:"application_id"`
+	GuildID                  *Snowflake                              `json:"guild_id,omitempty"`
 	Name                     string                                  `json:"name"`
 	NameLocalizations        map[Locale]string                       `json:"name_localizations,omitempty"`
 	Description              string                                  `json:"description"`

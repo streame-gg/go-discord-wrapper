@@ -121,7 +121,7 @@ func (cs *ConnectionSuite) TestStickerManager_FetchAll_HydratesAndSetsGuildID() 
 	require.True(t, ok)
 	assert.True(t, s.IsHydrated(), "sticker must be hydrated after FetchAll")
 	require.NotNil(t, s.GuildID, "sticker.GuildID must not be nil after FetchAll")
-	assert.Equal(t, guildID, *s.GuildID, "sticker.GuildID must equal manager's guildID")
+	assert.Equal(t, guildID, s.GuildID, "sticker.GuildID must equal manager's guildID")
 }
 
 func (cs *ConnectionSuite) TestStickerManager_FetchAll_CachesResults() {

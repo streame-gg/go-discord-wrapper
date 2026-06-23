@@ -165,8 +165,8 @@ func (su *mergeSuite) TestMergePartial_EmptyMessageKeepsOld() {
 		ID:        123,
 		ChannelID: 456,
 		Content:   "hello world",
-		Timestamp: &ts,
-		Author:    &discord.User{ID: 789},
+		Timestamp: ts,
+		Author:    discord.User{ID: 789},
 		Embeds:    []discord.Embed{{Title: "embed"}},
 	}
 
@@ -181,10 +181,10 @@ func (su *mergeSuite) TestMergePartial_EmptyMessageKeepsOld() {
 	if result.Content != "hello world" {
 		t.Errorf("Content: got %q, want %q", result.Content, "hello world")
 	}
-	if result.Timestamp == nil {
+	if result.Timestamp.IsZero() {
 		t.Error("Timestamp: got nil, want non-nil")
 	}
-	if result.Author == nil || result.Author.ID != 789 {
+	if result.Author.ID != 789 {
 		t.Errorf("Author: got %v, want ID=789", result.Author)
 	}
 	if len(result.Embeds) != 1 {
@@ -199,8 +199,8 @@ func (su *mergeSuite) TestMergePartial_OldMessageIsEmpty() {
 		ID:        123,
 		ChannelID: 456,
 		Content:   "hello world",
-		Timestamp: &ts,
-		Author:    &discord.User{ID: 789},
+		Timestamp: ts,
+		Author:    discord.User{ID: 789},
 		Embeds:    []discord.Embed{{Title: "embed"}},
 	}
 
@@ -215,10 +215,10 @@ func (su *mergeSuite) TestMergePartial_OldMessageIsEmpty() {
 	if result.Content != "hello world" {
 		t.Errorf("Content: got %q, want %q", result.Content, "hello world")
 	}
-	if result.Timestamp == nil {
+	if result.Timestamp.IsZero() {
 		t.Error("Timestamp: got nil, want non-nil")
 	}
-	if result.Author == nil || result.Author.ID != 789 {
+	if result.Author.ID != 789 {
 		t.Errorf("Author: got %v, want ID=789", result.Author)
 	}
 	if len(result.Embeds) != 1 {
@@ -233,8 +233,8 @@ func (su *mergeSuite) TestMergePartial_PartialMessageUpdatesContent() {
 		ID:        123,
 		ChannelID: 456,
 		Content:   "original",
-		Timestamp: &ts,
-		Author:    &discord.User{ID: 789},
+		Timestamp: ts,
+		Author:    discord.User{ID: 789},
 	}
 	// Discord partial: only ID, ChannelID, and Content are present.
 	partial := discord.Message{
@@ -248,10 +248,10 @@ func (su *mergeSuite) TestMergePartial_PartialMessageUpdatesContent() {
 	if result.Content != "edited" {
 		t.Errorf("Content: got %q, want %q", result.Content, "edited")
 	}
-	if result.Author == nil || result.Author.ID != 789 {
+	if result.Author.ID != 789 {
 		t.Errorf("Author: got %v, want ID=789 (preserved from old)", result.Author)
 	}
-	if result.Timestamp == nil {
+	if result.Timestamp.IsZero() {
 		t.Error("Timestamp: got nil, want preserved from old")
 	}
 }
@@ -293,7 +293,7 @@ func (s *mergeSuite) TestMergePartial_TimeTimeZeroSourceKeepsDestination() {
 func (s *mergeSuite) TestMergePartial_GuildMemberJoinedAt() {
 	joined := time.Date(2023, 6, 1, 12, 0, 0, 0, time.UTC)
 	old := discord.GuildMember{Nick: ptr("old-nick")}
-	partial := discord.GuildMember{JoinedAt: joined}
+	partial := discord.GuildMember{JoinedAt: &joined}
 
 	got := util.MergePartial(old, partial)
 	s.True(got.JoinedAt.Equal(joined), "JoinedAt must be applied from the partial")
@@ -322,7 +322,7 @@ func (s *mergeSuite) TestMergePartialJSON_PresentZeroOverwrites() {
 // which is NOT present in the payload is preserved from old.
 func (s *mergeSuite) TestMergePartialJSON_AbsentFieldKeepsOld() {
 	ts := time.Now()
-	old := discord.Message{ID: 1, ChannelID: 2, Content: "keep me", Timestamp: &ts}
+	old := discord.Message{ID: 1, ChannelID: 2, Content: "keep me", Timestamp: ts}
 	// Only content is present; it changed. Timestamp/Author etc. are absent.
 	partial := discord.Message{ID: 1, ChannelID: 2, Content: "edited"}
 	raw := json.RawMessage(`{"id":"1","channel_id":"2","content":"edited"}`)

@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/api"
@@ -137,8 +138,8 @@ func (s *clientExtrasSuite) TestManagerHelpers() {
 	s.Equal(0, c.ChannelsForGuild(id).Len())
 
 	// Seed a channel + index entries so the lookup loops run their body.
-	parent := &discord.Channel{ID: id, GuildID: id, Type: discord.ChannelTypeGuildText}
-	thread := &discord.Channel{ID: id + 1, GuildID: id, ParentID: &id, Type: discord.ChannelTypePublicThread}
+	parent := &discord.Channel{ID: id, GuildID: util.PointerOf(id), Type: discord.ChannelTypeGuildText}
+	thread := &discord.Channel{ID: id + 1, GuildID: util.PointerOf(id), ParentID: &id, Type: discord.ChannelTypePublicThread}
 	c.Cache.Channels().Set(parent)
 	c.Cache.Channels().Set(thread)
 	c.threadIndexMu.Lock()

@@ -50,7 +50,7 @@ type Channel struct {
 
 	ID                   Snowflake                    `json:"id"`
 	Type                 ChannelType                  `json:"type"`
-	GuildID              Snowflake                    `json:"guild_id,omitempty"`
+	GuildID              *Snowflake                   `json:"guild_id,omitempty"`
 	Position             int                          `json:"position,omitempty"`
 	PermissionOverwrites []ChannelPermissionOverwrite `json:"permission_overwrites,omitempty"`
 	Name                 *string                      `json:"name,omitempty"`
@@ -63,8 +63,8 @@ type Channel struct {
 	RateLimitPerUser              int                    `json:"rate_limit_per_user,omitempty"`
 	Recipients                    []User                 `json:"recipients,omitempty"`
 	IconHash                      *string                `json:"icon,omitempty"`
-	OwnerID                       Snowflake              `json:"owner_id,omitempty"`
-	ApplicationID                 Snowflake              `json:"application_id,omitempty"`
+	OwnerID                       *Snowflake             `json:"owner_id,omitempty"`
+	ApplicationID                 *Snowflake             `json:"application_id,omitempty"`
 	Managed                       bool                   `json:"managed,omitempty"`
 	ParentID                      *Snowflake             `json:"parent_id,omitempty"`
 	LastPinTimestamp              *time.Time             `json:"last_pin_timestamp,omitempty"`

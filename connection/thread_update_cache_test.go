@@ -27,7 +27,7 @@ func (cs *ConnectionSuite) TestBug82_ThreadUpdate_FallbackSetsOldThread() {
 	// Pre-seed thread in cache.
 	c.cacheChannel(&discord.Channel{
 		ID:       threadID,
-		GuildID:  guildID,
+		GuildID:  &guildID,
 		ParentID: &parentID,
 		Name:     util.PointerOf("old-name"),
 	})
@@ -64,7 +64,7 @@ func (cs *ConnectionSuite) TestBug82_ThreadUpdate_FallbackWithNilEvent_UpdatesCa
 
 	c.cacheChannel(&discord.Channel{
 		ID:       threadID,
-		GuildID:  guildID,
+		GuildID:  &guildID,
 		ParentID: &parentID,
 		Name:     util.PointerOf("old-name"),
 	})
@@ -98,9 +98,9 @@ func (cs *ConnectionSuite) TestBug83_GuildDelete_CleansThreadsByParentIndex() {
 	threadID := discord.Snowflake(3000)
 
 	// Register a parent channel and a thread under it.
-	c.cacheChannel(&discord.Channel{ID: parentID, GuildID: guildID})
-	c.cacheChannel(&discord.Channel{ID: threadID, GuildID: guildID, ParentID: &parentID})
-	c.trackThread(&discord.Channel{ID: threadID, GuildID: guildID, ParentID: &parentID})
+	c.cacheChannel(&discord.Channel{ID: parentID, GuildID: &guildID})
+	c.cacheChannel(&discord.Channel{ID: threadID, GuildID: &guildID, ParentID: &parentID})
+	c.trackThread(&discord.Channel{ID: threadID, GuildID: &guildID, ParentID: &parentID})
 
 	// Verify the thread is indexed.
 	c.threadIndexMu.RLock()
@@ -129,8 +129,8 @@ func (cs *ConnectionSuite) TestBug84_ThreadUpdate_ReparentCleansOldIndex() {
 	threadID := discord.Snowflake(4000)
 
 	// Seed thread under oldParent.
-	c.cacheChannel(&discord.Channel{ID: threadID, GuildID: guildID, ParentID: &oldParentID})
-	c.trackThread(&discord.Channel{ID: threadID, GuildID: guildID, ParentID: &oldParentID})
+	c.cacheChannel(&discord.Channel{ID: threadID, GuildID: &guildID, ParentID: &oldParentID})
+	c.trackThread(&discord.Channel{ID: threadID, GuildID: &guildID, ParentID: &oldParentID})
 
 	c.threadIndexMu.RLock()
 	assert.Contains(t, c.threadsByParent[oldParentID], threadID, "thread must be in old parent index")
@@ -169,8 +169,8 @@ func (cs *ConnectionSuite) TestBug84_ThreadUpdate_SameParent_IndexUnchanged() {
 	parentID := discord.Snowflake(2000)
 	threadID := discord.Snowflake(3000)
 
-	c.cacheChannel(&discord.Channel{ID: threadID, GuildID: guildID, ParentID: &parentID})
-	c.trackThread(&discord.Channel{ID: threadID, GuildID: guildID, ParentID: &parentID})
+	c.cacheChannel(&discord.Channel{ID: threadID, GuildID: &guildID, ParentID: &parentID})
+	c.trackThread(&discord.Channel{ID: threadID, GuildID: &guildID, ParentID: &parentID})
 
 	// Same parent — no reparent.
 	payload := map[string]any{

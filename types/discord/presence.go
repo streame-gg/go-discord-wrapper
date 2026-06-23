@@ -9,12 +9,12 @@ import (
 type ActivityType int
 
 const (
-	ActivityTypePlaying   ActivityType = 0
-	ActivityTypeStreaming ActivityType = 1
-	ActivityTypeListening ActivityType = 2
-	ActivityTypeWatching  ActivityType = 3
-	ActivityTypeCustom    ActivityType = 4
-	ActivityTypeCompeting ActivityType = 5
+	ActivityTypePlaying   ActivityType = 0 // -> Playing {name}
+	ActivityTypeStreaming ActivityType = 1 // -> Streaming {details}
+	ActivityTypeListening ActivityType = 2 // -> Listening to {name}
+	ActivityTypeWatching  ActivityType = 3 // -> Watching {name}
+	ActivityTypeCustom    ActivityType = 4 // -> {emoji} {state}
+	ActivityTypeCompeting ActivityType = 5 // -> Competing in {name}
 )
 
 // ActivityTimestamps holds the start and end times for an activity.
@@ -69,10 +69,13 @@ type ActivityParty struct {
 
 // https://docs.discord.com/developers/events/gateway-events#activity-object-activity-assets
 type ActivityAssets struct {
-	LargeImage *string `json:"large_image,omitempty"`
-	LargeText  *string `json:"large_text,omitempty"`
-	SmallImage *string `json:"small_image,omitempty"`
-	SmallText  *string `json:"small_text,omitempty"`
+	LargeImage       *string `json:"large_image,omitempty"`
+	LargeText        *string `json:"large_text,omitempty"`
+	LargeURL         *string `json:"large_url,omitempty"`
+	SmallImage       *string `json:"small_image,omitempty"`
+	SmallText        *string `json:"small_text,omitempty"`
+	SmallURL         *string `json:"small_url,omitempty"`
+	InviteCoverImage *string `json:"invite_cover_image,omitempty"`
 }
 
 // https://docs.discord.com/developers/events/gateway-events#activity-object-activity-secrets

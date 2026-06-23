@@ -9,12 +9,12 @@ type Entitlement struct {
 	ID            Snowflake       `json:"id"`
 	SkuID         Snowflake       `json:"sku_id"`
 	ApplicationID Snowflake       `json:"application_id"`
-	UserID        Snowflake       `json:"user_id,omitempty"`
+	UserID        *Snowflake      `json:"user_id,omitempty"`
 	Type          EntitlementType `json:"type"`
 	Deleted       bool            `json:"deleted"`
 	StartsAt      *time.Time      `json:"starts_at"`
 	EndsAt        *time.Time      `json:"ends_at"`
-	GuildID       Snowflake       `json:"guild_id,omitempty"`
+	GuildID       *Snowflake      `json:"guild_id,omitempty"`
 	Consumed      *bool           `json:"consumed,omitempty"`
 }
 

@@ -88,7 +88,7 @@ func (cs *ConnectionSuite) TestBug80_EditChannelPermissions_UpsertOverwrite() {
 	channelID := discord.Snowflake(2000)
 	overwriteID := discord.Snowflake(3000)
 
-	ch := &discord.Channel{ID: channelID, GuildID: guildID}
+	ch := &discord.Channel{ID: channelID, GuildID: &guildID}
 	c.cacheChannel(ch)
 
 	// Simulate the fixed EditChannelPermissions cache update.
@@ -142,7 +142,7 @@ func (cs *ConnectionSuite) TestBug80_EditChannelPermissions_UpdatesExistingOverw
 
 	ch := &discord.Channel{
 		ID:      channelID,
-		GuildID: guildID,
+		GuildID: &guildID,
 		PermissionOverwrites: []discord.ChannelPermissionOverwrite{
 			{ID: overwriteID, Allow: 0, Deny: 0, Type: discord.PermissionOverwriteTypeRole},
 			{ID: other, Allow: 4, Deny: 0, Type: discord.PermissionOverwriteTypeRole},
@@ -187,7 +187,7 @@ func (cs *ConnectionSuite) TestBug80_DeleteChannelPermission_RemovesOverwrite() 
 
 	ch := &discord.Channel{
 		ID:      channelID,
-		GuildID: guildID,
+		GuildID: &guildID,
 		PermissionOverwrites: []discord.ChannelPermissionOverwrite{
 			{ID: overwriteID, Allow: 8, Deny: 0, Type: discord.PermissionOverwriteTypeRole},
 			{ID: other, Allow: 4, Deny: 0, Type: discord.PermissionOverwriteTypeRole},
@@ -224,7 +224,7 @@ func (cs *ConnectionSuite) TestBug81_ModifyGuildChannelPositions_UpdatesPosition
 	channelID := discord.Snowflake(2000)
 	pos := 0
 
-	ch := &discord.Channel{ID: channelID, GuildID: guildID, Position: pos}
+	ch := &discord.Channel{ID: channelID, GuildID: &guildID, Position: pos}
 	c.cacheChannel(ch)
 
 	// Simulate the fixed ModifyGuildChannelPositions cache update.
@@ -257,7 +257,7 @@ func (cs *ConnectionSuite) TestBug81_ModifyGuildChannelPositions_UpdatesParentID
 	oldParent := discord.Snowflake(3000)
 	newParent := discord.Snowflake(4000)
 
-	ch := &discord.Channel{ID: channelID, GuildID: guildID, ParentID: &oldParent}
+	ch := &discord.Channel{ID: channelID, GuildID: &guildID, ParentID: &oldParent}
 	c.cacheChannel(ch)
 
 	// Simulate the fixed ModifyGuildChannelPositions cache update.

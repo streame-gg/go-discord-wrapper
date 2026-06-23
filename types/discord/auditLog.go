@@ -32,19 +32,19 @@ type AuditLogEntryChange struct {
 
 // AuditLogEntryOptions // https://docs.discord.com/developers/resources/audit-log#audit-log-entry-object-optional-audit-entry-info
 type AuditLogEntryOptions struct {
-	ApplicationID                 Snowflake                             `json:"application_id,omitempty"`
-	AutoModerationRuleName        string                                `json:"auto_moderation_rule_name,omitempty"`
-	AutoModerationRuleTriggerType AutoModerationTriggerType             `json:"auto_moderation_rule_trigger_type,omitempty"`
-	ChannelID                     Snowflake                             `json:"channel_id,omitempty"`
-	Count                         string                                `json:"count,omitempty"`
-	DeleteMemberDays              string                                `json:"delete_member_days,omitempty"`
-	ID                            Snowflake                             `json:"id,omitempty"`
-	MembersRemoved                string                                `json:"members_removed,omitempty"`
-	MessageID                     Snowflake                             `json:"message_id,omitempty"`
-	RoleName                      string                                `json:"role_name,omitempty"`
-	Type                          PermissionOverwriteType               `json:"type,omitempty"`
-	IntegrationType               InteractionApplicationIntegrationType `json:"integration_type,omitempty"`
-	Status                        string                                `json:"status,omitempty"`
+	ApplicationID                 *Snowflake                             `json:"application_id,omitempty"`
+	AutoModerationRuleName        string                                 `json:"auto_moderation_rule_name,omitempty"`
+	AutoModerationRuleTriggerType AutoModerationTriggerType              `json:"auto_moderation_rule_trigger_type,omitempty"`
+	ChannelID                     *Snowflake                             `json:"channel_id,omitempty"`
+	Count                         string                                 `json:"count,omitempty"`
+	DeleteMemberDays              string                                 `json:"delete_member_days,omitempty"`
+	ID                            *Snowflake                             `json:"id,omitempty"`
+	MembersRemoved                string                                 `json:"members_removed,omitempty"`
+	MessageID                     *Snowflake                             `json:"message_id,omitempty"`
+	RoleName                      string                                 `json:"role_name,omitempty"`
+	Type                          *PermissionOverwriteType               `json:"type,omitempty"`
+	IntegrationType               *InteractionApplicationIntegrationType `json:"integration_type,omitempty"`
+	Status                        string                                 `json:"status,omitempty"`
 }
 
 // AuditLogActionType // https://docs.discord.com/developers/resources/audit-log#audit-log-entry-object-audit-log-events

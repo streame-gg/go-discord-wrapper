@@ -977,14 +977,14 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 							for i := range gatewayGuild.Channels {
 								ch := gatewayGuild.Channels[i]
 								if ch.GuildID.IsEmpty() {
-									ch.GuildID = gid
+									ch.GuildID = &gid
 								}
 								d.cacheChannel(&ch)
 							}
 							for i := range gatewayGuild.Threads {
 								ch := gatewayGuild.Threads[i]
 								if ch.GuildID.IsEmpty() {
-									ch.GuildID = gid
+									ch.GuildID = &gid
 								}
 								d.cacheChannel(&ch)
 								d.trackThread(&ch)

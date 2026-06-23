@@ -289,7 +289,7 @@ func (s *RedisCacheTestSuite) TestMarshalErrorBranches() {
 	s.Equal(0, c.Channels().Size())
 
 	// setJSONAndIndexMap (guild store) marshal-error: GuildMember.JoinedAt overflow.
-	c.Members().Set(gA, &discord.GuildMember{User: user("1"), JoinedAt: ff})
+	c.Members().Set(gA, &discord.GuildMember{User: user("1"), JoinedAt: &ff})
 	s.Equal(0, c.Members().Size())
 
 	// Soundboard Set + SetAll marshal-error via NaN volume.

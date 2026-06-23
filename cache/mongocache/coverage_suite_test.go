@@ -323,7 +323,7 @@ func (s *mongoStoresSuite) TestMarshalErrorBranches_TimeOverflow() {
 	c := s.cache(cache.Options{})
 	ff := time.Date(10000, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	c.Members().Set(gA, &discord.GuildMember{User: user("1"), JoinedAt: ff})
+	c.Members().Set(gA, &discord.GuildMember{User: user("1"), JoinedAt: &ff})
 	s.Equal(0, c.Members().Size())
 
 	c.ScheduledEvents().Set(&discord.GuildScheduledEvent{ID: 1, ScheduledStartTime: ff})

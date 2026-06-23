@@ -59,7 +59,7 @@ type Message struct {
 
 	Activity      *MessageActivity `json:"activity,omitempty"`
 	Application   *Application     `json:"application,omitempty"`
-	ApplicationID Snowflake        `json:"application_id,omitempty"`
+	ApplicationID *Snowflake       `json:"application_id,omitempty"`
 	Attachments   []Attachment     `json:"attachments,omitempty"`
 	Author        User             `json:"author"`
 	Call          *Call            `json:"call,omitempty"`
@@ -92,7 +92,7 @@ type Message struct {
 	Timestamp            time.Time             `json:"timestamp"`
 	TTS                  bool                  `json:"tts"`
 	Type                 MessageType           `json:"type"`
-	WebhookID            Snowflake             `json:"webhook_id,omitempty"`
+	WebhookID            *Snowflake            `json:"webhook_id,omitempty"`
 	SharedClientTheme    *SharedClientTheme    `json:"shared_client_theme,omitempty"`
 }
 
@@ -239,9 +239,9 @@ const (
 // https://docs.discord.com/developers/resources/message#message-reference-structure
 type MessageMessageReference struct {
 	Type            *MessageMessageReferenceType `json:"type,omitempty"`
-	MessageID       Snowflake                    `json:"message_id,omitempty"`
-	ChannelID       Snowflake                    `json:"channel_id,omitempty"`
-	GuildID         Snowflake                    `json:"guild_id,omitempty"`
+	MessageID       *Snowflake                   `json:"message_id,omitempty"`
+	ChannelID       *Snowflake                   `json:"channel_id,omitempty"`
+	GuildID         *Snowflake                   `json:"guild_id,omitempty"`
 	FailIfNotExists *bool                        `json:"fail_if_not_exists,omitempty"`
 }
 
@@ -251,7 +251,7 @@ type MessageInteractionMetadataApplicationCommand struct {
 	Type                         InteractionType                                                      `json:"type"`
 	User                         User                                                                 `json:"user"`
 	AuthorizingIntegrationOwners map[InteractionApplicationIntegrationType]ApplicationIntegrationType `json:"authorizing_integration_owners"`
-	OriginalResponseMessageID    Snowflake                                                            `json:"original_response_message_id,omitempty"`
+	OriginalResponseMessageID    *Snowflake                                                           `json:"original_response_message_id,omitempty"`
 	TargetUser                   *User                                                                `json:"target_user,omitempty"`
 	TargetMessageID              *Snowflake                                                           `json:"target_message_id,omitempty"`
 }

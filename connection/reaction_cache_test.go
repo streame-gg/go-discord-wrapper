@@ -172,9 +172,9 @@ func (cs *ConnectionSuite) TestBug77_MessageReactionAdd_UpdatesCache() {
 	msg, ok := c.Cache.Messages().Get(channelID, msgID)
 	require.True(t, ok)
 	require.NotNil(t, msg.Reactions, "Reactions must not be nil after REACTION_ADD (Bug 77)")
-	require.Len(t, *msg.Reactions, 1)
-	assert.Equal(t, 1, (*msg.Reactions)[0].Count)
-	assert.Equal(t, "👍", (*msg.Reactions)[0].Emoji.Name)
+	require.Len(t, msg.Reactions, 1)
+	assert.Equal(t, 1, (msg.Reactions)[0].Count)
+	assert.Equal(t, "👍", (msg.Reactions)[0].Emoji.Name)
 }
 
 func (cs *ConnectionSuite) TestBug77_MessageReactionAdd_IncrementsExisting() {
@@ -184,7 +184,7 @@ func (cs *ConnectionSuite) TestBug77_MessageReactionAdd_IncrementsExisting() {
 	channelID := discord.Snowflake(300000000000000001)
 	msgID := discord.Snowflake(400000000000000002)
 	existing := []discord.Reaction{{Count: 2, Emoji: discord.Emoji{Name: "👍"}}}
-	c.cacheMessage(&discord.Message{ID: msgID, ChannelID: channelID, Reactions: &existing})
+	c.cacheMessage(&discord.Message{ID: msgID, ChannelID: channelID, Reactions: existing})
 
 	payload := map[string]any{
 		"user_id":    "111",
@@ -195,12 +195,12 @@ func (cs *ConnectionSuite) TestBug77_MessageReactionAdd_IncrementsExisting() {
 	raw, err := json.Marshal(payload)
 	require.NoError(t, err)
 
-	c.internalEventHandler(json.RawMessage(raw), events.EventMessageReactionAdd, nil)
+	c.internalEventHandler(raw, events.EventMessageReactionAdd, nil)
 
 	msg, ok := c.Cache.Messages().Get(channelID, msgID)
 	require.True(t, ok)
 	require.NotNil(t, msg.Reactions)
-	assert.Equal(t, 3, (*msg.Reactions)[0].Count, "count must be incremented to 3")
+	assert.Equal(t, 3, (msg.Reactions)[0].Count, "count must be incremented to 3")
 }
 
 // ── MESSAGE_REACTION_REMOVE gateway event ─────────────────────────────────────
@@ -212,7 +212,7 @@ func (cs *ConnectionSuite) TestBug77_MessageReactionRemove_DecrementsCache() {
 	channelID := discord.Snowflake(300000000000000001)
 	msgID := discord.Snowflake(400000000000000002)
 	existing := []discord.Reaction{{Count: 3, Emoji: discord.Emoji{Name: "👍"}}}
-	c.cacheMessage(&discord.Message{ID: msgID, ChannelID: channelID, Reactions: &existing})
+	c.cacheMessage(&discord.Message{ID: msgID, ChannelID: channelID, Reactions: existing})
 
 	payload := map[string]any{
 		"user_id":    "111",
@@ -228,7 +228,7 @@ func (cs *ConnectionSuite) TestBug77_MessageReactionRemove_DecrementsCache() {
 	msg, ok := c.Cache.Messages().Get(channelID, msgID)
 	require.True(t, ok)
 	require.NotNil(t, msg.Reactions)
-	assert.Equal(t, 2, (*msg.Reactions)[0].Count, "count must be decremented to 2")
+	assert.Equal(t, 2, (msg.Reactions)[0].Count, "count must be decremented to 2")
 }
 
 func (cs *ConnectionSuite) TestBug77_MessageReactionRemove_RemovesEntryAtOne() {
@@ -238,7 +238,7 @@ func (cs *ConnectionSuite) TestBug77_MessageReactionRemove_RemovesEntryAtOne() {
 	channelID := discord.Snowflake(300000000000000001)
 	msgID := discord.Snowflake(400000000000000002)
 	existing := []discord.Reaction{{Count: 1, Emoji: discord.Emoji{Name: "👍"}}}
-	c.cacheMessage(&discord.Message{ID: msgID, ChannelID: channelID, Reactions: &existing})
+	c.cacheMessage(&discord.Message{ID: msgID, ChannelID: channelID, Reactions: existing})
 
 	payload := map[string]any{
 		"user_id":    "111",
@@ -249,12 +249,12 @@ func (cs *ConnectionSuite) TestBug77_MessageReactionRemove_RemovesEntryAtOne() {
 	raw, err := json.Marshal(payload)
 	require.NoError(t, err)
 
-	c.internalEventHandler(json.RawMessage(raw), events.EventMessageReactionRemove, nil)
+	c.internalEventHandler(raw, events.EventMessageReactionRemove, nil)
 
 	msg, ok := c.Cache.Messages().Get(channelID, msgID)
 	require.True(t, ok)
 	require.NotNil(t, msg.Reactions)
-	assert.Empty(t, *msg.Reactions, "reaction entry must be removed when count reaches 0")
+	assert.Empty(t, msg.Reactions, "reaction entry must be removed when count reaches 0")
 }
 
 // ── MESSAGE_REACTION_REMOVE_ALL gateway event ─────────────────────────────────
@@ -269,7 +269,7 @@ func (cs *ConnectionSuite) TestBug77_MessageReactionRemoveAll_ClearsReactions() 
 		{Count: 5, Emoji: discord.Emoji{Name: "👍"}},
 		{Count: 2, Emoji: discord.Emoji{Name: "👎"}},
 	}
-	c.cacheMessage(&discord.Message{ID: msgID, ChannelID: channelID, Reactions: &existing})
+	c.cacheMessage(&discord.Message{ID: msgID, ChannelID: channelID, Reactions: existing})
 
 	payload := map[string]any{
 		"channel_id": channelID.String(),
@@ -278,7 +278,7 @@ func (cs *ConnectionSuite) TestBug77_MessageReactionRemoveAll_ClearsReactions() 
 	raw, err := json.Marshal(payload)
 	require.NoError(t, err)
 
-	c.internalEventHandler(json.RawMessage(raw), events.EventMessageReactionRemoveAll, nil)
+	c.internalEventHandler(raw, events.EventMessageReactionRemoveAll, nil)
 
 	msg, ok := c.Cache.Messages().Get(channelID, msgID)
 	require.True(t, ok)
@@ -297,7 +297,7 @@ func (cs *ConnectionSuite) TestBug77_MessageReactionRemoveEmoji_RemovesOneEmoji(
 		{Count: 10, Emoji: discord.Emoji{Name: "👍"}},
 		{Count: 3, Emoji: discord.Emoji{Name: "👎"}},
 	}
-	c.cacheMessage(&discord.Message{ID: msgID, ChannelID: channelID, Reactions: &existing})
+	c.cacheMessage(&discord.Message{ID: msgID, ChannelID: channelID, Reactions: existing})
 
 	payload := map[string]any{
 		"channel_id": channelID.String(),
@@ -312,6 +312,6 @@ func (cs *ConnectionSuite) TestBug77_MessageReactionRemoveEmoji_RemovesOneEmoji(
 	msg, ok := c.Cache.Messages().Get(channelID, msgID)
 	require.True(t, ok)
 	require.NotNil(t, msg.Reactions)
-	require.Len(t, *msg.Reactions, 1, "only one emoji reaction should remain")
-	assert.Equal(t, "👎", (*msg.Reactions)[0].Emoji.Name)
+	require.Len(t, msg.Reactions, 1, "only one emoji reaction should remain")
+	assert.Equal(t, "👎", (msg.Reactions)[0].Emoji.Name)
 }

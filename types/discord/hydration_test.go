@@ -445,11 +445,10 @@ func (su *hydrationSuite) TestHydrate_JSONOmitsClient() {
 func (su *hydrationSuite) TestHydrate_PropagatesAuthorHydration() {
 	t := su.T()
 	c := &stubClient{}
-	author := &discord.User{ID: 9}
-	msg := &discord.Message{Author: *author}
+	msg := &discord.Message{Author: discord.User{ID: 9}}
 	msg.Hydrate(c)
 
-	if !author.IsHydrated() {
+	if !msg.Author.IsHydrated() {
 		t.Fatal("author should be hydrated after Message.Hydrate")
 	}
 }

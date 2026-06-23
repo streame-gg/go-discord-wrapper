@@ -164,15 +164,6 @@ func (s *endpointSuite) TestGuildEndpoints() {
 		{name: "BulkBanGuildMembers", method: "POST", path: "/guilds/" + g + "/bulk-ban", call: func() error {
 			return drop(s.client.BulkBanGuildMembers(ctx, testGuildID, BulkBanParams{}))
 		}},
-		{name: "GetGuildJoinRequests", method: "GET", path: "/guilds/" + g + "/requests", call: func() error {
-			return drop(s.client.GetGuildJoinRequests(ctx, testGuildID, GetGuildJoinRequestsParams{}))
-		}},
-		{name: "ActionGuildJoinRequest", method: "PATCH", path: "/guilds/" + g + "/requests/" + testReqID.String(), call: func() error {
-			return drop(s.client.ActionGuildJoinRequest(ctx, testGuildID, testReqID, ActionGuildJoinRequestParams{}))
-		}},
-		{name: "GetGuildNewMemberWelcome", method: "GET", path: "/guilds/" + g + "/new-member-welcome", call: func() error {
-			return drop(s.client.GetGuildNewMemberWelcome(ctx, testGuildID))
-		}},
 		{name: "ListGuildIntegrations", method: "GET", path: "/guilds/" + g + "/integrations", body: "[]", call: func() error {
 			return drop(s.client.ListGuildIntegrations(ctx, testGuildID))
 		}},

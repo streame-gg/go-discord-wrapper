@@ -3,6 +3,7 @@ package managers_test
 import (
 	"testing"
 
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -16,9 +17,9 @@ func sf(v uint64) *discord.Snowflake {
 
 func (su *guildChannelSuite) TestGuildChannelManager_Get_HitMatchingGuild() {
 	t := su.T()
-	const guildID discord.Snowflake = 100
+	var guildID discord.Snowflake = 100
 	const channelID discord.Snowflake = 200
-	ch := &discord.Channel{ID: channelID, GuildID: guildID}
+	ch := &discord.Channel{ID: channelID, GuildID: &guildID}
 
 	cache := newStubCache()
 	cache.channels.channels[channelID] = ch
@@ -35,7 +36,7 @@ func (su *guildChannelSuite) TestGuildChannelManager_Get_GuildMismatch() {
 	const guildID discord.Snowflake = 100
 	const channelID discord.Snowflake = 200
 	// Channel belongs to a different guild.
-	ch := &discord.Channel{ID: channelID, GuildID: 999}
+	ch := &discord.Channel{ID: channelID, GuildID: util.PointerOf(discord.Snowflake(999))}
 
 	cache := newStubCache()
 	cache.channels.channels[channelID] = ch
@@ -80,9 +81,9 @@ func (su *guildChannelSuite) TestGuildChannelManager_Get_NoCache() {
 
 func (su *guildChannelSuite) TestGuildChannelManager_Resolve() {
 	t := su.T()
-	const guildID discord.Snowflake = 100
+	var guildID discord.Snowflake = 100
 	const channelID discord.Snowflake = 200000000000000000 // valid 18-digit snowflake
-	ch := &discord.Channel{ID: channelID, GuildID: guildID}
+	ch := &discord.Channel{ID: channelID, GuildID: &guildID}
 
 	cache := newStubCache()
 	cache.channels.channels[channelID] = ch

@@ -29,13 +29,13 @@ func (su *emojiUserSuite) TestEmojiUsersRoundtrip() {
 	su.Equal(e, e2)
 }
 
-// J0-#27: User.AvatarHash must be *string so null and absent are distinguishable.
+// J0-#27: User.Avatar must be *string so null and absent are distinguishable.
 func (su *emojiUserSuite) TestUserAvatarHashNull() {
 	t := su.T()
 	raw := `{"id":"1","username":"u","discriminator":"0","avatar":null}`
 	var u User
 	require.NoError(t, json.Unmarshal([]byte(raw), &u))
-	assert.Nil(t, u.AvatarHash, "null avatar must decode to nil pointer")
+	assert.Nil(t, u.Avatar, "null avatar must decode to nil pointer")
 }
 
 func (su *emojiUserSuite) TestUserAvatarHashPresent() {
@@ -43,8 +43,8 @@ func (su *emojiUserSuite) TestUserAvatarHashPresent() {
 	raw := `{"id":"1","username":"u","discriminator":"0","avatar":"abc123"}`
 	var u User
 	require.NoError(t, json.Unmarshal([]byte(raw), &u))
-	require.NotNil(t, u.AvatarHash)
-	assert.Equal(t, "abc123", *u.AvatarHash)
+	require.NotNil(t, u.Avatar)
+	assert.Equal(t, "abc123", *u.Avatar)
 }
 
 type emojiUserSuite struct{ suite.Suite }

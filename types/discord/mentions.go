@@ -8,7 +8,7 @@ import (
 )
 
 // This file collects the small, dependency-free convenience helpers on the
-// value types: Discord mention strings, raw ID formatting, hex colours and
+// value types: Discord mention strings, raw ID formatting, hex colors and
 // snowflake-derived creation timestamps. They mirror the ergonomics of
 // discord.js' toString()/createdAt/hexColor getters so handlers can format
 // entities without hand-assembling the `<@…>` / `<#…>` markup every time.

@@ -294,12 +294,12 @@ type Role struct {
 
 // https://docs.discord.com/developers/topics/permissions#role-object-role-tags-structure
 type RoleTags struct {
-	BotID                 Snowflake `json:"bot_id,omitempty"`
-	IntegrationID         Snowflake `json:"integration_id,omitempty"`
-	PremiumSubscriber     NullFlag  `json:"premium_subscriber,omitempty"`
-	SubscriptionListingID Snowflake `json:"subscription_listing_id,omitempty"`
-	AvailableForPurchase  NullFlag  `json:"available_for_purchase,omitempty"`
-	GuildConnections      NullFlag  `json:"guild_connections,omitempty"`
+	BotID                 *Snowflake `json:"bot_id,omitempty"`
+	IntegrationID         *Snowflake `json:"integration_id,omitempty"`
+	PremiumSubscriber     NullFlag   `json:"premium_subscriber,omitempty"`
+	SubscriptionListingID *Snowflake `json:"subscription_listing_id,omitempty"`
+	AvailableForPurchase  NullFlag   `json:"available_for_purchase,omitempty"`
+	GuildConnections      NullFlag   `json:"guild_connections,omitempty"`
 }
 
 // https://docs.discord.com/developers/topics/permissions#role-object-role-flags
@@ -314,7 +314,7 @@ type Sticker struct {
 	hClient EntityClient
 
 	ID          Snowflake         `json:"id"`
-	PackID      Snowflake         `json:"pack_id,omitempty"`
+	PackID      *Snowflake        `json:"pack_id,omitempty"`
 	Name        string            `json:"name"`
 	Description *string           `json:"description"`
 	Tags        string            `json:"tags"`
@@ -407,13 +407,13 @@ type GuildPruneCountResult struct {
 
 // https://docs.discord.com/developers/resources/sticker#sticker-pack-object
 type StickerPack struct {
-	ID             Snowflake `json:"id"`
-	Stickers       []Sticker `json:"stickers"`
-	Name           string    `json:"name"`
-	SKUId          Snowflake `json:"sku_id"`
-	CoverStickerID Snowflake `json:"cover_sticker_id,omitempty"`
-	Description    string    `json:"description"`
-	BannerAssetID  Snowflake `json:"banner_asset_id,omitempty"`
+	ID             Snowflake  `json:"id"`
+	Stickers       []Sticker  `json:"stickers"`
+	Name           string     `json:"name"`
+	SKUId          Snowflake  `json:"sku_id"`
+	CoverStickerID *Snowflake `json:"cover_sticker_id,omitempty"`
+	Description    string     `json:"description"`
+	BannerAssetID  *Snowflake `json:"banner_asset_id,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/user#get-current-user-guilds

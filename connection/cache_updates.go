@@ -325,7 +325,7 @@ func (d *Client) removeRoleFromCache(guildID, roleID discord.Snowflake) {
 // If the channel has no GuildID it is a DM channel and is not indexed.
 // Safe for concurrent use; acquires channelIndexMu internally.
 func (d *Client) trackChannel(channel *discord.Channel) {
-	if channel == nil {
+	if channel == nil || channel.GuildID.IsNil() {
 		return
 	}
 
@@ -333,7 +333,7 @@ func (d *Client) trackChannel(channel *discord.Channel) {
 	defer d.channelIndexMu.Unlock()
 
 	if oldGuildID, ok := d.guildByChannel[channel.ID]; ok {
-		if channel.GuildID.IsEmpty() || oldGuildID != channel.GuildID {
+		if channel.GuildID.IsEmpty() || oldGuildID != *channel.GuildID {
 			if set := d.channelsByGuild[oldGuildID]; set != nil {
 				delete(set, channel.ID)
 				if len(set) == 0 {
@@ -349,13 +349,13 @@ func (d *Client) trackChannel(channel *discord.Channel) {
 	}
 
 	guildID := channel.GuildID
-	set := d.channelsByGuild[guildID]
+	set := d.channelsByGuild[*guildID]
 	if set == nil {
 		set = make(map[discord.Snowflake]struct{})
-		d.channelsByGuild[guildID] = set
+		d.channelsByGuild[*guildID] = set
 	}
 	set[channel.ID] = struct{}{}
-	d.guildByChannel[channel.ID] = guildID
+	d.guildByChannel[channel.ID] = *guildID
 }
 
 // untrackChannel removes a channel from the bidirectional index. It is called

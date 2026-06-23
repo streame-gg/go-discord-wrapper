@@ -23,7 +23,10 @@ func (m *guildChannelManager) Cache() *collection.Collection[discord.Snowflake, 
 func (m *guildChannelManager) Get(channelID discord.Snowflake) (*discord.Channel, bool) {
 	if c := m.client.ClientCache(); c != nil {
 		ch, ok := c.Channels().Get(channelID)
-		if ok && ch.GuildID == m.guildID {
+		if ch == nil || ch.GuildID.IsNil() {
+			return nil, false
+		}
+		if ok && *ch.GuildID == m.guildID {
 			return ch, true
 		}
 		return nil, false

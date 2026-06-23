@@ -3,6 +3,7 @@ package discord
 import (
 	"testing"
 
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -240,7 +241,7 @@ func (su *permissionHelpersSuite) TestPermissionsInChannel() {
 func (su *permissionHelpersSuite) TestGuildMemberPermissionMethods() {
 	t := su.T()
 	g := makeGuild(PermissionViewChannel|PermissionSendMessages, 0, 0)
-	m := &GuildMember{UserID: testUserID}
+	m := &GuildMember{UserID: testUserID, Permissions: util.PointerOf(PermissionViewChannel | PermissionSendMessages)}
 
 	if *m.Permissions != PermissionsFor(g, m) {
 		t.Error("Permissions method should match PermissionsFor")

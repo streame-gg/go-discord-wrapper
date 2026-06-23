@@ -53,6 +53,7 @@ var permissionNames = []struct {
 	{PermissionCreateEvents, "CreateEvents"},
 	{PermissionUseExternalSounds, "UseExternalSounds"},
 	{PermissionSendVoiceMessages, "SendVoiceMessages"},
+	{PermissionSetVoiceChannelStatus, "SetVoiceChannelStatus"},
 	{PermissionSendPolls, "SendPolls"},
 	{PermissionUseExternalApps, "UseExternalApps"},
 	{PermissionPinMessages, "PinMessages"},

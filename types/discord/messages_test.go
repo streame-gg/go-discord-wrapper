@@ -42,7 +42,7 @@ func (s *messageTestSuite) TestEditedTimestampUnmarshal_EditedTimestampIsNull() 
 }
 
 func (s *messageTestSuite) TestIsWebhookMessage() {
-	msg := Message{WebhookID: Snowflake(1)}
+	msg := Message{WebhookID: util.PointerOf(Snowflake(1))}
 	s.True(msg.IsWebhookMessage())
 
 	msg = Message{}

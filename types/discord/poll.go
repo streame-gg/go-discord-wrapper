@@ -6,18 +6,19 @@ import "time"
 type PollLayoutType int
 
 const (
-	PollLayoutTypeDefault PollLayoutType = 0
+	PollLayoutTypeDefault PollLayoutType = 1
 )
 
 // https://docs.discord.com/developers/resources/poll#poll-media-object
 type PollQuestion struct {
-	Text  *string `json:"text"`
-	Emoji *Emoji  `json:"emoji,omitempty"`
+	// Text should always be non-null for both questions and answers, but please do not depend on that in the future ~API Docs
+	Text  string `json:"text,omitempty"`
+	Emoji *Emoji `json:"emoji,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/poll#poll-answer-object
 type PollAnswer struct {
-	AnswerID  int          `json:"answer_id"`
+	AnswerID  *int         `json:"answer_id,omitempty"`
 	PollMedia PollQuestion `json:"poll_media"`
 }
 
@@ -36,9 +37,9 @@ type PollResults struct {
 
 // https://docs.discord.com/developers/resources/poll#poll-object
 type Poll struct {
-	Question         *PollQuestion  `json:"question"`
+	Question         PollQuestion   `json:"question"`
 	Answers          []PollAnswer   `json:"answers"`
-	Expiry           *time.Time     `json:"expiry,omitempty"`
+	Expiry           *time.Time     `json:"expiry"`
 	AllowMultiselect bool           `json:"allow_multiselect,omitempty"`
 	LayoutType       PollLayoutType `json:"layout_type,omitempty"`
 	Results          *PollResults   `json:"results,omitempty"`
@@ -46,7 +47,7 @@ type Poll struct {
 
 // https://docs.discord.com/developers/resources/poll#poll-create-request-object
 type PollRequest struct {
-	Question         *PollQuestion          `json:"question"`
+	Question         PollQuestion           `json:"question"`
 	Answers          []PollAnswer           `json:"answers"`
 	Duration         Option[int]            `json:"duration,omitempty"`
 	AllowMultiselect Option[bool]           `json:"allow_multiselect,omitempty"`

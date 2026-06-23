@@ -2,8 +2,9 @@ package events
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/suite"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
 // TestGuildMemberUpdateMarshalRoundTrip verifies that MarshalJSON preserves the
@@ -38,10 +39,10 @@ func (su *guildMemberSuite) TestGuildMemberUpdateMarshalRoundTrip() {
 		t.Fatalf("re-unmarshal: %v", err)
 	}
 
-	if round.NewMember.Deaf == nil || !*round.NewMember.Deaf {
+	if !round.NewMember.Deaf {
 		t.Errorf("want Deaf=true after round-trip, got %v", round.NewMember.Deaf)
 	}
-	if round.NewMember.Mute == nil || !*round.NewMember.Mute {
+	if !round.NewMember.Mute {
 		t.Errorf("want Mute=true after round-trip, got %v", round.NewMember.Mute)
 	}
 	if !round.NewMember.Pending {

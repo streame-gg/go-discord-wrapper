@@ -92,7 +92,7 @@ func (m *Message) Reply(ctx context.Context, opts MessageCreateOptions) (*Messag
 	if err != nil {
 		return nil, err
 	}
-	ref := MessageMessageReference{MessageID: m.ID, ChannelID: m.ChannelID}
+	ref := MessageMessageReference{MessageID: &m.ID, ChannelID: &m.ChannelID}
 	opts.MessageReference = &ref
 	return c.CreateMessage(ctx, m.ChannelID, opts)
 }

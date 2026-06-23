@@ -72,10 +72,10 @@ func hashIsAnimated(hash string) bool { return strings.HasPrefix(hash, "a_") }
 // AvatarURL returns the user's custom avatar URL, or "" if the user has no
 // custom avatar (use DisplayAvatarURL to fall back to the default avatar).
 func (u *User) AvatarURL(opts *ImageOptions) string {
-	if u == nil || u.AvatarHash == nil {
+	if u == nil || u.Avatar == nil {
 		return ""
 	}
-	h := *u.AvatarHash
+	h := *u.Avatar
 	return imageURL(cdnBaseURL, "/avatars/"+u.ID.String()+"/"+h, hashIsAnimated(h), opts)
 }
 

@@ -70,10 +70,10 @@ func (w *Webhook) Execute(ctx context.Context, opts WebhookExecuteOptions) (*Mes
 	if err != nil {
 		return nil, err
 	}
-	if w.Token == nil {
+	if w.Token == "" {
 		return nil, errWebhookNoToken
 	}
-	return c.ExecuteWebhook(ctx, w.ID, *w.Token, opts)
+	return c.ExecuteWebhook(ctx, w.ID, w.Token, opts)
 }
 
 // FetchMessage retrieves a previously sent webhook message.
@@ -82,10 +82,10 @@ func (w *Webhook) FetchMessage(ctx context.Context, messageID Snowflake) (*Messa
 	if err != nil {
 		return nil, err
 	}
-	if w.Token == nil {
+	if w.Token == "" {
 		return nil, errWebhookNoToken
 	}
-	return c.GetWebhookMessage(ctx, w.ID, *w.Token, messageID)
+	return c.GetWebhookMessage(ctx, w.ID, w.Token, messageID)
 }
 
 var errWebhookNoToken = errorf("discord: Webhook.Token is not set — only incoming webhooks have tokens")

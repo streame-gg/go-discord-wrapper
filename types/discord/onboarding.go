@@ -10,7 +10,7 @@ const (
 	OnboardingModeAdvanced OnboardingMode = 1
 )
 
-// OnboardingPromptType is the display type of an onboarding prompt.
+// OnboardingPromptType is the display type of onboarding prompt.
 //
 // https://docs.discord.com/developers/resources/guild#guild-onboarding-object-prompt-types
 type OnboardingPromptType int
@@ -29,10 +29,10 @@ type PromptOption struct {
 	RoleIDs       []Snowflake `json:"role_ids"`
 	Emoji         *Emoji      `json:"emoji,omitempty"`
 	EmojiID       *Snowflake  `json:"emoji_id,omitempty"`
-	EmojiName     *string     `json:"emoji_name,omitempty"`
+	EmojiName     string      `json:"emoji_name,omitempty"`
 	EmojiAnimated *bool       `json:"emoji_animated,omitempty"`
 	Title         string      `json:"title"`
-	Description   *string     `json:"description,omitempty"`
+	Description   *string     `json:"description"`
 }
 
 // OnboardingPrompt is a prompt shown to new members during guild onboarding.

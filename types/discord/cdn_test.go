@@ -21,7 +21,7 @@ func (su *cdnSuite) TestEmojiURL_AnimatedIsNil() {
 
 func (su *cdnSuite) TestUserAvatarURL() {
 	t := su.T()
-	u := &User{ID: 123, AvatarHash: strptr("abc")}
+	u := &User{ID: 123, Avatar: strptr("abc")}
 	if got := u.AvatarURL(nil); got != "https://cdn.discordapp.com/avatars/123/abc.webp" {
 		t.Errorf("default: got %q", got)
 	}
@@ -29,7 +29,7 @@ func (su *cdnSuite) TestUserAvatarURL() {
 		t.Errorf("png+size: got %q", got)
 	}
 
-	animated := &User{ID: 1, AvatarHash: strptr("a_xyz")}
+	animated := &User{ID: 1, Avatar: strptr("a_xyz")}
 	if got := animated.AvatarURL(nil); got != "https://cdn.discordapp.com/avatars/1/a_xyz.gif" {
 		t.Errorf("animated should default to gif: got %q", got)
 	}
@@ -58,7 +58,7 @@ func (su *cdnSuite) TestUserDefaultAndDisplayAvatarURL() {
 	if got := legacy.DisplayAvatarURL(nil); got != legacy.DefaultAvatarURL() {
 		t.Errorf("display should fall back to default: got %q", got)
 	}
-	withAvatar := &User{ID: 5, AvatarHash: strptr("h")}
+	withAvatar := &User{ID: 5, Avatar: strptr("h")}
 	if got := withAvatar.DisplayAvatarURL(nil); got != withAvatar.AvatarURL(nil) {
 		t.Errorf("display should use custom avatar: got %q", got)
 	}

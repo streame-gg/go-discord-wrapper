@@ -112,7 +112,7 @@ func (e GuildMemberUpdateEvent) MarshalJSON() ([]byte, error) {
 		OldMember                  *discord.GuildMember     `json:"old_member,omitempty"`
 	}
 	var jat *time.Time
-	if !m.JoinedAt.IsZero() {
+	if m.JoinedAt != nil && !m.JoinedAt.IsZero() {
 		jat = m.JoinedAt
 	}
 	return json.Marshal(wire{

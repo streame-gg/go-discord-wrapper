@@ -88,7 +88,7 @@ func main() {
 		// (see docs/CACHE.md). Filter the snapshot Collection in-place.
 		members := c.Cache.Members().AllInGuild(guildID)
 		bots := members.Filter(func(m *discord.GuildMember) bool {
-			return m.User != nil && m.User.Bot
+			return m.User != nil && m.User.Bot != nil && *m.User.Bot
 		})
 
 		c.Logger.Info("guild ready",

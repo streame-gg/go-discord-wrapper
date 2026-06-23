@@ -47,7 +47,7 @@ type Integration struct {
 	Type              IntegrationType            `json:"type"`
 	Enabled           bool                       `json:"enabled"`
 	Syncing           bool                       `json:"syncing,omitempty"`
-	RoleID            Snowflake                  `json:"role_id,omitempty"`
+	RoleID            *Snowflake                 `json:"role_id,omitempty"`
 	EnableEmoticons   bool                       `json:"enable_emoticons,omitempty"`
 	ExpireBehavior    *IntegrationExpireBehavior `json:"expire_behavior,omitempty"`
 	ExpireGracePeriod int                        `json:"expire_grace_period,omitempty"`

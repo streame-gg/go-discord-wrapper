@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -237,6 +238,7 @@ func (cs *ConnectionSuite) TestMessageCreateCapturesMember() {
 			"id":            "920000000000000004",
 			"username":      "DGamet",
 			"discriminator": "0001",
+			"bot":           false,
 		},
 		"type":   0,
 		"pinned": false,
@@ -249,13 +251,13 @@ func (cs *ConnectionSuite) TestMessageCreateCapturesMember() {
 	cs.Require().Equal("<@920000000000000004>", ev.Member.Mention(), "Member must mention the user ID")
 	cs.Require().NotNil(ev.Member.User, "Member must have a user")
 	cs.Require().Equal("920000000000000004", ev.Member.User.ID.String(), "Member.User.ID must match the author ID")
-	cs.Require().Equal(ev.Author, ev.Member.User, "Author and user should match")
+	cs.Require().Equal(ev.Author, *ev.Member.User, "Author and user should match")
 
-	ev.Author.Bot = true
+	ev.Author.Bot = util.PointerOf(true)
 
 	// ev.Member.User should be a copy of ev.Author and not directly point at the memory address of ev.Author
-	cs.Require().True(ev.Author.Bot)
-	cs.Require().False(ev.Member.User.Bot)
+	cs.Require().True(*ev.Author.Bot)
+	cs.Require().False(*ev.Member.User.Bot)
 }
 
 // sendN dispatches len(contents) MESSAGE_CREATE packets, one per content string.

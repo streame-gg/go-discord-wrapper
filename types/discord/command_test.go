@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -238,8 +239,8 @@ func (su *commandSuite) TestCommand_MarshalRoundTripScalars() {
 	cmd := ApplicationCommand{
 		ID:            Snowflake(1),
 		Type:          ApplicationCommandType(1),
-		ApplicationID: Snowflake(2),
-		GuildID:       guild,
+		ApplicationID: util.PointerOf(Snowflake(2)),
+		GuildID:       util.PointerOf(guild),
 		Name:          "name",
 		Description:   "desc",
 	}
@@ -251,7 +252,7 @@ func (su *commandSuite) TestCommand_MarshalRoundTripScalars() {
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if got.Name != "name" || got.Description != "desc" || got.GuildID != 42 {
+	if got.Name != "name" || got.Description != "desc" || *got.GuildID != 42 {
 		t.Fatalf("round-trip mismatch: %+v", got)
 	}
 }

@@ -530,7 +530,7 @@ func (cs *ConnectionSuite) TestStickerHydration_GuildIDSet() {
 	require.Len(t, g.RawStickers, 1)
 	s := g.RawStickers[0]
 	require.NotNil(t, s.GuildID, "Sticker.GuildID must not be nil after Guild.Hydrate")
-	assert.Equal(t, guildID, *s.GuildID, "Sticker.GuildID must equal the parent guild ID")
+	assert.Equal(t, guildID, s.GuildID, "Sticker.GuildID must equal the parent guild ID")
 	assert.True(t, s.IsHydrated(), "sticker must be hydrated")
 }
 

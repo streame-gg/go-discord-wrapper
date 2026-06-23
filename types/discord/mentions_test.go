@@ -137,7 +137,7 @@ func (s *mentionsSuite) TestChannelPredicates() {
 func (s *mentionsSuite) TestChannelURL() {
 	s.Equal("", (*Channel)(nil).URL())
 	gid := Snowflake(10)
-	s.Equal("https://discord.com/channels/10/20", (&Channel{ID: 20, GuildID: gid}).URL())
+	s.Equal("https://discord.com/channels/10/20", (&Channel{ID: 20, GuildID: util.PointerOf(gid)}).URL())
 	// DM channel has no guild → "@me".
 	s.Equal("https://discord.com/channels/@me/20", (&Channel{ID: 20}).URL())
 }
@@ -151,7 +151,7 @@ func (s *mentionsSuite) TestInviteURL() {
 // ── Predicates ──────────────────────────────────────────────────────────────
 
 func (s *mentionsSuite) TestChannelNSFWAndThreadOnly() {
-	s.False(*(&Channel{}).IsNSFW())
+	s.Nil((&Channel{}).IsNSFW())
 	s.True(*(&Channel{NSFW: util.PointerOf(true)}).IsNSFW())
 	s.True((&Channel{Type: ChannelTypeGuildForum}).IsThreadOnly())
 	s.True((&Channel{Type: ChannelTypeGuildMedia}).IsThreadOnly())
@@ -197,7 +197,7 @@ func (s *mentionsSuite) TestMemberDisplayAvatarURL() {
 	m := &GuildMember{GuildID: gid, UserID: 2, AvatarHash: strptr("memberhash")}
 	s.Contains(m.DisplayAvatarURL(nil), "/guilds/1/users/2/avatars/memberhash")
 	// Falls back to the user's avatar when no guild avatar.
-	m2 := &GuildMember{GuildID: gid, UserID: 2, User: &User{ID: 2, AvatarHash: strptr("userhash")}}
+	m2 := &GuildMember{GuildID: gid, UserID: 2, User: &User{ID: 2, Avatar: strptr("userhash")}}
 	s.Contains(m2.DisplayAvatarURL(nil), "/avatars/2/userhash")
 	// No user to fall back to → empty.
 	s.Equal("", (&GuildMember{}).DisplayAvatarURL(nil))
