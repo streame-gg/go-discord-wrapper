@@ -16,11 +16,11 @@ func NewStickerManager(guildID discord.Snowflake, c discord.EntityClient) discor
 	return &stickerManager{guildID: guildID, client: c}
 }
 
-func (m *stickerManager) Cache() *collection.Collection[discord.Snowflake, *discord.Sticker] {
+func (m *stickerManager) Cache() *collection.Collection[discord.Snowflake, discord.Sticker] {
 	if c := m.client.ClientCache(); c != nil {
 		return c.Stickers().GetByGuild(m.guildID)
 	}
-	return collection.New[discord.Snowflake, *discord.Sticker]()
+	return collection.New[discord.Snowflake, discord.Sticker]()
 }
 
 func (m *stickerManager) Get(stickerID discord.Snowflake) (*discord.Sticker, bool) {

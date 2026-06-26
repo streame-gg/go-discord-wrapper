@@ -1279,8 +1279,8 @@ func (s *mongoEmojiStore) Get(emojiID discord.Snowflake) (*discord.Emoji, bool) 
 	return &emoji, true
 }
 
-func (s *mongoEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Emoji] {
-	coll := collection.New[discord.Snowflake, *discord.Emoji]()
+func (s *mongoEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Emoji] {
+	coll := collection.New[discord.Snowflake, discord.Emoji]()
 	filter := bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -1297,7 +1297,7 @@ func (s *mongoEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Coll
 	for _, d := range docs {
 		var emoji discord.Emoji
 		if json.Unmarshal([]byte(d.JSON), &emoji) == nil {
-			coll.Set(emoji.ID, &emoji)
+			coll.Set(emoji.ID, emoji)
 		}
 	}
 	return coll
@@ -1394,8 +1394,8 @@ func (s *mongoStickerStore) Get(stickerID discord.Snowflake) (*discord.Sticker, 
 	return &sticker, true
 }
 
-func (s *mongoStickerStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Sticker] {
-	coll := collection.New[discord.Snowflake, *discord.Sticker]()
+func (s *mongoStickerStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Sticker] {
+	coll := collection.New[discord.Snowflake, discord.Sticker]()
 	filter := bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -1412,7 +1412,7 @@ func (s *mongoStickerStore) GetByGuild(guildID discord.Snowflake) *collection.Co
 	for _, d := range docs {
 		var sticker discord.Sticker
 		if json.Unmarshal([]byte(d.JSON), &sticker) == nil {
-			coll.Set(sticker.ID, &sticker)
+			coll.Set(sticker.ID, sticker)
 		}
 	}
 	return coll
@@ -1509,8 +1509,8 @@ func (s *mongoPresenceStore) Get(guildID, userID discord.Snowflake) (*discord.Pr
 	return &presence, true
 }
 
-func (s *mongoPresenceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Presence] {
-	coll := collection.New[discord.Snowflake, *discord.Presence]()
+func (s *mongoPresenceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Presence] {
+	coll := collection.New[discord.Snowflake, discord.Presence]()
 	filter := bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -1527,7 +1527,7 @@ func (s *mongoPresenceStore) GetByGuild(guildID discord.Snowflake) *collection.C
 	for _, d := range docs {
 		var presence discord.Presence
 		if json.Unmarshal([]byte(d.JSON), &presence) == nil {
-			coll.Set(presence.User.ID, &presence)
+			coll.Set(presence.User.ID, presence)
 		}
 	}
 	return coll

@@ -2,8 +2,9 @@ package events
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/suite"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -14,7 +15,6 @@ import (
 // entire payload and these outer fields were always zero/nil.
 func (su *guildCreateSuite) TestGuildCreateEventOuterFields() {
 	t := su.T()
-	unavailableFalse := false
 	payload := `{
 		"id": "123456789012345678",
 		"name": "Test Guild",
@@ -41,7 +41,7 @@ func (su *guildCreateSuite) TestGuildCreateEventOuterFields() {
 	if !ev.Large {
 		t.Error("want Large=true, got false")
 	}
-	if ev.Unavailable == nil || *ev.Unavailable != unavailableFalse {
+	if ev.Unavailable != false {
 		t.Errorf("want Unavailable=false, got %v", ev.Unavailable)
 	}
 	if ev.MemberCount != 1234 {

@@ -16,11 +16,11 @@ func NewEmojiManager(guildID discord.Snowflake, c discord.EntityClient) discord.
 	return &emojiManager{guildID: guildID, client: c}
 }
 
-func (m *emojiManager) Cache() *collection.Collection[discord.Snowflake, *discord.Emoji] {
+func (m *emojiManager) Cache() *collection.Collection[discord.Snowflake, discord.Emoji] {
 	if c := m.client.ClientCache(); c != nil {
 		return c.Emojis().GetByGuild(m.guildID)
 	}
-	return collection.New[discord.Snowflake, *discord.Emoji]()
+	return collection.New[discord.Snowflake, discord.Emoji]()
 }
 
 func (m *emojiManager) Get(emojiID discord.Snowflake) (*discord.Emoji, bool) {

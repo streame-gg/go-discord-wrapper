@@ -16,8 +16,8 @@ func init() { Register(serverinfo{}) }
 // replies with an embed. It demonstrates reading cached state inside a command.
 type serverinfo struct{}
 
-func (serverinfo) Definition() *discord.ApplicationCommand {
-	return &discord.ApplicationCommand{
+func (serverinfo) Definition() discord.ApplicationCommand {
+	return discord.ApplicationCommand{
 		Name:        "serverinfo",
 		Description: "Show cached stats about this server",
 		Type:        discord.ApplicationCommandTypeChatInput,

@@ -94,19 +94,19 @@ func (s *stubStageInstanceStore) GetByGuild(guildID discord.Snowflake) *collecti
 func (s *stubStageInstanceStore) Size() int { return len(s.instances) }
 
 type stubEmojiStore struct {
-	emojis map[discord.Snowflake]map[discord.Snowflake]*discord.Emoji
+	emojis map[discord.Snowflake]map[discord.Snowflake]discord.Emoji
 }
 
 func (s *stubEmojiStore) Get(emojiID discord.Snowflake) (*discord.Emoji, bool) {
 	for _, g := range s.emojis {
 		if e, ok := g[emojiID]; ok {
-			return e, true
+			return &e, true
 		}
 	}
 	return nil, false
 }
-func (s *stubEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Emoji] {
-	c := collection.New[discord.Snowflake, *discord.Emoji]()
+func (s *stubEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Emoji] {
+	c := collection.New[discord.Snowflake, discord.Emoji]()
 	for id, e := range s.emojis[guildID] {
 		c.Set(id, e)
 	}

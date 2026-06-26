@@ -57,12 +57,12 @@ func (s *MemBanStore) DeleteGuild(guildID discord.Snowflake) {
 }
 
 // AllInGuild returns a snapshot Collection of all bans for guildID, keyed by user ID.
-func (s *MemBanStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Ban] {
+func (s *MemBanStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Ban] {
 	userIDs := s.index.forGuild(guildID)
-	out := collection.NewWithCapacity[discord.Snowflake, *discord.Ban](len(userIDs))
+	out := collection.NewWithCapacity[discord.Snowflake, discord.Ban](len(userIDs))
 	for _, uid := range userIDs {
 		if b, ok := s.base.Get(BanKey{GuildID: guildID, UserID: uid}); ok {
-			out.Set(uid, b)
+			out.Set(uid, *b)
 		}
 	}
 	return out

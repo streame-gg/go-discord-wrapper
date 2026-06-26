@@ -2,7 +2,6 @@ package events
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -37,6 +36,9 @@ type GuildMemberUpdateEvent struct {
 	GuildID   discord.Snowflake    `json:"-"`
 	NewMember discord.GuildMember  `json:"-"`
 	OldMember *discord.GuildMember `json:"-"`
+
+	Nick                       *string    `json:"nick,omitempty"`
+	CommunicationDisabledUntil *time.Time `json:"communication_disabled_until,omitempty"`
 }
 
 func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
@@ -51,7 +53,7 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 		Deaf                       *bool                     `json:"deaf,omitempty"`
 		Mute                       *bool                     `json:"mute,omitempty"`
 		Pending                    *bool                     `json:"pending,omitempty"`
-		CommunicationDisabledUntil *string                   `json:"communication_disabled_until,omitempty"`
+		CommunicationDisabledUntil *time.Time                `json:"communication_disabled_until,omitempty"`
 		Flags                      *discord.GuildMemberFlags `json:"flags,omitempty"`
 	}
 	var w wire
@@ -65,12 +67,10 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	e.NewMember.Nick = w.Nick
 	e.NewMember.AvatarHash = w.AvatarHash
 	e.NewMember.PremiumSince = w.PremiumSince
+	e.CommunicationDisabledUntil = w.CommunicationDisabledUntil
+	e.Nick = w.Nick
 	if w.CommunicationDisabledUntil != nil {
-		t, err := time.Parse(time.RFC3339, *w.CommunicationDisabledUntil)
-		if err != nil {
-			return fmt.Errorf("communication_disabled_until: %w", err)
-		}
-		e.NewMember.CommunicationDisabledUntil = &t
+		e.NewMember.CommunicationDisabledUntil = w.CommunicationDisabledUntil
 	}
 	e.NewMember.Roles = make([]discord.Snowflake, len(w.Roles))
 	copy(e.NewMember.Roles, w.Roles)

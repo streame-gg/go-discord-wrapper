@@ -1,14 +1,15 @@
 package discord
 
 import (
-	"github.com/stretchr/testify/suite"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/suite"
 )
 
-func (su *snowflakeSuite) TestSnowflakeFromInt() {
-	t := su.T()
+func (s *snowflakeSuite) TestSnowflakeFromInt() {
+	t := s.T()
 	cases := []struct {
 		name      string
 		in        int64
@@ -35,8 +36,8 @@ func (su *snowflakeSuite) TestSnowflakeFromInt() {
 	}
 }
 
-func (su *snowflakeSuite) TestSnowflakeFromUint() {
-	t := su.T()
+func (s *snowflakeSuite) TestSnowflakeFromUint() {
+	t := s.T()
 	cases := []struct {
 		name string
 		in   uint64
@@ -56,16 +57,16 @@ func (su *snowflakeSuite) TestSnowflakeFromUint() {
 	}
 }
 
-func (su *snowflakeSuite) TestSnowflakeFromInt_NegativeFailsValidate() {
-	t := su.T()
+func (s *snowflakeSuite) TestSnowflakeFromInt_NegativeFailsValidate() {
+	t := s.T()
 	_, err := SnowflakeFromInt(-1)
 	if err == nil {
 		t.Error("expected Validate() to return an error for negative Snowflake, got nil")
 	}
 }
 
-func (su *snowflakeSuite) TestSnowflakeTime() {
-	t := su.T()
+func (s *snowflakeSuite) TestSnowflakeTime() {
+	t := s.T()
 	cases := []struct {
 		name string
 		id   Snowflake
@@ -94,8 +95,8 @@ func (su *snowflakeSuite) TestSnowflakeTime() {
 	}
 }
 
-func (su *snowflakeSuite) TestUserCreatedAt() {
-	t := su.T()
+func (s *snowflakeSuite) TestUserCreatedAt() {
+	t := s.T()
 	u := &User{ID: Snowflake(175928847299117063)}
 	id := Snowflake(175928847299117063)
 	want := id.Time()
@@ -124,4 +125,16 @@ func (s *snowflakeSuite) TestTime_ValueReceiverOnNonAddressable() {
 	// Sanity: a later snowflake decodes to a later embedded creation time.
 	got := Snowflake(175928847299117063).Time()
 	s.True(got.After(Snowflake(0).Time()), "later snowflake → later time")
+}
+
+func (s *snowflakeSuite) TestRandomSnowflake() {
+	snowflake := RandomSnowflake()
+	s.NotNil(snowflake)
+
+	snowflakeArray := make([]Snowflake, 100)
+	for i := 0; i < len(snowflakeArray); i++ {
+		snowflakeArray[i] = RandomSnowflake()
+	}
+	s.Len(snowflakeArray, 100)
+	s.NotContains(snowflakeArray, 0)
 }

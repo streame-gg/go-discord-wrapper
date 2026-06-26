@@ -8,13 +8,17 @@ import (
 
 // https://docs.discord.com/developers/events/gateway-events#auto-moderation-rule-create
 type AutoModerationRuleCreateEvent struct {
-	discord.AutoModerationRule
+	Rule discord.AutoModerationRule `json:"-"`
+}
+
+func (e *AutoModerationRuleCreateEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.Rule)
 }
 
 // https://docs.discord.com/developers/events/gateway-events#auto-moderation-rule-update
 type AutoModerationRuleUpdateEvent struct {
 	NewRule discord.AutoModerationRule `json:"-"`
-	// OldRule is nil when the rule was not previously cached (no automod rule store exists).
+	// OldRule is nil when the rule was not previously cached.
 	OldRule *discord.AutoModerationRule `json:"-"`
 }
 
@@ -22,17 +26,13 @@ func (e *AutoModerationRuleUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.NewRule)
 }
 
-func (e AutoModerationRuleUpdateEvent) MarshalJSON() ([]byte, error) {
-	type wire struct {
-		discord.AutoModerationRule
-		OldRule *discord.AutoModerationRule `json:"old_rule,omitempty"`
-	}
-	return json.Marshal(wire{e.NewRule, e.OldRule})
-}
-
 // https://docs.discord.com/developers/events/gateway-events#auto-moderation-rule-delete
 type AutoModerationRuleDeleteEvent struct {
-	discord.AutoModerationRule
+	Rule discord.AutoModerationRule `json:"-"`
+}
+
+func (e *AutoModerationRuleDeleteEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.Rule)
 }
 
 // https://docs.discord.com/developers/events/gateway-events#auto-moderation-action-execution
@@ -46,8 +46,8 @@ type AutoModerationActionExecutionEvent struct {
 	MessageID            *discord.Snowflake                `json:"message_id,omitempty"`
 	AlertSystemMessageID *discord.Snowflake                `json:"alert_system_message_id,omitempty"`
 	Content              string                            `json:"content"`
-	MatchedKeyword       *string                           `json:"matched_keyword,omitempty"`
-	MatchedContent       *string                           `json:"matched_content,omitempty"`
+	MatchedKeyword       *string                           `json:"matched_keyword"`
+	MatchedContent       *string                           `json:"matched_content"`
 }
 
 func init() {

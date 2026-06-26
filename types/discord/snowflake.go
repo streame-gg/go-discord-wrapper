@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"strconv"
 	"time"
 )
@@ -131,4 +132,20 @@ func ParseSnowflake(s string) (*Snowflake, error) {
 	}
 
 	return &createdSnowflake, nil
+}
+
+func RandomSnowflake() Snowflake {
+	now := time.Now().UnixMilli()
+	timestamp := uint64(now) - Epoch
+
+	workerID := uint64(rand.IntN(32))
+	processID := uint64(rand.IntN(32))
+	increment := uint64(rand.IntN(4096))
+
+	snowflake := (timestamp << 22) |
+		(workerID << 17) |
+		(processID << 12) |
+		increment
+
+	return Snowflake(snowflake)
 }

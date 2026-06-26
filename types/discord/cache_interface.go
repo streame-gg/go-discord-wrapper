@@ -95,7 +95,7 @@ type StageInstanceStore interface {
 // https://docs.discord.com/developers/resources/emoji#emoji-object
 type EmojiStore interface {
 	Get(emojiID Snowflake) (*Emoji, bool)
-	GetByGuild(guildID Snowflake) *collection.Collection[Snowflake, *Emoji]
+	GetByGuild(guildID Snowflake) *collection.Collection[Snowflake, Emoji]
 	Size() int
 }
 
@@ -103,7 +103,7 @@ type EmojiStore interface {
 // https://docs.discord.com/developers/resources/sticker#sticker-object
 type StickerStore interface {
 	Get(stickerID Snowflake) (*Sticker, bool)
-	GetByGuild(guildID Snowflake) *collection.Collection[Snowflake, *Sticker]
+	GetByGuild(guildID Snowflake) *collection.Collection[Snowflake, Sticker]
 	Size() int
 }
 
@@ -111,7 +111,7 @@ type StickerStore interface {
 // https://docs.discord.com/developers/resources/guild#ban-object
 type BanStore interface {
 	Get(guildID, userID Snowflake) (*Ban, bool)
-	AllInGuild(guildID Snowflake) *collection.Collection[Snowflake, *Ban]
+	AllInGuild(guildID Snowflake) *collection.Collection[Snowflake, Ban]
 	Size() int
 }
 
@@ -119,7 +119,7 @@ type BanStore interface {
 // https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-rule-object
 type AutoModerationRuleStore interface {
 	Get(ruleID Snowflake) (*AutoModerationRule, bool)
-	GetByGuild(guildID Snowflake) *collection.Collection[Snowflake, *AutoModerationRule]
+	GetByGuild(guildID Snowflake) *collection.Collection[Snowflake, AutoModerationRule]
 	Size() int
 }
 
@@ -127,7 +127,7 @@ type AutoModerationRuleStore interface {
 // https://docs.discord.com/developers/resources/invite#invite-object
 type InviteStore interface {
 	Get(code string) (*Invite, bool)
-	GetByGuild(guildID Snowflake) *collection.Collection[string, *Invite]
+	GetByGuild(guildID Snowflake) *collection.Collection[string, Invite]
 	Size() int
 }
 

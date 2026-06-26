@@ -119,12 +119,12 @@ func (s *MemInviteStore) Get(code string) (*discord.Invite, bool) {
 }
 
 // GetByGuild returns a snapshot Collection of all invites for guildID, keyed by code.
-func (s *MemInviteStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[string, *discord.Invite] {
+func (s *MemInviteStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[string, discord.Invite] {
 	codes := s.index.forGuild(guildID)
-	out := collection.NewWithCapacity[string, *discord.Invite](len(codes))
+	out := collection.NewWithCapacity[string, discord.Invite](len(codes))
 	for _, code := range codes {
 		if inv, ok := s.base.Get(code); ok {
-			out.Set(code, inv)
+			out.Set(code, *inv)
 		}
 	}
 	return out

@@ -374,15 +374,15 @@ type GatewayGuild struct {
 	JoinedAt             time.Time             `json:"joined_at"`
 	Large                bool                  `json:"large"`
 	Unavailable          *bool                 `json:"unavailable,omitempty"`
-	MemberCount          int                   `json:"member_count,omitempty"`
-	VoiceStates          []VoiceState          `json:"voice_states,omitempty"`
-	Members              []GuildMember         `json:"members,omitempty"`
-	Channels             []Channel             `json:"channels,omitempty"`
-	Threads              []Channel             `json:"threads,omitempty"`
-	Presences            []GatewayPresence     `json:"presences,omitempty"`
-	StageInstances       []StageInstance       `json:"stage_instances,omitempty"`
-	GuildScheduledEvents []GuildScheduledEvent `json:"guild_scheduled_events,omitempty"`
-	SoundboardSounds     []SoundboardSound     `json:"soundboard_sounds,omitempty"`
+	MemberCount          int                   `json:"member_count"`
+	VoiceStates          []VoiceState          `json:"voice_states"`
+	Members              []GuildMember         `json:"members"`
+	Channels             []Channel             `json:"channels"`
+	Threads              []Channel             `json:"threads"`
+	Presences            []GatewayPresence     `json:"presences"`
+	StageInstances       []StageInstance       `json:"stage_instances"`
+	GuildScheduledEvents []GuildScheduledEvent `json:"guild_scheduled_events"`
+	SoundboardSounds     []SoundboardSound     `json:"soundboard_sounds"`
 }
 
 func (g GatewayGuild) IsAvailable() bool { return true }

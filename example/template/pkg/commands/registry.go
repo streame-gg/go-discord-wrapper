@@ -23,7 +23,7 @@ import (
 // and a handler invoked when a user runs it.
 type Command interface {
 	// Definition is the registration payload (name, description, options).
-	Definition() *discord.ApplicationCommand
+	Definition() discord.ApplicationCommand
 	// Handle runs when the command is invoked. ev is guaranteed to be a
 	// chat-input command interaction for this command's top-level name.
 	Handle(c *connection.Client, ev *events.InteractionCreateEvent)
@@ -50,8 +50,8 @@ func Lookup(name string) (Command, bool) {
 
 // Definitions returns the registration payloads for every command, ready to
 // pass to BulkRegisterCommands.
-func Definitions() []*discord.ApplicationCommand {
-	out := make([]*discord.ApplicationCommand, 0, len(registry))
+func Definitions() []discord.ApplicationCommand {
+	out := make([]discord.ApplicationCommand, 0, len(registry))
 	for _, c := range registry {
 		out = append(out, c.Definition())
 	}

@@ -40,7 +40,7 @@ func (d *Client) RegisterCommand(ctx context.Context, cmd *discord.ApplicationCo
 // BulkRegisterCommands overwrites all application commands with the provided list.
 // Any existing commands not included will be deleted.
 // Must be called after Login() so that the application ID is available.
-func (d *Client) BulkRegisterCommands(ctx context.Context, cmds []*discord.ApplicationCommand) ([]*discord.ApplicationCommand, error) {
+func (d *Client) BulkRegisterCommands(ctx context.Context, cmds []discord.ApplicationCommand) ([]*discord.ApplicationCommand, error) {
 	appID, err := d.applicationID()
 	if err != nil {
 		return nil, err

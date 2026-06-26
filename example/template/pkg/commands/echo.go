@@ -13,8 +13,8 @@ func init() { Register(echo{}) }
 // GetStringOption helper on the interaction.
 type echo struct{}
 
-func (echo) Definition() *discord.ApplicationCommand {
-	return &discord.ApplicationCommand{
+func (echo) Definition() discord.ApplicationCommand {
+	return discord.ApplicationCommand{
 		Name:        "echo",
 		Description: "Repeat back what you say",
 		Type:        discord.ApplicationCommandTypeChatInput,

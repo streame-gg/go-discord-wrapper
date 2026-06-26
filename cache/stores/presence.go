@@ -52,12 +52,12 @@ func (s *MemPresenceStore) DeleteGuild(guildID discord.Snowflake) {
 }
 
 // GetByGuild returns a snapshot Collection of all presences for guildID, keyed by user ID.
-func (s *MemPresenceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Presence] {
+func (s *MemPresenceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Presence] {
 	userIDs := s.index.forGuild(guildID)
-	out := collection.NewWithCapacity[discord.Snowflake, *discord.Presence](len(userIDs))
+	out := collection.NewWithCapacity[discord.Snowflake, discord.Presence](len(userIDs))
 	for _, uid := range userIDs {
 		if p, ok := s.base.Get(PresenceKey{GuildID: guildID, UserID: uid}); ok {
-			out.Set(uid, p)
+			out.Set(uid, *p)
 		}
 	}
 	return out

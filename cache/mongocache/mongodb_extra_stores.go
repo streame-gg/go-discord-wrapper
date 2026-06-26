@@ -76,8 +76,8 @@ func (s *mongoBanStore) DeleteGuild(guildID discord.Snowflake) {
 	})
 }
 
-func (s *mongoBanStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Ban] {
-	coll := collection.New[discord.Snowflake, *discord.Ban]()
+func (s *mongoBanStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Ban] {
+	coll := collection.New[discord.Snowflake, discord.Ban]()
 	filter := bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -94,7 +94,7 @@ func (s *mongoBanStore) AllInGuild(guildID discord.Snowflake) *collection.Collec
 	for _, d := range docs {
 		var ban discord.Ban
 		if json.Unmarshal([]byte(d.JSON), &ban) == nil {
-			coll.Set(ban.User.ID, &ban)
+			coll.Set(ban.User.ID, ban)
 		}
 	}
 	return coll
@@ -151,8 +151,8 @@ func (s *mongoAutoModStore) Get(ruleID discord.Snowflake) (*discord.AutoModerati
 	return &rule, true
 }
 
-func (s *mongoAutoModStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.AutoModerationRule] {
-	coll := collection.New[discord.Snowflake, *discord.AutoModerationRule]()
+func (s *mongoAutoModStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.AutoModerationRule] {
+	coll := collection.New[discord.Snowflake, discord.AutoModerationRule]()
 	filter := bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -169,7 +169,7 @@ func (s *mongoAutoModStore) GetByGuild(guildID discord.Snowflake) *collection.Co
 	for _, d := range docs {
 		var rule discord.AutoModerationRule
 		if json.Unmarshal([]byte(d.JSON), &rule) == nil {
-			coll.Set(rule.ID, &rule)
+			coll.Set(rule.ID, rule)
 		}
 	}
 	return coll
@@ -261,8 +261,8 @@ func (s *mongoInviteStore) Get(code string) (*discord.Invite, bool) {
 	return &inv, true
 }
 
-func (s *mongoInviteStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[string, *discord.Invite] {
-	coll := collection.New[string, *discord.Invite]()
+func (s *mongoInviteStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[string, discord.Invite] {
+	coll := collection.New[string, discord.Invite]()
 	filter := bson.M{"guild_id": strconv.FormatUint(uint64(guildID), 10)}
 	if s.c.opts.TTL > 0 {
 		filter["expires_at"] = bson.M{"$gt": time.Now()}
@@ -279,7 +279,7 @@ func (s *mongoInviteStore) GetByGuild(guildID discord.Snowflake) *collection.Col
 	for _, d := range docs {
 		var inv discord.Invite
 		if json.Unmarshal([]byte(d.JSON), &inv) == nil {
-			coll.Set(inv.Code, &inv)
+			coll.Set(inv.Code, inv)
 		}
 	}
 	return coll

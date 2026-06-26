@@ -28,11 +28,11 @@ func deriveGuildEmojiSyntheticEvents(ev *events.GuildEmojisUpdateEvent) []events
 
 	oldByID := make(map[discord.Snowflake]*discord.Emoji, len(ev.OldEmojis))
 	for _, e := range ev.OldEmojis {
-		oldByID[e.ID] = e
+		oldByID[e.ID] = &e
 	}
 	newByID := make(map[discord.Snowflake]*discord.Emoji, len(ev.NewEmojis))
 	for _, e := range ev.NewEmojis {
-		newByID[e.ID] = e
+		newByID[e.ID] = &e
 	}
 
 	var result []events.Event
@@ -73,11 +73,11 @@ func deriveGuildStickerSyntheticEvents(ev *events.GuildStickersUpdateEvent) []ev
 
 	oldByID := make(map[discord.Snowflake]*discord.Sticker, len(ev.OldStickers))
 	for _, s := range ev.OldStickers {
-		oldByID[s.ID] = s
+		oldByID[s.ID] = &s
 	}
 	newByID := make(map[discord.Snowflake]*discord.Sticker, len(ev.NewStickers))
 	for _, s := range ev.NewStickers {
-		newByID[s.ID] = s
+		newByID[s.ID] = &s
 	}
 
 	var result []events.Event

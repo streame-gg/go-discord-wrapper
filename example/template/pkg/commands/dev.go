@@ -28,8 +28,8 @@ func init() { Register(dev{}) }
 // command refuses to run for anyone.
 type dev struct{}
 
-func (dev) Definition() *discord.ApplicationCommand {
-	return &discord.ApplicationCommand{
+func (dev) Definition() discord.ApplicationCommand {
+	return discord.ApplicationCommand{
 		Name:        "dev",
 		Description: "Owner-only developer tools",
 		Type:        discord.ApplicationCommandTypeChatInput,

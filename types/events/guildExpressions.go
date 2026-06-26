@@ -9,61 +9,42 @@ import (
 // https://docs.discord.com/developers/events/gateway-events#guild-emojis-update
 type GuildEmojisUpdateEvent struct {
 	GuildID   discord.Snowflake `json:"-"`
-	NewEmojis []*discord.Emoji  `json:"-"`
-	OldEmojis []*discord.Emoji  `json:"-"`
+	NewEmojis []discord.Emoji   `json:"-"`
+	OldEmojis []discord.Emoji   `json:"-"`
 }
 
 func (e *GuildEmojisUpdateEvent) UnmarshalJSON(data []byte) error {
-	type wire struct {
+	var outer struct {
 		GuildID discord.Snowflake `json:"guild_id"`
-		Emojis  []*discord.Emoji  `json:"emojis"`
+		Emojis  []discord.Emoji   `json:"emojis"`
 	}
-	var w wire
-	if err := json.Unmarshal(data, &w); err != nil {
+	if err := json.Unmarshal(data, &outer); err != nil {
 		return err
 	}
-	e.GuildID = w.GuildID
-	e.NewEmojis = w.Emojis
-	return nil
-}
 
-func (e GuildEmojisUpdateEvent) MarshalJSON() ([]byte, error) {
-	type wire struct {
-		GuildID   discord.Snowflake `json:"guild_id"`
-		Emojis    []*discord.Emoji  `json:"emojis"`
-		OldEmojis []*discord.Emoji  `json:"old_emojis,omitempty"`
-	}
-	return json.Marshal(wire{e.GuildID, e.NewEmojis, e.OldEmojis})
+	e.GuildID = outer.GuildID
+	e.NewEmojis = outer.Emojis
+	return nil
 }
 
 // https://docs.discord.com/developers/events/gateway-events#guild-stickers-update
 type GuildStickersUpdateEvent struct {
-	GuildID     discord.Snowflake  `json:"-"`
-	NewStickers []*discord.Sticker `json:"-"`
-	OldStickers []*discord.Sticker `json:"-"`
+	GuildID     discord.Snowflake `json:"-"`
+	NewStickers []discord.Sticker `json:"-"`
+	OldStickers []discord.Sticker `json:"-"`
 }
 
 func (e *GuildStickersUpdateEvent) UnmarshalJSON(data []byte) error {
-	type wire struct {
-		GuildID  discord.Snowflake  `json:"guild_id"`
-		Stickers []*discord.Sticker `json:"stickers"`
+	var outer struct {
+		GuildID  discord.Snowflake `json:"guild_id"`
+		Stickers []discord.Sticker `json:"stickers"`
 	}
-	var w wire
-	if err := json.Unmarshal(data, &w); err != nil {
+	if err := json.Unmarshal(data, &outer); err != nil {
 		return err
 	}
-	e.GuildID = w.GuildID
-	e.NewStickers = w.Stickers
+	e.GuildID = outer.GuildID
+	e.NewStickers = outer.Stickers
 	return nil
-}
-
-func (e GuildStickersUpdateEvent) MarshalJSON() ([]byte, error) {
-	type wire struct {
-		GuildID     discord.Snowflake  `json:"guild_id"`
-		Stickers    []*discord.Sticker `json:"stickers"`
-		OldStickers []*discord.Sticker `json:"old_stickers,omitempty"`
-	}
-	return json.Marshal(wire{e.GuildID, e.NewStickers, e.OldStickers})
 }
 
 func init() {

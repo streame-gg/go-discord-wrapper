@@ -34,12 +34,12 @@ func (s *MemStickerStore) Get(stickerID discord.Snowflake) (*discord.Sticker, bo
 }
 
 // GetByGuild returns a snapshot Collection of all stickers for guildID, keyed by sticker ID.
-func (s *MemStickerStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Sticker] {
+func (s *MemStickerStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Sticker] {
 	ids := s.index.forGuild(guildID)
-	out := collection.NewWithCapacity[discord.Snowflake, *discord.Sticker](len(ids))
+	out := collection.NewWithCapacity[discord.Snowflake, discord.Sticker](len(ids))
 	for _, id := range ids {
 		if st, ok := s.base.Get(id); ok {
-			out.Set(id, st)
+			out.Set(id, *st)
 		}
 	}
 	return out

@@ -72,7 +72,7 @@ func main() {
 	// BulkRegisterCommands overwrites the application's global command set. Global
 	// commands can take up to an hour to propagate; for instant iteration during
 	// development, register guild-scoped commands instead.
-	if _, err := bot.BulkRegisterCommands(context.Background(), []*discord.ApplicationCommand{
+	if _, err := bot.BulkRegisterCommands(context.Background(), []discord.ApplicationCommand{
 		{
 			Name:        "echo",
 			Description: "Repeat back what you say",

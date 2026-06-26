@@ -1461,8 +1461,8 @@ func (s *redisEmojiStore) Get(emojiID discord.Snowflake) (*discord.Emoji, bool) 
 	return &emoji, true
 }
 
-func (s *redisEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Emoji] {
-	coll := collection.New[discord.Snowflake, *discord.Emoji]()
+func (s *redisEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Emoji] {
+	coll := collection.New[discord.Snowflake, discord.Emoji]()
 	idx := s.c.k("emoji", "guild", strconv.FormatUint(uint64(guildID), 10))
 	emojiIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(emojiIDs) == 0 {
@@ -1484,7 +1484,7 @@ func (s *redisEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Coll
 		}
 		var emoji discord.Emoji
 		if json.Unmarshal([]byte(v.(string)), &emoji) == nil {
-			coll.Set(emoji.ID, &emoji)
+			coll.Set(emoji.ID, emoji)
 		}
 	}
 	if len(stale) > 0 {
@@ -1611,8 +1611,8 @@ func (s *redisStickerStore) Get(stickerID discord.Snowflake) (*discord.Sticker, 
 	return &sticker, true
 }
 
-func (s *redisStickerStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Sticker] {
-	coll := collection.New[discord.Snowflake, *discord.Sticker]()
+func (s *redisStickerStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Sticker] {
+	coll := collection.New[discord.Snowflake, discord.Sticker]()
 	idx := s.c.k("sticker", "guild", strconv.FormatUint(uint64(guildID), 10))
 	stickerIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(stickerIDs) == 0 {
@@ -1634,7 +1634,7 @@ func (s *redisStickerStore) GetByGuild(guildID discord.Snowflake) *collection.Co
 		}
 		var sticker discord.Sticker
 		if json.Unmarshal([]byte(v.(string)), &sticker) == nil {
-			coll.Set(sticker.ID, &sticker)
+			coll.Set(sticker.ID, sticker)
 		}
 	}
 	if len(stale) > 0 {
@@ -1754,10 +1754,10 @@ func (s *redisPresenceStore) Get(guildID, userID discord.Snowflake) (*discord.Pr
 	return &presence, true
 }
 
-func (s *redisPresenceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Presence] {
+func (s *redisPresenceStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Presence] {
 	idx := s.c.k("presence", "guild", strconv.FormatUint(uint64(guildID), 10))
 	userIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
-	coll := collection.New[discord.Snowflake, *discord.Presence]()
+	coll := collection.New[discord.Snowflake, discord.Presence]()
 	if err != nil || len(userIDs) == 0 {
 		return coll
 	}
@@ -1777,7 +1777,7 @@ func (s *redisPresenceStore) GetByGuild(guildID discord.Snowflake) *collection.C
 		}
 		var presence discord.Presence
 		if json.Unmarshal([]byte(v.(string)), &presence) == nil {
-			coll.Set(presence.User.ID, &presence)
+			coll.Set(presence.User.ID, presence)
 		}
 	}
 	if len(stale) > 0 {

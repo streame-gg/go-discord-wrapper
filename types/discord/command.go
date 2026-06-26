@@ -7,7 +7,8 @@ import (
 
 // https://docs.discord.com/developers/interactions/application-commands#application-command-object
 type ApplicationCommand struct {
-	ID                       Snowflake                               `json:"id"`
+	// ID uses omitempty due to command registrations.
+	ID                       Snowflake                               `json:"id,omitempty"`
 	Type                     ApplicationCommandType                  `json:"type,omitempty"`
 	ApplicationID            *Snowflake                              `json:"application_id"`
 	GuildID                  *Snowflake                              `json:"guild_id,omitempty"`

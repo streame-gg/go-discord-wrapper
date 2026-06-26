@@ -17,8 +17,8 @@ func init() { Register(ping{}) }
 // attaches a "Ping again" button handled in the components package.
 type ping struct{}
 
-func (ping) Definition() *discord.ApplicationCommand {
-	return &discord.ApplicationCommand{
+func (ping) Definition() discord.ApplicationCommand {
+	return discord.ApplicationCommand{
 		Name:        "ping",
 		Description: "Check that the bot is alive",
 		Type:        discord.ApplicationCommandTypeChatInput,

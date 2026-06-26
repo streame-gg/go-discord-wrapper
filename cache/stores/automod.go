@@ -37,12 +37,12 @@ func (s *MemAutoModerationRuleStore) Get(ruleID discord.Snowflake) (*discord.Aut
 }
 
 // GetByGuild returns a snapshot Collection of all automod rules for guildID, keyed by rule ID.
-func (s *MemAutoModerationRuleStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.AutoModerationRule] {
+func (s *MemAutoModerationRuleStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.AutoModerationRule] {
 	ruleIDs := s.index.forGuild(guildID)
-	out := collection.NewWithCapacity[discord.Snowflake, *discord.AutoModerationRule](len(ruleIDs))
+	out := collection.NewWithCapacity[discord.Snowflake, discord.AutoModerationRule](len(ruleIDs))
 	for _, id := range ruleIDs {
 		if r, ok := s.base.Get(id); ok {
-			out.Set(id, r)
+			out.Set(id, *r)
 		}
 	}
 	return out

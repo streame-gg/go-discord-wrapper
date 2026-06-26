@@ -101,8 +101,8 @@ func (s *redisBanStore) DeleteGuild(guildID discord.Snowflake) {
 	})
 }
 
-func (s *redisBanStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Ban] {
-	coll := collection.New[discord.Snowflake, *discord.Ban]()
+func (s *redisBanStore) AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Ban] {
+	coll := collection.New[discord.Snowflake, discord.Ban]()
 	gIdx := s.c.k("ban", "guild", sf(guildID))
 	userIDs, err := s.c.client.SMembers(s.c.ctx, gIdx).Result()
 	if err != nil || len(userIDs) == 0 {
@@ -136,7 +136,7 @@ func (s *redisBanStore) AllInGuild(guildID discord.Snowflake) *collection.Collec
 			stale = append(stale, userIDs[i])
 			continue
 		}
-		coll.Set(uid, &b)
+		coll.Set(uid, b)
 	}
 	if len(stale) > 0 {
 		_ = s.c.client.SRem(s.c.ctx, gIdx, stale...).Err()
@@ -184,8 +184,8 @@ func (s *redisAutoModStore) Get(ruleID discord.Snowflake) (*discord.AutoModerati
 	return &rule, true
 }
 
-func (s *redisAutoModStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.AutoModerationRule] {
-	coll := collection.New[discord.Snowflake, *discord.AutoModerationRule]()
+func (s *redisAutoModStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.AutoModerationRule] {
+	coll := collection.New[discord.Snowflake, discord.AutoModerationRule]()
 	idx := s.c.k("automod", "guild", sf(guildID))
 	ruleIDs, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(ruleIDs) == 0 {
@@ -207,7 +207,7 @@ func (s *redisAutoModStore) GetByGuild(guildID discord.Snowflake) *collection.Co
 		}
 		var rule discord.AutoModerationRule
 		if json.Unmarshal([]byte(v.(string)), &rule) == nil {
-			coll.Set(rule.ID, &rule)
+			coll.Set(rule.ID, rule)
 		}
 	}
 	if len(stale) > 0 {
@@ -316,8 +316,8 @@ func (s *redisInviteStore) Get(code string) (*discord.Invite, bool) {
 	return &inv, true
 }
 
-func (s *redisInviteStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[string, *discord.Invite] {
-	coll := collection.New[string, *discord.Invite]()
+func (s *redisInviteStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[string, discord.Invite] {
+	coll := collection.New[string, discord.Invite]()
 	idx := s.c.k("invite", "guild", sf(guildID))
 	codes, err := s.c.client.SMembers(s.c.ctx, idx).Result()
 	if err != nil || len(codes) == 0 {
@@ -339,7 +339,7 @@ func (s *redisInviteStore) GetByGuild(guildID discord.Snowflake) *collection.Col
 		}
 		var inv discord.Invite
 		if json.Unmarshal([]byte(v.(string)), &inv) == nil {
-			coll.Set(inv.Code, &inv)
+			coll.Set(inv.Code, inv)
 		}
 	}
 	if len(stale) > 0 {

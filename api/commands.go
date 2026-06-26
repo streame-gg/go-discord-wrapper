@@ -35,7 +35,7 @@ func (c *RestClient) RegisterCommand(ctx context.Context, appID discord.Snowflak
 // BulkRegisterCommands overwrites all global application commands for the given application ID.
 // Any commands not included in cmds are deleted.
 // https://docs.discord.com/developers/interactions/application-commands#bulk-overwrite-global-application-commands
-func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID discord.Snowflake, cmds []*discord.ApplicationCommand) ([]*discord.ApplicationCommand, error) {
+func (c *RestClient) BulkRegisterCommands(ctx context.Context, appID discord.Snowflake, cmds []discord.ApplicationCommand) ([]*discord.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}
@@ -289,7 +289,7 @@ func (c *RestClient) DeleteGuildApplicationCommand(ctx context.Context, appID, g
 // BulkOverwriteGuildApplicationCommands overwrites all guild-specific commands for the given guild.
 // Any commands not included in cmds are deleted.
 // https://docs.discord.com/developers/interactions/application-commands#bulk-overwrite-guild-application-commands
-func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, cmds []*discord.ApplicationCommand) ([]*discord.ApplicationCommand, error) {
+func (c *RestClient) BulkOverwriteGuildApplicationCommands(ctx context.Context, appID, guildID discord.Snowflake, cmds []discord.ApplicationCommand) ([]*discord.ApplicationCommand, error) {
 	if err := appID.Validate(); err != nil {
 		return nil, err
 	}

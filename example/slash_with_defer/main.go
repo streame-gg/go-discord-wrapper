@@ -123,7 +123,7 @@ func main() {
 		panic(err)
 	}
 
-	_, err := bot.BulkRegisterCommands(context.Background(), []*discord.ApplicationCommand{
+	_, err := bot.BulkRegisterCommands(context.Background(), []discord.ApplicationCommand{
 		{Name: "slow", Description: "Simulate a slow operation with DeferAndFollowup", Type: discord.ApplicationCommandTypeChatInput},
 		{Name: "ban", Description: "Ban a member (typed-error example)", Type: discord.ApplicationCommandTypeChatInput},
 	})

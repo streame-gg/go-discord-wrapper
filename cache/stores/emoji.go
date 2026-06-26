@@ -34,12 +34,12 @@ func (s *MemEmojiStore) Get(emojiID discord.Snowflake) (*discord.Emoji, bool) {
 }
 
 // GetByGuild returns a snapshot Collection of all emojis for guildID, keyed by emoji ID.
-func (s *MemEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Emoji] {
+func (s *MemEmojiStore) GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Emoji] {
 	ids := s.index.forGuild(guildID)
-	out := collection.NewWithCapacity[discord.Snowflake, *discord.Emoji](len(ids))
+	out := collection.NewWithCapacity[discord.Snowflake, discord.Emoji](len(ids))
 	for _, id := range ids {
 		if e, ok := s.base.Get(id); ok {
-			out.Set(id, e)
+			out.Set(id, *e)
 		}
 	}
 	return out

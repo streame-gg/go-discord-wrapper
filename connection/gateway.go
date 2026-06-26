@@ -152,6 +152,8 @@ type Client struct {
 
 	// voiceStates caches the latest voice state per (guildID:userID) key so
 	// VoiceStateUpdateEvent can carry OldState alongside the new state.
+
+	//TODO: this should be part of the cache, not of the client
 	voiceStates   map[string]*discord.VoiceState
 	voiceStatesMu sync.RWMutex
 
@@ -881,198 +883,164 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			}
 
 			if guildCreateEvent.Guild.IsAvailable() {
-				memberCount := guildCreateEvent.MemberCount
-				var guild discord.Guild
-				var gatewayGuild discord.GatewayGuild
-				hasGateway := false
-				switch g := guildCreateEvent.Guild.(type) {
-				case discord.GatewayGuild:
-					guild = g.Guild
-					gatewayGuild = g
-					hasGateway = true
-					if memberCount == 0 && g.MemberCount > 0 {
-						memberCount = g.MemberCount
-					}
-				case discord.Guild:
-					guild = g
-				}
-
-				// Record (or refresh) the member count for this guild.
 				d.guildMu.Lock()
-				d.guildMemberCounts[guildCreateEvent.Guild.GetID()] = memberCount
+				d.guildMemberCounts[guildCreateEvent.Guild.GetID()] = guildCreateEvent.MemberCount
 				d.guildMu.Unlock()
 
-				if hasGateway {
-					guildID := guildCreateEvent.Guild.GetID()
-					d.voiceStatesMu.Lock()
-					for i := range gatewayGuild.VoiceStates {
-						vs := gatewayGuild.VoiceStates[i]
-						key := guildID.String() + ":" + vs.UserID.String()
-						vscopy := vs
-						if vscopy.GuildID == nil {
-							vscopy.GuildID = &guildID
-						}
-						d.voiceStates[key] = &vscopy
+				guildID := guildCreateEvent.Guild.GetID()
+				d.voiceStatesMu.Lock()
+				for i := range guildCreateEvent.VoiceStates {
+					vs := guildCreateEvent.VoiceStates[i]
+					key := guildID.String() + ":" + vs.UserID.String()
+					vscopy := vs
+					if vscopy.GuildID == nil {
+						vscopy.GuildID = &guildID
 					}
-					d.voiceStatesMu.Unlock()
+					d.voiceStates[key] = &vscopy
 				}
+				d.voiceStatesMu.Unlock()
 
 				if d.cacheEnabled() {
-					if !guild.ID.IsEmpty() {
-						guild.Hydrate(d)
-						d.SetGuildManagers(&guild)
+					guildCreateEvent.Guild.Hydrate(d)
+					d.SetGuildManagers(guildCreateEvent.Guild)
+
+					if d.cacheStoreEnabled(cache.CategoryGuilds) {
+						d.Cache.Guilds().Set(guildCreateEvent.Guild)
 					}
 
-					if !guild.ID.IsEmpty() && d.cacheStoreEnabled(cache.CategoryGuilds) {
-						d.Cache.Guilds().Set(&guild)
-					}
-
-					if !guild.ID.IsEmpty() && d.cacheStoreEnabled(cache.CategoryRoles) {
+					if d.cacheStoreEnabled(cache.CategoryRoles) {
 						// Delete stale roles before re-adding so removed roles don't persist.
-						d.Cache.Roles().DeleteGuild(guild.ID)
-						for i := range guild.RawRoles {
-							role := guild.RawRoles[i]
-							role.GuildID = guild.ID
+						d.Cache.Roles().DeleteGuild(guildID)
+						for i := range guildCreateEvent.Guild.RawRoles {
+							role := guildCreateEvent.Guild.RawRoles[i]
+							role.GuildID = guildID
 							role.Hydrate(d)
-							d.Cache.Roles().Set(guild.ID, &role)
+							d.Cache.Roles().Set(guildID, &role)
 						}
 					}
 
-					if !guild.ID.IsEmpty() && d.cacheStoreEnabled(cache.CategoryEmojis) {
-						emojis := make([]*discord.Emoji, 0, len(guild.RawEmojis))
-						for i := range guild.RawEmojis {
-							emoji := guild.RawEmojis[i]
-							if !emoji.ID.IsEmpty() {
-								emoji.GuildID = guild.ID
-								emoji.Hydrate(d)
-								emojis = append(emojis, &emoji)
-							}
+					if d.cacheStoreEnabled(cache.CategoryEmojis) {
+						emojis := make([]*discord.Emoji, 0, len(guildCreateEvent.Guild.RawEmojis))
+						for i := range guildCreateEvent.Guild.RawEmojis {
+							emoji := guildCreateEvent.Guild.RawEmojis[i]
+							emoji.GuildID = guildID
+							emoji.Hydrate(d)
+							emojis = append(emojis, &emoji)
 						}
-						d.Cache.Emojis().SetAll(guild.ID, emojis)
+						d.Cache.Emojis().SetAll(guildID, emojis)
 					}
-					if !guild.ID.IsEmpty() && d.cacheStoreEnabled(cache.CategoryStickers) && len(guild.RawStickers) > 0 {
-						stickers := make([]*discord.Sticker, 0, len(guild.RawStickers))
-						for i := range guild.RawStickers {
-							sticker := guild.RawStickers[i]
+					if d.cacheStoreEnabled(cache.CategoryStickers) && len(guildCreateEvent.Guild.RawStickers) > 0 {
+						stickers := make([]*discord.Sticker, 0, len(guildCreateEvent.Guild.RawStickers))
+						for i := range guildCreateEvent.Guild.RawStickers {
+							sticker := guildCreateEvent.Guild.RawStickers[i]
 							if !sticker.ID.IsEmpty() {
-								if !sticker.GuildID.IsNil() {
-									sticker.GuildID = guild.ID
-								}
+								sticker.GuildID = guildID
+
 								sticker.Hydrate(d)
 								stickers = append(stickers, &sticker)
 							}
 						}
-						d.Cache.Stickers().SetAll(guild.ID, stickers)
+						d.Cache.Stickers().SetAll(guildID, stickers)
 					}
 
-					if hasGateway {
-						guildID := guildCreateEvent.Guild.GetID()
-						if d.cacheStoreEnabled(cache.CategoryChannels) {
-							// Drain stale channels before re-adding so deleted channels don't persist.
-							for _, oldID := range d.drainGuildChannelIDs(guildID) {
-								d.Cache.Channels().Delete(oldID)
-								d.Cache.Messages().DeleteChannel(oldID)
-							}
-							gid := guildCreateEvent.Guild.GetID()
-							for i := range gatewayGuild.Channels {
-								ch := gatewayGuild.Channels[i]
-								if ch.GuildID.IsEmpty() {
-									ch.GuildID = &gid
-								}
-								d.cacheChannel(&ch)
-							}
-							for i := range gatewayGuild.Threads {
-								ch := gatewayGuild.Threads[i]
-								if ch.GuildID.IsEmpty() {
-									ch.GuildID = &gid
-								}
-								d.cacheChannel(&ch)
-								d.trackThread(&ch)
-							}
+					if d.cacheStoreEnabled(cache.CategoryChannels) {
+						// Drain stale channels before re-adding so deleted channels don't persist.
+						for _, oldID := range d.drainGuildChannelIDs(guildID) {
+							d.Cache.Channels().Delete(oldID)
+							d.Cache.Messages().DeleteChannel(oldID)
 						}
+						for i := range guildCreateEvent.Channels {
+							ch := guildCreateEvent.Channels[i]
+							ch.GuildID = &guildID
 
-						if d.cacheStoreEnabled(cache.CategoryMembers) {
-							// Delete stale members before re-adding.
-							d.Cache.Members().DeleteGuild(guildID)
-							for i := range gatewayGuild.Members {
-								m := gatewayGuild.Members[i]
-								m.GuildID = guildID
-								if m.User != nil {
-									m.UserID = m.User.ID
-								}
-								m.Hydrate(d)
-								d.Cache.Members().Set(guildID, &m)
-							}
+							d.cacheChannel(&ch)
 						}
-
-						if d.cacheStoreEnabled(cache.CategoryUsers) {
-							for i := range gatewayGuild.Members {
-								if gatewayGuild.Members[i].User == nil {
-									continue
-								}
-								u := *gatewayGuild.Members[i].User
-								u.Hydrate(d)
-								d.Cache.Users().Set(&u)
-							}
-						}
-
-						if d.cacheStoreEnabled(cache.CategoryVoiceStates) {
-							// Delete stale voice states before re-adding.
-							d.Cache.VoiceStates().DeleteGuild(guildID)
-							for i := range gatewayGuild.VoiceStates {
-								vs := gatewayGuild.VoiceStates[i]
-								if vs.GuildID == nil {
-									vs.GuildID = &guildID
-								}
-								d.Cache.VoiceStates().Set(guildID, &vs)
-							}
-						}
-
-						if d.cacheStoreEnabled(cache.CategoryPresences) {
-							// Delete stale presences before re-adding.
-							d.Cache.Presences().DeleteGuild(guildID)
-							for i := range gatewayGuild.Presences {
-								p := gatewayGuild.Presences[i]
-								presence := discord.Presence{
-									User:         p.User,
-									GuildID:      guildID,
-									Status:       p.Status,
-									Activities:   p.Activities,
-									ClientStatus: p.ClientStatus,
-								}
-								d.Cache.Presences().Set(&presence)
-							}
-						}
-
-						if d.cacheStoreEnabled(cache.CategorySoundboard) {
-							sounds := make([]*discord.SoundboardSound, 0, len(gatewayGuild.SoundboardSounds))
-							for i := range gatewayGuild.SoundboardSounds {
-								s := gatewayGuild.SoundboardSounds[i]
-								s.Hydrate(d)
-								sounds = append(sounds, &s)
-							}
-							d.Cache.Soundboard().SetAll(guildID, sounds)
-						}
-
-						if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
-							// Delete stale scheduled events before re-adding.
-							d.Cache.ScheduledEvents().DeleteGuild(guildID)
-							for i := range gatewayGuild.GuildScheduledEvents {
-								ev := gatewayGuild.GuildScheduledEvents[i]
-								ev.Hydrate(d)
-								d.Cache.ScheduledEvents().Set(&ev)
-							}
-						}
-						if d.cacheStoreEnabled(cache.CategoryStageInstances) {
-							// Delete stale stage instances before re-adding.
-							d.Cache.StageInstances().DeleteGuild(guildID)
-							for i := range gatewayGuild.StageInstances {
-								instance := gatewayGuild.StageInstances[i]
-								instance.Hydrate(d)
-								d.Cache.StageInstances().Set(&instance)
-							}
+						for i := range guildCreateEvent.Threads {
+							ch := guildCreateEvent.Threads[i]
+							ch.GuildID = &guildID
+							d.cacheChannel(&ch)
+							d.trackThread(&ch)
 						}
 					}
+
+					if d.cacheStoreEnabled(cache.CategoryMembers) {
+						// Delete stale members before re-adding.
+						d.Cache.Members().DeleteGuild(guildID)
+						for i := range guildCreateEvent.Members {
+							m := guildCreateEvent.Members[i]
+							m.GuildID = guildID
+							m.UserID = m.User.ID
+							m.Hydrate(d)
+							d.Cache.Members().Set(guildID, &m)
+						}
+					}
+
+					if d.cacheStoreEnabled(cache.CategoryUsers) {
+						for i := range guildCreateEvent.Members {
+							if guildCreateEvent.Members[i].User == nil {
+								continue
+							}
+							u := *guildCreateEvent.Members[i].User
+							u.Hydrate(d)
+							d.Cache.Users().Set(&u)
+						}
+					}
+
+					if d.cacheStoreEnabled(cache.CategoryVoiceStates) {
+						// Delete stale voice states before re-adding.
+						d.Cache.VoiceStates().DeleteGuild(guildID)
+						for i := range guildCreateEvent.VoiceStates {
+							vs := guildCreateEvent.VoiceStates[i]
+							vs.GuildID = &guildID
+							d.Cache.VoiceStates().Set(guildID, &vs)
+						}
+					}
+
+					if d.cacheStoreEnabled(cache.CategoryPresences) {
+						// Delete stale presences before re-adding.
+						d.Cache.Presences().DeleteGuild(guildID)
+						for i := range guildCreateEvent.Presences {
+							p := guildCreateEvent.Presences[i]
+							presence := discord.Presence{
+								User:         p.User,
+								GuildID:      guildID,
+								Status:       p.Status,
+								Activities:   p.Activities,
+								ClientStatus: p.ClientStatus,
+							}
+							d.Cache.Presences().Set(&presence)
+						}
+					}
+
+					if d.cacheStoreEnabled(cache.CategorySoundboard) {
+						sounds := make([]*discord.SoundboardSound, 0, len(guildCreateEvent.SoundboardSounds))
+						for i := range guildCreateEvent.SoundboardSounds {
+							s := guildCreateEvent.SoundboardSounds[i]
+							s.Hydrate(d)
+							sounds = append(sounds, &s)
+						}
+						d.Cache.Soundboard().SetAll(guildID, sounds)
+					}
+
+					if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
+						// Delete stale scheduled events before re-adding.
+						d.Cache.ScheduledEvents().DeleteGuild(guildID)
+						for i := range guildCreateEvent.GuildScheduledEvents {
+							ev := guildCreateEvent.GuildScheduledEvents[i]
+							ev.Hydrate(d)
+							d.Cache.ScheduledEvents().Set(&ev)
+						}
+					}
+					if d.cacheStoreEnabled(cache.CategoryStageInstances) {
+						// Delete stale stage instances before re-adding.
+						d.Cache.StageInstances().DeleteGuild(guildID)
+						for i := range guildCreateEvent.StageInstances {
+							instance := guildCreateEvent.StageInstances[i]
+							instance.Hydrate(d)
+							d.Cache.StageInstances().Set(&instance)
+						}
+					}
+
 				}
 			}
 
@@ -1093,7 +1061,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 
-			if guildDeleteEvent.Unavailable != nil && *guildDeleteEvent.Unavailable {
+			if guildDeleteEvent.Unavailable {
 				// Temporary outage — guild is still ours, just unreachable right now.
 				// Keep the member count in the cache so GuildCount stays accurate.
 				if d.IsGuildUnavailable(guildDeleteEvent.ID) {
@@ -1211,14 +1179,16 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryEmojis) {
+				newEmojis := make([]*discord.Emoji, 0, len(ev.NewEmojis))
 				if col := d.Cache.Emojis().GetByGuild(ev.GuildID); col != nil && col.Len() > 0 {
 					ev.OldEmojis = col.Values()
 				}
 				for _, emoji := range ev.NewEmojis {
 					emoji.GuildID = ev.GuildID
 					emoji.Hydrate(d)
+					newEmojis = append(newEmojis, &emoji)
 				}
-				d.Cache.Emojis().SetAll(ev.GuildID, ev.NewEmojis)
+				d.Cache.Emojis().SetAll(ev.GuildID, newEmojis)
 			}
 		}
 	case events.EventGuildStickersUpdate:
@@ -1228,16 +1198,17 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryStickers) {
+				newStickers := make([]*discord.Sticker, 0, len(ev.NewStickers))
+
 				if col := d.Cache.Stickers().GetByGuild(ev.GuildID); col != nil && col.Len() > 0 {
 					ev.OldStickers = col.Values()
 				}
 				for _, sticker := range ev.NewStickers {
-					if !sticker.GuildID.IsNil() {
-						sticker.GuildID = ev.GuildID
-					}
+					sticker.GuildID = ev.GuildID
 					sticker.Hydrate(d)
+					newStickers = append(newStickers, &sticker)
 				}
-				d.Cache.Stickers().SetAll(ev.GuildID, ev.NewStickers)
+				d.Cache.Stickers().SetAll(ev.GuildID, newStickers)
 			}
 		}
 	case events.EventAutoModerationRuleCreate:
@@ -1248,7 +1219,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal AUTO_MODERATION_RULE_CREATE event", slog.Any("err", err))
 					return false
 				}
-				rule := ev.AutoModerationRule
+				rule := ev.Rule
 				d.cacheAutoModRule(rule.GuildID, &rule)
 			}
 		}
@@ -1274,7 +1245,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal AUTO_MODERATION_RULE_DELETE event", slog.Any("err", err))
 					return false
 				}
-				d.Cache.AutoModRules().Delete(ev.ID)
+				d.Cache.AutoModRules().Delete(ev.Rule.ID)
 			}
 		}
 	case events.EventInviteCreate:
@@ -1285,7 +1256,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal INVITE_CREATE event", slog.Any("err", err))
 					return false
 				}
-				invite := discord.Invite{
+				invite := &discord.Invite{
 					Code:      ev.Code,
 					Inviter:   ev.Inviter,
 					MaxAge:    ev.MaxAge,
@@ -1295,9 +1266,9 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					ExpiresAt: ev.ExpiresAt,
 				}
 				if ev.GuildID != nil {
-					d.Cache.Invites().SetWithGuild(*ev.GuildID, &invite)
+					d.Cache.Invites().SetWithGuild(*ev.GuildID, invite)
 				} else {
-					d.Cache.Invites().Set(&invite)
+					d.Cache.Invites().Set(invite)
 				}
 			}
 		}
@@ -2150,16 +2121,9 @@ func (d *Client) hydrateEvent(event events.Event) {
 		ev.NewThread.Hydrate(d)
 		d.SetChannelManagers(&ev.NewThread)
 	case *events.GuildCreateEvent:
-		switch g := ev.Guild.(type) {
-		case discord.GatewayGuild:
-			g.Hydrate(d)
-			d.SetGuildManagers(&g.Guild)
-			ev.Guild = g
-		case discord.Guild:
-			g.Hydrate(d)
-			d.SetGuildManagers(&g)
-			ev.Guild = g
-		}
+		ev.Guild.Hydrate(d)
+		d.SetGuildManagers(ev.Guild)
+		ev.Guild = ev.Guild
 	case *events.GuildUpdateEvent:
 		ev.NewGuild.Hydrate(d)
 		d.SetGuildManagers(&ev.NewGuild)
@@ -2182,11 +2146,11 @@ func (d *Client) hydrateEvent(event events.Event) {
 	case *events.GuildScheduledEventDeleteEvent:
 		ev.Hydrate(d)
 	case *events.AutoModerationRuleCreateEvent:
-		ev.Hydrate(d)
+		ev.Rule.Hydrate(d)
 	case *events.AutoModerationRuleUpdateEvent:
 		ev.NewRule.Hydrate(d)
 	case *events.AutoModerationRuleDeleteEvent:
-		ev.Hydrate(d)
+		ev.Rule.Hydrate(d)
 	case *events.StageInstanceCreateEvent:
 		ev.Hydrate(d)
 	case *events.StageInstanceUpdateEvent:

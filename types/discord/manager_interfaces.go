@@ -61,7 +61,7 @@ type GuildChannelManager interface {
 // EmojiManager manages emojis for a single guild.
 // https://docs.discord.com/developers/resources/emoji#emoji-object
 type EmojiManager interface {
-	Cache() *collection.Collection[Snowflake, *Emoji]
+	Cache() *collection.Collection[Snowflake, Emoji]
 	Get(emojiID Snowflake) (*Emoji, bool)
 	GetOrFetch(ctx context.Context, emojiID Snowflake) (*Emoji, error)
 	Fetch(ctx context.Context, emojiID Snowflake) (*Emoji, error)
@@ -74,7 +74,7 @@ type EmojiManager interface {
 // StickerManager manages stickers for a single guild.
 // https://docs.discord.com/developers/resources/sticker#sticker-object
 type StickerManager interface {
-	Cache() *collection.Collection[Snowflake, *Sticker]
+	Cache() *collection.Collection[Snowflake, Sticker]
 	Get(stickerID Snowflake) (*Sticker, bool)
 	GetOrFetch(ctx context.Context, stickerID Snowflake) (*Sticker, error)
 	Fetch(ctx context.Context, stickerID Snowflake) (*Sticker, error)

@@ -384,7 +384,7 @@ type EmojiStore interface {
 	Get(emojiID discord.Snowflake) (*discord.Emoji, bool)
 	// GetByGuild returns a snapshot Collection of all emojis for guildID,
 	// keyed by emoji ID. The returned Collection is a copy.
-	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Emoji]
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Emoji]
 	SetAll(guildID discord.Snowflake, emojis []*discord.Emoji)
 	Delete(emojiID discord.Snowflake)
 	// DeleteGuild removes every emoji for guildID. Call on GUILD_DELETE.
@@ -399,7 +399,7 @@ type StickerStore interface {
 	Get(stickerID discord.Snowflake) (*discord.Sticker, bool)
 	// GetByGuild returns a snapshot Collection of all stickers for guildID,
 	// keyed by sticker ID. The returned Collection is a copy.
-	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Sticker]
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Sticker]
 	SetAll(guildID discord.Snowflake, stickers []*discord.Sticker)
 	Delete(stickerID discord.Snowflake)
 	// DeleteGuild removes every sticker for guildID. Call on GUILD_DELETE.
@@ -414,7 +414,7 @@ type PresenceStore interface {
 	Get(guildID, userID discord.Snowflake) (*discord.Presence, bool)
 	// GetByGuild returns a snapshot Collection of all presences for guildID.
 	// The returned Collection is a copy — mutating it does not affect the cache.
-	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Presence]
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Presence]
 	Delete(guildID, userID discord.Snowflake)
 	// DeleteGuild removes every presence entry for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)
@@ -432,7 +432,7 @@ type BanStore interface {
 	DeleteGuild(guildID discord.Snowflake)
 	// AllInGuild returns a snapshot Collection of all bans for guildID,
 	// keyed by user ID. The returned Collection is a copy.
-	AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.Ban]
+	AllInGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.Ban]
 	Size() int
 }
 
@@ -443,7 +443,7 @@ type AutoModerationRuleStore interface {
 	Get(ruleID discord.Snowflake) (*discord.AutoModerationRule, bool)
 	// GetByGuild returns a snapshot Collection of all automod rules for guildID,
 	// keyed by rule ID. The returned Collection is a copy.
-	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, *discord.AutoModerationRule]
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[discord.Snowflake, discord.AutoModerationRule]
 	Delete(ruleID discord.Snowflake)
 	// DeleteGuild removes every automod rule for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)
@@ -460,7 +460,7 @@ type InviteStore interface {
 	Get(code string) (*discord.Invite, bool)
 	// GetByGuild returns a snapshot Collection of all invites for guildID,
 	// keyed by code. The returned Collection is a copy.
-	GetByGuild(guildID discord.Snowflake) *collection.Collection[string, *discord.Invite]
+	GetByGuild(guildID discord.Snowflake) *collection.Collection[string, discord.Invite]
 	Delete(code string)
 	// DeleteGuild removes every invite for guildID. Call on GUILD_DELETE.
 	DeleteGuild(guildID discord.Snowflake)
