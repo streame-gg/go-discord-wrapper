@@ -41,8 +41,7 @@ type BanOptions struct {
 // User.ID when User is available.
 func (m *GuildMember) Hydrate(c EntityClient) {
 	m.hClient = c
-	if m.User != nil && m.UserID.IsEmpty() {
-		m.UserID = m.User.ID
+	if m.User != nil {
 		m.User.Hydrate(c)
 	}
 }
@@ -63,14 +62,10 @@ func (m *GuildMember) ids() (guildID, userID Snowflake, err error) {
 	if m.GuildID.IsEmpty() {
 		return 0, 0, errMemberNoGuildID
 	}
-	uid := m.UserID
-	if uid.IsEmpty() && m.User != nil {
-		uid = m.User.ID
-	}
-	if uid.IsEmpty() {
+	if m.User == nil {
 		return 0, 0, errMemberNoUserID
 	}
-	return m.GuildID, uid, nil
+	return m.GuildID, m.User.ID, nil
 }
 
 // ── Entity methods ────────────────────────────────────────────────────────────

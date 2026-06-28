@@ -281,7 +281,7 @@ func (s *stubClient) CreateStageInstance(ctx context.Context, opts discord.Stage
 func (s *stubClient) GetGuildSoundboardSound(ctx context.Context, guildID, soundID discord.Snowflake) (*discord.SoundboardSound, error) {
 	return nil, nil
 }
-func (s *stubClient) ListGuildSoundboardSounds(ctx context.Context, guildID discord.Snowflake) ([]*discord.SoundboardSound, error) {
+func (s *stubClient) ListGuildSoundboardSounds(ctx context.Context, guildID discord.Snowflake) ([]discord.SoundboardSound, error) {
 	return nil, nil
 }
 func (s *stubClient) ListGuildInvites(ctx context.Context, guildID discord.Snowflake) ([]*discord.Invite, error) {

@@ -126,7 +126,7 @@ type SoundboardManager interface {
 	Get(soundID Snowflake) (*SoundboardSound, bool)
 	GetOrFetch(ctx context.Context, soundID Snowflake) (*SoundboardSound, error)
 	Fetch(ctx context.Context, soundID Snowflake) (*SoundboardSound, error)
-	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, *SoundboardSound], error)
+	FetchAll(ctx context.Context) (*collection.Collection[Snowflake, SoundboardSound], error)
 	Resolve(input any) (*SoundboardSound, error)
 	Size() int
 }

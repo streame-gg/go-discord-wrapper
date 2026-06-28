@@ -8,8 +8,8 @@ var _ Event = &VoiceChannelStatusUpdateEvent{}
 var _ Event = &VoiceChannelStartTimeUpdateEvent{}
 
 func init() {
-	RegisterEvent(VoiceChannelStatusUpdateEvent{})
-	RegisterEvent(VoiceChannelStartTimeUpdateEvent{})
+	RegisterEvent(&VoiceChannelStatusUpdateEvent{})
+	RegisterEvent(&VoiceChannelStartTimeUpdateEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#voice-channel-status-update
@@ -32,12 +32,12 @@ type VoiceChannelStartTimeUpdateEvent struct {
 	Channel *discord.Channel `json:"channel"`
 }
 
-func (e VoiceChannelStatusUpdateEvent) DesiredEventType() Event {
+func (e *VoiceChannelStatusUpdateEvent) DesiredEventType() Event {
 	return &VoiceChannelStatusUpdateEvent{}
 }
-func (e VoiceChannelStatusUpdateEvent) Event() EventType { return EventVoiceChannelStatusUpdate }
+func (e *VoiceChannelStatusUpdateEvent) Event() EventType { return EventVoiceChannelStatusUpdate }
 
-func (e VoiceChannelStartTimeUpdateEvent) DesiredEventType() Event {
+func (e *VoiceChannelStartTimeUpdateEvent) DesiredEventType() Event {
 	return &VoiceChannelStartTimeUpdateEvent{}
 }
-func (e VoiceChannelStartTimeUpdateEvent) Event() EventType { return EventVoiceChannelStartTimeUpdate }
+func (e *VoiceChannelStartTimeUpdateEvent) Event() EventType { return EventVoiceChannelStartTimeUpdate }

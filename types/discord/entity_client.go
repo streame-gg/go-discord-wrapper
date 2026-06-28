@@ -121,7 +121,7 @@ type EntityClient interface {
 	GetStageInstance(ctx context.Context, channelID Snowflake) (*StageInstance, error)
 	CreateStageInstance(ctx context.Context, opts StageCreateOptions) (*StageInstance, error)
 	GetGuildSoundboardSound(ctx context.Context, guildID, soundID Snowflake) (*SoundboardSound, error)
-	ListGuildSoundboardSounds(ctx context.Context, guildID Snowflake) ([]*SoundboardSound, error)
+	ListGuildSoundboardSounds(ctx context.Context, guildID Snowflake) ([]SoundboardSound, error)
 	ListGuildInvites(ctx context.Context, guildID Snowflake) ([]*Invite, error)
 	ListGuildWebhooks(ctx context.Context, guildID Snowflake) ([]*Webhook, error)
 	GetAutoModerationRule(ctx context.Context, guildID, ruleID Snowflake) (*AutoModerationRule, error)

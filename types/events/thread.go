@@ -14,12 +14,12 @@ var _ Event = &ThreadMemberUpdateEvent{}
 var _ Event = &ThreadMembersUpdateEvent{}
 
 func init() {
-	RegisterEvent(ThreadCreateEvent{})
-	RegisterEvent(ThreadUpdateEvent{})
-	RegisterEvent(ThreadDeleteEvent{})
-	RegisterEvent(ThreadListSyncEvent{})
-	RegisterEvent(ThreadMemberUpdateEvent{})
-	RegisterEvent(ThreadMembersUpdateEvent{})
+	RegisterEvent(&ThreadCreateEvent{})
+	RegisterEvent(&ThreadUpdateEvent{})
+	RegisterEvent(&ThreadDeleteEvent{})
+	RegisterEvent(&ThreadListSyncEvent{})
+	RegisterEvent(&ThreadMemberUpdateEvent{})
+	RegisterEvent(&ThreadMembersUpdateEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#thread-create
@@ -79,9 +79,9 @@ type ThreadMembersUpdateEvent struct {
 	Guild *discord.Guild `json:"-"`
 }
 
-func (e ThreadCreateEvent) DesiredEventType() Event { return &ThreadCreateEvent{} }
-func (e ThreadCreateEvent) Event() EventType        { return EventThreadCreate }
-func (e ThreadCreateEvent) UnmarshalJSON(data []byte) error {
+func (e *ThreadCreateEvent) DesiredEventType() Event { return &ThreadCreateEvent{} }
+func (e *ThreadCreateEvent) Event() EventType        { return EventThreadCreate }
+func (e *ThreadCreateEvent) UnmarshalJSON(data []byte) error {
 	var wire struct {
 		NewlyCreated *bool `json:"newly_created,omitempty"`
 		discord.Channel
@@ -97,21 +97,21 @@ func (e ThreadCreateEvent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e ThreadUpdateEvent) DesiredEventType() Event { return &ThreadUpdateEvent{} }
-func (e ThreadUpdateEvent) Event() EventType        { return EventThreadUpdate }
-func (e ThreadUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *ThreadUpdateEvent) DesiredEventType() Event { return &ThreadUpdateEvent{} }
+func (e *ThreadUpdateEvent) Event() EventType        { return EventThreadUpdate }
+func (e *ThreadUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.NewThread)
 }
 
-func (e ThreadDeleteEvent) DesiredEventType() Event { return &ThreadDeleteEvent{} }
-func (e ThreadDeleteEvent) Event() EventType        { return EventThreadDelete }
+func (e *ThreadDeleteEvent) DesiredEventType() Event { return &ThreadDeleteEvent{} }
+func (e *ThreadDeleteEvent) Event() EventType        { return EventThreadDelete }
 
-func (e ThreadListSyncEvent) DesiredEventType() Event { return &ThreadListSyncEvent{} }
-func (e ThreadListSyncEvent) Event() EventType        { return EventThreadListSync }
+func (e *ThreadListSyncEvent) DesiredEventType() Event { return &ThreadListSyncEvent{} }
+func (e *ThreadListSyncEvent) Event() EventType        { return EventThreadListSync }
 
-func (e ThreadMemberUpdateEvent) DesiredEventType() Event { return &ThreadMemberUpdateEvent{} }
-func (e ThreadMemberUpdateEvent) Event() EventType        { return EventThreadMemberUpdate }
-func (e ThreadMemberUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *ThreadMemberUpdateEvent) DesiredEventType() Event { return &ThreadMemberUpdateEvent{} }
+func (e *ThreadMemberUpdateEvent) Event() EventType        { return EventThreadMemberUpdate }
+func (e *ThreadMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	type wire struct {
 		GuildID discord.Snowflake `json:"guild_id"`
 		discord.ThreadMember
@@ -125,5 +125,5 @@ func (e ThreadMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e ThreadMembersUpdateEvent) DesiredEventType() Event { return &ThreadMembersUpdateEvent{} }
-func (e ThreadMembersUpdateEvent) Event() EventType        { return EventThreadMembersUpdate }
+func (e *ThreadMembersUpdateEvent) DesiredEventType() Event { return &ThreadMembersUpdateEvent{} }
+func (e *ThreadMembersUpdateEvent) Event() EventType        { return EventThreadMembersUpdate }

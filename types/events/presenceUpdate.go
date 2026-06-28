@@ -8,7 +8,7 @@ import (
 
 var _ Event = &PresenceUpdateEvent{}
 
-func init() { RegisterEvent(PresenceUpdateEvent{}) }
+func init() { RegisterEvent(&PresenceUpdateEvent{}) }
 
 // https://docs.discord.com/developers/events/gateway-events#presence-update
 type PresenceUpdateEvent struct {
@@ -16,8 +16,8 @@ type PresenceUpdateEvent struct {
 	OldPresence *discord.Presence `json:"-"`
 }
 
-func (e PresenceUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *PresenceUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.NewPresence)
 }
-func (e PresenceUpdateEvent) DesiredEventType() Event { return &PresenceUpdateEvent{} }
-func (e PresenceUpdateEvent) Event() EventType        { return EventPresenceUpdate }
+func (e *PresenceUpdateEvent) DesiredEventType() Event { return &PresenceUpdateEvent{} }
+func (e *PresenceUpdateEvent) Event() EventType        { return EventPresenceUpdate }

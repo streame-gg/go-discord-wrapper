@@ -469,7 +469,7 @@ func (s *stubEntityClient) CreateStageInstance(_ context.Context, _ discord.Stag
 func (s *stubEntityClient) GetGuildSoundboardSound(_ context.Context, _, _ discord.Snowflake) (*discord.SoundboardSound, error) {
 	return nil, nil
 }
-func (s *stubEntityClient) ListGuildSoundboardSounds(_ context.Context, _ discord.Snowflake) ([]*discord.SoundboardSound, error) {
+func (s *stubEntityClient) ListGuildSoundboardSounds(_ context.Context, _ discord.Snowflake) ([]discord.SoundboardSound, error) {
 	return nil, nil
 }
 func (s *stubEntityClient) ListGuildInvites(_ context.Context, _ discord.Snowflake) ([]*discord.Invite, error) {

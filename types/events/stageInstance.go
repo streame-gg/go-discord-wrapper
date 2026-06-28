@@ -11,9 +11,9 @@ var _ Event = &StageInstanceUpdateEvent{}
 var _ Event = &StageInstanceDeleteEvent{}
 
 func init() {
-	RegisterEvent(StageInstanceCreateEvent{})
-	RegisterEvent(StageInstanceUpdateEvent{})
-	RegisterEvent(StageInstanceDeleteEvent{})
+	RegisterEvent(&StageInstanceCreateEvent{})
+	RegisterEvent(&StageInstanceUpdateEvent{})
+	RegisterEvent(&StageInstanceDeleteEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#stage-instance-create
@@ -29,17 +29,23 @@ type StageInstanceUpdateEvent struct {
 
 // https://docs.discord.com/developers/events/gateway-events#stage-instance-delete
 type StageInstanceDeleteEvent struct {
-	discord.StageInstance
+	Stage discord.StageInstance
 }
 
-func (e StageInstanceCreateEvent) DesiredEventType() Event { return &StageInstanceCreateEvent{} }
-func (e StageInstanceCreateEvent) Event() EventType        { return EventStageInstanceCreate }
+func (e *StageInstanceCreateEvent) DesiredEventType() Event { return &StageInstanceCreateEvent{} }
+func (e *StageInstanceCreateEvent) Event() EventType        { return EventStageInstanceCreate }
+func (e *StageInstanceCreateEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.Stage)
+}
 
-func (e StageInstanceUpdateEvent) DesiredEventType() Event { return &StageInstanceUpdateEvent{} }
-func (e StageInstanceUpdateEvent) Event() EventType        { return EventStageInstanceUpdate }
-func (e StageInstanceUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *StageInstanceUpdateEvent) DesiredEventType() Event { return &StageInstanceUpdateEvent{} }
+func (e *StageInstanceUpdateEvent) Event() EventType        { return EventStageInstanceUpdate }
+func (e *StageInstanceUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.NewStage)
 }
 
-func (e StageInstanceDeleteEvent) DesiredEventType() Event { return &StageInstanceDeleteEvent{} }
-func (e StageInstanceDeleteEvent) Event() EventType        { return EventStageInstanceDelete }
+func (e *StageInstanceDeleteEvent) DesiredEventType() Event { return &StageInstanceDeleteEvent{} }
+func (e *StageInstanceDeleteEvent) Event() EventType        { return EventStageInstanceDelete }
+func (e *StageInstanceDeleteEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.Stage)
+}

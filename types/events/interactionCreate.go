@@ -8,26 +8,26 @@ import (
 
 var _ Event = &InteractionCreateEvent{}
 
-func init() { RegisterEvent(InteractionCreateEvent{}) }
+func init() { RegisterEvent(&InteractionCreateEvent{}) }
 
 // https://docs.discord.com/developers/events/gateway-events#interaction-create
 type InteractionCreateEvent struct {
 	interactions.Interaction
 }
 
-func (e InteractionCreateEvent) DesiredEventType() Event {
+func (e *InteractionCreateEvent) DesiredEventType() Event {
 	return &InteractionCreateEvent{}
 }
 
-func (e InteractionCreateEvent) Event() EventType {
+func (e *InteractionCreateEvent) Event() EventType {
 	return EventInteractionCreate
 }
 
-func (e InteractionCreateEvent) IsCommand() bool {
+func (e *InteractionCreateEvent) IsCommand() bool {
 	return e.Type == discord.InteractionTypeApplicationCommand
 }
 
-func (e InteractionCreateEvent) IsButton() bool {
+func (e *InteractionCreateEvent) IsButton() bool {
 	if e.Type != discord.InteractionTypeMessageComponent {
 		return false
 	}
@@ -39,7 +39,7 @@ func (e InteractionCreateEvent) IsButton() bool {
 	return comp.ComponentType == discord.ComponentTypeButton
 }
 
-func (e InteractionCreateEvent) IsAnySelectMenu() bool {
+func (e *InteractionCreateEvent) IsAnySelectMenu() bool {
 	if e.Type != discord.InteractionTypeMessageComponent {
 		return false
 	}
@@ -51,10 +51,10 @@ func (e InteractionCreateEvent) IsAnySelectMenu() bool {
 	return comp.ComponentType.IsAnySelectMenu()
 }
 
-func (e InteractionCreateEvent) IsAutocomplete() bool {
+func (e *InteractionCreateEvent) IsAutocomplete() bool {
 	return e.Type == discord.InteractionTypeApplicationCommandAutocomplete
 }
 
-func (e InteractionCreateEvent) IsModalSubmit() bool {
+func (e *InteractionCreateEvent) IsModalSubmit() bool {
 	return e.Type == discord.InteractionTypeModalSubmit
 }

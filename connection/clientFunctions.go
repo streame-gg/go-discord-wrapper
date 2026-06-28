@@ -983,7 +983,7 @@ func (d *Client) ListDefaultSoundboardSounds(ctx context.Context) ([]*discord.So
 	return d.RestClient.ListDefaultSoundboardSounds(ctx)
 }
 
-func (d *Client) ListGuildSoundboardSounds(ctx context.Context, guildID discord.Snowflake) ([]*discord.SoundboardSound, error) {
+func (d *Client) ListGuildSoundboardSounds(ctx context.Context, guildID discord.Snowflake) ([]discord.SoundboardSound, error) {
 	resp, err := d.RestClient.ListGuildSoundboardSounds(ctx, guildID)
 	if err != nil {
 		return nil, err

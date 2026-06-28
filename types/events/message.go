@@ -7,13 +7,13 @@ import (
 )
 
 func init() {
-	RegisterEvent(MessageCreateEvent{})
-	RegisterEvent(MessageUpdateEvent{})
-	RegisterEvent(MessageDeleteEvent{})
-	RegisterEvent(MessageDeleteBulkEvent{})
+	RegisterEvent(&MessageCreateEvent{})
+	RegisterEvent(&MessageUpdateEvent{})
+	RegisterEvent(&MessageDeleteEvent{})
+	RegisterEvent(&MessageDeleteBulkEvent{})
 
-	RegisterEvent(MessagePollVoteAddEvent{})
-	RegisterEvent(MessagePollVoteRemoveEvent{})
+	RegisterEvent(&MessagePollVoteAddEvent{})
+	RegisterEvent(&MessagePollVoteRemoveEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#message-create
@@ -75,13 +75,13 @@ type MessagePollVoteRemoveEvent struct {
 	AnswerID  int                `json:"answer_id"`
 }
 
-func (e MessageCreateEvent) DesiredEventType() Event {
+func (e *MessageCreateEvent) DesiredEventType() Event {
 	return &MessageCreateEvent{}
 }
-func (e MessageCreateEvent) Event() EventType {
+func (e *MessageCreateEvent) Event() EventType {
 	return EventMessageCreate
 }
-func (e MessageCreateEvent) UnmarshalJSON(data []byte) error {
+func (e *MessageCreateEvent) UnmarshalJSON(data []byte) error {
 	if err := e.Message.UnmarshalJSON(data); err != nil {
 		return err
 	}
@@ -101,9 +101,9 @@ func (e MessageCreateEvent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e MessageUpdateEvent) DesiredEventType() Event { return &MessageUpdateEvent{} }
-func (e MessageUpdateEvent) Event() EventType        { return EventMessageUpdate }
-func (e MessageUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *MessageUpdateEvent) DesiredEventType() Event { return &MessageUpdateEvent{} }
+func (e *MessageUpdateEvent) Event() EventType        { return EventMessageUpdate }
+func (e *MessageUpdateEvent) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &e.NewMessage); err != nil {
 		return err
 	}
@@ -125,22 +125,22 @@ func (e MessageUpdateEvent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (m MessageDeleteEvent) DesiredEventType() Event {
+func (m *MessageDeleteEvent) DesiredEventType() Event {
 	return &MessageDeleteEvent{}
 }
-func (m MessageDeleteEvent) Event() EventType {
+func (m *MessageDeleteEvent) Event() EventType {
 	return EventMessageDelete
 }
 
-func (m MessageDeleteBulkEvent) DesiredEventType() Event {
+func (m *MessageDeleteBulkEvent) DesiredEventType() Event {
 	return &MessageDeleteBulkEvent{}
 }
-func (m MessageDeleteBulkEvent) Event() EventType {
+func (m *MessageDeleteBulkEvent) Event() EventType {
 	return EventMessageDeleteBulk
 }
 
-func (e MessagePollVoteAddEvent) DesiredEventType() Event { return &MessagePollVoteAddEvent{} }
-func (e MessagePollVoteAddEvent) Event() EventType        { return EventMessagePollVoteAdd }
+func (e *MessagePollVoteAddEvent) DesiredEventType() Event { return &MessagePollVoteAddEvent{} }
+func (e *MessagePollVoteAddEvent) Event() EventType        { return EventMessagePollVoteAdd }
 
-func (e MessagePollVoteRemoveEvent) DesiredEventType() Event { return &MessagePollVoteRemoveEvent{} }
-func (e MessagePollVoteRemoveEvent) Event() EventType        { return EventMessagePollVoteRemove }
+func (e *MessagePollVoteRemoveEvent) DesiredEventType() Event { return &MessagePollVoteRemoveEvent{} }
+func (e *MessagePollVoteRemoveEvent) Event() EventType        { return EventMessagePollVoteRemove }

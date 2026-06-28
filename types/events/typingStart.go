@@ -6,7 +6,7 @@ import (
 
 var _ Event = &TypingStartEvent{}
 
-func init() { RegisterEvent(TypingStartEvent{}) }
+func init() { RegisterEvent(&TypingStartEvent{}) }
 
 // https://docs.discord.com/developers/events/gateway-events#typing-start
 type TypingStartEvent struct {
@@ -19,5 +19,5 @@ type TypingStartEvent struct {
 	Guild *discord.Guild `json:"-"`
 }
 
-func (e TypingStartEvent) DesiredEventType() Event { return &TypingStartEvent{} }
-func (e TypingStartEvent) Event() EventType        { return EventTypingStart }
+func (e *TypingStartEvent) DesiredEventType() Event { return &TypingStartEvent{} }
+func (e *TypingStartEvent) Event() EventType        { return EventTypingStart }

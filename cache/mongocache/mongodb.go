@@ -1004,12 +1004,9 @@ func (s *mongoSoundboardStore) GetByGuild(guildID discord.Snowflake) *collection
 	return coll
 }
 
-func (s *mongoSoundboardStore) SetAll(guildID discord.Snowflake, sounds []*discord.SoundboardSound) {
+func (s *mongoSoundboardStore) SetAll(guildID discord.Snowflake, sounds []discord.SoundboardSound) {
 	var docs []interface{}
 	for _, sound := range sounds {
-		if sound == nil {
-			continue
-		}
 		b, err := json.Marshal(sound)
 		if err != nil {
 			continue

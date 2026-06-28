@@ -61,15 +61,12 @@ func (s *MemSoundboardStore) DeleteGuild(guildID discord.Snowflake) {
 }
 
 // SetAll atomically replaces all sounds for guildID.
-func (s *MemSoundboardStore) SetAll(guildID discord.Snowflake, sounds []*discord.SoundboardSound) {
+func (s *MemSoundboardStore) SetAll(guildID discord.Snowflake, sounds []discord.SoundboardSound) {
 	newIDs := make([]discord.Snowflake, 0, len(sounds))
 	add := make(map[discord.Snowflake]*discord.SoundboardSound, len(sounds))
 	for _, snd := range sounds {
-		if snd == nil {
-			continue
-		}
 		newIDs = append(newIDs, snd.SoundID)
-		add[snd.SoundID] = snd
+		add[snd.SoundID] = &snd
 	}
 	toDelete := s.index.setForGuild(guildID, newIDs)
 	s.base.ReplaceKeys(toDelete, add)

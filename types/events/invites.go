@@ -7,8 +7,8 @@ import (
 )
 
 func init() {
-	RegisterEvent(InviteCreateEvent{})
-	RegisterEvent(InviteDeleteEvent{})
+	RegisterEvent(&InviteCreateEvent{})
+	RegisterEvent(&InviteDeleteEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#invite-create
@@ -38,16 +38,16 @@ type InviteDeleteEvent struct {
 	Invite *discord.Invite `json:"invite,omitempty"`
 }
 
-func (i InviteCreateEvent) DesiredEventType() Event {
+func (i *InviteCreateEvent) DesiredEventType() Event {
 	return &InviteCreateEvent{}
 }
-func (i InviteCreateEvent) Event() EventType {
+func (i *InviteCreateEvent) Event() EventType {
 	return EventInviteCreate
 }
 
-func (i InviteDeleteEvent) DesiredEventType() Event {
+func (i *InviteDeleteEvent) DesiredEventType() Event {
 	return &InviteDeleteEvent{}
 }
-func (i InviteDeleteEvent) Event() EventType {
+func (i *InviteDeleteEvent) Event() EventType {
 	return EventInviteDelete
 }

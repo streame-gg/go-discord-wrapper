@@ -13,11 +13,11 @@ var _ Event = &GuildSoundboardSoundsUpdateEvent{}
 var _ Event = &SoundboardSoundsEvent{}
 
 func init() {
-	RegisterEvent(GuildSoundboardSoundCreateEvent{})
-	RegisterEvent(GuildSoundboardSoundUpdateEvent{})
-	RegisterEvent(GuildSoundboardSoundDeleteEvent{})
-	RegisterEvent(GuildSoundboardSoundsUpdateEvent{})
-	RegisterEvent(SoundboardSoundsEvent{})
+	RegisterEvent(&GuildSoundboardSoundCreateEvent{})
+	RegisterEvent(&GuildSoundboardSoundUpdateEvent{})
+	RegisterEvent(&GuildSoundboardSoundDeleteEvent{})
+	RegisterEvent(&GuildSoundboardSoundsUpdateEvent{})
+	RegisterEvent(&SoundboardSoundsEvent{})
 }
 
 // GuildSoundboardSoundCreateEvent is dispatched when a soundboard sound is created in a guild.
@@ -61,31 +61,31 @@ type SoundboardSoundsEvent struct {
 	SoundboardSounds []discord.SoundboardSound `json:"soundboard_sounds"`
 }
 
-func (e GuildSoundboardSoundCreateEvent) Event() EventType { return EventGuildSoundboardSoundCreate }
-func (e GuildSoundboardSoundCreateEvent) UnmarshalJSON(data []byte) error {
+func (e *GuildSoundboardSoundCreateEvent) Event() EventType { return EventGuildSoundboardSoundCreate }
+func (e *GuildSoundboardSoundCreateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.Sound)
 }
-func (e GuildSoundboardSoundCreateEvent) DesiredEventType() Event {
+func (e *GuildSoundboardSoundCreateEvent) DesiredEventType() Event {
 	return &GuildSoundboardSoundCreateEvent{}
 }
 
-func (e GuildSoundboardSoundUpdateEvent) Event() EventType { return EventGuildSoundboardSoundUpdate }
-func (e GuildSoundboardSoundUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *GuildSoundboardSoundUpdateEvent) Event() EventType { return EventGuildSoundboardSoundUpdate }
+func (e *GuildSoundboardSoundUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.NewSound)
 }
-func (e GuildSoundboardSoundUpdateEvent) DesiredEventType() Event {
+func (e *GuildSoundboardSoundUpdateEvent) DesiredEventType() Event {
 	return &GuildSoundboardSoundUpdateEvent{}
 }
 
-func (e GuildSoundboardSoundDeleteEvent) Event() EventType { return EventGuildSoundboardSoundDelete }
-func (e GuildSoundboardSoundDeleteEvent) DesiredEventType() Event {
+func (e *GuildSoundboardSoundDeleteEvent) Event() EventType { return EventGuildSoundboardSoundDelete }
+func (e *GuildSoundboardSoundDeleteEvent) DesiredEventType() Event {
 	return &GuildSoundboardSoundDeleteEvent{}
 }
 
-func (e GuildSoundboardSoundsUpdateEvent) Event() EventType { return EventGuildSoundboardSoundsUpdate }
-func (e GuildSoundboardSoundsUpdateEvent) DesiredEventType() Event {
+func (e *GuildSoundboardSoundsUpdateEvent) Event() EventType { return EventGuildSoundboardSoundsUpdate }
+func (e *GuildSoundboardSoundsUpdateEvent) DesiredEventType() Event {
 	return &GuildSoundboardSoundsUpdateEvent{}
 }
 
-func (e SoundboardSoundsEvent) DesiredEventType() Event { return &SoundboardSoundsEvent{} }
-func (e SoundboardSoundsEvent) Event() EventType        { return EventSoundboardSounds }
+func (e *SoundboardSoundsEvent) DesiredEventType() Event { return &SoundboardSoundsEvent{} }
+func (e *SoundboardSoundsEvent) Event() EventType        { return EventSoundboardSounds }

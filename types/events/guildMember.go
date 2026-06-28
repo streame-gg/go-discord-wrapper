@@ -13,10 +13,10 @@ var _ Event = &GuildMemberRemoveEvent{}
 var _ Event = &GuildMembersChunkEvent{}
 
 func init() {
-	RegisterEvent(GuildMemberAddEvent{})
-	RegisterEvent(GuildMemberRemoveEvent{})
-	RegisterEvent(GuildMemberUpdateEvent{})
-	RegisterEvent(GuildMembersChunkEvent{})
+	RegisterEvent(&GuildMemberAddEvent{})
+	RegisterEvent(&GuildMemberRemoveEvent{})
+	RegisterEvent(&GuildMemberUpdateEvent{})
+	RegisterEvent(&GuildMembersChunkEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#guild-member-add
@@ -70,9 +70,9 @@ type GuildMemberUpdateEvent struct {
 	Collectibles               *discord.Collectible          `json:"collectibles,omitempty"`
 }
 
-func (e GuildMemberAddEvent) DesiredEventType() Event { return &GuildMemberAddEvent{} }
-func (e GuildMemberAddEvent) Event() EventType        { return EventGuildMemberAdd }
-func (e GuildMemberAddEvent) UnmarshalJSON(data []byte) (err error) {
+func (e *GuildMemberAddEvent) DesiredEventType() Event { return &GuildMemberAddEvent{} }
+func (e *GuildMemberAddEvent) Event() EventType        { return EventGuildMemberAdd }
+func (e *GuildMemberAddEvent) UnmarshalJSON(data []byte) (err error) {
 	var structData struct {
 		GuildID discord.Snowflake `json:"guild_id"`
 		discord.GuildMember
@@ -88,9 +88,9 @@ func (e GuildMemberAddEvent) UnmarshalJSON(data []byte) (err error) {
 	return nil
 }
 
-func (e GuildMemberUpdateEvent) DesiredEventType() Event { return &GuildMemberUpdateEvent{} }
-func (e GuildMemberUpdateEvent) Event() EventType        { return EventGuildMemberUpdate }
-func (e GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *GuildMemberUpdateEvent) DesiredEventType() Event { return &GuildMemberUpdateEvent{} }
+func (e *GuildMemberUpdateEvent) Event() EventType        { return EventGuildMemberUpdate }
+func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	var structData struct {
 		GuildID                    discord.Snowflake             `json:"guild_id"`
 		Avatar                     *string                       `json:"avatar"`
@@ -140,11 +140,11 @@ func (e GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e GuildMemberRemoveEvent) DesiredEventType() Event { return &GuildMemberRemoveEvent{} }
-func (e GuildMemberRemoveEvent) Event() EventType        { return EventGuildMemberRemove }
-func (e GuildMemberRemoveEvent) UnmarshalJSON(data []byte) (err error) {
+func (e *GuildMemberRemoveEvent) DesiredEventType() Event { return &GuildMemberRemoveEvent{} }
+func (e *GuildMemberRemoveEvent) Event() EventType        { return EventGuildMemberRemove }
+func (e *GuildMemberRemoveEvent) UnmarshalJSON(data []byte) (err error) {
 	return json.Unmarshal(data, &e)
 }
 
-func (e GuildMembersChunkEvent) DesiredEventType() Event { return &GuildMembersChunkEvent{} }
-func (e GuildMembersChunkEvent) Event() EventType        { return EventGuildMembersChunk }
+func (e *GuildMembersChunkEvent) DesiredEventType() Event { return &GuildMembersChunkEvent{} }
+func (e *GuildMembersChunkEvent) Event() EventType        { return EventGuildMembersChunk }

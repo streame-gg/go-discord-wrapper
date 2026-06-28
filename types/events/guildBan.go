@@ -8,8 +8,8 @@ var _ Event = &GuildBanAddEvent{}
 var _ Event = &GuildBanRemoveEvent{}
 
 func init() {
-	RegisterEvent(GuildBanAddEvent{})
-	RegisterEvent(GuildBanRemoveEvent{})
+	RegisterEvent(&GuildBanAddEvent{})
+	RegisterEvent(&GuildBanRemoveEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#guild-ban-add
@@ -24,8 +24,8 @@ type GuildBanRemoveEvent struct {
 	User    discord.User      `json:"user"`
 }
 
-func (e GuildBanAddEvent) DesiredEventType() Event { return &GuildBanAddEvent{} }
-func (e GuildBanAddEvent) Event() EventType        { return EventGuildBanAdd }
+func (e *GuildBanAddEvent) DesiredEventType() Event { return &GuildBanAddEvent{} }
+func (e *GuildBanAddEvent) Event() EventType        { return EventGuildBanAdd }
 
-func (e GuildBanRemoveEvent) DesiredEventType() Event { return &GuildBanRemoveEvent{} }
-func (e GuildBanRemoveEvent) Event() EventType        { return EventGuildBanRemove }
+func (e *GuildBanRemoveEvent) DesiredEventType() Event { return &GuildBanRemoveEvent{} }
+func (e *GuildBanRemoveEvent) Event() EventType        { return EventGuildBanRemove }

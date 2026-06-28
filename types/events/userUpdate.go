@@ -8,7 +8,7 @@ import (
 
 var _ Event = &UserUpdateEvent{}
 
-func init() { RegisterEvent(UserUpdateEvent{}) }
+func init() { RegisterEvent(&UserUpdateEvent{}) }
 
 // https://docs.discord.com/developers/events/gateway-events#user-update
 type UserUpdateEvent struct {
@@ -16,8 +16,8 @@ type UserUpdateEvent struct {
 	OldUser *discord.User `json:"-"`
 }
 
-func (e UserUpdateEvent) DesiredEventType() Event { return &UserUpdateEvent{} }
-func (e UserUpdateEvent) Event() EventType        { return EventUserUpdate }
-func (e UserUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *UserUpdateEvent) DesiredEventType() Event { return &UserUpdateEvent{} }
+func (e *UserUpdateEvent) Event() EventType        { return EventUserUpdate }
+func (e *UserUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.NewUser)
 }

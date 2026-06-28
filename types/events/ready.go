@@ -10,8 +10,8 @@ var _ Event = &ReadyEvent{}
 var _ Event = &ResumedEvent{}
 
 func init() {
-	RegisterEvent(ReadyEvent{})
-	RegisterEvent(ResumedEvent{})
+	RegisterEvent(&ReadyEvent{})
+	RegisterEvent(&ResumedEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#ready
@@ -55,10 +55,10 @@ type ResumedEvent struct {
 	Seq       int    `json:"seq"`
 }
 
-func (e ReadyEvent) DesiredEventType() Event {
+func (e *ReadyEvent) DesiredEventType() Event {
 	return &ReadyEvent{}
 }
-func (e ReadyEvent) Event() EventType { return EventReady }
+func (e *ReadyEvent) Event() EventType { return EventReady }
 
-func (e ResumedEvent) DesiredEventType() Event { return &ResumedEvent{} }
-func (e ResumedEvent) Event() EventType        { return EventResumed }
+func (e *ResumedEvent) DesiredEventType() Event { return &ResumedEvent{} }
+func (e *ResumedEvent) Event() EventType        { return EventResumed }

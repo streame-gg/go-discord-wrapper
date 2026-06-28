@@ -13,15 +13,15 @@ var _ Event = &ChannelDeleteEvent{}
 var _ Event = &ChannelPinsUpdateEvent{}
 
 func init() {
-	RegisterEvent(ChannelCreateEvent{})
-	RegisterEvent(ChannelDeleteEvent{})
-	RegisterEvent(ChannelUpdateEvent{})
-	RegisterEvent(ChannelPinsUpdateEvent{})
+	RegisterEvent(&ChannelCreateEvent{})
+	RegisterEvent(&ChannelDeleteEvent{})
+	RegisterEvent(&ChannelUpdateEvent{})
+	RegisterEvent(&ChannelPinsUpdateEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#channel-create
 type ChannelCreateEvent struct {
-	Channel discord.Channel
+	Channel discord.Channel `json:"-"`
 }
 
 // https://docs.discord.com/developers/events/gateway-events#channel-delete
@@ -42,31 +42,31 @@ type ChannelUpdateEvent struct {
 	OldChannel *discord.Channel `json:"-"`
 }
 
-func (e ChannelCreateEvent) DesiredEventType() Event {
+func (e *ChannelCreateEvent) DesiredEventType() Event {
 	return &ChannelCreateEvent{}
 }
-func (e ChannelCreateEvent) Event() EventType {
+func (e *ChannelCreateEvent) Event() EventType {
 	return EventChannelCreate
 }
-func (e ChannelCreateEvent) Unmarshal(data []byte) error {
+func (e *ChannelCreateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.Channel)
 }
 
 func (e *ChannelUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.NewChannel)
 }
-func (e ChannelUpdateEvent) DesiredEventType() Event { return &ChannelUpdateEvent{} }
-func (e ChannelUpdateEvent) Event() EventType        { return EventChannelUpdate }
+func (e *ChannelUpdateEvent) DesiredEventType() Event { return &ChannelUpdateEvent{} }
+func (e *ChannelUpdateEvent) Event() EventType        { return EventChannelUpdate }
 
-func (e ChannelDeleteEvent) UnmarshalJSON(data []byte) error {
+func (e *ChannelDeleteEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.Channel)
 }
-func (e ChannelDeleteEvent) DesiredEventType() Event {
+func (e *ChannelDeleteEvent) DesiredEventType() Event {
 	return &ChannelDeleteEvent{}
 }
-func (e ChannelDeleteEvent) Event() EventType {
+func (e *ChannelDeleteEvent) Event() EventType {
 	return EventChannelDelete
 }
 
-func (e ChannelPinsUpdateEvent) DesiredEventType() Event { return &ChannelPinsUpdateEvent{} }
-func (e ChannelPinsUpdateEvent) Event() EventType        { return EventChannelPinsUpdate }
+func (e *ChannelPinsUpdateEvent) DesiredEventType() Event { return &ChannelPinsUpdateEvent{} }
+func (e *ChannelPinsUpdateEvent) Event() EventType        { return EventChannelPinsUpdate }

@@ -144,9 +144,6 @@ func memberUserID(m *GuildMember) Snowflake {
 	if m == nil {
 		return 0
 	}
-	if !m.UserID.IsEmpty() {
-		return m.UserID
-	}
 	if m.User != nil {
 		return m.User.ID
 	}

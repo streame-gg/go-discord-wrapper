@@ -11,14 +11,14 @@ var _ Event = &VoiceServerUpdateEvent{}
 var _ Event = &VoiceStateUpdateEvent{}
 
 func init() {
-	RegisterEvent(VoiceStateUpdateEvent{})
-	RegisterEvent(VoiceServerUpdateEvent{})
-	RegisterEvent(VoiceChannelEffectSendEvent{})
+	RegisterEvent(&VoiceStateUpdateEvent{})
+	RegisterEvent(&VoiceServerUpdateEvent{})
+	RegisterEvent(&VoiceChannelEffectSendEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#voice-state-update
 type VoiceStateUpdateEvent struct {
-	NewState *discord.VoiceState
+	NewState discord.VoiceState
 	OldState *discord.VoiceState
 }
 
@@ -46,14 +46,14 @@ type VoiceChannelEffectSendEvent struct {
 	Sound   *discord.SoundboardSound `json:"-"`
 }
 
-func (e VoiceStateUpdateEvent) DesiredEventType() Event { return &VoiceStateUpdateEvent{} }
-func (e VoiceStateUpdateEvent) Event() EventType        { return EventVoiceStateUpdate }
-func (e VoiceStateUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *VoiceStateUpdateEvent) DesiredEventType() Event { return &VoiceStateUpdateEvent{} }
+func (e *VoiceStateUpdateEvent) Event() EventType        { return EventVoiceStateUpdate }
+func (e *VoiceStateUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.NewState)
 }
 
-func (e VoiceServerUpdateEvent) DesiredEventType() Event { return &VoiceServerUpdateEvent{} }
-func (e VoiceServerUpdateEvent) Event() EventType        { return EventVoiceServerUpdate }
+func (e *VoiceServerUpdateEvent) DesiredEventType() Event { return &VoiceServerUpdateEvent{} }
+func (e *VoiceServerUpdateEvent) Event() EventType        { return EventVoiceServerUpdate }
 
-func (e VoiceChannelEffectSendEvent) DesiredEventType() Event { return &VoiceChannelEffectSendEvent{} }
-func (e VoiceChannelEffectSendEvent) Event() EventType        { return EventVoiceChannelEffectSend }
+func (e *VoiceChannelEffectSendEvent) DesiredEventType() Event { return &VoiceChannelEffectSendEvent{} }
+func (e *VoiceChannelEffectSendEvent) Event() EventType        { return EventVoiceChannelEffectSend }

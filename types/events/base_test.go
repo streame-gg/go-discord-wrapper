@@ -15,5 +15,5 @@ func TestEventSuite(t *testing.T) {
 }
 
 func (s *eventSuite) TestAllCommandsRegistered() {
-	s.Equal(72, len(eventFactories))
+	s.Equal(77, len(eventFactories))
 }

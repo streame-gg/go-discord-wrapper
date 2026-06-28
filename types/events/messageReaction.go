@@ -10,10 +10,10 @@ var _ Event = &MessageReactionRemoveAllEvent{}
 var _ Event = &MessageReactionRemoveEmojiEvent{}
 
 func init() {
-	RegisterEvent(MessageReactionAddEvent{})
-	RegisterEvent(MessageReactionRemoveEvent{})
-	RegisterEvent(MessageReactionRemoveAllEvent{})
-	RegisterEvent(MessageReactionRemoveEmojiEvent{})
+	RegisterEvent(&MessageReactionAddEvent{})
+	RegisterEvent(&MessageReactionRemoveEvent{})
+	RegisterEvent(&MessageReactionRemoveAllEvent{})
+	RegisterEvent(&MessageReactionRemoveEmojiEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#message-reaction-add
@@ -74,18 +74,18 @@ type MessageReactionRemoveEmojiEvent struct {
 	Message *discord.Message `json:"-"`
 }
 
-func (e MessageReactionAddEvent) DesiredEventType() Event { return &MessageReactionAddEvent{} }
-func (e MessageReactionAddEvent) Event() EventType        { return EventMessageReactionAdd }
+func (e *MessageReactionAddEvent) DesiredEventType() Event { return &MessageReactionAddEvent{} }
+func (e *MessageReactionAddEvent) Event() EventType        { return EventMessageReactionAdd }
 
-func (e MessageReactionRemoveEvent) DesiredEventType() Event { return &MessageReactionRemoveEvent{} }
-func (e MessageReactionRemoveEvent) Event() EventType        { return EventMessageReactionRemove }
+func (e *MessageReactionRemoveEvent) DesiredEventType() Event { return &MessageReactionRemoveEvent{} }
+func (e *MessageReactionRemoveEvent) Event() EventType        { return EventMessageReactionRemove }
 
-func (e MessageReactionRemoveAllEvent) DesiredEventType() Event {
+func (e *MessageReactionRemoveAllEvent) DesiredEventType() Event {
 	return &MessageReactionRemoveAllEvent{}
 }
-func (e MessageReactionRemoveAllEvent) Event() EventType { return EventMessageReactionRemoveAll }
+func (e *MessageReactionRemoveAllEvent) Event() EventType { return EventMessageReactionRemoveAll }
 
-func (e MessageReactionRemoveEmojiEvent) DesiredEventType() Event {
+func (e *MessageReactionRemoveEmojiEvent) DesiredEventType() Event {
 	return &MessageReactionRemoveEmojiEvent{}
 }
-func (e MessageReactionRemoveEmojiEvent) Event() EventType { return EventMessageReactionRemoveEmoji }
+func (e *MessageReactionRemoveEmojiEvent) Event() EventType { return EventMessageReactionRemoveEmoji }

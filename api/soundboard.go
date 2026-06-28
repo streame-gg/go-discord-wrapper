@@ -60,7 +60,7 @@ func (c *RestClient) ListDefaultSoundboardSounds(ctx context.Context) ([]*discor
 
 // https://docs.discord.com/developers/resources/soundboard#list-guild-soundboard-sounds
 type ListGuildSoundboardSoundsResponse struct {
-	Items []*discord.SoundboardSound `json:"items"`
+	Items []discord.SoundboardSound `json:"items"`
 }
 
 // ListGuildSoundboardSounds returns all soundboard sounds for a guild.

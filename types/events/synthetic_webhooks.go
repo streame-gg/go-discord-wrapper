@@ -28,11 +28,11 @@ type WebhookUpdateEvent struct {
 	NewWebhook *discord.Webhook
 }
 
-func (e WebhookCreateEvent) Event() EventType        { return EventWrapperWebhookCreate }
-func (e WebhookCreateEvent) DesiredEventType() Event { return &WebhookCreateEvent{} }
+func (e *WebhookCreateEvent) Event() EventType        { return EventWrapperWebhookCreate }
+func (e *WebhookCreateEvent) DesiredEventType() Event { return &WebhookCreateEvent{} }
 
-func (e WebhookUpdateEvent) Event() EventType        { return EventWrapperWebhookUpdate }
-func (e WebhookUpdateEvent) DesiredEventType() Event { return &WebhookUpdateEvent{} }
+func (e *WebhookUpdateEvent) Event() EventType        { return EventWrapperWebhookUpdate }
+func (e *WebhookUpdateEvent) DesiredEventType() Event { return &WebhookUpdateEvent{} }
 
-func (e WebhookDeleteEvent) Event() EventType        { return EventWrapperWebhookDelete }
-func (e WebhookDeleteEvent) DesiredEventType() Event { return &WebhookDeleteEvent{} }
+func (e *WebhookDeleteEvent) Event() EventType        { return EventWrapperWebhookDelete }
+func (e *WebhookDeleteEvent) DesiredEventType() Event { return &WebhookDeleteEvent{} }

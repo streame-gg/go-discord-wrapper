@@ -8,7 +8,7 @@ import (
 
 var _ Event = &GuildUpdateEvent{}
 
-func init() { RegisterEvent(GuildUpdateEvent{}) }
+func init() { RegisterEvent(&GuildUpdateEvent{}) }
 
 // https://docs.discord.com/developers/events/gateway-events#guild-update
 type GuildUpdateEvent struct {
@@ -19,5 +19,5 @@ type GuildUpdateEvent struct {
 func (e *GuildUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.NewGuild)
 }
-func (e GuildUpdateEvent) DesiredEventType() Event { return &GuildUpdateEvent{} }
-func (e GuildUpdateEvent) Event() EventType        { return EventGuildUpdate }
+func (e *GuildUpdateEvent) DesiredEventType() Event { return &GuildUpdateEvent{} }
+func (e *GuildUpdateEvent) Event() EventType        { return EventGuildUpdate }

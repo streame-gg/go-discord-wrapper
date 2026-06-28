@@ -13,11 +13,11 @@ var _ Event = &GuildScheduledEventUserAddEvent{}
 var _ Event = &GuildScheduledEventUserRemoveEvent{}
 
 func init() {
-	RegisterEvent(GuildScheduledEventCreateEvent{})
-	RegisterEvent(GuildScheduledEventUpdateEvent{})
-	RegisterEvent(GuildScheduledEventDeleteEvent{})
-	RegisterEvent(GuildScheduledEventUserAddEvent{})
-	RegisterEvent(GuildScheduledEventUserRemoveEvent{})
+	RegisterEvent(&GuildScheduledEventCreateEvent{})
+	RegisterEvent(&GuildScheduledEventUpdateEvent{})
+	RegisterEvent(&GuildScheduledEventDeleteEvent{})
+	RegisterEvent(&GuildScheduledEventUserAddEvent{})
+	RegisterEvent(&GuildScheduledEventUserRemoveEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#guild-scheduled-event-create
@@ -58,38 +58,38 @@ type GuildScheduledEventUserRemoveEvent struct {
 	Guild               *discord.Guild               `json:"-"`
 }
 
-func (e GuildScheduledEventCreateEvent) DesiredEventType() Event {
+func (e *GuildScheduledEventCreateEvent) DesiredEventType() Event {
 	return &GuildScheduledEventCreateEvent{}
 }
-func (e GuildScheduledEventCreateEvent) Event() EventType { return EventGuildScheduledEventCreate }
-func (e GuildScheduledEventCreateEvent) UnmarshalJSON(data []byte) error {
+func (e *GuildScheduledEventCreateEvent) Event() EventType { return EventGuildScheduledEventCreate }
+func (e *GuildScheduledEventCreateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.ScheduledEvent)
 }
 
-func (e GuildScheduledEventUpdateEvent) DesiredEventType() Event {
+func (e *GuildScheduledEventUpdateEvent) DesiredEventType() Event {
 	return &GuildScheduledEventUpdateEvent{}
 }
-func (e GuildScheduledEventUpdateEvent) Event() EventType { return EventGuildScheduledEventUpdate }
-func (e GuildScheduledEventUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *GuildScheduledEventUpdateEvent) Event() EventType { return EventGuildScheduledEventUpdate }
+func (e *GuildScheduledEventUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.NewScheduledEvent)
 }
 
-func (e GuildScheduledEventDeleteEvent) DesiredEventType() Event {
+func (e *GuildScheduledEventDeleteEvent) DesiredEventType() Event {
 	return &GuildScheduledEventDeleteEvent{}
 }
-func (e GuildScheduledEventDeleteEvent) Event() EventType { return EventGuildScheduledEventDelete }
-func (e GuildScheduledEventDeleteEvent) UnmarshalJSON(data []byte) error {
+func (e *GuildScheduledEventDeleteEvent) Event() EventType { return EventGuildScheduledEventDelete }
+func (e *GuildScheduledEventDeleteEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.ScheduledEvent)
 }
 
-func (e GuildScheduledEventUserAddEvent) DesiredEventType() Event {
+func (e *GuildScheduledEventUserAddEvent) DesiredEventType() Event {
 	return &GuildScheduledEventUserAddEvent{}
 }
-func (e GuildScheduledEventUserAddEvent) Event() EventType { return EventGuildScheduledEventUserAdd }
+func (e *GuildScheduledEventUserAddEvent) Event() EventType { return EventGuildScheduledEventUserAdd }
 
-func (e GuildScheduledEventUserRemoveEvent) DesiredEventType() Event {
+func (e *GuildScheduledEventUserRemoveEvent) DesiredEventType() Event {
 	return &GuildScheduledEventUserRemoveEvent{}
 }
-func (e GuildScheduledEventUserRemoveEvent) Event() EventType {
+func (e *GuildScheduledEventUserRemoveEvent) Event() EventType {
 	return EventGuildScheduledEventUserRemove
 }

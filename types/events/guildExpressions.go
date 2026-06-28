@@ -10,8 +10,8 @@ var _ Event = &GuildEmojisUpdateEvent{}
 var _ Event = &GuildStickersUpdateEvent{}
 
 func init() {
-	RegisterEvent(GuildEmojisUpdateEvent{})
-	RegisterEvent(GuildStickersUpdateEvent{})
+	RegisterEvent(&GuildEmojisUpdateEvent{})
+	RegisterEvent(&GuildStickersUpdateEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#guild-emojis-update
@@ -28,9 +28,9 @@ type GuildStickersUpdateEvent struct {
 	OldStickers []discord.Sticker `json:"-"`
 }
 
-func (e GuildEmojisUpdateEvent) DesiredEventType() Event { return &GuildEmojisUpdateEvent{} }
-func (e GuildEmojisUpdateEvent) Event() EventType        { return EventGuildEmojisUpdate }
-func (e GuildEmojisUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *GuildEmojisUpdateEvent) DesiredEventType() Event { return &GuildEmojisUpdateEvent{} }
+func (e *GuildEmojisUpdateEvent) Event() EventType        { return EventGuildEmojisUpdate }
+func (e *GuildEmojisUpdateEvent) UnmarshalJSON(data []byte) error {
 	var outer struct {
 		GuildID discord.Snowflake `json:"guild_id"`
 		Emojis  []discord.Emoji   `json:"emojis"`
@@ -44,9 +44,9 @@ func (e GuildEmojisUpdateEvent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e GuildStickersUpdateEvent) DesiredEventType() Event { return &GuildStickersUpdateEvent{} }
-func (e GuildStickersUpdateEvent) Event() EventType        { return EventGuildStickersUpdate }
-func (e GuildStickersUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *GuildStickersUpdateEvent) DesiredEventType() Event { return &GuildStickersUpdateEvent{} }
+func (e *GuildStickersUpdateEvent) Event() EventType        { return EventGuildStickersUpdate }
+func (e *GuildStickersUpdateEvent) UnmarshalJSON(data []byte) error {
 	var outer struct {
 		GuildID  discord.Snowflake `json:"guild_id"`
 		Stickers []discord.Sticker `json:"stickers"`

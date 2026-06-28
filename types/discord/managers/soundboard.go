@@ -34,12 +34,12 @@ func (m *soundboardManager) Fetch(ctx context.Context, soundID discord.Snowflake
 	return m.client.GetGuildSoundboardSound(ctx, m.guildID, soundID)
 }
 
-func (m *soundboardManager) FetchAll(ctx context.Context) (*collection.Collection[discord.Snowflake, *discord.SoundboardSound], error) {
+func (m *soundboardManager) FetchAll(ctx context.Context) (*collection.Collection[discord.Snowflake, discord.SoundboardSound], error) {
 	sounds, err := m.client.ListGuildSoundboardSounds(ctx, m.guildID)
 	if err != nil {
 		return nil, err
 	}
-	return collection.FromSlice(sounds, func(s *discord.SoundboardSound) discord.Snowflake {
+	return collection.FromSlice(sounds, func(s discord.SoundboardSound) discord.Snowflake {
 		return s.SoundID
 	}), nil
 }

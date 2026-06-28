@@ -21,7 +21,16 @@ func (s *eventSuite) TestApplicationCommandPermissionsUpdate() {
 			Name:  "valid full payload with permissions",
 			Input: sub.MustMarshal(applicationCommandPermissions),
 			Validate: func(e ApplicationCommandPermissionsUpdateEvent) {
-				s.Equal(applicationCommandPermissions, e.NewPermissions)
+				s.EqualValues(applicationCommandPermissions["id"], e.NewPermissions.ID)
+				s.EqualValues(applicationCommandPermissions["application_id"], e.NewPermissions.ApplicationID)
+				s.EqualValues(applicationCommandPermissions["guild_id"], e.NewPermissions.GuildID)
+
+				permissions := applicationCommandPermissions["permissions"].([]map[string]interface{})
+				for i, perm := range permissions {
+					s.EqualValues(perm["id"], e.NewPermissions.Permissions[i].ID)
+					s.EqualValues(perm["type"], e.NewPermissions.Permissions[i].Type)
+					s.EqualValues(perm["permission"], e.NewPermissions.Permissions[i].Permission)
+				}
 			},
 		},
 	})

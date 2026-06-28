@@ -12,10 +12,10 @@ var _ Event = &AutoModerationRuleDeleteEvent{}
 var _ Event = &AutoModerationActionExecutionEvent{}
 
 func init() {
-	RegisterEvent(AutoModerationRuleCreateEvent{})
-	RegisterEvent(AutoModerationRuleUpdateEvent{})
-	RegisterEvent(AutoModerationRuleDeleteEvent{})
-	RegisterEvent(AutoModerationActionExecutionEvent{})
+	RegisterEvent(&AutoModerationRuleCreateEvent{})
+	RegisterEvent(&AutoModerationRuleUpdateEvent{})
+	RegisterEvent(&AutoModerationRuleDeleteEvent{})
+	RegisterEvent(&AutoModerationActionExecutionEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#auto-moderation-rule-create
@@ -53,33 +53,33 @@ type AutoModerationActionExecutionEvent struct {
 	AutomoderationRule *discord.AutoModerationRule `json:"-"`
 }
 
-func (e AutoModerationRuleCreateEvent) DesiredEventType() Event {
+func (e *AutoModerationRuleCreateEvent) DesiredEventType() Event {
 	return &AutoModerationRuleCreateEvent{}
 }
-func (e AutoModerationRuleCreateEvent) Event() EventType { return EventAutoModerationRuleCreate }
-func (e AutoModerationRuleCreateEvent) UnmarshalJSON(data []byte) error {
+func (e *AutoModerationRuleCreateEvent) Event() EventType { return EventAutoModerationRuleCreate }
+func (e *AutoModerationRuleCreateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.Rule)
 }
 
-func (e AutoModerationRuleUpdateEvent) DesiredEventType() Event {
+func (e *AutoModerationRuleUpdateEvent) DesiredEventType() Event {
 	return &AutoModerationRuleUpdateEvent{}
 }
-func (e AutoModerationRuleUpdateEvent) Event() EventType { return EventAutoModerationRuleUpdate }
-func (e AutoModerationRuleUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *AutoModerationRuleUpdateEvent) Event() EventType { return EventAutoModerationRuleUpdate }
+func (e *AutoModerationRuleUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.NewRule)
 }
 
-func (e AutoModerationRuleDeleteEvent) DesiredEventType() Event {
+func (e *AutoModerationRuleDeleteEvent) DesiredEventType() Event {
 	return &AutoModerationRuleDeleteEvent{}
 }
-func (e AutoModerationRuleDeleteEvent) Event() EventType { return EventAutoModerationRuleDelete }
-func (e AutoModerationRuleDeleteEvent) UnmarshalJSON(data []byte) error {
+func (e *AutoModerationRuleDeleteEvent) Event() EventType { return EventAutoModerationRuleDelete }
+func (e *AutoModerationRuleDeleteEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.Rule)
 }
 
-func (e AutoModerationActionExecutionEvent) DesiredEventType() Event {
+func (e *AutoModerationActionExecutionEvent) DesiredEventType() Event {
 	return &AutoModerationActionExecutionEvent{}
 }
-func (e AutoModerationActionExecutionEvent) Event() EventType {
+func (e *AutoModerationActionExecutionEvent) Event() EventType {
 	return EventAutoModerationActionExecution
 }

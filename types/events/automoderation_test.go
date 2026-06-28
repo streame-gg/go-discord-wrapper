@@ -2,7 +2,6 @@ package events
 
 import (
 	"github.com/streame-gg/go-discord-wrapper/internal/testutil"
-	"github.com/streame-gg/go-discord-wrapper/internal/util"
 	"github.com/streame-gg/go-discord-wrapper/testdata"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
@@ -19,83 +18,109 @@ func (s *eventSuite) TestAutomoderationRuleCreate() {
 
 	randomAutomoderationRule2LogChannelID := discord.RandomSnowflake()
 
-	testActions := []discord.AutoModerationAction{
+	testActions := []map[string]interface{}{
 		{
-			Type: discord.AutoModerationActionTypeBlockMessage,
-			Metadata: &discord.AutoModerationActionMetadata{
-				CustomMessage: nil,
+			"type": discord.AutoModerationActionTypeBlockMessage,
+			"metadata": map[string]interface{}{
+				"custom_message": nil,
 			},
 		},
 		{
-			Type: discord.AutoModerationActionTypeBlockMessage,
-			Metadata: &discord.AutoModerationActionMetadata{
-				CustomMessage: util.PointerOf("lol!"),
+			"type": discord.AutoModerationActionTypeBlockMessage,
+			"metadata": map[string]interface{}{
+				"custom_message": "lol!",
 			},
 		},
 		{
-			Type: discord.AutoModerationActionTypeSendAlertMessage,
-			Metadata: &discord.AutoModerationActionMetadata{
-				ChannelID: util.PointerOf(randomAutomoderationRule2LogChannelID),
+			"type": discord.AutoModerationActionTypeSendAlertMessage,
+			"metadata": map[string]interface{}{
+				"channel_id": randomAutomoderationRule2LogChannelID,
 			},
 		},
 		{
-			Type: discord.AutoModerationActionTypeTimeout,
-			Metadata: &discord.AutoModerationActionMetadata{
-				DurationSeconds: 3600,
+			"type": discord.AutoModerationActionTypeTimeout,
+			"metadata": map[string]interface{}{
+				"duration_seconds": 3600,
 			},
 		},
 		{
-			Type: discord.AutoModerationActionTypeBlockMemberInteraction,
+			"type": discord.AutoModerationActionTypeBlockMemberInteraction,
 		},
 	}
 
-	randomAutomoderationRule2.Actions = testActions
+	randomAutomoderationRule2["actions"] = testActions
 
 	sub.RunCases([]testutil.UnmarshalTestCase[AutoModerationRuleCreateEvent]{
 		{
 			Name:  "valid full payload",
 			Input: sub.MustMarshal(randomAutomoderationRule),
 			Validate: func(e AutoModerationRuleCreateEvent) {
-				s.Equal(randomAutomoderationRule.ID, e.Rule.ID)
-				s.Equal(randomAutomoderationRule.GuildID, e.Rule.GuildID)
-				s.Equal(randomAutomoderationRule.Name, e.Rule.Name)
-				s.Equal(randomAutomoderationRule.CreatorID, e.Rule.CreatorID)
-				s.Equal(randomAutomoderationRule.EventType, e.Rule.EventType)
-				s.Equal(randomAutomoderationRule.TriggerType, e.Rule.TriggerType)
-				s.Equal(randomAutomoderationRule.Enabled, e.Rule.Enabled)
-				s.Equal(randomAutomoderationRule.ExemptRoles, e.Rule.ExemptRoles)
-				s.Equal(randomAutomoderationRule.ExemptChannels, e.Rule.ExemptChannels)
-				s.Equal(randomAutomoderationRule.Actions, e.Rule.Actions)
+				s.EqualValues(randomAutomoderationRule["id"], e.Rule.ID)
+				s.EqualValues(randomAutomoderationRule["guild_id"], e.Rule.GuildID)
+				s.EqualValues(randomAutomoderationRule["name"], e.Rule.Name)
+				s.EqualValues(randomAutomoderationRule["creator_id"], e.Rule.CreatorID)
+				s.EqualValues(randomAutomoderationRule["event_type"], e.Rule.EventType)
+				s.EqualValues(randomAutomoderationRule["trigger_type"], e.Rule.TriggerType)
+				s.EqualValues(randomAutomoderationRule["enabled"], e.Rule.Enabled)
+				s.EqualValues(randomAutomoderationRule["exempt_roles"], e.Rule.ExemptRoles)
+				s.EqualValues(randomAutomoderationRule["exempt_channels"], e.Rule.ExemptChannels)
+
+				triggerMetadata := randomAutomoderationRule["trigger_metadata"].(map[string]interface{})
+				s.EqualValues(triggerMetadata["keyword_filter"], e.Rule.TriggerMetadata.KeywordFilter)
+				s.EqualValues(triggerMetadata["regex_patterns"], e.Rule.TriggerMetadata.RegexPatterns)
+				s.EqualValues(triggerMetadata["presets"], e.Rule.TriggerMetadata.Presets)
+				s.EqualValues(triggerMetadata["allow_list"], e.Rule.TriggerMetadata.AllowList)
+				s.EqualValues(triggerMetadata["mention_total_limit"], *e.Rule.TriggerMetadata.MentionTotalLimit)
+				s.EqualValues(triggerMetadata["mention_raid_protection_enabled"], e.Rule.TriggerMetadata.MentionRaidProtectionEnabled)
+
+				actions := randomAutomoderationRule["actions"].([]map[string]interface{})
+				for i, action := range actions {
+					s.EqualValues(action["type"], e.Rule.Actions[i].Type)
+					if action["metadata"] == nil {
+						s.Nil(e.Rule.Actions[i].Metadata)
+					} else {
+						metadata := action["metadata"].(map[string]interface{})
+						if metadata["channel_id"] != nil {
+							s.EqualValues(metadata["channel_id"], *e.Rule.Actions[i].Metadata.ChannelID)
+						}
+						s.EqualValues(metadata["duration_seconds"], e.Rule.Actions[i].Metadata.DurationSeconds)
+						if metadata["custom_message"] != nil {
+							s.EqualValues(metadata["custom_message"], *e.Rule.Actions[i].Metadata.CustomMessage)
+						} else {
+							s.Nil(e.Rule.Actions[i].Metadata.CustomMessage)
+						}
+					}
+				}
 			},
 		},
 		{
 			Name:  "full payload with all actions",
 			Input: sub.MustMarshal(randomAutomoderationRule2),
 			Validate: func(e AutoModerationRuleCreateEvent) {
-				s.Equal(randomAutomoderationRule.ID, e.Rule.ID)
-				s.Equal(randomAutomoderationRule.GuildID, e.Rule.GuildID)
-				s.Equal(randomAutomoderationRule.Name, e.Rule.Name)
-				s.Equal(randomAutomoderationRule.CreatorID, e.Rule.CreatorID)
-				s.Equal(randomAutomoderationRule.EventType, e.Rule.EventType)
-				s.Equal(randomAutomoderationRule.TriggerType, e.Rule.TriggerType)
-				s.Equal(randomAutomoderationRule.Enabled, e.Rule.Enabled)
-				s.Equal(randomAutomoderationRule.ExemptRoles, e.Rule.ExemptRoles)
-				s.Equal(randomAutomoderationRule.ExemptChannels, e.Rule.ExemptChannels)
+				s.EqualValues(randomAutomoderationRule2["id"], e.Rule.ID)
+				s.EqualValues(randomAutomoderationRule2["guild_id"], e.Rule.GuildID)
+				s.EqualValues(randomAutomoderationRule2["name"], e.Rule.Name)
+				s.EqualValues(randomAutomoderationRule2["creator_id"], e.Rule.CreatorID)
+				s.EqualValues(randomAutomoderationRule2["event_type"], e.Rule.EventType)
+				s.EqualValues(randomAutomoderationRule2["trigger_type"], e.Rule.TriggerType)
+				s.EqualValues(randomAutomoderationRule2["enabled"], e.Rule.Enabled)
+				s.EqualValues(randomAutomoderationRule2["exempt_roles"], e.Rule.ExemptRoles)
+				s.EqualValues(randomAutomoderationRule2["exempt_channels"], e.Rule.ExemptChannels)
 
-				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule.Actions[0].Type)
-				s.Nil(randomAutomoderationRule.Actions[0].Metadata.CustomMessage)
+				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule2["actions"].([]map[string]interface{})[0]["type"])
+				s.Nil(e.Rule.Actions[0].Metadata.CustomMessage)
 
-				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule.Actions[1].Type)
-				s.Equal("lol!", *randomAutomoderationRule.Actions[1].Metadata.CustomMessage)
+				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule2["actions"].([]map[string]interface{})[1]["type"])
+				s.Equal("lol!", *e.Rule.Actions[1].Metadata.CustomMessage)
 
-				s.Equal(discord.AutoModerationActionTypeSendAlertMessage, randomAutomoderationRule.Actions[2].Type)
-				s.Equal(randomAutomoderationRule2LogChannelID, *randomAutomoderationRule.Actions[2].Metadata.ChannelID)
+				s.Equal(discord.AutoModerationActionTypeSendAlertMessage, randomAutomoderationRule2["actions"].([]map[string]interface{})[2]["type"])
+				s.EqualValues(randomAutomoderationRule2LogChannelID, *e.Rule.Actions[2].Metadata.ChannelID)
 
-				s.Equal(discord.AutoModerationActionTypeTimeout, randomAutomoderationRule.Actions[3].Type)
-				s.Equal(3600, randomAutomoderationRule.Actions[3].Metadata.DurationSeconds)
+				s.Equal(discord.AutoModerationActionTypeTimeout, randomAutomoderationRule2["actions"].([]map[string]interface{})[3]["type"])
+				s.Equal(3600, e.Rule.Actions[3].Metadata.DurationSeconds)
 
-				s.Equal(discord.AutoModerationActionTypeBlockMemberInteraction, randomAutomoderationRule.Actions[4].Type)
-				s.Nil(randomAutomoderationRule.Actions[4].Metadata)
+				s.Equal(discord.AutoModerationActionTypeBlockMemberInteraction, randomAutomoderationRule2["actions"].([]map[string]interface{})[4]["type"])
+				s.Nil(e.Rule.Actions[4].Metadata)
 			},
 		},
 	})
@@ -113,85 +138,109 @@ func (s *eventSuite) TestAutomoderationRuleUpdate() {
 
 	randomAutomoderationRule2LogChannelID := discord.RandomSnowflake()
 
-	testActions := []discord.AutoModerationAction{
+	testActions := []map[string]interface{}{
 		{
-			Type: discord.AutoModerationActionTypeBlockMessage,
-			Metadata: &discord.AutoModerationActionMetadata{
-				CustomMessage: nil,
+			"type": discord.AutoModerationActionTypeBlockMessage,
+			"metadata": map[string]interface{}{
+				"custom_message": nil,
 			},
 		},
 		{
-			Type: discord.AutoModerationActionTypeBlockMessage,
-			Metadata: &discord.AutoModerationActionMetadata{
-				CustomMessage: util.PointerOf("lol!"),
+			"type": discord.AutoModerationActionTypeBlockMessage,
+			"metadata": map[string]interface{}{
+				"custom_message": "lol!",
 			},
 		},
 		{
-			Type: discord.AutoModerationActionTypeSendAlertMessage,
-			Metadata: &discord.AutoModerationActionMetadata{
-				ChannelID: util.PointerOf(randomAutomoderationRule2LogChannelID),
+			"type": discord.AutoModerationActionTypeSendAlertMessage,
+			"metadata": map[string]interface{}{
+				"channel_id": randomAutomoderationRule2LogChannelID,
 			},
 		},
 		{
-			Type: discord.AutoModerationActionTypeTimeout,
-			Metadata: &discord.AutoModerationActionMetadata{
-				DurationSeconds: 3600,
+			"type": discord.AutoModerationActionTypeTimeout,
+			"metadata": map[string]interface{}{
+				"duration_seconds": 3600,
 			},
 		},
 		{
-			Type: discord.AutoModerationActionTypeBlockMemberInteraction,
+			"type": discord.AutoModerationActionTypeBlockMemberInteraction,
 		},
 	}
 
-	randomAutomoderationRule2.Actions = testActions
+	randomAutomoderationRule2["actions"] = testActions
 
 	sub.RunCases([]testutil.UnmarshalTestCase[AutoModerationRuleUpdateEvent]{
 		{
 			Name:  "valid full payload",
 			Input: sub.MustMarshal(randomAutomoderationRule),
 			Validate: func(e AutoModerationRuleUpdateEvent) {
-				s.Equal(randomAutomoderationRule.ID, e.NewRule.ID)
-				s.Equal(randomAutomoderationRule.GuildID, e.NewRule.GuildID)
-				s.Equal(randomAutomoderationRule.Name, e.NewRule.Name)
-				s.Equal(randomAutomoderationRule.CreatorID, e.NewRule.CreatorID)
-				s.Equal(randomAutomoderationRule.EventType, e.NewRule.EventType)
-				s.Equal(randomAutomoderationRule.TriggerType, e.NewRule.TriggerType)
-				s.Equal(randomAutomoderationRule.Enabled, e.NewRule.Enabled)
-				s.Equal(randomAutomoderationRule.ExemptRoles, e.NewRule.ExemptRoles)
-				s.Equal(randomAutomoderationRule.ExemptChannels, e.NewRule.ExemptChannels)
-				s.Equal(randomAutomoderationRule.Actions, e.NewRule.Actions)
-				s.Nil(e.OldRule)
+				s.EqualValues(randomAutomoderationRule["id"], e.NewRule.ID)
+				s.EqualValues(randomAutomoderationRule["guild_id"], e.NewRule.GuildID)
+				s.EqualValues(randomAutomoderationRule["name"], e.NewRule.Name)
+				s.EqualValues(randomAutomoderationRule["creator_id"], e.NewRule.CreatorID)
+				s.EqualValues(randomAutomoderationRule["event_type"], e.NewRule.EventType)
+				s.EqualValues(randomAutomoderationRule["trigger_type"], e.NewRule.TriggerType)
+				s.EqualValues(randomAutomoderationRule["enabled"], e.NewRule.Enabled)
+				s.EqualValues(randomAutomoderationRule["exempt_roles"], e.NewRule.ExemptRoles)
+				s.EqualValues(randomAutomoderationRule["exempt_channels"], e.NewRule.ExemptChannels)
+
+				triggerMetadata := randomAutomoderationRule["trigger_metadata"].(map[string]interface{})
+				s.EqualValues(triggerMetadata["keyword_filter"], e.NewRule.TriggerMetadata.KeywordFilter)
+				s.EqualValues(triggerMetadata["regex_patterns"], e.NewRule.TriggerMetadata.RegexPatterns)
+				s.EqualValues(triggerMetadata["presets"], e.NewRule.TriggerMetadata.Presets)
+				s.EqualValues(triggerMetadata["allow_list"], e.NewRule.TriggerMetadata.AllowList)
+				s.EqualValues(triggerMetadata["mention_total_limit"], *e.NewRule.TriggerMetadata.MentionTotalLimit)
+				s.EqualValues(triggerMetadata["mention_raid_protection_enabled"], e.NewRule.TriggerMetadata.MentionRaidProtectionEnabled)
+
+				actions := randomAutomoderationRule["actions"].([]map[string]interface{})
+				for i, action := range actions {
+					s.EqualValues(action["type"], e.NewRule.Actions[i].Type)
+					if action["metadata"] == nil {
+						s.Nil(e.NewRule.Actions[i].Metadata)
+					} else {
+						metadata := action["metadata"].(map[string]interface{})
+						if metadata["channel_id"] != nil {
+							s.EqualValues(metadata["channel_id"], *e.NewRule.Actions[i].Metadata.ChannelID)
+						}
+						s.EqualValues(metadata["duration_seconds"], e.NewRule.Actions[i].Metadata.DurationSeconds)
+						if metadata["custom_message"] != nil {
+							s.EqualValues(metadata["custom_message"], *e.NewRule.Actions[i].Metadata.CustomMessage)
+						} else {
+							s.Nil(e.NewRule.Actions[i].Metadata.CustomMessage)
+						}
+					}
+				}
 			},
 		},
 		{
 			Name:  "full payload with all actions",
 			Input: sub.MustMarshal(randomAutomoderationRule2),
 			Validate: func(e AutoModerationRuleUpdateEvent) {
-				s.Equal(randomAutomoderationRule.ID, e.NewRule.ID)
-				s.Equal(randomAutomoderationRule.GuildID, e.NewRule.GuildID)
-				s.Equal(randomAutomoderationRule.Name, e.NewRule.Name)
-				s.Equal(randomAutomoderationRule.CreatorID, e.NewRule.CreatorID)
-				s.Equal(randomAutomoderationRule.EventType, e.NewRule.EventType)
-				s.Equal(randomAutomoderationRule.TriggerType, e.NewRule.TriggerType)
-				s.Equal(randomAutomoderationRule.Enabled, e.NewRule.Enabled)
-				s.Equal(randomAutomoderationRule.ExemptRoles, e.NewRule.ExemptRoles)
-				s.Equal(randomAutomoderationRule.ExemptChannels, e.NewRule.ExemptChannels)
-				s.Nil(e.OldRule)
+				s.EqualValues(randomAutomoderationRule2["id"], e.NewRule.ID)
+				s.EqualValues(randomAutomoderationRule2["guild_id"], e.NewRule.GuildID)
+				s.EqualValues(randomAutomoderationRule2["name"], e.NewRule.Name)
+				s.EqualValues(randomAutomoderationRule2["creator_id"], e.NewRule.CreatorID)
+				s.EqualValues(randomAutomoderationRule2["event_type"], e.NewRule.EventType)
+				s.EqualValues(randomAutomoderationRule2["trigger_type"], e.NewRule.TriggerType)
+				s.EqualValues(randomAutomoderationRule2["enabled"], e.NewRule.Enabled)
+				s.EqualValues(randomAutomoderationRule2["exempt_roles"], e.NewRule.ExemptRoles)
+				s.EqualValues(randomAutomoderationRule2["exempt_channels"], e.NewRule.ExemptChannels)
 
-				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule.Actions[0].Type)
-				s.Nil(randomAutomoderationRule.Actions[0].Metadata.CustomMessage)
+				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule2["actions"].([]map[string]interface{})[0]["type"])
+				s.Nil(e.NewRule.Actions[0].Metadata.CustomMessage)
 
-				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule.Actions[1].Type)
-				s.Equal("lol!", *randomAutomoderationRule.Actions[1].Metadata.CustomMessage)
+				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule2["actions"].([]map[string]interface{})[1]["type"])
+				s.Equal("lol!", *e.NewRule.Actions[1].Metadata.CustomMessage)
 
-				s.Equal(discord.AutoModerationActionTypeSendAlertMessage, randomAutomoderationRule.Actions[2].Type)
-				s.Equal(randomAutomoderationRule2LogChannelID, *randomAutomoderationRule.Actions[2].Metadata.ChannelID)
+				s.Equal(discord.AutoModerationActionTypeSendAlertMessage, randomAutomoderationRule2["actions"].([]map[string]interface{})[2]["type"])
+				s.EqualValues(randomAutomoderationRule2LogChannelID, *e.NewRule.Actions[2].Metadata.ChannelID)
 
-				s.Equal(discord.AutoModerationActionTypeTimeout, randomAutomoderationRule.Actions[3].Type)
-				s.Equal(3600, randomAutomoderationRule.Actions[3].Metadata.DurationSeconds)
+				s.Equal(discord.AutoModerationActionTypeTimeout, randomAutomoderationRule2["actions"].([]map[string]interface{})[3]["type"])
+				s.Equal(3600, e.NewRule.Actions[3].Metadata.DurationSeconds)
 
-				s.Equal(discord.AutoModerationActionTypeBlockMemberInteraction, randomAutomoderationRule.Actions[4].Type)
-				s.Nil(randomAutomoderationRule.Actions[4].Metadata)
+				s.Equal(discord.AutoModerationActionTypeBlockMemberInteraction, randomAutomoderationRule2["actions"].([]map[string]interface{})[4]["type"])
+				s.Nil(e.NewRule.Actions[4].Metadata)
 			},
 		},
 	})
@@ -209,83 +258,109 @@ func (s *eventSuite) TestAutomoderationRuleDelete() {
 
 	randomAutomoderationRule2LogChannelID := discord.RandomSnowflake()
 
-	testActions := []discord.AutoModerationAction{
+	testActions := []map[string]interface{}{
 		{
-			Type: discord.AutoModerationActionTypeBlockMessage,
-			Metadata: &discord.AutoModerationActionMetadata{
-				CustomMessage: nil,
+			"type": discord.AutoModerationActionTypeBlockMessage,
+			"metadata": map[string]interface{}{
+				"custom_message": nil,
 			},
 		},
 		{
-			Type: discord.AutoModerationActionTypeBlockMessage,
-			Metadata: &discord.AutoModerationActionMetadata{
-				CustomMessage: util.PointerOf("lol!"),
+			"type": discord.AutoModerationActionTypeBlockMessage,
+			"metadata": map[string]interface{}{
+				"custom_message": "lol!",
 			},
 		},
 		{
-			Type: discord.AutoModerationActionTypeSendAlertMessage,
-			Metadata: &discord.AutoModerationActionMetadata{
-				ChannelID: util.PointerOf(randomAutomoderationRule2LogChannelID),
+			"type": discord.AutoModerationActionTypeSendAlertMessage,
+			"metadata": map[string]interface{}{
+				"channel_id": randomAutomoderationRule2LogChannelID,
 			},
 		},
 		{
-			Type: discord.AutoModerationActionTypeTimeout,
-			Metadata: &discord.AutoModerationActionMetadata{
-				DurationSeconds: 3600,
+			"type": discord.AutoModerationActionTypeTimeout,
+			"metadata": map[string]interface{}{
+				"duration_seconds": 3600,
 			},
 		},
 		{
-			Type: discord.AutoModerationActionTypeBlockMemberInteraction,
+			"type": discord.AutoModerationActionTypeBlockMemberInteraction,
 		},
 	}
 
-	randomAutomoderationRule2.Actions = testActions
+	randomAutomoderationRule2["actions"] = testActions
 
 	sub.RunCases([]testutil.UnmarshalTestCase[AutoModerationRuleDeleteEvent]{
 		{
 			Name:  "valid full payload",
 			Input: sub.MustMarshal(randomAutomoderationRule),
 			Validate: func(e AutoModerationRuleDeleteEvent) {
-				s.Equal(randomAutomoderationRule.ID, e.Rule.ID)
-				s.Equal(randomAutomoderationRule.GuildID, e.Rule.GuildID)
-				s.Equal(randomAutomoderationRule.Name, e.Rule.Name)
-				s.Equal(randomAutomoderationRule.CreatorID, e.Rule.CreatorID)
-				s.Equal(randomAutomoderationRule.EventType, e.Rule.EventType)
-				s.Equal(randomAutomoderationRule.TriggerType, e.Rule.TriggerType)
-				s.Equal(randomAutomoderationRule.Enabled, e.Rule.Enabled)
-				s.Equal(randomAutomoderationRule.ExemptRoles, e.Rule.ExemptRoles)
-				s.Equal(randomAutomoderationRule.ExemptChannels, e.Rule.ExemptChannels)
-				s.Equal(randomAutomoderationRule.Actions, e.Rule.Actions)
+				s.EqualValues(randomAutomoderationRule["id"], e.Rule.ID)
+				s.EqualValues(randomAutomoderationRule["guild_id"], e.Rule.GuildID)
+				s.EqualValues(randomAutomoderationRule["name"], e.Rule.Name)
+				s.EqualValues(randomAutomoderationRule["creator_id"], e.Rule.CreatorID)
+				s.EqualValues(randomAutomoderationRule["event_type"], e.Rule.EventType)
+				s.EqualValues(randomAutomoderationRule["trigger_type"], e.Rule.TriggerType)
+				s.EqualValues(randomAutomoderationRule["enabled"], e.Rule.Enabled)
+				s.EqualValues(randomAutomoderationRule["exempt_roles"], e.Rule.ExemptRoles)
+				s.EqualValues(randomAutomoderationRule["exempt_channels"], e.Rule.ExemptChannels)
+
+				triggerMetadata := randomAutomoderationRule["trigger_metadata"].(map[string]interface{})
+				s.EqualValues(triggerMetadata["keyword_filter"], e.Rule.TriggerMetadata.KeywordFilter)
+				s.EqualValues(triggerMetadata["regex_patterns"], e.Rule.TriggerMetadata.RegexPatterns)
+				s.EqualValues(triggerMetadata["presets"], e.Rule.TriggerMetadata.Presets)
+				s.EqualValues(triggerMetadata["allow_list"], e.Rule.TriggerMetadata.AllowList)
+				s.EqualValues(triggerMetadata["mention_total_limit"], *e.Rule.TriggerMetadata.MentionTotalLimit)
+				s.EqualValues(triggerMetadata["mention_raid_protection_enabled"], e.Rule.TriggerMetadata.MentionRaidProtectionEnabled)
+
+				actions := randomAutomoderationRule["actions"].([]map[string]interface{})
+				for i, action := range actions {
+					s.EqualValues(action["type"], e.Rule.Actions[i].Type)
+					if action["metadata"] == nil {
+						s.Nil(e.Rule.Actions[i].Metadata)
+					} else {
+						metadata := action["metadata"].(map[string]interface{})
+						if metadata["channel_id"] != nil {
+							s.EqualValues(metadata["channel_id"], *e.Rule.Actions[i].Metadata.ChannelID)
+						}
+						s.EqualValues(metadata["duration_seconds"], e.Rule.Actions[i].Metadata.DurationSeconds)
+						if metadata["custom_message"] != nil {
+							s.EqualValues(metadata["custom_message"], *e.Rule.Actions[i].Metadata.CustomMessage)
+						} else {
+							s.Nil(e.Rule.Actions[i].Metadata.CustomMessage)
+						}
+					}
+				}
 			},
 		},
 		{
 			Name:  "full payload with all actions",
 			Input: sub.MustMarshal(randomAutomoderationRule2),
 			Validate: func(e AutoModerationRuleDeleteEvent) {
-				s.Equal(randomAutomoderationRule.ID, e.Rule.ID)
-				s.Equal(randomAutomoderationRule.GuildID, e.Rule.GuildID)
-				s.Equal(randomAutomoderationRule.Name, e.Rule.Name)
-				s.Equal(randomAutomoderationRule.CreatorID, e.Rule.CreatorID)
-				s.Equal(randomAutomoderationRule.EventType, e.Rule.EventType)
-				s.Equal(randomAutomoderationRule.TriggerType, e.Rule.TriggerType)
-				s.Equal(randomAutomoderationRule.Enabled, e.Rule.Enabled)
-				s.Equal(randomAutomoderationRule.ExemptRoles, e.Rule.ExemptRoles)
-				s.Equal(randomAutomoderationRule.ExemptChannels, e.Rule.ExemptChannels)
+				s.EqualValues(randomAutomoderationRule2["id"], e.Rule.ID)
+				s.EqualValues(randomAutomoderationRule2["guild_id"], e.Rule.GuildID)
+				s.EqualValues(randomAutomoderationRule2["name"], e.Rule.Name)
+				s.EqualValues(randomAutomoderationRule2["creator_id"], e.Rule.CreatorID)
+				s.EqualValues(randomAutomoderationRule2["event_type"], e.Rule.EventType)
+				s.EqualValues(randomAutomoderationRule2["trigger_type"], e.Rule.TriggerType)
+				s.EqualValues(randomAutomoderationRule2["enabled"], e.Rule.Enabled)
+				s.EqualValues(randomAutomoderationRule2["exempt_roles"], e.Rule.ExemptRoles)
+				s.EqualValues(randomAutomoderationRule2["exempt_channels"], e.Rule.ExemptChannels)
 
-				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule.Actions[0].Type)
-				s.Nil(randomAutomoderationRule.Actions[0].Metadata.CustomMessage)
+				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule2["actions"].([]map[string]interface{})[0]["type"])
+				s.Nil(e.Rule.Actions[0].Metadata.CustomMessage)
 
-				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule.Actions[1].Type)
-				s.Equal("lol!", *randomAutomoderationRule.Actions[1].Metadata.CustomMessage)
+				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule2["actions"].([]map[string]interface{})[1]["type"])
+				s.Equal("lol!", *e.Rule.Actions[1].Metadata.CustomMessage)
 
-				s.Equal(discord.AutoModerationActionTypeSendAlertMessage, randomAutomoderationRule.Actions[2].Type)
-				s.Equal(randomAutomoderationRule2LogChannelID, *randomAutomoderationRule.Actions[2].Metadata.ChannelID)
+				s.Equal(discord.AutoModerationActionTypeSendAlertMessage, randomAutomoderationRule2["actions"].([]map[string]interface{})[2]["type"])
+				s.EqualValues(randomAutomoderationRule2LogChannelID, *e.Rule.Actions[2].Metadata.ChannelID)
 
-				s.Equal(discord.AutoModerationActionTypeTimeout, randomAutomoderationRule.Actions[3].Type)
-				s.Equal(3600, randomAutomoderationRule.Actions[3].Metadata.DurationSeconds)
+				s.Equal(discord.AutoModerationActionTypeTimeout, randomAutomoderationRule2["actions"].([]map[string]interface{})[3]["type"])
+				s.Equal(3600, e.Rule.Actions[3].Metadata.DurationSeconds)
 
-				s.Equal(discord.AutoModerationActionTypeBlockMemberInteraction, randomAutomoderationRule.Actions[4].Type)
-				s.Nil(randomAutomoderationRule.Actions[4].Metadata)
+				s.Equal(discord.AutoModerationActionTypeBlockMemberInteraction, randomAutomoderationRule2["actions"].([]map[string]interface{})[4]["type"])
+				s.Nil(e.Rule.Actions[4].Metadata)
 			},
 		},
 	})

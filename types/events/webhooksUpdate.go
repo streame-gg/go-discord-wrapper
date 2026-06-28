@@ -6,7 +6,7 @@ import (
 
 var _ Event = &WebhooksUpdateEvent{}
 
-func init() { RegisterEvent(WebhooksUpdateEvent{}) }
+func init() { RegisterEvent(&WebhooksUpdateEvent{}) }
 
 // https://docs.discord.com/developers/events/gateway-events#webhooks-update
 type WebhooksUpdateEvent struct {
@@ -17,5 +17,5 @@ type WebhooksUpdateEvent struct {
 	Channel *discord.Channel `json:"-"`
 }
 
-func (e WebhooksUpdateEvent) DesiredEventType() Event { return &WebhooksUpdateEvent{} }
-func (e WebhooksUpdateEvent) Event() EventType        { return EventWebhooksUpdate }
+func (e *WebhooksUpdateEvent) DesiredEventType() Event { return &WebhooksUpdateEvent{} }
+func (e *WebhooksUpdateEvent) Event() EventType        { return EventWebhooksUpdate }

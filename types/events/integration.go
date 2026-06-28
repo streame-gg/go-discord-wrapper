@@ -11,9 +11,9 @@ var _ Event = &IntegrationUpdateEvent{}
 var _ Event = &IntegrationDeleteEvent{}
 
 func init() {
-	RegisterEvent(IntegrationCreateEvent{})
-	RegisterEvent(IntegrationUpdateEvent{})
-	RegisterEvent(IntegrationDeleteEvent{})
+	RegisterEvent(&IntegrationCreateEvent{})
+	RegisterEvent(&IntegrationUpdateEvent{})
+	RegisterEvent(&IntegrationDeleteEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#integration-create
@@ -35,9 +35,9 @@ type IntegrationDeleteEvent struct {
 	ApplicationID *discord.Snowflake `json:"application_id,omitempty"`
 }
 
-func (e IntegrationCreateEvent) DesiredEventType() Event { return &IntegrationCreateEvent{} }
-func (e IntegrationCreateEvent) Event() EventType        { return EventIntegrationCreate }
-func (e IntegrationCreateEvent) UnmarshalJSON(data []byte) error {
+func (e *IntegrationCreateEvent) DesiredEventType() Event { return &IntegrationCreateEvent{} }
+func (e *IntegrationCreateEvent) Event() EventType        { return EventIntegrationCreate }
+func (e *IntegrationCreateEvent) UnmarshalJSON(data []byte) error {
 	type wire struct {
 		GuildID discord.Snowflake `json:"guild_id"`
 		discord.Integration
@@ -51,9 +51,9 @@ func (e IntegrationCreateEvent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e IntegrationUpdateEvent) DesiredEventType() Event { return &IntegrationUpdateEvent{} }
-func (e IntegrationUpdateEvent) Event() EventType        { return EventIntegrationUpdate }
-func (e IntegrationUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *IntegrationUpdateEvent) DesiredEventType() Event { return &IntegrationUpdateEvent{} }
+func (e *IntegrationUpdateEvent) Event() EventType        { return EventIntegrationUpdate }
+func (e *IntegrationUpdateEvent) UnmarshalJSON(data []byte) error {
 	type wire struct {
 		GuildID discord.Snowflake `json:"guild_id"`
 		discord.Integration
@@ -67,5 +67,5 @@ func (e IntegrationUpdateEvent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e IntegrationDeleteEvent) DesiredEventType() Event { return &IntegrationDeleteEvent{} }
-func (e IntegrationDeleteEvent) Event() EventType        { return EventIntegrationDelete }
+func (e *IntegrationDeleteEvent) DesiredEventType() Event { return &IntegrationDeleteEvent{} }
+func (e *IntegrationDeleteEvent) Event() EventType        { return EventIntegrationDelete }

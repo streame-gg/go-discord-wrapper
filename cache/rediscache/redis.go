@@ -649,17 +649,16 @@ func (s *redisMemberStore) AllInGuild(guildID discord.Snowflake) *collection.Col
 			continue
 		}
 		if n, err := strconv.ParseUint(userIDs[i], 10, 64); err == nil {
-			m.UserID = discord.Snowflake(n)
+			if m.User == nil {
+				m.User = &discord.User{}
+			}
+			m.User.ID = discord.Snowflake(n)
 		}
-		uid := m.UserID
-		if m.User != nil && m.User.ID.IsValid() {
-			uid = m.User.ID
-		}
-		if uid.IsEmpty() {
+		if m.User == nil || !m.User.ID.IsValid() {
 			stale = append(stale, userIDs[i])
 			continue
 		}
-		coll.Set(uid, &m)
+		coll.Set(m.User.ID, &m)
 	}
 	if len(stale) > 0 {
 		_ = s.c.client.SRem(s.c.ctx, gIdx, stale...).Err()
@@ -1092,16 +1091,13 @@ func (s *redisSoundboardStore) GetByGuild(guildID discord.Snowflake) *collection
 	return coll
 }
 
-func (s *redisSoundboardStore) SetAll(guildID discord.Snowflake, sounds []*discord.SoundboardSound) {
+func (s *redisSoundboardStore) SetAll(guildID discord.Snowflake, sounds []discord.SoundboardSound) {
 	idx := s.c.k("soundboard", "guild", strconv.FormatUint(uint64(guildID), 10))
 	iPfx := s.c.k("soundboard") + ":"
 	mPfx := s.c.k("soundboard", "map") + ":"
 	ttl := s.c.opts.TTL.Milliseconds()
 	args := []interface{}{iPfx, mPfx, ttl, strconv.FormatUint(uint64(guildID), 10)}
 	for _, sound := range sounds {
-		if sound == nil {
-			continue
-		}
 		b, err := json.Marshal(sound)
 		if err != nil {
 			continue

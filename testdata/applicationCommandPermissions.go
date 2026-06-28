@@ -5,24 +5,24 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-func NewApplicationCommandPermissions() discord.ApplicationCommandPermission {
-	return discord.ApplicationCommandPermission{
-		ID: discord.RandomSnowflake(),
-		Type: testutil.RandomItem(
+func NewApplicationCommandPermissions() map[string]interface{} {
+	return map[string]interface{}{
+		"id": discord.RandomSnowflake(),
+		"type": testutil.RandomItem(
 			discord.ApplicationCommandPermissionTypeRole,
 			discord.ApplicationCommandPermissionTypeUser,
 			discord.ApplicationCommandPermissionTypeChannel,
 		),
-		Permission: testutil.RandomBool(),
+		"permission": testutil.RandomBool(),
 	}
 }
 
-func NewGuildApplicationCommandPermissions() discord.GuildApplicationCommandPermissions {
-	return discord.GuildApplicationCommandPermissions{
-		ID:            discord.RandomSnowflake(),
-		ApplicationID: discord.RandomSnowflake(),
-		GuildID:       discord.RandomSnowflake(),
-		Permissions: testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 100), func(arrayToFill *[]discord.ApplicationCommandPermission) {
+func NewGuildApplicationCommandPermissions() map[string]interface{} {
+	return map[string]interface{}{
+		"id":             discord.RandomSnowflake(),
+		"application_id": discord.RandomSnowflake(),
+		"guild_id":       discord.RandomSnowflake(),
+		"permissions": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewApplicationCommandPermissions())
 		}),
 	}

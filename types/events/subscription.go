@@ -7,9 +7,9 @@ import (
 )
 
 func init() {
-	RegisterEvent(SubscriptionCreateEvent{})
-	RegisterEvent(SubscriptionUpdateEvent{})
-	RegisterEvent(SubscriptionDeleteEvent{})
+	RegisterEvent(&SubscriptionCreateEvent{})
+	RegisterEvent(&SubscriptionUpdateEvent{})
+	RegisterEvent(&SubscriptionDeleteEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#subscription-create
@@ -33,20 +33,20 @@ type SubscriptionDeleteEvent struct {
 	User *discord.User `json:"-"`
 }
 
-func (e SubscriptionCreateEvent) DesiredEventType() Event { return &SubscriptionCreateEvent{} }
-func (e SubscriptionCreateEvent) Event() EventType        { return EventSubscriptionCreate }
-func (e SubscriptionCreateEvent) UnmarshalJSON(data []byte) error {
+func (e *SubscriptionCreateEvent) DesiredEventType() Event { return &SubscriptionCreateEvent{} }
+func (e *SubscriptionCreateEvent) Event() EventType        { return EventSubscriptionCreate }
+func (e *SubscriptionCreateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.Subscription)
 }
 
-func (e SubscriptionUpdateEvent) DesiredEventType() Event { return &SubscriptionUpdateEvent{} }
-func (e SubscriptionUpdateEvent) Event() EventType        { return EventSubscriptionUpdate }
-func (e SubscriptionUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *SubscriptionUpdateEvent) DesiredEventType() Event { return &SubscriptionUpdateEvent{} }
+func (e *SubscriptionUpdateEvent) Event() EventType        { return EventSubscriptionUpdate }
+func (e *SubscriptionUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.Subscription)
 }
 
-func (e SubscriptionDeleteEvent) DesiredEventType() Event { return &SubscriptionDeleteEvent{} }
-func (e SubscriptionDeleteEvent) Event() EventType        { return EventSubscriptionDelete }
-func (e SubscriptionDeleteEvent) UnmarshalJSON(data []byte) error {
+func (e *SubscriptionDeleteEvent) DesiredEventType() Event { return &SubscriptionDeleteEvent{} }
+func (e *SubscriptionDeleteEvent) Event() EventType        { return EventSubscriptionDelete }
+func (e *SubscriptionDeleteEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.Subscription)
 }

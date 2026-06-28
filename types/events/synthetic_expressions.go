@@ -48,20 +48,20 @@ type GuildStickerUpdateEvent struct {
 	NewSticker *discord.Sticker
 }
 
-func (e GuildEmojiAddEvent) Event() EventType        { return EventWrapperGuildEmojiAdd }
-func (e GuildEmojiAddEvent) DesiredEventType() Event { return &GuildEmojiAddEvent{} }
+func (e *GuildEmojiAddEvent) Event() EventType        { return EventWrapperGuildEmojiAdd }
+func (e *GuildEmojiAddEvent) DesiredEventType() Event { return &GuildEmojiAddEvent{} }
 
-func (e GuildEmojiUpdateEvent) Event() EventType        { return EventWrapperGuildEmojiUpdate }
-func (e GuildEmojiUpdateEvent) DesiredEventType() Event { return &GuildEmojiUpdateEvent{} }
+func (e *GuildEmojiUpdateEvent) Event() EventType        { return EventWrapperGuildEmojiUpdate }
+func (e *GuildEmojiUpdateEvent) DesiredEventType() Event { return &GuildEmojiUpdateEvent{} }
 
-func (e GuildEmojiRemoveEvent) Event() EventType        { return EventWrapperGuildEmojiRemove }
-func (e GuildEmojiRemoveEvent) DesiredEventType() Event { return &GuildEmojiRemoveEvent{} }
+func (e *GuildEmojiRemoveEvent) Event() EventType        { return EventWrapperGuildEmojiRemove }
+func (e *GuildEmojiRemoveEvent) DesiredEventType() Event { return &GuildEmojiRemoveEvent{} }
 
-func (e GuildStickerAddEvent) Event() EventType        { return EventWrapperGuildStickerAdd }
-func (e GuildStickerAddEvent) DesiredEventType() Event { return &GuildStickerAddEvent{} }
+func (e *GuildStickerAddEvent) Event() EventType        { return EventWrapperGuildStickerAdd }
+func (e *GuildStickerAddEvent) DesiredEventType() Event { return &GuildStickerAddEvent{} }
 
-func (e GuildStickerUpdateEvent) Event() EventType        { return EventWrapperGuildStickerUpdate }
-func (e GuildStickerUpdateEvent) DesiredEventType() Event { return &GuildStickerUpdateEvent{} }
+func (e *GuildStickerUpdateEvent) Event() EventType        { return EventWrapperGuildStickerUpdate }
+func (e *GuildStickerUpdateEvent) DesiredEventType() Event { return &GuildStickerUpdateEvent{} }
 
-func (e GuildStickerRemoveEvent) Event() EventType        { return EventWrapperGuildStickerRemove }
-func (e GuildStickerRemoveEvent) DesiredEventType() Event { return &GuildStickerRemoveEvent{} }
+func (e *GuildStickerRemoveEvent) Event() EventType        { return EventWrapperGuildStickerRemove }
+func (e *GuildStickerRemoveEvent) DesiredEventType() Event { return &GuildStickerRemoveEvent{} }

@@ -11,9 +11,9 @@ var _ Event = &GuildRoleUpdateEvent{}
 var _ Event = &GuildRoleDeleteEvent{}
 
 func init() {
-	RegisterEvent(GuildRoleCreateEvent{})
-	RegisterEvent(GuildRoleUpdateEvent{})
-	RegisterEvent(GuildRoleDeleteEvent{})
+	RegisterEvent(&GuildRoleCreateEvent{})
+	RegisterEvent(&GuildRoleUpdateEvent{})
+	RegisterEvent(&GuildRoleDeleteEvent{})
 }
 
 // https://docs.discord.com/developers/events/gateway-events#guild-role-create
@@ -36,12 +36,12 @@ type GuildRoleDeleteEvent struct {
 	Role    *discord.Role     `json:"-"`
 }
 
-func (e GuildRoleCreateEvent) DesiredEventType() Event { return &GuildRoleCreateEvent{} }
-func (e GuildRoleCreateEvent) Event() EventType        { return EventGuildRoleCreate }
+func (e *GuildRoleCreateEvent) DesiredEventType() Event { return &GuildRoleCreateEvent{} }
+func (e *GuildRoleCreateEvent) Event() EventType        { return EventGuildRoleCreate }
 
-func (e GuildRoleUpdateEvent) DesiredEventType() Event { return &GuildRoleUpdateEvent{} }
-func (e GuildRoleUpdateEvent) Event() EventType        { return EventGuildRoleUpdate }
-func (e GuildRoleUpdateEvent) UnmarshalJSON(data []byte) error {
+func (e *GuildRoleUpdateEvent) DesiredEventType() Event { return &GuildRoleUpdateEvent{} }
+func (e *GuildRoleUpdateEvent) Event() EventType        { return EventGuildRoleUpdate }
+func (e *GuildRoleUpdateEvent) UnmarshalJSON(data []byte) error {
 	var wire struct {
 		GuildID discord.Snowflake `json:"guild_id"`
 		Role    discord.Role      `json:"role"`
@@ -56,5 +56,5 @@ func (e GuildRoleUpdateEvent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e GuildRoleDeleteEvent) DesiredEventType() Event { return &GuildRoleDeleteEvent{} }
-func (e GuildRoleDeleteEvent) Event() EventType        { return EventGuildRoleDelete }
+func (e *GuildRoleDeleteEvent) DesiredEventType() Event { return &GuildRoleDeleteEvent{} }
+func (e *GuildRoleDeleteEvent) Event() EventType        { return EventGuildRoleDelete }
