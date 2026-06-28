@@ -1507,7 +1507,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					d.Logger.Error("Failed to unmarshal STAGE_INSTANCE_DELETE event", slog.Any("err", err))
 					return false
 				}
-				d.Cache.StageInstances().Delete(ev.ID)
+				d.Cache.StageInstances().Delete(ev.Stage.ID)
 			}
 		}
 	case events.EventGuildSoundboardSoundCreate:
@@ -2136,7 +2136,7 @@ func (d *Client) hydrateEvent(event events.Event) {
 	case *events.StageInstanceUpdateEvent:
 		ev.NewStage.Hydrate(d)
 	case *events.StageInstanceDeleteEvent:
-		ev.Hydrate(d)
+		ev.Stage.Hydrate(d)
 	case *events.UserUpdateEvent:
 		ev.NewUser.Hydrate(d)
 	case *events.GuildSoundboardSoundCreateEvent:
