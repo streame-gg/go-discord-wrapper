@@ -969,7 +969,6 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						for i := range guildCreateEvent.Members {
 							m := guildCreateEvent.Members[i]
 							m.GuildID = guildID
-							m.UserID = m.User.ID
 							m.Hydrate(d)
 							d.Cache.Members().Set(guildID, &m)
 						}
@@ -1424,10 +1423,10 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 				return false
 			}
 			if d.cacheStoreEnabled(cache.CategoryScheduledEvents) {
-				if old, exists := d.Cache.ScheduledEvents().Get(ev.NewEvent.ID); exists {
-					ev.OldEvent = old
+				if old, exists := d.Cache.ScheduledEvents().Get(ev.NewScheduledEvent.ID); exists {
+					ev.OldScheduledEvent = old
 				}
-				scheduled := ev.NewEvent
+				scheduled := ev.NewScheduledEvent
 				scheduled.Hydrate(d)
 				d.Cache.ScheduledEvents().Set(&scheduled)
 			}
@@ -1763,20 +1762,21 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 		}
 	case events.EventMessageCreate:
 		{
-			if d.cacheStoreEnabled(cache.CategoryMessages) || d.cacheStoreEnabled(cache.CategoryUsers) {
-				var ev events.MessageCreateEvent
-				if err := json.Unmarshal(msg, &ev); err != nil {
-					d.Logger.Error("Failed to unmarshal MESSAGE_CREATE event", slog.Any("err", err))
-					return false
-				}
-				msg := ev.Message
-				if d.cacheStoreEnabled(cache.CategoryMessages) {
-					msg.Hydrate(d)
-					d.Cache.Messages().Add(&msg)
-				}
-				if d.cacheStoreEnabled(cache.CategoryUsers) {
-					d.cacheUser(&ev.Author)
-				}
+			var ev events.MessageCreateEvent
+			if err := json.Unmarshal(msg, &ev); err != nil {
+				d.Logger.Error("Failed to unmarshal MESSAGE_CREATE event", slog.Any("err", err))
+				return false
+			}
+
+			if d.cacheStoreEnabled(cache.CategoryMessages) {
+				ev.Message.Hydrate(d)
+				d.cacheMessage(&ev.Message)
+			}
+
+			d.cacheUser(&ev.Message.Author)
+
+			if ev.GuildID != nil && ev.Member != nil {
+				d.cacheMember(*ev.GuildID, ev.Member)
 			}
 		}
 	case events.EventMessageUpdate:
@@ -1785,8 +1785,8 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 			if !ok {
 				return false
 			}
+			m := ev.NewMessage
 			if d.cacheStoreEnabled(cache.CategoryMessages) {
-				m := ev.NewMessage
 				if old, exists := d.Cache.Messages().Get(ev.NewMessage.ChannelID, ev.NewMessage.ID); exists {
 					ev.OldMessage = old
 					m = util.MergePartialJSON(*ev.OldMessage, ev.NewMessage, msg)
@@ -2142,7 +2142,7 @@ func (d *Client) hydrateEvent(event events.Event) {
 	case *events.GuildScheduledEventCreateEvent:
 		ev.Hydrate(d)
 	case *events.GuildScheduledEventUpdateEvent:
-		ev.NewEvent.Hydrate(d)
+		ev.NewScheduledEvent.Hydrate(d)
 	case *events.GuildScheduledEventDeleteEvent:
 		ev.Hydrate(d)
 	case *events.AutoModerationRuleCreateEvent:

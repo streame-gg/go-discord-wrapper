@@ -62,7 +62,7 @@ type Channel struct {
 	UserLimit                     int                    `json:"user_limit,omitempty"`
 	RateLimitPerUser              int                    `json:"rate_limit_per_user,omitempty"`
 	Recipients                    []User                 `json:"recipients,omitempty"`
-	IconHash                      *string                `json:"icon,omitempty"`
+	Icon                          *string                `json:"icon,omitempty"`
 	OwnerID                       *Snowflake             `json:"owner_id,omitempty"`
 	ApplicationID                 *Snowflake             `json:"application_id,omitempty"`
 	Managed                       bool                   `json:"managed,omitempty"`

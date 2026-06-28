@@ -119,14 +119,14 @@ func (u *User) AvatarDecorationURL() string {
 // AvatarURL returns the member's guild-specific avatar URL, or "" if the member
 // has no per-guild avatar (fall back to the user's avatar in that case).
 func (m *GuildMember) AvatarURL(opts *ImageOptions) string {
-	if m == nil || m.AvatarHash == nil {
+	if m == nil || m.Avatar == nil {
 		return ""
 	}
 	uid := memberUserID(m)
 	if m.GuildID.IsEmpty() || uid.IsEmpty() {
 		return ""
 	}
-	h := *m.AvatarHash
+	h := *m.Avatar
 	path := "/guilds/" + m.GuildID.String() + "/users/" + uid.String() + "/avatars/" + h
 	return imageURL(cdnBaseURL, path, hashIsAnimated(h), opts)
 }
@@ -146,14 +146,14 @@ func (m *GuildMember) DisplayAvatarURL(opts *ImageOptions) string {
 
 // BannerURL returns the member's guild-specific banner URL, or "" if unset.
 func (m *GuildMember) BannerURL(opts *ImageOptions) string {
-	if m == nil || m.BannerHash == nil {
+	if m == nil || m.Banner == nil {
 		return ""
 	}
 	uid := memberUserID(m)
 	if m.GuildID.IsEmpty() || uid.IsEmpty() {
 		return ""
 	}
-	h := *m.BannerHash
+	h := *m.Banner
 	path := "/guilds/" + m.GuildID.String() + "/users/" + uid.String() + "/banners/" + h
 	return imageURL(cdnBaseURL, path, hashIsAnimated(h), opts)
 }

@@ -14,8 +14,10 @@ func (a APIVersion) ToString() string {
 		return "10"
 	case APIVersion9:
 		return "9"
+	case APIVersion8:
+		return "8"
 	default:
-		return "unknown"
+		return strconv.Itoa(int(a))
 	}
 }
 
@@ -26,6 +28,7 @@ var (
 
 	APIVersion10 APIVersion = 10
 	APIVersion9  APIVersion = 9
+	APIVersion8  APIVersion = 8
 )
 
 // https://docs.discord.com/developers/events/gateway-events#payload-structure

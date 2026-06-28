@@ -11,10 +11,9 @@ type GuildMember struct {
 	hClient EntityClient
 
 	GuildID Snowflake `json:"-"`
-	UserID  Snowflake `json:"-"`
 
-	AvatarHash                 *string               `json:"avatar,omitempty"`
-	BannerHash                 *string               `json:"banner,omitempty"`
+	Avatar                     *string               `json:"avatar,omitempty"`
+	Banner                     *string               `json:"banner,omitempty"`
 	CommunicationDisabledUntil *time.Time            `json:"communication_disabled_until,omitempty"`
 	Deaf                       bool                  `json:"deaf"`
 	Flags                      GuildMemberFlags      `json:"flags"`
@@ -27,7 +26,7 @@ type GuildMember struct {
 	User                       *User                 `json:"user,omitempty"`
 	Permissions                *Permission           `json:"permissions,omitempty"`
 	AvatarDecorationData       *AvatarDecorationData `json:"avatar_decoration_data,omitempty"`
-	Collectibles               []Collectible         `json:"collectibles"`
+	Collectibles               *Collectible          `json:"collectibles,omitempty"`
 }
 
 func (m *GuildMember) DisplayName() string {

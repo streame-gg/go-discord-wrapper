@@ -178,25 +178,11 @@ const (
 	PresenceStatusInvisible PresenceStatus = "invisible"
 )
 
-// https://docs.discord.com/developers/events/gateway-events#presence-update
-type PartialPresenceUser struct {
-	ID            Snowflake `json:"id"`
-	Username      *string   `json:"username,omitempty"`
-	Discriminator *string   `json:"discriminator,omitempty"`
-	GlobalName    *string   `json:"global_name,omitempty"`
-	AvatarHash    *string   `json:"avatar,omitempty"`
-	Bot           *bool     `json:"bot,omitempty"`
-	PublicFlags   *int      `json:"public_flags,omitempty"`
-}
-
-// Presence is the cached form of a user's presence in a guild.
-// Populated from GUILD_CREATE (initial state) and PRESENCE_UPDATE events.
-//
 // https://docs.discord.com/developers/events/gateway-events#presence-update-presence-update-event-fields
 type Presence struct {
-	User         PartialPresenceUser `json:"user"`
-	GuildID      Snowflake           `json:"guild_id"`
-	Status       PresenceStatus      `json:"status"`
-	Activities   []FullActivity      `json:"activities"`
-	ClientStatus ClientStatus        `json:"client_status"`
+	User         User           `json:"user"`
+	GuildID      Snowflake      `json:"guild_id"`
+	Status       PresenceStatus `json:"status"`
+	Activities   []FullActivity `json:"activities"`
+	ClientStatus ClientStatus   `json:"client_status"`
 }

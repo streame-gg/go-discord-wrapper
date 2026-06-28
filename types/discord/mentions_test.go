@@ -194,7 +194,7 @@ func (s *mentionsSuite) TestRoleComparePositionTo() {
 func (s *mentionsSuite) TestMemberDisplayAvatarURL() {
 	gid := Snowflake(1)
 	// Per-guild avatar wins.
-	m := &GuildMember{GuildID: gid, UserID: 2, AvatarHash: strptr("memberhash")}
+	m := &GuildMember{GuildID: gid, UserID: 2, Avatar: strptr("memberhash")}
 	s.Contains(m.DisplayAvatarURL(nil), "/guilds/1/users/2/avatars/memberhash")
 	// Falls back to the user's avatar when no guild avatar.
 	m2 := &GuildMember{GuildID: gid, UserID: 2, User: &User{ID: 2, Avatar: strptr("userhash")}}

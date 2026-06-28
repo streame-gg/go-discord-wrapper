@@ -57,16 +57,15 @@ func (d *Client) cacheGuild(guild *discord.Guild) {
 }
 
 func (d *Client) cacheMember(guildID discord.Snowflake, member *discord.GuildMember) {
-	if member == nil || member.User == nil {
+	if member == nil {
 		return
 	}
 	member.GuildID = guildID
-	member.UserID = member.User.ID
 	member.Hydrate(d)
 	if d.cacheStoreEnabled(cache.CategoryMembers) {
 		d.Cache.Members().Set(guildID, member)
 	}
-	if d.cacheStoreEnabled(cache.CategoryUsers) {
+	if d.cacheStoreEnabled(cache.CategoryUsers) && member.User != nil {
 		d.cacheUser(member.User)
 	}
 }
@@ -78,7 +77,7 @@ func (d *Client) cacheMembers(guildID discord.Snowflake, members []*discord.Guil
 }
 
 func (d *Client) cacheMessage(msg *discord.Message) {
-	if d.Cache == nil || msg == nil {
+	if d.Cache == nil || msg == nil || !d.cacheStoreEnabled(cache.CategoryMessages) {
 		return
 	}
 
@@ -145,7 +144,7 @@ func (d *Client) cacheAutoModRule(guildID discord.Snowflake, rule *discord.AutoM
 }
 
 func (d *Client) cacheUser(user *discord.User) {
-	if d.Cache == nil || user == nil {
+	if d.Cache == nil || user == nil || !d.cacheStoreEnabled(cache.CategoryUsers) {
 		return
 	}
 

@@ -19,7 +19,7 @@ func NewAutomoderationRule() discord.AutoModerationRule {
 			Metadata: &discord.AutoModerationActionMetadata{
 				ChannelID:       util.PointerOf(discord.RandomSnowflake()),
 				DurationSeconds: util.PointerOf(testutil.RandomNumberInRange(1, 2419200)),
-				CustomMessage:   util.PointerOf(testutil.RandString(testutil.RandomNumberInRange(0, 150))),
+				CustomMessage:   util.PointerOf(testutil.RandomString(testutil.RandomNumberInRange(0, 150))),
 			},
 		})
 	}
@@ -27,7 +27,7 @@ func NewAutomoderationRule() discord.AutoModerationRule {
 	return discord.AutoModerationRule{
 		ID:        discord.RandomSnowflake(),
 		GuildID:   discord.RandomSnowflake(),
-		Name:      testutil.RandString(testutil.RandomNumberInRange(1, 100)),
+		Name:      testutil.RandomString(testutil.RandomNumberInRange(1, 100)),
 		CreatorID: discord.RandomSnowflake(),
 		EventType: testutil.RandomItem(discord.AutoModerationEventTypeMessageSend, discord.AutoModerationEventTypeMemberUpdate),
 		TriggerType: testutil.RandomItem(

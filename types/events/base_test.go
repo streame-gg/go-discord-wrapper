@@ -13,3 +13,7 @@ type eventSuite struct {
 func TestEventSuite(t *testing.T) {
 	suite.Run(t, new(eventSuite))
 }
+
+func (s *eventSuite) TestAllCommandsRegistered() {
+	s.Equal(72, len(eventFactories))
+}

@@ -4,16 +4,16 @@ import "time"
 
 // https://docs.discord.com/developers/resources/user#avatar-decoration-data-object
 type AvatarDecorationData struct {
-	Asset string `json:"asset"`
-	SkuID string `json:"sku_id"`
+	Asset string    `json:"asset"`
+	SkuID Snowflake `json:"sku_id"`
 }
 
 // https://docs.discord.com/developers/resources/user#user-object-user-primary-guild
 type PrimaryGuild struct {
-	Badge           *string `json:"badge"`
-	IdentityEnabled *bool   `json:"identity_enabled"`
-	IdentityGuildID *string `json:"identity_guild_id"`
-	Tag             *string `json:"tag"`
+	Badge           *string    `json:"badge"`
+	IdentityEnabled *bool      `json:"identity_enabled"`
+	IdentityGuildID *Snowflake `json:"identity_guild_id"`
+	Tag             *string    `json:"tag"`
 }
 
 // https://docs.discord.com/developers/resources/user#collectibles
@@ -23,7 +23,7 @@ type Collectible struct {
 
 // https://docs.discord.com/developers/resources/user#nameplate-nameplate-structure
 type Nameplate struct {
-	SkuID   string           `json:"sku_id"`
+	SkuID   Snowflake        `json:"sku_id"`
 	Asset   string           `json:"asset"`
 	Label   string           `json:"label"`
 	Palette NameplatePalette `json:"palette"`
@@ -58,7 +58,7 @@ type User struct {
 	Flags                UserFlags             `json:"flags"`
 	GlobalName           *string               `json:"global_name"`
 	ID                   Snowflake             `json:"id"`
-	Locale               *string               `json:"locale,omitempty"`
+	Locale               *Locale               `json:"locale,omitempty"`
 	MFAEnabled           *bool                 `json:"mfa_enabled"`
 	PrimaryGuild         *PrimaryGuild         `json:"primary_guild,omitempty"`
 	PublicFlags          UserFlags             `json:"public_flags"`

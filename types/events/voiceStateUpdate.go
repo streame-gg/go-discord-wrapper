@@ -1,39 +1,14 @@
 package events
 
 import (
+	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-// https://docs.discord.com/developers/events/gateway-events#voice-state-update
-type VoiceStateUpdateEvent struct {
-	discord.VoiceState
-	// OldState is the user's previous voice state. Nil if the user was not in
-	// any voice channel before this event (e.g. they just joined for the first time).
-	OldState *discord.VoiceState
-}
-
-// VoiceServerUpdateEvent is dispatched when a guild's voice server is updated.
-// Use the Token and Endpoint to connect to the voice websocket.
-// https://docs.discord.com/developers/events/gateway-events#voice-server-update
-type VoiceServerUpdateEvent struct {
-	Token    string            `json:"token"`
-	GuildID  discord.Snowflake `json:"guild_id"`
-	Endpoint *string           `json:"endpoint,omitempty"` // null when the guild has no voice server
-}
-
-// VoiceChannelEffectSendEvent is dispatched when a user sends an effect (soundboard,
-// emoji, etc.) in a voice channel.
-// https://docs.discord.com/developers/events/gateway-events#voice-channel-effect-send
-type VoiceChannelEffectSendEvent struct {
-	ChannelID     discord.Snowflake  `json:"channel_id"`
-	GuildID       discord.Snowflake  `json:"guild_id"`
-	UserID        discord.Snowflake  `json:"user_id"`
-	Emoji         *discord.Emoji     `json:"emoji,omitempty"`
-	AnimationType *int               `json:"animation_type,omitempty"`
-	AnimationID   *int               `json:"animation_id,omitempty"`
-	SoundID       *discord.Snowflake `json:"sound_id,omitempty"`
-	SoundVolume   *float64           `json:"sound_volume,omitempty"`
-}
+var _ Event = &VoiceStateUpdateEvent{}
+var _ Event = &VoiceServerUpdateEvent{}
+var _ Event = &VoiceStateUpdateEvent{}
 
 func init() {
 	RegisterEvent(VoiceStateUpdateEvent{})
@@ -41,8 +16,41 @@ func init() {
 	RegisterEvent(VoiceChannelEffectSendEvent{})
 }
 
+// https://docs.discord.com/developers/events/gateway-events#voice-state-update
+type VoiceStateUpdateEvent struct {
+	NewState *discord.VoiceState
+	OldState *discord.VoiceState
+}
+
+// https://docs.discord.com/developers/events/gateway-events#voice-server-update
+type VoiceServerUpdateEvent struct {
+	Token    string            `json:"token"`
+	GuildID  discord.Snowflake `json:"guild_id"`
+	Endpoint *string           `json:"endpoint"`
+}
+
+// https://docs.discord.com/developers/events/gateway-events#voice-channel-effect-send
+type VoiceChannelEffectSendEvent struct {
+	ChannelID     discord.Snowflake                  `json:"channel_id"`
+	GuildID       discord.Snowflake                  `json:"guild_id"`
+	UserID        discord.Snowflake                  `json:"user_id"`
+	Emoji         *discord.Emoji                     `json:"emoji,omitempty"`
+	AnimationType *discord.VoiceChannelAnimationType `json:"animation_type,omitempty"`
+	AnimationID   *int                               `json:"animation_id,omitempty"`
+	SoundID       *discord.Snowflake                 `json:"sound_id,omitempty"`
+	SoundVolume   *float64                           `json:"sound_volume,omitempty"`
+
+	Channel *discord.Channel         `json:"-"`
+	Guild   *discord.Guild           `json:"-"`
+	User    *discord.User            `json:"-"`
+	Sound   *discord.SoundboardSound `json:"-"`
+}
+
 func (e VoiceStateUpdateEvent) DesiredEventType() Event { return &VoiceStateUpdateEvent{} }
 func (e VoiceStateUpdateEvent) Event() EventType        { return EventVoiceStateUpdate }
+func (e VoiceStateUpdateEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.NewState)
+}
 
 func (e VoiceServerUpdateEvent) DesiredEventType() Event { return &VoiceServerUpdateEvent{} }
 func (e VoiceServerUpdateEvent) Event() EventType        { return EventVoiceServerUpdate }

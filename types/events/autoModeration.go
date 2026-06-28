@@ -6,13 +6,21 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+var _ Event = &AutoModerationRuleCreateEvent{}
+var _ Event = &AutoModerationRuleUpdateEvent{}
+var _ Event = &AutoModerationRuleDeleteEvent{}
+var _ Event = &AutoModerationActionExecutionEvent{}
+
+func init() {
+	RegisterEvent(AutoModerationRuleCreateEvent{})
+	RegisterEvent(AutoModerationRuleUpdateEvent{})
+	RegisterEvent(AutoModerationRuleDeleteEvent{})
+	RegisterEvent(AutoModerationActionExecutionEvent{})
+}
+
 // https://docs.discord.com/developers/events/gateway-events#auto-moderation-rule-create
 type AutoModerationRuleCreateEvent struct {
 	Rule discord.AutoModerationRule `json:"-"`
-}
-
-func (e *AutoModerationRuleCreateEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.Rule)
 }
 
 // https://docs.discord.com/developers/events/gateway-events#auto-moderation-rule-update
@@ -22,17 +30,9 @@ type AutoModerationRuleUpdateEvent struct {
 	OldRule *discord.AutoModerationRule `json:"-"`
 }
 
-func (e *AutoModerationRuleUpdateEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.NewRule)
-}
-
 // https://docs.discord.com/developers/events/gateway-events#auto-moderation-rule-delete
 type AutoModerationRuleDeleteEvent struct {
 	Rule discord.AutoModerationRule `json:"-"`
-}
-
-func (e *AutoModerationRuleDeleteEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.Rule)
 }
 
 // https://docs.discord.com/developers/events/gateway-events#auto-moderation-action-execution
@@ -48,29 +48,34 @@ type AutoModerationActionExecutionEvent struct {
 	Content              string                            `json:"content"`
 	MatchedKeyword       *string                           `json:"matched_keyword"`
 	MatchedContent       *string                           `json:"matched_content"`
-}
 
-func init() {
-	RegisterEvent(AutoModerationRuleCreateEvent{})
-	RegisterEvent(AutoModerationRuleUpdateEvent{})
-	RegisterEvent(AutoModerationRuleDeleteEvent{})
-	RegisterEvent(AutoModerationActionExecutionEvent{})
+	Guild              *discord.Guild              `json:"-"`
+	AutomoderationRule *discord.AutoModerationRule `json:"-"`
 }
 
 func (e AutoModerationRuleCreateEvent) DesiredEventType() Event {
 	return &AutoModerationRuleCreateEvent{}
 }
 func (e AutoModerationRuleCreateEvent) Event() EventType { return EventAutoModerationRuleCreate }
+func (e AutoModerationRuleCreateEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.Rule)
+}
 
 func (e AutoModerationRuleUpdateEvent) DesiredEventType() Event {
 	return &AutoModerationRuleUpdateEvent{}
 }
 func (e AutoModerationRuleUpdateEvent) Event() EventType { return EventAutoModerationRuleUpdate }
+func (e AutoModerationRuleUpdateEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.NewRule)
+}
 
 func (e AutoModerationRuleDeleteEvent) DesiredEventType() Event {
 	return &AutoModerationRuleDeleteEvent{}
 }
 func (e AutoModerationRuleDeleteEvent) Event() EventType { return EventAutoModerationRuleDelete }
+func (e AutoModerationRuleDeleteEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.Rule)
+}
 
 func (e AutoModerationActionExecutionEvent) DesiredEventType() Event {
 	return &AutoModerationActionExecutionEvent{}

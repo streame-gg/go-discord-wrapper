@@ -66,7 +66,7 @@ func (su *cdnSuite) TestUserDefaultAndDisplayAvatarURL() {
 
 func (su *cdnSuite) TestMemberAvatarAndBannerURL() {
 	t := su.T()
-	m := &GuildMember{GuildID: 10, UserID: 20, AvatarHash: strptr("a_anim"), BannerHash: strptr("ban")}
+	m := &GuildMember{GuildID: 10, UserID: 20, Avatar: strptr("a_anim"), Banner: strptr("ban")}
 	if got := m.AvatarURL(nil); got != "https://cdn.discordapp.com/guilds/10/users/20/avatars/a_anim.gif" {
 		t.Errorf("member avatar: got %q", got)
 	}
@@ -74,7 +74,7 @@ func (su *cdnSuite) TestMemberAvatarAndBannerURL() {
 		t.Errorf("member banner: got %q", got)
 	}
 
-	noGuild := &GuildMember{UserID: 20, AvatarHash: strptr("x")}
+	noGuild := &GuildMember{UserID: 20, Avatar: strptr("x")}
 	if got := noGuild.AvatarURL(nil); got != "" {
 		t.Errorf("missing guild id should yield empty: got %q", got)
 	}

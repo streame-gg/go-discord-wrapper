@@ -6,12 +6,14 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
 
+var _ Event = &InteractionCreateEvent{}
+
+func init() { RegisterEvent(InteractionCreateEvent{}) }
+
 // https://docs.discord.com/developers/events/gateway-events#interaction-create
 type InteractionCreateEvent struct {
 	interactions.Interaction
 }
-
-func init() { RegisterEvent(InteractionCreateEvent{}) }
 
 func (e InteractionCreateEvent) DesiredEventType() Event {
 	return &InteractionCreateEvent{}

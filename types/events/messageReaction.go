@@ -4,13 +4,17 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-// https://docs.discord.com/developers/resources/message#get-reactions-reaction-types
-type ReactionType int
+var _ Event = &MessageReactionAddEvent{}
+var _ Event = &MessageReactionRemoveEvent{}
+var _ Event = &MessageReactionRemoveAllEvent{}
+var _ Event = &MessageReactionRemoveEmojiEvent{}
 
-const (
-	ReactionTypeNormal ReactionType = 0
-	ReactionTypeBurst  ReactionType = 1
-)
+func init() {
+	RegisterEvent(MessageReactionAddEvent{})
+	RegisterEvent(MessageReactionRemoveEvent{})
+	RegisterEvent(MessageReactionRemoveAllEvent{})
+	RegisterEvent(MessageReactionRemoveEmojiEvent{})
+}
 
 // https://docs.discord.com/developers/events/gateway-events#message-reaction-add
 type MessageReactionAddEvent struct {
@@ -23,18 +27,28 @@ type MessageReactionAddEvent struct {
 	MessageAuthorID *discord.Snowflake   `json:"message_author_id,omitempty"`
 	Burst           bool                 `json:"burst"`
 	BurstColors     []string             `json:"burst_colors,omitempty"`
-	Type            ReactionType         `json:"type"`
+	Type            discord.ReactionType `json:"type"`
+
+	Guild   *discord.Guild   `json:"-"`
+	Channel *discord.Channel `json:"-"`
+	Message *discord.Message `json:"-"`
+	User    *discord.User    `json:"-"`
 }
 
 // https://docs.discord.com/developers/events/gateway-events#message-reaction-remove
 type MessageReactionRemoveEvent struct {
-	UserID    discord.Snowflake  `json:"user_id"`
-	ChannelID discord.Snowflake  `json:"channel_id"`
-	MessageID discord.Snowflake  `json:"message_id"`
-	GuildID   *discord.Snowflake `json:"guild_id,omitempty"`
-	Emoji     discord.Emoji      `json:"emoji"`
-	Burst     bool               `json:"burst"`
-	Type      ReactionType       `json:"type"`
+	UserID    discord.Snowflake    `json:"user_id"`
+	ChannelID discord.Snowflake    `json:"channel_id"`
+	MessageID discord.Snowflake    `json:"message_id"`
+	GuildID   *discord.Snowflake   `json:"guild_id,omitempty"`
+	Emoji     discord.Emoji        `json:"emoji"`
+	Burst     bool                 `json:"burst"`
+	Type      discord.ReactionType `json:"type"`
+
+	Guild   *discord.Guild   `json:"-"`
+	Channel *discord.Channel `json:"-"`
+	Message *discord.Message `json:"-"`
+	User    *discord.User    `json:"-"`
 }
 
 // https://docs.discord.com/developers/events/gateway-events#message-reaction-remove-all
@@ -42,6 +56,10 @@ type MessageReactionRemoveAllEvent struct {
 	ChannelID discord.Snowflake  `json:"channel_id"`
 	MessageID discord.Snowflake  `json:"message_id"`
 	GuildID   *discord.Snowflake `json:"guild_id,omitempty"`
+
+	Guild   *discord.Guild   `json:"-"`
+	Channel *discord.Channel `json:"-"`
+	Message *discord.Message `json:"-"`
 }
 
 // https://docs.discord.com/developers/events/gateway-events#message-reaction-remove-emoji
@@ -50,13 +68,10 @@ type MessageReactionRemoveEmojiEvent struct {
 	GuildID   *discord.Snowflake `json:"guild_id,omitempty"`
 	MessageID discord.Snowflake  `json:"message_id"`
 	Emoji     discord.Emoji      `json:"emoji"`
-}
 
-func init() {
-	RegisterEvent(MessageReactionAddEvent{})
-	RegisterEvent(MessageReactionRemoveEvent{})
-	RegisterEvent(MessageReactionRemoveAllEvent{})
-	RegisterEvent(MessageReactionRemoveEmojiEvent{})
+	Guild   *discord.Guild   `json:"-"`
+	Channel *discord.Channel `json:"-"`
+	Message *discord.Message `json:"-"`
 }
 
 func (e MessageReactionAddEvent) DesiredEventType() Event { return &MessageReactionAddEvent{} }

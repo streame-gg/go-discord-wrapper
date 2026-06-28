@@ -6,9 +6,19 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+var _ Event = &EntitlementCreateEvent{}
+var _ Event = &EntitlementUpdateEvent{}
+var _ Event = &EntitlementDeleteEvent{}
+
+func init() {
+	RegisterEvent(EntitlementCreateEvent{})
+	RegisterEvent(EntitlementUpdateEvent{})
+	RegisterEvent(EntitlementDeleteEvent{})
+}
+
 // https://docs.discord.com/developers/events/gateway-events#entitlement-create
 type EntitlementCreateEvent struct {
-	discord.Entitlement
+	Entitlement discord.Entitlement
 }
 
 // https://docs.discord.com/developers/events/gateway-events#entitlement-update
@@ -20,30 +30,25 @@ type EntitlementUpdateEvent struct {
 	OldEntitlement *discord.Entitlement `json:"-"`
 }
 
-func (e *EntitlementUpdateEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.NewEntitlement)
-}
-
-func (e EntitlementUpdateEvent) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&e.NewEntitlement)
-}
-
 // https://docs.discord.com/developers/events/gateway-events#entitlement-delete
 type EntitlementDeleteEvent struct {
-	discord.Entitlement
-}
-
-func init() {
-	RegisterEvent(EntitlementCreateEvent{})
-	RegisterEvent(EntitlementUpdateEvent{})
-	RegisterEvent(EntitlementDeleteEvent{})
+	Entitlement discord.Entitlement
 }
 
 func (e EntitlementCreateEvent) DesiredEventType() Event { return &EntitlementCreateEvent{} }
 func (e EntitlementCreateEvent) Event() EventType        { return EventEntitlementCreate }
+func (e EntitlementCreateEvent) UnmarshalJSON(byte []byte) error {
+	return json.Unmarshal(byte, &e.Entitlement)
+}
 
 func (e EntitlementUpdateEvent) DesiredEventType() Event { return &EntitlementUpdateEvent{} }
 func (e EntitlementUpdateEvent) Event() EventType        { return EventEntitlementUpdate }
+func (e EntitlementUpdateEvent) UnmarshalJSON(byte []byte) error {
+	return json.Unmarshal(byte, &e.NewEntitlement)
+}
 
 func (e EntitlementDeleteEvent) DesiredEventType() Event { return &EntitlementDeleteEvent{} }
 func (e EntitlementDeleteEvent) Event() EventType        { return EventEntitlementDelete }
+func (e EntitlementDeleteEvent) UnmarshalJSON(byte []byte) error {
+	return json.Unmarshal(byte, &e.Entitlement)
+}

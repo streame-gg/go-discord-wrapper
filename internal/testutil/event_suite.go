@@ -14,7 +14,7 @@ type UnmarshalTestCase[T any] struct {
 	Name     string
 	Input    []byte
 	WantErr  bool
-	Validate func(t *testing.T, got T)
+	Validate func(got T)
 }
 
 // EventSuite ist die generische Basis für alle Event-Suites
@@ -72,7 +72,7 @@ func (s *EventSuite[T]) RunCases(cases []UnmarshalTestCase[T]) {
 			}
 			s.Require().NoError(err)
 			if tc.Validate != nil {
-				tc.Validate(s.T(), e)
+				tc.Validate(e)
 			}
 		})
 	}

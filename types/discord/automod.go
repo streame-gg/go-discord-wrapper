@@ -33,7 +33,7 @@ const (
 // https://docs.discord.com/developers/resources/auto-moderation#auto-moderation-action-object-action-metadata
 type AutoModerationActionMetadata struct {
 	ChannelID       *Snowflake `json:"channel_id,omitempty"`
-	DurationSeconds *int       `json:"duration_seconds,omitempty"`
+	DurationSeconds int        `json:"duration_seconds,omitempty"`
 	CustomMessage   *string    `json:"custom_message,omitempty"`
 }
 

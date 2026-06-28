@@ -4,6 +4,14 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+var _ Event = &GuildBanAddEvent{}
+var _ Event = &GuildBanRemoveEvent{}
+
+func init() {
+	RegisterEvent(GuildBanAddEvent{})
+	RegisterEvent(GuildBanRemoveEvent{})
+}
+
 // https://docs.discord.com/developers/events/gateway-events#guild-ban-add
 type GuildBanAddEvent struct {
 	GuildID discord.Snowflake `json:"guild_id"`
@@ -14,11 +22,6 @@ type GuildBanAddEvent struct {
 type GuildBanRemoveEvent struct {
 	GuildID discord.Snowflake `json:"guild_id"`
 	User    discord.User      `json:"user"`
-}
-
-func init() {
-	RegisterEvent(GuildBanAddEvent{})
-	RegisterEvent(GuildBanRemoveEvent{})
 }
 
 func (e GuildBanAddEvent) DesiredEventType() Event { return &GuildBanAddEvent{} }

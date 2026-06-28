@@ -1,5 +1,13 @@
 package discord
 
+// https://docs.discord.com/developers/resources/message#get-reactions-reaction-types
+type ReactionType int
+
+const (
+	ReactionTypeNormal ReactionType = 0
+	ReactionTypeBurst  ReactionType = 1
+)
+
 // https://docs.discord.com/developers/resources/emoji#emoji-object
 type Emoji struct {
 	hClient EntityClient

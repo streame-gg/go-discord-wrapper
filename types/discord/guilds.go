@@ -434,11 +434,11 @@ type CurrentUserGuild struct {
 //
 // https://docs.discord.com/developers/events/gateway-events#presence-update
 type GatewayPresence struct {
-	User         PartialPresenceUser `json:"user"`
-	GuildID      Snowflake           `json:"guild_id"`
-	Status       PresenceStatus      `json:"status"`
-	Activities   []FullActivity      `json:"activities"`
-	ClientStatus ClientStatus        `json:"client_status"`
+	User         User           `json:"user"`
+	GuildID      Snowflake      `json:"guild_id"`
+	Status       PresenceStatus `json:"status"`
+	Activities   []FullActivity `json:"activities"`
+	ClientStatus ClientStatus   `json:"client_status"`
 }
 
 // GatewayGuildWrapper is like [AnyGuildWrapper] but deserialises available

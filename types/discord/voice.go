@@ -30,3 +30,10 @@ type VoiceState struct {
 	Suppress                bool         `json:"suppress"`
 	RequestToSpeakTimestamp *time.Time   `json:"request_to_speak_timestamp,omitempty"`
 }
+
+type VoiceChannelAnimationType uint8
+
+const (
+	VoiceChannelAnimationTypePremium VoiceChannelAnimationType = 0
+	VoiceChannelAnimationTypeBasic   VoiceChannelAnimationType = 1
+)
