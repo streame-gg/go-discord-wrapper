@@ -3,7 +3,6 @@ package events
 import (
 	"github.com/streame-gg/go-discord-wrapper/internal/testutil"
 	"github.com/streame-gg/go-discord-wrapper/testdata"
-	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 func (s *eventSuite) TestGuildAuditLogEntryCreate() {
@@ -26,11 +25,13 @@ func (s *eventSuite) TestGuildAuditLogEntryCreate() {
 				s.EqualValues(auditLogEntry["reason"], got.AuditLogEntry.Reason)
 				s.EqualValues(auditLogEntry["action_type"], got.AuditLogEntry.ActionType)
 
-				changes := auditLogEntry["changes"].([]discord.AuditLogEntryChange)
+				changes := auditLogEntry["changes"].([]map[string]interface{})
+				s.Len(got.AuditLogEntry.Changes, len(changes))
+
 				for i, change := range changes {
-					s.EqualValues(change.Key, got.AuditLogEntry.Changes[i].Key)
-					s.EqualValues(change.NewValue, got.AuditLogEntry.Changes[i].NewValue)
-					s.EqualValues(change.OldValue, got.AuditLogEntry.Changes[i].OldValue)
+					s.EqualValues(change["key"], got.AuditLogEntry.Changes[i].Key)
+					s.EqualValues(change["new_value"], got.AuditLogEntry.Changes[i].NewValue)
+					s.EqualValues(change["old_value"], got.AuditLogEntry.Changes[i].OldValue)
 				}
 
 				options := auditLogEntry["options"].(map[string]interface{})

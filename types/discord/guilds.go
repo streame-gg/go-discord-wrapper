@@ -109,6 +109,8 @@ type Guild struct {
 	IncidentsData               *GuildIncidentsData             `json:"incidents_data,omitempty"`
 }
 
+//roles, emojis, stickers
+
 func (g Guild) IsAvailable() bool {
 	return true
 }
@@ -321,7 +323,7 @@ type Sticker struct {
 	Type        StickerType       `json:"type"`
 	FormatType  StickerFormatType `json:"format_type"`
 	Available   *bool             `json:"available,omitempty"`
-	GuildID     Snowflake         `json:"guild_id,omitempty"`
+	GuildID     *Snowflake        `json:"guild_id,omitempty"`
 	SortValue   int               `json:"sort_value,omitempty"`
 	User        *User             `json:"user,omitempty"`
 }

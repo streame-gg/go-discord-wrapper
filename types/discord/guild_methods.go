@@ -95,15 +95,21 @@ func (g *Guild) IsHydrated() bool { return g.hClient != nil }
 // hydrateNested injects the client into sub-entities embedded in this guild.
 func (g *Guild) hydrateNested(c EntityClient) {
 	for i := range g.RawRoles {
-		g.RawRoles[i].GuildID = g.ID
+		if !g.ID.IsNil() {
+			g.RawRoles[i].GuildID = g.ID
+		}
 		g.RawRoles[i].Hydrate(c)
 	}
 	for i := range g.RawEmojis {
-		g.RawEmojis[i].GuildID = g.ID
+		if !g.ID.IsNil() {
+			g.RawEmojis[i].GuildID = g.ID
+		}
 		g.RawEmojis[i].Hydrate(c)
 	}
 	for i := range g.RawStickers {
-		g.RawStickers[i].GuildID = g.ID
+		if !g.ID.IsNil() {
+			g.RawStickers[i].GuildID = &g.ID
+		}
 		g.RawStickers[i].Hydrate(c)
 	}
 }

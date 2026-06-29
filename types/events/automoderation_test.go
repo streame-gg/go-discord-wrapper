@@ -107,6 +107,16 @@ func (s *eventSuite) TestAutomoderationRuleCreate() {
 				s.EqualValues(randomAutomoderationRule2["exempt_roles"], e.Rule.ExemptRoles)
 				s.EqualValues(randomAutomoderationRule2["exempt_channels"], e.Rule.ExemptChannels)
 
+				metadata := randomAutomoderationRule2["trigger_metadata"].(map[string]interface{})
+				s.EqualValues(metadata["keyword_filter"], e.Rule.TriggerMetadata.KeywordFilter)
+				s.EqualValues(metadata["regex_patterns"], e.Rule.TriggerMetadata.RegexPatterns)
+				s.EqualValues(metadata["presets"], e.Rule.TriggerMetadata.Presets)
+				s.EqualValues(metadata["allow_list"], e.Rule.TriggerMetadata.AllowList)
+				s.EqualValues(metadata["mention_total_limit"], *e.Rule.TriggerMetadata.MentionTotalLimit)
+				s.Equal(metadata["mention_raid_protection_enabled"], e.Rule.TriggerMetadata.MentionRaidProtectionEnabled)
+
+				s.Len(e.Rule.Actions, len(randomAutomoderationRule2["actions"].([]map[string]interface{})))
+
 				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule2["actions"].([]map[string]interface{})[0]["type"])
 				s.Nil(e.Rule.Actions[0].Metadata.CustomMessage)
 
@@ -227,6 +237,16 @@ func (s *eventSuite) TestAutomoderationRuleUpdate() {
 				s.EqualValues(randomAutomoderationRule2["exempt_roles"], e.NewRule.ExemptRoles)
 				s.EqualValues(randomAutomoderationRule2["exempt_channels"], e.NewRule.ExemptChannels)
 
+				metadata := randomAutomoderationRule2["trigger_metadata"].(map[string]interface{})
+				s.EqualValues(metadata["keyword_filter"], e.NewRule.TriggerMetadata.KeywordFilter)
+				s.EqualValues(metadata["regex_patterns"], e.NewRule.TriggerMetadata.RegexPatterns)
+				s.EqualValues(metadata["presets"], e.NewRule.TriggerMetadata.Presets)
+				s.EqualValues(metadata["allow_list"], e.NewRule.TriggerMetadata.AllowList)
+				s.EqualValues(metadata["mention_total_limit"], *e.NewRule.TriggerMetadata.MentionTotalLimit)
+				s.Equal(metadata["mention_raid_protection_enabled"], e.NewRule.TriggerMetadata.MentionRaidProtectionEnabled)
+
+				s.Len(e.NewRule.Actions, len(randomAutomoderationRule2["actions"].([]map[string]interface{})))
+
 				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule2["actions"].([]map[string]interface{})[0]["type"])
 				s.Nil(e.NewRule.Actions[0].Metadata.CustomMessage)
 
@@ -346,6 +366,16 @@ func (s *eventSuite) TestAutomoderationRuleDelete() {
 				s.EqualValues(randomAutomoderationRule2["enabled"], e.Rule.Enabled)
 				s.EqualValues(randomAutomoderationRule2["exempt_roles"], e.Rule.ExemptRoles)
 				s.EqualValues(randomAutomoderationRule2["exempt_channels"], e.Rule.ExemptChannels)
+
+				metadata := randomAutomoderationRule2["trigger_metadata"].(map[string]interface{})
+				s.EqualValues(metadata["keyword_filter"], e.Rule.TriggerMetadata.KeywordFilter)
+				s.EqualValues(metadata["regex_patterns"], e.Rule.TriggerMetadata.RegexPatterns)
+				s.EqualValues(metadata["presets"], e.Rule.TriggerMetadata.Presets)
+				s.EqualValues(metadata["allow_list"], e.Rule.TriggerMetadata.AllowList)
+				s.EqualValues(metadata["mention_total_limit"], *e.Rule.TriggerMetadata.MentionTotalLimit)
+				s.Equal(metadata["mention_raid_protection_enabled"], e.Rule.TriggerMetadata.MentionRaidProtectionEnabled)
+
+				s.Len(e.Rule.Actions, len(randomAutomoderationRule2["actions"].([]map[string]interface{})))
 
 				s.Equal(discord.AutoModerationActionTypeBlockMessage, randomAutomoderationRule2["actions"].([]map[string]interface{})[0]["type"])
 				s.Nil(e.Rule.Actions[0].Metadata.CustomMessage)

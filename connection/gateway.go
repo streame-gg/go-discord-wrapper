@@ -934,7 +934,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 						for i := range guildCreateEvent.Guild.RawStickers {
 							sticker := guildCreateEvent.Guild.RawStickers[i]
 							if !sticker.ID.IsEmpty() {
-								sticker.GuildID = guildID
+								sticker.GuildID = &guildID
 
 								sticker.Hydrate(d)
 								stickers = append(stickers, &sticker)
@@ -1203,7 +1203,7 @@ func (d *Client) internalEventHandler(msg json.RawMessage, eventType events.Even
 					ev.OldStickers = col.Values()
 				}
 				for _, sticker := range ev.NewStickers {
-					sticker.GuildID = ev.GuildID
+					sticker.GuildID = &ev.GuildID
 					sticker.Hydrate(d)
 					newStickers = append(newStickers, &sticker)
 				}

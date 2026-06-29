@@ -77,48 +77,24 @@ func (s *eventSuite) TestGuildCreate() {
 				s.EqualValues(incidentsData["raid_detected_at"], *got.Guild.IncidentsData.RaidDetectedAt)
 
 				roles := guild["roles"].([]map[string]interface{})
+				s.Len(got.Guild.RawRoles, len(roles))
+
 				for i, r := range roles {
-					s.EqualValues(r["id"], got.Guild.RawRoles[i].ID)
-					s.EqualValues(r["name"], got.Guild.RawRoles[i].Name)
-					s.EqualValues(r["hoist"], got.Guild.RawRoles[i].Hoist)
-					s.EqualValues(r["position"], got.Guild.RawRoles[i].Position)
-					s.EqualValues(r["permissions"], got.Guild.RawRoles[i].Permissions)
-					s.EqualValues(r["managed"], got.Guild.RawRoles[i].Managed)
-					s.EqualValues(r["mentionable"], got.Guild.RawRoles[i].Mentionable)
-					colors := r["colors"].(map[string]interface{})
-					s.EqualValues(colors["primary_color"], got.Guild.RawRoles[i].Colors.PrimaryColor)
-					s.EqualValues(colors["secondary_color"], *got.Guild.RawRoles[i].Colors.SecondaryColor)
-					s.EqualValues(colors["tertiary_color"], *got.Guild.RawRoles[i].Colors.TertiaryColor)
+					s.compareRole(r, got.Guild.RawRoles[i])
 				}
 
 				stickers := guild["stickers"].([]map[string]interface{})
-				for i, st := range stickers {
-					s.EqualValues(st["id"], got.Guild.RawStickers[i].ID)
-					s.EqualValues(st["name"], got.Guild.RawStickers[i].Name)
-					s.EqualValues(st["description"], *got.Guild.RawStickers[i].Description)
-					s.EqualValues(st["tags"], got.Guild.RawStickers[i].Tags)
-					s.EqualValues(st["type"], got.Guild.RawStickers[i].Type)
-					s.EqualValues(st["format_type"], got.Guild.RawStickers[i].FormatType)
-					s.EqualValues(st["available"], *got.Guild.RawStickers[i].Available)
-					s.EqualValues(st["sort_value"], got.Guild.RawStickers[i].SortValue)
+				s.Len(got.Guild.RawStickers, len(stickers))
 
-					user := st["user"].(map[string]interface{})
-					s.EqualValues(user["id"], got.Guild.RawStickers[i].User.ID)
-					s.EqualValues(user["username"], got.Guild.RawStickers[i].User.Username)
-					s.EqualValues(user["discriminator"], got.Guild.RawStickers[i].User.Discriminator)
-					s.EqualValues(user["avatar"], *got.Guild.RawStickers[i].User.Avatar)
-					s.EqualValues(user["bot"], *got.Guild.RawStickers[i].User.Bot)
-					s.EqualValues(user["system"], *got.Guild.RawStickers[i].User.System)
-					s.EqualValues(user["mfa_enabled"], *got.Guild.RawStickers[i].User.MFAEnabled)
-					s.EqualValues(user["banner"], *got.Guild.RawStickers[i].User.Banner)
-					s.EqualValues(user["accent_color"], *got.Guild.RawStickers[i].User.AccentColor)
-					s.EqualValues(user["locale"], *got.Guild.RawStickers[i].User.Locale)
-					s.EqualValues(user["verified"], *got.Guild.RawStickers[i].User.Verified)
-					s.EqualValues(user["email"], *got.Guild.RawStickers[i].User.Email)
-					s.EqualValues(user["flags"], got.Guild.RawStickers[i].User.Flags)
-					s.EqualValues(user["premium_type"], *got.Guild.RawStickers[i].User.PremiumType)
-					s.EqualValues(user["public_flags"], got.Guild.RawStickers[i].User.PublicFlags)
-					s.EqualValues(user["global_name"], *got.Guild.RawStickers[i].User.GlobalName)
+				for i, st := range stickers {
+					s.compareSticker(st, got.Guild.RawStickers[i])
+				}
+
+				emojis := guild["emojis"].([]map[string]interface{})
+				s.Len(got.Guild.RawEmojis, len(emojis))
+
+				for i, em := range emojis {
+					s.compareEmoji(em, got.Guild.RawEmojis[i])
 				}
 
 				s.False(got.Unavailable)

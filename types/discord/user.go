@@ -52,7 +52,7 @@ type User struct {
 
 	AccentColor          *int                  `json:"accent_color,omitempty"`
 	Avatar               *string               `json:"avatar"`
-	AvatarDecorationData *AvatarDecorationData `json:"avatar_decoration,omitempty"`
+	AvatarDecorationData *AvatarDecorationData `json:"avatar_decoration_data,omitempty"`
 	Bot                  *bool                 `json:"bot,omitempty"`
 	Discriminator        string                `json:"discriminator"`
 	Flags                UserFlags             `json:"flags"`

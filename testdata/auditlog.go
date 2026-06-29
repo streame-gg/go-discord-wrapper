@@ -7,11 +7,11 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-func NewAuditLogEntryChange() discord.AuditLogEntryChange {
-	return discord.AuditLogEntryChange{
-		Key:      testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
-		NewValue: testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
-		OldValue: testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
+func NewAuditLogEntryChange() map[string]interface{} {
+	return map[string]interface{}{
+		"key":       testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
+		"new_value": testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
+		"old_value": testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
 	}
 }
 
@@ -30,7 +30,7 @@ func NewAuditLogEntry() map[string]interface{} {
 	return map[string]interface{}{
 		"guild_id":  discord.RandomSnowflake(),
 		"target_id": discord.RandomSnowflake(),
-		"changes": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 32), func(arrayToFill *[]discord.AuditLogEntryChange) {
+		"changes": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 32), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewAuditLogEntryChange())
 		}),
 		"user_id": discord.RandomSnowflake(),

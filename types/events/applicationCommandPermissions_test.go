@@ -26,6 +26,8 @@ func (s *eventSuite) TestApplicationCommandPermissionsUpdate() {
 				s.EqualValues(applicationCommandPermissions["guild_id"], e.NewPermissions.GuildID)
 
 				permissions := applicationCommandPermissions["permissions"].([]map[string]interface{})
+				s.Len(e.NewPermissions.Permissions, len(permissions))
+
 				for i, perm := range permissions {
 					s.EqualValues(perm["id"], e.NewPermissions.Permissions[i].ID)
 					s.EqualValues(perm["type"], e.NewPermissions.Permissions[i].Type)

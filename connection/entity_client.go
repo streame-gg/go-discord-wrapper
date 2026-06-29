@@ -231,7 +231,7 @@ func (d *Client) CreateGuildSticker(ctx context.Context, guildID discord.Snowfla
 	params.AuditLogReason = opts.AuditLogReason
 	sticker, err := d.RestClient.CreateGuildSticker(ctx, guildID, params)
 	if err == nil {
-		sticker.GuildID = guildID
+		sticker.GuildID = &guildID
 		sticker.Hydrate(d)
 		if d.Cache != nil {
 			d.Cache.Stickers().Set(guildID, sticker)
@@ -493,7 +493,7 @@ func (d *Client) ModifyGuildSticker(ctx context.Context, guildID, stickerID disc
 	params.AuditLogReason = opts.AuditLogReason
 	sticker, err := d.RestClient.ModifyGuildSticker(ctx, guildID, stickerID, params)
 	if err == nil {
-		sticker.GuildID = guildID
+		sticker.GuildID = &guildID
 		sticker.Hydrate(d)
 		if d.Cache != nil {
 			d.Cache.Stickers().Set(guildID, sticker)
@@ -610,7 +610,7 @@ func (d *Client) GetGuildSticker(ctx context.Context, guildID, stickerID discord
 	sticker, err := d.RestClient.GetGuildSticker(ctx, guildID, stickerID)
 	if err == nil {
 		sticker.Hydrate(d)
-		sticker.GuildID = guildID
+		sticker.GuildID = &guildID
 
 		if d.Cache != nil {
 			d.Cache.Stickers().Set(guildID, sticker)
@@ -624,7 +624,7 @@ func (d *Client) ListGuildStickers(ctx context.Context, guildID discord.Snowflak
 	stickers, err := d.RestClient.ListGuildStickers(ctx, guildID)
 	if err == nil {
 		for _, s := range stickers {
-			s.GuildID = guildID
+			s.GuildID = &guildID
 			s.Hydrate(d)
 		}
 		if d.Cache != nil {

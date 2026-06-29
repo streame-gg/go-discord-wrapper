@@ -63,7 +63,8 @@ var AllPermissions = []discord.Permission{
 
 func RandomFlags[
 	V discord.Permission | discord.ChannelFlags | discord.UserFlags |
-		discord.GuildMemberFlags | discord.RoleFlags | discord.GuildSystemChannelFlags,
+		discord.GuildMemberFlags | discord.RoleFlags | discord.GuildSystemChannelFlags |
+		discord.ActivityFlags,
 ](flags ...V) V {
 	var result V
 	for _, p := range flags {

@@ -46,6 +46,7 @@ type GuildMembersChunkEvent struct {
 	ChunkCount int                   `json:"chunk_count"`
 	NotFound   []interface{}         `json:"not_found,omitempty"`
 	Nonce      string                `json:"nonce,omitempty"`
+	Presences  []discord.Presence    `json:"presences,omitempty"`
 }
 
 // https://docs.discord.com/developers/events/gateway-events#guild-member-update
@@ -111,30 +112,41 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	e.GuildID = structData.GuildID
 	e.NewMember.GuildID = structData.GuildID
 	e.NewMember.User = &structData.User
 	e.NewMember.Nick = structData.Nick
 	e.NewMember.Avatar = structData.Avatar
 	e.NewMember.PremiumSince = structData.PremiumSince
-	e.CommunicationDisabledUntil = structData.CommunicationDisabledUntil
-	e.Nick = structData.Nick
+	e.NewMember.CommunicationDisabledUntil = structData.CommunicationDisabledUntil
 	e.NewMember.Roles = structData.Roles
+	e.NewMember.Banner = structData.Banner
+	e.NewMember.CommunicationDisabledUntil = structData.CommunicationDisabledUntil
+	e.NewMember.JoinedAt = structData.JoinedAt
+	e.NewMember.AvatarDecorationData = structData.AvatarDecorationData
 
-	if structData.JoinedAt != nil {
-		e.NewMember.JoinedAt = structData.JoinedAt
-	}
+	e.GuildID = structData.GuildID
+	e.User = structData.User
+	e.Nick = structData.Nick
+	e.Avatar = structData.Avatar
+	e.PremiumSince = structData.PremiumSince
+	e.CommunicationDisabledUntil = structData.CommunicationDisabledUntil
+	e.Roles = structData.Roles
+	e.Banner = structData.Banner
+	e.CommunicationDisabledUntil = structData.CommunicationDisabledUntil
+	e.JoinedAt = structData.JoinedAt
+	e.AvatarDecorationData = structData.AvatarDecorationData
+
 	if structData.Deaf != nil {
 		e.NewMember.Deaf = *structData.Deaf
+		e.Deaf = structData.Deaf
 	}
 	if structData.Mute != nil {
 		e.NewMember.Mute = *structData.Mute
+		e.Mute = structData.Mute
 	}
 	if structData.Pending != nil {
 		e.NewMember.Pending = *structData.Pending
-	}
-	if structData.CommunicationDisabledUntil != nil {
-		e.NewMember.CommunicationDisabledUntil = structData.CommunicationDisabledUntil
+		e.Pending = structData.Pending
 	}
 
 	return nil
@@ -143,7 +155,19 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 func (e *GuildMemberRemoveEvent) DesiredEventType() Event { return &GuildMemberRemoveEvent{} }
 func (e *GuildMemberRemoveEvent) Event() EventType        { return EventGuildMemberRemove }
 func (e *GuildMemberRemoveEvent) UnmarshalJSON(data []byte) (err error) {
-	return json.Unmarshal(data, &e)
+	var structData struct {
+		GuildID discord.Snowflake `json:"guild_id"`
+		discord.User
+	}
+
+	if err := json.Unmarshal(data, &structData); err != nil {
+		return err
+	}
+
+	e.GuildID = structData.GuildID
+	e.User = structData.User
+
+	return nil
 }
 
 func (e *GuildMembersChunkEvent) DesiredEventType() Event { return &GuildMembersChunkEvent{} }

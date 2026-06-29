@@ -1277,7 +1277,7 @@ func (d *Client) GetStickerPack(ctx context.Context, packID discord.Snowflake) (
 func (d *Client) CreateGuildStickerRaw(ctx context.Context, guildID discord.Snowflake, params api.CreateGuildStickerParams) (*discord.Sticker, error) {
 	sticker, err := d.RestClient.CreateGuildSticker(ctx, guildID, params)
 	if err == nil {
-		sticker.GuildID = guildID
+		sticker.GuildID = &guildID
 		sticker.Hydrate(d)
 		if d.cacheStoreEnabled(cache.CategoryStickers) {
 			d.Cache.Stickers().Set(guildID, sticker)

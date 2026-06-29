@@ -53,10 +53,10 @@ func (s *Sticker) Edit(ctx context.Context, opts StickerEditOptions) (*Sticker, 
 	if err != nil {
 		return nil, err
 	}
-	if s.GuildID.IsEmpty() {
+	if s.GuildID.IsNil() {
 		return nil, errStickerNoGuildID
 	}
-	return c.ModifyGuildSticker(ctx, s.GuildID, s.ID, opts)
+	return c.ModifyGuildSticker(ctx, *s.GuildID, s.ID, opts)
 }
 
 // Delete deletes this sticker. Requires MANAGE_GUILD_EXPRESSIONS.
@@ -65,8 +65,8 @@ func (s *Sticker) Delete(ctx context.Context, reason *string) error {
 	if err != nil {
 		return err
 	}
-	if s.GuildID.IsEmpty() {
+	if s.GuildID.IsNil() {
 		return errStickerNoGuildID
 	}
-	return c.DeleteGuildSticker(ctx, s.GuildID, s.ID, reason)
+	return c.DeleteGuildSticker(ctx, *s.GuildID, s.ID, reason)
 }

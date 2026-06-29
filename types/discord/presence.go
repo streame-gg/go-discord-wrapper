@@ -2,7 +2,6 @@ package discord
 
 import (
 	"encoding/json"
-	"time"
 )
 
 // https://docs.discord.com/developers/events/gateway-events#activity-object-activity-types
@@ -22,43 +21,8 @@ const (
 //
 // https://docs.discord.com/developers/events/gateway-events#activity-object-activity-timestamps
 type ActivityTimestamps struct {
-	Start *time.Time
-	End   *time.Time
-}
-
-func (a *ActivityTimestamps) UnmarshalJSON(data []byte) error {
-	var raw struct {
-		Start *int64 `json:"start,omitempty"`
-		End   *int64 `json:"end,omitempty"`
-	}
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
-	}
-	if raw.Start != nil {
-		t := time.UnixMilli(*raw.Start).UTC()
-		a.Start = &t
-	}
-	if raw.End != nil {
-		t := time.UnixMilli(*raw.End).UTC()
-		a.End = &t
-	}
-	return nil
-}
-
-func (a ActivityTimestamps) MarshalJSON() ([]byte, error) {
-	raw := struct {
-		Start *int64 `json:"start,omitempty"`
-		End   *int64 `json:"end,omitempty"`
-	}{}
-	if a.Start != nil {
-		ms := a.Start.UnixMilli()
-		raw.Start = &ms
-	}
-	if a.End != nil {
-		ms := a.End.UnixMilli()
-		raw.End = &ms
-	}
-	return json.Marshal(raw)
+	Start int64 `json:"start"`
+	End   int64 `json:"end"`
 }
 
 // https://docs.discord.com/developers/events/gateway-events#activity-object-activity-party
@@ -118,22 +82,36 @@ const (
 //
 // https://docs.discord.com/developers/events/gateway-events#activity-object
 type FullActivity struct {
-	Name          string              `json:"name"`
-	Type          ActivityType        `json:"type"`
-	URL           *string             `json:"url,omitempty"`
-	CreatedAt     time.Time           `json:"-"`
-	Timestamps    *ActivityTimestamps `json:"timestamps,omitempty"`
-	ApplicationID *Snowflake          `json:"application_id,omitempty"`
-	Details       *string             `json:"details,omitempty"`
-	State         *string             `json:"state,omitempty"`
-	Emoji         *ActivityEmoji      `json:"emoji,omitempty"`
-	Party         *ActivityParty      `json:"party,omitempty"`
-	Assets        *ActivityAssets     `json:"assets,omitempty"`
-	Secrets       *ActivitySecrets    `json:"secrets,omitempty"`
-	Instance      *bool               `json:"instance,omitempty"`
-	Flags         *ActivityFlags      `json:"flags,omitempty"`
-	Buttons       []string            `json:"buttons,omitempty"`
+	Name              string               `json:"name"`
+	Type              ActivityType         `json:"type"`
+	URL               *string              `json:"url,omitempty"`
+	CreatedAt         int64                `json:"created_at"`
+	Timestamps        *ActivityTimestamps  `json:"timestamps,omitempty"`
+	ApplicationID     *Snowflake           `json:"application_id,omitempty"`
+	StatusDisplayType *StatusDisplayType   `json:"status_display_type,omitempty"`
+	Details           *string              `json:"details,omitempty"`
+	State             *string              `json:"state,omitempty"`
+	Emoji             *ActivityEmoji       `json:"emoji,omitempty"`
+	Party             *ActivityParty       `json:"party,omitempty"`
+	Assets            *ActivityAssets      `json:"assets,omitempty"`
+	Secrets           *ActivitySecrets     `json:"secrets,omitempty"`
+	Instance          *bool                `json:"instance,omitempty"`
+	Flags             *ActivityFlags       `json:"flags,omitempty"`
+	Buttons           []FullActivityButton `json:"buttons,omitempty"`
 }
+
+type FullActivityButton struct {
+	Label string `json:"label"`
+	URL   string `json:"url"`
+}
+
+type StatusDisplayType uint8
+
+const (
+	StatusDisplayTypeName    StatusDisplayType = 0
+	StatusDisplayTypeState   StatusDisplayType = 1
+	StatusDisplayTypeDetails StatusDisplayType = 2
+)
 
 func (f *FullActivity) UnmarshalJSON(data []byte) error {
 	type Alias FullActivity
@@ -145,7 +123,7 @@ func (f *FullActivity) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
-	f.CreatedAt = time.UnixMilli(raw.CreatedAt).UTC()
+	f.CreatedAt = raw.CreatedAt
 	return nil
 }
 
@@ -156,7 +134,7 @@ func (f FullActivity) MarshalJSON() ([]byte, error) {
 		CreatedAt int64 `json:"created_at"`
 	}{
 		Alias:     Alias(f),
-		CreatedAt: f.CreatedAt.UnixMilli(),
+		CreatedAt: f.CreatedAt,
 	})
 }
 
