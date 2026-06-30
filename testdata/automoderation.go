@@ -9,8 +9,8 @@ func NewAutomoderationRule() map[string]interface{} {
 	actions := make([]map[string]interface{}, 0, 5)
 	for i := 0; i < 5; i++ {
 		channelID := discord.RandomSnowflake()
-		customMessage := testutil.RandomString(testutil.RandomNumberInRange(0, 150))
-		durationSeconds := testutil.RandomNumberInRange(1, 2419200)
+		customMessage := testutil.RandomString(testutil.RandomIntInRange(0, 150))
+		durationSeconds := testutil.RandomIntInRange(1, 2419200)
 
 		actions = append(actions, map[string]interface{}{
 			"type": testutil.RandomItem(
@@ -30,7 +30,7 @@ func NewAutomoderationRule() map[string]interface{} {
 	return map[string]interface{}{
 		"id":         discord.RandomSnowflake(),
 		"guild_id":   discord.RandomSnowflake(),
-		"name":       testutil.RandomString(testutil.RandomNumberInRange(1, 100)),
+		"name":       testutil.RandomString(testutil.RandomIntInRange(1, 100)),
 		"creator_id": discord.RandomSnowflake(),
 		"event_type": testutil.RandomItem(
 			discord.AutoModerationEventTypeMessageSend,
@@ -44,21 +44,21 @@ func NewAutomoderationRule() map[string]interface{} {
 			discord.AutoModerationTriggerTypeMemberProfile,
 		),
 		"trigger_metadata": map[string]interface{}{
-			"keyword_filter": testutil.RandomStringArray(testutil.RandomNumberInRange(0, 1000), 1, 10),
-			"regex_patterns": testutil.RandomStringArray(testutil.RandomNumberInRange(0, 10), 1, 10),
+			"keyword_filter": testutil.RandomStringArray(testutil.RandomIntInRange(0, 1000), 1, 10),
+			"regex_patterns": testutil.RandomStringArray(testutil.RandomIntInRange(0, 10), 1, 10),
 			"presets": testutil.RandomArray[discord.KeywordPresetType](
-				testutil.RandomNumberInRange(1, 3),
+				testutil.RandomIntInRange(1, 3),
 				discord.KeywordPresetTypeProfanity,
 				discord.KeywordPresetTypeSexualContent,
 				discord.KeywordPresetTypeSlurs,
 			),
-			"allow_list":                      testutil.RandomStringArray(testutil.RandomNumberInRange(0, 100), 1, 10),
-			"mention_total_limit":             testutil.RandomNumberInRange(1, 50),
+			"allow_list":                      testutil.RandomStringArray(testutil.RandomIntInRange(0, 100), 1, 10),
+			"mention_total_limit":             testutil.RandomIntInRange(1, 50),
 			"mention_raid_protection_enabled": testutil.RandomBool(),
 		},
-		"actions":         testutil.RandomArray(testutil.RandomNumberInRange(1, 5), actions...),
+		"actions":         testutil.RandomArray(testutil.RandomIntInRange(1, 5), actions...),
 		"enabled":         testutil.RandomBool(),
-		"exempt_roles":    testutil.RandomSnowflakeArray(testutil.RandomNumberInRange(0, 20)),
-		"exempt_channels": testutil.RandomSnowflakeArray(testutil.RandomNumberInRange(0, 20)),
+		"exempt_roles":    testutil.RandomSnowflakeArray(testutil.RandomIntInRange(0, 20)),
+		"exempt_channels": testutil.RandomSnowflakeArray(testutil.RandomIntInRange(0, 20)),
 	}
 }

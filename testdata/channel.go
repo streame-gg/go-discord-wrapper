@@ -23,18 +23,18 @@ func NewChannel() map[string]interface{} {
 			discord.ChannelTypeGuildMedia,
 		),
 		"guild_id": discord.RandomSnowflake(),
-		"position": testutil.RandomNumberInRange(0, 500),
-		"permission_overwrites": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
+		"position": testutil.RandomIntInRange(0, 500),
+		"permission_overwrites": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewPermissionOverwrite())
 		}),
-		"name":                testutil.RandomString(testutil.RandomNumberInRange(1, 100)),
-		"topic":               testutil.RandomString(testutil.RandomNumberInRange(1, 4096)),
+		"name":                testutil.RandomString(testutil.RandomIntInRange(1, 100)),
+		"topic":               testutil.RandomString(testutil.RandomIntInRange(1, 4096)),
 		"nsfw":                testutil.RandomBool(),
 		"last_message_id":     discord.RandomSnowflake(),
-		"bitrate":             testutil.RandomNumberInRange(1, 384),
-		"user_limit":          testutil.RandomNumberInRange(0, 100),
-		"rate_limit_per_user": testutil.RandomNumberInRange(1, 21600),
-		"recipients": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(0, 10), func(arrayToFill *[]map[string]interface{}) {
+		"bitrate":             testutil.RandomIntInRange(1, 384),
+		"user_limit":          testutil.RandomIntInRange(0, 100),
+		"rate_limit_per_user": testutil.RandomIntInRange(1, 21600),
+		"recipients": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(0, 10), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewUser())
 		}),
 		"icon":               testutil.RandomString(32),
@@ -45,8 +45,8 @@ func NewChannel() map[string]interface{} {
 		"last_pin_timestamp": testutil.RandomTime(),
 		"rtc_region":         testutil.RandomString(2),
 		"video_quality_mode": testutil.RandomItem(discord.VideoQualityModeAuto, discord.VideoQualityModeFull),
-		"message_count":      testutil.RandomNumberInRange(1, 100000),
-		"member_count":       testutil.RandomNumberInRange(1, 100000),
+		"message_count":      testutil.RandomIntInRange(1, 100000),
+		"member_count":       testutil.RandomIntInRange(1, 100000),
 		"thread_metadata": map[string]interface{}{
 			"archived":              testutil.RandomBool(),
 			"auto_archive_duration": testutil.RandomItem(60, 1440, 4320, 10080),
@@ -59,22 +59,22 @@ func NewChannel() map[string]interface{} {
 			"id":             discord.RandomSnowflake(),
 			"user_id":        discord.RandomSnowflake(),
 			"join_timestamp": testutil.RandomTime(),
-			"flags":          testutil.RandomNumberInRange(0, 1),
+			"flags":          testutil.RandomIntInRange(0, 1),
 			"member":         NewGuildMember(),
 		},
 		"default_auto_archive_duration": testutil.RandomItem(60, 1440, 4320, 10080),
 		"permissions":                   testutil.RandomFlags(testutil.AllPermissions...),
 		"flags":                         testutil.RandomFlags(discord.ChannelFlagPinned, discord.ChannelFlagRequireTag, discord.ChannelFlagHideMediaDownloadOptions),
-		"total_message_sent":            testutil.RandomNumberInRange(1, 100000),
-		"available_tags": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 25), func(arrayToFill *[]map[string]interface{}) {
+		"total_message_sent":            testutil.RandomIntInRange(1, 100000),
+		"available_tags": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 25), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewChannelTag())
 		}),
-		"applied_tags": testutil.RandomSnowflakeArray(testutil.RandomNumberInRange(1, 25)),
+		"applied_tags": testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 25)),
 		"default_reaction_emoji": map[string]interface{}{
 			"emoji_id":   discord.RandomSnowflake(),
 			"emoji_name": testutil.RandomString(4),
 		},
-		"default_thread_rate_limit_per_user": testutil.RandomNumberInRange(1, 21600),
+		"default_thread_rate_limit_per_user": testutil.RandomIntInRange(1, 21600),
 		"default_sort_order":                 testutil.RandomItem(discord.DefaultSortOrderLatestActivity, discord.DefaultSortOrderCreationDate),
 		"default_forum_layout":               testutil.RandomItem(discord.ChannelForumLayoutTypeNotSet, discord.ChannelForumLayoutTypeListView, discord.ChannelForumLayoutTypeGalleryView),
 	}
@@ -83,7 +83,7 @@ func NewChannel() map[string]interface{} {
 func NewChannelTag() map[string]interface{} {
 	return map[string]interface{}{
 		"id":         discord.RandomSnowflake(),
-		"name":       testutil.RandomString(testutil.RandomNumberInRange(0, 20)),
+		"name":       testutil.RandomString(testutil.RandomIntInRange(0, 20)),
 		"moderated":  testutil.RandomBool(),
 		"emoji_id":   discord.RandomSnowflake(),
 		"emoji_name": testutil.RandomString(4),

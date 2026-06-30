@@ -8,7 +8,7 @@ import (
 func NewGuildEmojisUpdateEventPayload() map[string]interface{} {
 	return map[string]interface{}{
 		"guild_id": discord.RandomSnowflake(),
-		"emojis": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 50), func(arrayToFill *[]map[string]interface{}) {
+		"emojis": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 50), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewEmoji())
 		}),
 	}
@@ -17,7 +17,7 @@ func NewGuildEmojisUpdateEventPayload() map[string]interface{} {
 func NewGuildStickersUpdateEventPayload() map[string]interface{} {
 	return map[string]interface{}{
 		"guild_id": discord.RandomSnowflake(),
-		"stickers": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 50), func(arrayToFill *[]map[string]interface{}) {
+		"stickers": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 50), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewSticker())
 		}),
 	}

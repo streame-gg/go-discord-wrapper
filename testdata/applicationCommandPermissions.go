@@ -22,7 +22,7 @@ func NewGuildApplicationCommandPermissions() map[string]interface{} {
 		"id":             discord.RandomSnowflake(),
 		"application_id": discord.RandomSnowflake(),
 		"guild_id":       discord.RandomSnowflake(),
-		"permissions": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
+		"permissions": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewApplicationCommandPermissions())
 		}),
 	}

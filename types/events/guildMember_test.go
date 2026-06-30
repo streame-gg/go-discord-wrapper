@@ -26,21 +26,42 @@ func (s *eventSuite) TestGuildMemberAdd() {
 	})
 }
 
-// TODO
 func (s *eventSuite) TestGuildMemberUpdate() {
-	s.T().Log("Testing Guild Member Add Unmarshal Logic")
-	s.T().Skip("not implemented yet just todo")
+	s.T().Log("Testing Guild Member Update Unmarshal Logic")
 
-	sub := testutil.InitSub[GuildMemberAddEvent](s)
+	sub := testutil.InitSub[GuildMemberUpdateEvent](s)
 
 	sub.RunCommonEdgeCases()
 
-	sub.RunCases([]testutil.UnmarshalTestCase[GuildMemberAddEvent]{
+	payload := testdata.NewMemberUpdateEventPayload()
+
+	sub.RunCases([]testutil.UnmarshalTestCase[GuildMemberUpdateEvent]{
 		{
 			Name:  "valid full payload",
-			Input: sub.MustMarshal("{}"),
-			Validate: func(got GuildMemberAddEvent) {
+			Input: sub.MustMarshal(payload),
+			Validate: func(got GuildMemberUpdateEvent) {
+				s.EqualValues(payload["guild_id"], got.GuildID)
+				s.EqualValues(payload["avatar"], *got.Avatar)
+				s.EqualValues(payload["banner"], *got.Banner)
+				s.EqualValues(payload["communication_disabled_until"], *got.CommunicationDisabledUntil)
+				s.EqualValues(payload["deaf"], *got.Deaf)
+				s.EqualValues(payload["joined_at"], *got.JoinedAt)
+				s.EqualValues(payload["mute"], *got.Mute)
+				s.EqualValues(payload["nick"], *got.Nick)
+				s.EqualValues(payload["pending"], *got.Pending)
+				s.EqualValues(payload["premium_since"], *got.PremiumSince)
+				s.EqualValues(payload["roles"], got.Roles)
+				s.compareUser(payload["user"].(map[string]interface{}), got.User)
 
+				nameplate := payload["collectibles"].(map[string]interface{})["nameplate"].(map[string]interface{})
+				s.EqualValues(nameplate["sku_id"], got.Collectibles.Nameplate.SkuID)
+				s.EqualValues(nameplate["asset"], got.Collectibles.Nameplate.Asset)
+				s.EqualValues(nameplate["label"], got.Collectibles.Nameplate.Label)
+				s.EqualValues(nameplate["palette"], got.Collectibles.Nameplate.Palette)
+
+				avatarDecorationData := payload["avatar_decoration_data"].(map[string]interface{})
+				s.EqualValues(avatarDecorationData["asset"], got.AvatarDecorationData.Asset)
+				s.EqualValues(avatarDecorationData["sku_id"], got.AvatarDecorationData.SkuID)
 			},
 		},
 	})

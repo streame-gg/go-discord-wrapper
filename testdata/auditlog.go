@@ -9,9 +9,9 @@ import (
 
 func NewAuditLogEntryChange() map[string]interface{} {
 	return map[string]interface{}{
-		"key":       testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
-		"new_value": testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
-		"old_value": testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
+		"key":       testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"new_value": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"old_value": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 	}
 }
 
@@ -30,7 +30,7 @@ func NewAuditLogEntry() map[string]interface{} {
 	return map[string]interface{}{
 		"guild_id":  discord.RandomSnowflake(),
 		"target_id": discord.RandomSnowflake(),
-		"changes": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 32), func(arrayToFill *[]map[string]interface{}) {
+		"changes": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 32), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewAuditLogEntryChange())
 		}),
 		"user_id": discord.RandomSnowflake(),
@@ -108,7 +108,7 @@ func NewAuditLogEntry() map[string]interface{} {
 		),
 		"options": map[string]interface{}{
 			"application_id":            discord.RandomSnowflake(),
-			"auto_moderation_rule_name": testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
+			"auto_moderation_rule_name": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 			"auto_moderation_rule_trigger_type": testutil.RandomItem(
 				discord.AutoModerationTriggerTypeKeyword,
 				discord.AutoModerationTriggerTypeSpam,
@@ -117,12 +117,12 @@ func NewAuditLogEntry() map[string]interface{} {
 				discord.AutoModerationTriggerTypeMemberProfile,
 			),
 			"channel_id":         discord.RandomSnowflake(),
-			"count":              strconv.Itoa(testutil.RandomNumberInRange(1, 100)),
-			"delete_member_days": strconv.Itoa(testutil.RandomNumberInRange(1, 365)),
+			"count":              strconv.Itoa(testutil.RandomIntInRange(1, 100)),
+			"delete_member_days": strconv.Itoa(testutil.RandomIntInRange(1, 365)),
 			"id":                 discord.RandomSnowflake(),
-			"members_removed":    strconv.Itoa(testutil.RandomNumberInRange(1, 1000)),
+			"members_removed":    strconv.Itoa(testutil.RandomIntInRange(1, 1000)),
 			"message_id":         discord.RandomSnowflake(),
-			"role_name":          testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
+			"role_name":          testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 			"type": testutil.RandomItem(
 				discord.PermissionOverwriteTypeRole,
 				discord.PermissionOverwriteTypeUser,
@@ -131,8 +131,8 @@ func NewAuditLogEntry() map[string]interface{} {
 				discord.InteractionApplicationIntegrationTypeGuildInstall,
 				discord.InteractionApplicationIntegrationTypeUserInstall,
 			),
-			"status": testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
+			"status": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 		},
-		"reason": testutil.RandomString(testutil.RandomNumberInRange(1, 512)),
+		"reason": testutil.RandomString(testutil.RandomIntInRange(1, 512)),
 	}
 }

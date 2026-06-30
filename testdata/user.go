@@ -31,7 +31,7 @@ func NewGuildMemberWithGuildID() map[string]interface{} {
 		"nick":                   testutil.RandomString(32),
 		"pending":                testutil.RandomBool(),
 		"premium_since":          testutil.RandomTime(),
-		"roles":                  testutil.RandomSnowflakeArray(testutil.RandomNumberInRange(1, 500)),
+		"roles":                  testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 500)),
 		"user":                   NewUser(),
 		"permissions":            testutil.RandomFlags(testutil.AllPermissions...),
 		"avatar_decoration_data": NewAvatarDecorationData(),
@@ -62,7 +62,7 @@ func NewGuildMember() map[string]interface{} {
 		"nick":                   testutil.RandomString(32),
 		"pending":                testutil.RandomBool(),
 		"premium_since":          testutil.RandomTime(),
-		"roles":                  testutil.RandomSnowflakeArray(testutil.RandomNumberInRange(1, 500)),
+		"roles":                  testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 500)),
 		"user":                   NewUser(),
 		"permissions":            testutil.RandomFlags(testutil.AllPermissions...),
 		"avatar_decoration_data": NewAvatarDecorationData(),
@@ -72,11 +72,11 @@ func NewGuildMember() map[string]interface{} {
 
 func NewUser() map[string]interface{} {
 	return map[string]interface{}{
-		"accent_color":           testutil.RandomNumberInRange(0x000000, 0xFFFFFF),
+		"accent_color":           testutil.RandomIntInRange(0x000000, 0xFFFFFF),
 		"avatar":                 testutil.RandomString(32),
 		"avatar_decoration_data": NewAvatarDecorationData(),
 		"bot":                    testutil.RandomBool(),
-		"discriminator":          strconv.Itoa(testutil.RandomNumberInRange(0000, 9999)),
+		"discriminator":          strconv.Itoa(testutil.RandomIntInRange(0000, 9999)),
 		"flags": testutil.RandomFlags(
 			discord.UserFlagStaff,
 			discord.UserFlagPartner,
@@ -93,7 +93,7 @@ func NewUser() map[string]interface{} {
 			discord.UserFlagCertifiedModerator,
 			discord.UserFlagBotHTTPInteractions,
 		),
-		"global_name": testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
+		"global_name": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 		"id":          discord.RandomSnowflake(),
 		"locale": testutil.RandomItem(
 			discord.LocaleIndonesian,
@@ -134,7 +134,7 @@ func NewUser() map[string]interface{} {
 			"badge":             testutil.RandomString(32),
 			"identity_enabled":  testutil.RandomBool(),
 			"identity_guild_id": discord.RandomSnowflake(),
-			"tag":               testutil.RandomString(testutil.RandomNumberInRange(1, 4)),
+			"tag":               testutil.RandomString(testutil.RandomIntInRange(1, 4)),
 		},
 		"public_flags": testutil.RandomFlags(
 			discord.UserFlagStaff,
@@ -153,7 +153,7 @@ func NewUser() map[string]interface{} {
 			discord.UserFlagBotHTTPInteractions,
 		),
 		"system":   testutil.RandomBool(),
-		"username": testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
+		"username": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 		"banner":   testutil.RandomString(32),
 		"verified": testutil.RandomBool(),
 		"email":    testutil.RandomString(10) + "@streame.gg",
@@ -170,11 +170,11 @@ func NewUser() map[string]interface{} {
 func NewUserWithGuildID() map[string]interface{} {
 	return map[string]interface{}{
 		"guild_id":               discord.RandomSnowflake(),
-		"accent_color":           testutil.RandomNumberInRange(0x000000, 0xFFFFFF),
+		"accent_color":           testutil.RandomIntInRange(0x000000, 0xFFFFFF),
 		"avatar":                 testutil.RandomString(32),
 		"avatar_decoration_data": NewAvatarDecorationData(),
 		"bot":                    testutil.RandomBool(),
-		"discriminator":          strconv.Itoa(testutil.RandomNumberInRange(0000, 9999)),
+		"discriminator":          strconv.Itoa(testutil.RandomIntInRange(0000, 9999)),
 		"flags": testutil.RandomFlags(
 			discord.UserFlagStaff,
 			discord.UserFlagPartner,
@@ -191,7 +191,7 @@ func NewUserWithGuildID() map[string]interface{} {
 			discord.UserFlagCertifiedModerator,
 			discord.UserFlagBotHTTPInteractions,
 		),
-		"global_name": testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
+		"global_name": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 		"id":          discord.RandomSnowflake(),
 		"locale": testutil.RandomItem(
 			discord.LocaleIndonesian,
@@ -232,7 +232,7 @@ func NewUserWithGuildID() map[string]interface{} {
 			"badge":             testutil.RandomString(32),
 			"identity_enabled":  testutil.RandomBool(),
 			"identity_guild_id": discord.RandomSnowflake(),
-			"tag":               testutil.RandomString(testutil.RandomNumberInRange(1, 4)),
+			"tag":               testutil.RandomString(testutil.RandomIntInRange(1, 4)),
 		},
 		"public_flags": testutil.RandomFlags(
 			discord.UserFlagStaff,
@@ -251,7 +251,7 @@ func NewUserWithGuildID() map[string]interface{} {
 			discord.UserFlagBotHTTPInteractions,
 		),
 		"system":   testutil.RandomBool(),
-		"username": testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
+		"username": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 		"banner":   testutil.RandomString(32),
 		"verified": testutil.RandomBool(),
 		"email":    testutil.RandomString(10) + "@streame.gg",
@@ -298,16 +298,16 @@ func NewAvatarDecorationData() map[string]interface{} {
 func NewGuildMembersChunkEventPayload() map[string]interface{} {
 	return map[string]interface{}{
 		"guild_id":    discord.RandomSnowflake(),
-		"chunk_index": testutil.RandomNumberInRange(1, 100),
-		"chunk_count": testutil.RandomNumberInRange(1, 100),
-		"not_found": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 100), func(arrayToFill *[]interface{}) {
-			*arrayToFill = append(*arrayToFill, testutil.RandomString(testutil.RandomNumberInRange(1, 5)))
+		"chunk_index": testutil.RandomIntInRange(1, 100),
+		"chunk_count": testutil.RandomIntInRange(1, 100),
+		"not_found": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]interface{}) {
+			*arrayToFill = append(*arrayToFill, testutil.RandomString(testutil.RandomIntInRange(1, 5)))
 		}),
-		"presences": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 100), func(arrayToFill *[]interface{}) {
+		"presences": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewPresence())
 		}),
 		"nonce": testutil.RandomString(32),
-		"members": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 100), func(arrayToFill *[]interface{}) {
+		"members": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewGuildMember())
 		}),
 	}
@@ -343,7 +343,7 @@ func NewPresenceActivity() map[string]interface{} {
 		"emoji":       NewEmoji(),
 		"party": map[string]interface{}{
 			"id":   testutil.RandomString(32),
-			"size": []int{testutil.RandomNumberInRange(1, 100), testutil.RandomNumberInRange(1, 100)},
+			"size": []int{testutil.RandomIntInRange(1, 100), testutil.RandomIntInRange(1, 100)},
 		},
 		"assets": map[string]interface{}{
 			"large_image":        testutil.RandomString(32),
@@ -371,7 +371,7 @@ func NewPresenceActivity() map[string]interface{} {
 			discord.ActivityFlagPartyPrivacyVoiceChannel,
 			discord.ActivityFlagEmbedded,
 		),
-		"buttons": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 2), func(arrayToFill *[]interface{}) {
+		"buttons": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 2), func(arrayToFill *[]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewPresenceActivityButton())
 		}),
 	}
@@ -379,8 +379,8 @@ func NewPresenceActivity() map[string]interface{} {
 
 func NewPresenceActivityButton() map[string]interface{} {
 	return map[string]interface{}{
-		"label": testutil.RandomString(testutil.RandomNumberInRange(1, 32)),
-		"url":   testutil.RandomString(testutil.RandomNumberInRange(1, 512)),
+		"label": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"url":   testutil.RandomString(testutil.RandomIntInRange(1, 512)),
 	}
 }
 
@@ -394,7 +394,7 @@ func NewPresence() map[string]interface{} {
 			discord.PresenceStatusOnline,
 			discord.PresenceStatusOffline,
 		),
-		"activities": testutil.RandomArrayWithFilledItems(testutil.RandomNumberInRange(1, 50), func(arrayToFill *[]interface{}) {
+		"activities": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 50), func(arrayToFill *[]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewPresenceActivity())
 		}),
 		"client_status": map[string]interface{}{

@@ -8,10 +8,12 @@ import (
 )
 
 var _ Event = &GuildCreateEvent{}
+var _ Event = &GuildUpdateEvent{}
 var _ Event = &GuildDeleteEvent{}
 
 func init() {
 	RegisterEvent(&GuildCreateEvent{})
+	RegisterEvent(&GuildUpdateEvent{})
 	RegisterEvent(&GuildDeleteEvent{})
 }
 
@@ -33,6 +35,12 @@ type GuildCreateEvent struct {
 	SoundboardSounds     []discord.SoundboardSound     `json:"soundboard_sounds"`
 
 	Guild *discord.Guild `json:"-"`
+}
+
+// https://docs.discord.com/developers/events/gateway-events#guild-update
+type GuildUpdateEvent struct {
+	NewGuild discord.Guild  `json:"-"`
+	OldGuild *discord.Guild `json:"-"`
 }
 
 // https://docs.discord.com/developers/events/gateway-events#guild-delete
@@ -95,6 +103,12 @@ func (e *GuildCreateEvent) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+func (e *GuildUpdateEvent) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &e.NewGuild)
+}
+func (e *GuildUpdateEvent) DesiredEventType() Event { return &GuildUpdateEvent{} }
+func (e *GuildUpdateEvent) Event() EventType        { return EventGuildUpdate }
 
 func (g *GuildDeleteEvent) DesiredEventType() Event {
 	return &GuildDeleteEvent{}

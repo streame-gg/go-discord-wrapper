@@ -51,11 +51,11 @@ type GuildMembersChunkEvent struct {
 
 // https://docs.discord.com/developers/events/gateway-events#guild-member-update
 type GuildMemberUpdateEvent struct {
-	GuildID   discord.Snowflake    `json:"-"`
 	Guild     *discord.Guild       `json:"-"`
 	NewMember discord.GuildMember  `json:"-"`
 	OldMember *discord.GuildMember `json:"-"`
 
+	GuildID                    discord.Snowflake             `json:"guild_id"`
 	Avatar                     *string                       `json:"avatar"`
 	Banner                     *string                       `json:"banner"`
 	CommunicationDisabledUntil *time.Time                    `json:"communication_disabled_until,omitempty"`
@@ -108,7 +108,7 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 		AvatarDecorationData       *discord.AvatarDecorationData `json:"avatar_decoration_data,omitempty"`
 		Collectibles               *discord.Collectible          `json:"collectibles,omitempty"`
 	}
-	if err := json.Unmarshal(data, &data); err != nil {
+	if err := json.Unmarshal(data, &structData); err != nil {
 		return err
 	}
 
@@ -123,6 +123,7 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	e.NewMember.CommunicationDisabledUntil = structData.CommunicationDisabledUntil
 	e.NewMember.JoinedAt = structData.JoinedAt
 	e.NewMember.AvatarDecorationData = structData.AvatarDecorationData
+	e.NewMember.Collectibles = structData.Collectibles
 
 	e.GuildID = structData.GuildID
 	e.User = structData.User
@@ -135,6 +136,7 @@ func (e *GuildMemberUpdateEvent) UnmarshalJSON(data []byte) error {
 	e.CommunicationDisabledUntil = structData.CommunicationDisabledUntil
 	e.JoinedAt = structData.JoinedAt
 	e.AvatarDecorationData = structData.AvatarDecorationData
+	e.Collectibles = structData.Collectibles
 
 	if structData.Deaf != nil {
 		e.NewMember.Deaf = *structData.Deaf

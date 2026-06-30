@@ -14,7 +14,7 @@ func RandomArray[V any](arraySize int, entries ...V) []V {
 
 	arr := make([]V, arraySize)
 	for i := 0; i < arraySize; i++ {
-		arr[i] = entries[RandomNumberInRange(0, len(entries)-1)]
+		arr[i] = entries[RandomIntInRange(0, len(entries)-1)]
 	}
 
 	return arr

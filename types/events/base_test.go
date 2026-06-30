@@ -298,3 +298,178 @@ func (s *eventSuite) comparePresence(expected map[string]interface{}, actual dis
 		s.EqualValues(emoji["animated"], *actualActivity.Emoji.Animated)
 	}
 }
+
+func (s *eventSuite) compareGuildScheduledEvent(expected map[string]interface{}, actual discord.GuildScheduledEvent) {
+	s.EqualValues(expected["id"], actual.ID)
+	s.EqualValues(expected["guild_id"], actual.GuildID)
+	s.EqualValues(expected["channel_id"], *actual.ChannelID)
+	s.EqualValues(expected["creator_id"], *actual.CreatorID)
+	s.EqualValues(expected["name"], actual.Name)
+	s.EqualValues(expected["description"], *actual.Description)
+	s.EqualValues(expected["scheduled_start_time"], actual.ScheduledStartTime)
+	s.EqualValues(expected["scheduled_end_time"], *actual.ScheduledEndTime)
+	s.EqualValues(expected["privacy_level"], actual.PrivacyLevel)
+	s.EqualValues(expected["status"], actual.Status)
+	s.EqualValues(expected["entity_type"], actual.EntityType)
+	s.EqualValues(expected["user_count"], *actual.UserCount)
+	s.EqualValues(expected["image"], *actual.Image)
+
+	s.compareUser(expected["creator"].(map[string]interface{}), *actual.Creator)
+
+	entityMetadata := expected["entity_metadata"].(map[string]interface{})
+	s.EqualValues(entityMetadata["location"], *actual.EntityMetadata.Location)
+
+	recurrenceRule := expected["recurrence_rule"].(map[string]interface{})
+	s.EqualValues(recurrenceRule["start"], actual.RecurrenceRule.Start)
+	s.EqualValues(recurrenceRule["end"], *actual.RecurrenceRule.End)
+	s.EqualValues(recurrenceRule["frequency"], actual.RecurrenceRule.Frequency)
+	s.EqualValues(recurrenceRule["interval"], actual.RecurrenceRule.Interval)
+	s.EqualValues(recurrenceRule["count"], *actual.RecurrenceRule.Count)
+
+	expectedByWeekday := recurrenceRule["by_weekday"].([]discord.GuildScheduledEventRecurrenceRuleWeekday)
+	s.Require().Len(actual.RecurrenceRule.ByWeekday, len(expectedByWeekday))
+	for i, exp := range expectedByWeekday {
+		s.EqualValues(exp, actual.RecurrenceRule.ByWeekday[i])
+	}
+
+	expectedByNWeekday := recurrenceRule["by_n_weekday"].([]map[string]interface{})
+	s.Require().Len(actual.RecurrenceRule.ByNWeekday, len(expectedByNWeekday))
+	for i, exp := range expectedByNWeekday {
+		s.EqualValues(exp["n"], actual.RecurrenceRule.ByNWeekday[i].N)
+		s.EqualValues(exp["day"], actual.RecurrenceRule.ByNWeekday[i].Day)
+	}
+
+	expectedByMonth := recurrenceRule["by_month"].([]discord.GuildScheduledEventRecurrenceRuleMonth)
+	s.Require().Len(actual.RecurrenceRule.ByMonth, len(expectedByMonth))
+	for i, exp := range expectedByMonth {
+		s.EqualValues(exp, actual.RecurrenceRule.ByMonth[i])
+	}
+
+	expectedByMonthDay := recurrenceRule["by_month_day"].([]int)
+	s.Require().Len(actual.RecurrenceRule.ByMonthDay, len(expectedByMonthDay))
+	for i, exp := range expectedByMonthDay {
+		s.EqualValues(exp, actual.RecurrenceRule.ByMonthDay[i])
+	}
+
+	expectedByYearDay := recurrenceRule["by_year_day"].([]int)
+	s.Require().Len(actual.RecurrenceRule.ByYearDay, len(expectedByYearDay))
+	for i, exp := range expectedByYearDay {
+		s.EqualValues(exp, actual.RecurrenceRule.ByYearDay[i])
+	}
+}
+
+func (s *eventSuite) compareGuild(expected map[string]interface{}, actual discord.Guild) {
+	s.EqualValues(expected["id"], actual.ID)
+	s.EqualValues(expected["name"], actual.Name)
+	s.EqualValues(expected["icon"], *actual.Icon)
+	s.EqualValues(expected["icon_hash"], *actual.IconHash)
+	s.EqualValues(expected["splash"], *actual.Splash)
+	s.EqualValues(expected["discovery_splash"], *actual.DiscoverySplash)
+	s.EqualValues(expected["owner"], actual.Owner)
+	s.EqualValues(expected["owner_id"], actual.OwnerID)
+	s.EqualValues(expected["permissions"], actual.Permissions)
+	s.EqualValues(expected["region"], *actual.Region)
+	s.EqualValues(expected["afk_channel_id"], *actual.AfkChannelID)
+	s.EqualValues(expected["afk_timeout"], actual.AfkTimeout)
+	s.EqualValues(expected["widget_enabled"], actual.WidgetEnabled)
+	s.EqualValues(expected["widget_channel_id"], *actual.WidgetChannelID)
+	s.EqualValues(expected["verification_level"], actual.VerificationLevel)
+	s.EqualValues(expected["default_message_notifications"], actual.DefaultMessageNotifications)
+	s.EqualValues(expected["explicit_content_filter"], actual.ExplicitContentFilter)
+	s.EqualValues(expected["mfa_level"], actual.MfaLevel)
+	s.EqualValues(expected["application_id"], *actual.ApplicationID)
+	s.EqualValues(expected["system_channel_id"], *actual.SystemChannelID)
+	s.EqualValues(expected["system_channel_flags"], actual.SystemChannelFlags)
+	s.EqualValues(expected["rules_channel_id"], *actual.RulesChannelID)
+	s.EqualValues(expected["max_presences"], *actual.MaxPresences)
+	s.EqualValues(expected["max_members"], actual.MaxMembers)
+	s.EqualValues(expected["vanity_url_code"], *actual.VanityUrlCode)
+	s.EqualValues(expected["description"], *actual.Description)
+	s.EqualValues(expected["banner"], *actual.Banner)
+	s.EqualValues(expected["premium_tier"], actual.PremiumTier)
+	s.EqualValues(expected["premium_subscription_count"], actual.PremiumSubscriptionCount)
+	s.EqualValues(expected["preferred_locale"], actual.PreferredLocale)
+	s.EqualValues(expected["public_updates_channel_id"], *actual.PublicUpdatesChannelID)
+	s.EqualValues(expected["max_video_channel_users"], actual.MaxVideoChannelUsers)
+	s.EqualValues(expected["max_stage_video_channel_users"], actual.MaxStageVideoChannelUsers)
+	s.EqualValues(expected["approximate_member_count"], actual.ApproximateMemberCount)
+	s.EqualValues(expected["approximate_presence_count"], actual.ApproximatePresenceCount)
+	s.EqualValues(expected["nsfw_level"], actual.NSFWLevel)
+	s.EqualValues(expected["premium_progress_bar_enabled"], actual.PremiumProgressBarEnabled)
+	s.EqualValues(expected["safety_alerts_channel_id"], *actual.SafetyAlertsChannelID)
+
+	welcomeScreen := expected["welcome_screen"].(map[string]interface{})
+	s.EqualValues(welcomeScreen["description"], *actual.WelcomeScreen.Description)
+	welcomeChannels := welcomeScreen["welcome_channels"].([]map[string]interface{})
+	for i, wc := range welcomeChannels {
+		s.EqualValues(wc["channel_id"], actual.WelcomeScreen.WelcomeChannels[i].ChannelID)
+		s.EqualValues(wc["description"], actual.WelcomeScreen.WelcomeChannels[i].Description)
+		s.EqualValues(wc["emoji_id"], *actual.WelcomeScreen.WelcomeChannels[i].EmojiID)
+		s.EqualValues(wc["emoji_name"], *actual.WelcomeScreen.WelcomeChannels[i].EmojiName)
+	}
+
+	incidentsData := expected["incidents_data"].(map[string]interface{})
+	s.EqualValues(incidentsData["invites_disabled_until"], *actual.IncidentsData.InvitesDisabledUntil)
+	s.EqualValues(incidentsData["dms_disabled_until"], *actual.IncidentsData.DmsDisabledUntil)
+	s.EqualValues(incidentsData["dm_spam_detected_at"], *actual.IncidentsData.DmSpanDetectedAt)
+	s.EqualValues(incidentsData["raid_detected_at"], *actual.IncidentsData.RaidDetectedAt)
+
+	roles := expected["roles"].([]map[string]interface{})
+	s.Len(actual.RawRoles, len(roles))
+
+	for i, r := range roles {
+		s.compareRole(r, actual.RawRoles[i])
+	}
+
+	stickers := expected["stickers"].([]map[string]interface{})
+	s.Len(actual.RawStickers, len(stickers))
+
+	for i, st := range stickers {
+		s.compareSticker(st, actual.RawStickers[i])
+	}
+
+	emojis := expected["emojis"].([]map[string]interface{})
+	s.Len(actual.RawEmojis, len(emojis))
+
+	for i, em := range emojis {
+		s.compareEmoji(em, actual.RawEmojis[i])
+	}
+}
+
+func (s *eventSuite) compareSoundboardSound(expected map[string]interface{}, actual discord.SoundboardSound) {
+	s.EqualValues(expected["name"], actual.Name)
+	s.EqualValues(expected["sound_id"], actual.SoundID)
+	s.EqualValues(expected["volume"], actual.Volume)
+	s.EqualValues(expected["emoji_id"], *actual.EmojiID)
+	s.EqualValues(expected["emoji_name"], *actual.EmojiName)
+	s.EqualValues(expected["guild_id"], *actual.GuildID)
+	s.EqualValues(expected["available"], actual.Available)
+	s.compareUser(expected["user"].(map[string]interface{}), *actual.User)
+}
+
+func (s *eventSuite) compareStageInstance(expected map[string]interface{}, actual discord.StageInstance) {
+	s.EqualValues(expected["id"], actual.ID)
+	s.EqualValues(expected["guild_id"], actual.GuildID)
+	s.EqualValues(expected["channel_id"], actual.ChannelID)
+	s.EqualValues(expected["topic"], actual.Topic)
+	s.EqualValues(expected["privacy_level"], actual.PrivacyLevel)
+	s.EqualValues(expected["discoverable_disabled"], actual.DiscoverableDisabled)
+	s.EqualValues(expected["guild_scheduled_event_id"], *actual.GuildScheduledEventID)
+}
+
+func (s *eventSuite) compareVoiceState(expected map[string]interface{}, actual discord.VoiceState) {
+	s.EqualValues(expected["guild_id"], *actual.GuildID)
+	s.EqualValues(expected["channel_id"], *actual.ChannelID)
+	s.EqualValues(expected["user_id"], actual.UserID)
+	s.EqualValues(expected["session_id"], actual.SessionID)
+	s.EqualValues(expected["deaf"], actual.Deaf)
+	s.EqualValues(expected["mute"], actual.Mute)
+	s.EqualValues(expected["self_deaf"], actual.SelfDeaf)
+	s.EqualValues(expected["self_mute"], actual.SelfMute)
+	s.EqualValues(expected["self_stream"], *actual.SelfStream)
+	s.EqualValues(expected["self_video"], actual.SelfVideo)
+	s.EqualValues(expected["suppress"], actual.Suppress)
+	s.EqualValues(expected["request_to_speak_timestamp"], *actual.RequestToSpeakTimestamp)
+
+	s.compareMember(expected["member"].(map[string]interface{}), *actual.Member)
+}
