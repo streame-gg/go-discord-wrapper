@@ -23,9 +23,7 @@ func init() {
 // GuildSoundboardSoundCreateEvent is dispatched when a soundboard sound is created in a guild.
 // https://docs.discord.com/developers/events/gateway-events#guild-soundboard-sound-create
 type GuildSoundboardSoundCreateEvent struct {
-	Sound discord.SoundboardSound `json:"-"`
-
-	Guild *discord.Guild `json:"-"`
+	discord.SoundboardSound
 }
 
 // GuildSoundboardSoundUpdateEvent is dispatched when a soundboard sound is updated.
@@ -62,9 +60,6 @@ type SoundboardSoundsEvent struct {
 }
 
 func (e *GuildSoundboardSoundCreateEvent) Event() EventType { return EventGuildSoundboardSoundCreate }
-func (e *GuildSoundboardSoundCreateEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.Sound)
-}
 func (e *GuildSoundboardSoundCreateEvent) DesiredEventType() Event {
 	return &GuildSoundboardSoundCreateEvent{}
 }

@@ -16,6 +16,8 @@ type Subscription struct {
 	Status             SubscriptionStatus `json:"status"`
 	CanceledAt         *time.Time         `json:"canceled_at"`
 	Country            string             `json:"country,omitempty"`
+
+	User *User `json:"-"`
 }
 
 // https://docs.discord.com/developers/resources/subscription#subscription-statuses

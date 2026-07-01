@@ -20,7 +20,7 @@ func init() {
 
 // https://docs.discord.com/developers/events/gateway-events#auto-moderation-rule-create
 type AutoModerationRuleCreateEvent struct {
-	Rule discord.AutoModerationRule `json:"-"`
+	discord.AutoModerationRule
 }
 
 // https://docs.discord.com/developers/events/gateway-events#auto-moderation-rule-update
@@ -32,7 +32,7 @@ type AutoModerationRuleUpdateEvent struct {
 
 // https://docs.discord.com/developers/events/gateway-events#auto-moderation-rule-delete
 type AutoModerationRuleDeleteEvent struct {
-	Rule discord.AutoModerationRule `json:"-"`
+	discord.AutoModerationRule
 }
 
 // https://docs.discord.com/developers/events/gateway-events#auto-moderation-action-execution
@@ -53,28 +53,22 @@ type AutoModerationActionExecutionEvent struct {
 	AutomoderationRule *discord.AutoModerationRule `json:"-"`
 }
 
+func (e *AutoModerationRuleCreateEvent) Event() EventType { return EventAutoModerationRuleCreate }
 func (e *AutoModerationRuleCreateEvent) DesiredEventType() Event {
 	return &AutoModerationRuleCreateEvent{}
 }
-func (e *AutoModerationRuleCreateEvent) Event() EventType { return EventAutoModerationRuleCreate }
-func (e *AutoModerationRuleCreateEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.Rule)
-}
 
+func (e *AutoModerationRuleUpdateEvent) Event() EventType { return EventAutoModerationRuleUpdate }
 func (e *AutoModerationRuleUpdateEvent) DesiredEventType() Event {
 	return &AutoModerationRuleUpdateEvent{}
 }
-func (e *AutoModerationRuleUpdateEvent) Event() EventType { return EventAutoModerationRuleUpdate }
 func (e *AutoModerationRuleUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.NewRule)
 }
 
+func (e *AutoModerationRuleDeleteEvent) Event() EventType { return EventAutoModerationRuleDelete }
 func (e *AutoModerationRuleDeleteEvent) DesiredEventType() Event {
 	return &AutoModerationRuleDeleteEvent{}
-}
-func (e *AutoModerationRuleDeleteEvent) Event() EventType { return EventAutoModerationRuleDelete }
-func (e *AutoModerationRuleDeleteEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.Rule)
 }
 
 func (e *AutoModerationActionExecutionEvent) DesiredEventType() Event {

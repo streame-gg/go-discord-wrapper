@@ -419,3 +419,13 @@ func NewPresence() map[string]interface{} {
 		},
 	}
 }
+
+func NewThreadMember() map[string]interface{} {
+	return map[string]interface{}{
+		"id":             discord.RandomSnowflake(),
+		"user_id":        discord.RandomSnowflake(),
+		"join_timestamp": testutil.RandomTime(),
+		"flags":          testutil.RandomIntInRange(0, 1),
+		"member":         NewGuildMember(),
+	}
+}

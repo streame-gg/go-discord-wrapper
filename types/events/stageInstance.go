@@ -18,7 +18,7 @@ func init() {
 
 // https://docs.discord.com/developers/events/gateway-events#stage-instance-create
 type StageInstanceCreateEvent struct {
-	Stage discord.StageInstance
+	discord.StageInstance
 }
 
 // https://docs.discord.com/developers/events/gateway-events#stage-instance-update
@@ -29,14 +29,11 @@ type StageInstanceUpdateEvent struct {
 
 // https://docs.discord.com/developers/events/gateway-events#stage-instance-delete
 type StageInstanceDeleteEvent struct {
-	Stage discord.StageInstance
+	discord.StageInstance
 }
 
 func (e *StageInstanceCreateEvent) DesiredEventType() Event { return &StageInstanceCreateEvent{} }
 func (e *StageInstanceCreateEvent) Event() EventType        { return EventStageInstanceCreate }
-func (e *StageInstanceCreateEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.Stage)
-}
 
 func (e *StageInstanceUpdateEvent) DesiredEventType() Event { return &StageInstanceUpdateEvent{} }
 func (e *StageInstanceUpdateEvent) Event() EventType        { return EventStageInstanceUpdate }
@@ -46,6 +43,3 @@ func (e *StageInstanceUpdateEvent) UnmarshalJSON(data []byte) error {
 
 func (e *StageInstanceDeleteEvent) DesiredEventType() Event { return &StageInstanceDeleteEvent{} }
 func (e *StageInstanceDeleteEvent) Event() EventType        { return EventStageInstanceDelete }
-func (e *StageInstanceDeleteEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.Stage)
-}

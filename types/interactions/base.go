@@ -27,8 +27,8 @@ type Interaction struct {
 	Version                      int                                                           `json:"version"`
 	Message                      *discord.Message                                              `json:"message,omitempty"`
 	AppPermissions               string                                                        `json:"app_permissions,omitempty"`
-	Locale                       *discord.Locale                                               `json:"locale,omitempty"`
-	GuildLocale                  string                                                        `json:"guild_locale,omitempty"`
+	Locale                       discord.Locale                                                `json:"locale,omitempty"`
+	GuildLocale                  discord.Locale                                                `json:"guild_locale,omitempty"`
 	Entitlements                 []discord.Entitlement                                         `json:"entitlements,omitempty"`
 	AuthorizingIntegrationOwners map[discord.InteractionApplicationIntegrationType]interface{} `json:"authorizing_integration_owners,omitempty"`
 	Context                      discord.InteractionContextType                                `json:"context,omitempty"`

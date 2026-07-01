@@ -41,7 +41,7 @@ type ThreadUpdateEvent struct {
 // https://docs.discord.com/developers/events/gateway-events#thread-delete
 type ThreadDeleteEvent struct {
 	ID       discord.Snowflake   `json:"id"`
-	GuildID  *discord.Snowflake  `json:"guild_id,omitempty"`
+	GuildID  discord.Snowflake   `json:"guild_id"`
 	ParentID *discord.Snowflake  `json:"parent_id,omitempty"`
 	Type     discord.ChannelType `json:"type"`
 

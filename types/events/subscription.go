@@ -14,39 +14,27 @@ func init() {
 
 // https://docs.discord.com/developers/events/gateway-events#subscription-create
 type SubscriptionCreateEvent struct {
-	Subscription discord.Subscription `json:"-"`
-
-	User *discord.User `json:"-"`
+	discord.Subscription
 }
 
 // https://docs.discord.com/developers/events/gateway-events#subscription-update
 type SubscriptionUpdateEvent struct {
-	Subscription discord.Subscription `json:"-"`
-
-	User *discord.User `json:"-"`
+	NewSubscription discord.Subscription `json:"-"`
 }
 
 // https://docs.discord.com/developers/events/gateway-events#subscription-delete
 type SubscriptionDeleteEvent struct {
-	Subscription discord.Subscription `json:"-"`
-
-	User *discord.User `json:"-"`
+	discord.Subscription
 }
 
 func (e *SubscriptionCreateEvent) DesiredEventType() Event { return &SubscriptionCreateEvent{} }
 func (e *SubscriptionCreateEvent) Event() EventType        { return EventSubscriptionCreate }
-func (e *SubscriptionCreateEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.Subscription)
-}
 
 func (e *SubscriptionUpdateEvent) DesiredEventType() Event { return &SubscriptionUpdateEvent{} }
 func (e *SubscriptionUpdateEvent) Event() EventType        { return EventSubscriptionUpdate }
-func (e *SubscriptionUpdateEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.Subscription)
+func (e *SubscriptionUpdateEvent) UnmarshalJSON(data []byte) (err error) {
+	return json.Unmarshal(data, &e.NewSubscription)
 }
 
 func (e *SubscriptionDeleteEvent) DesiredEventType() Event { return &SubscriptionDeleteEvent{} }
 func (e *SubscriptionDeleteEvent) Event() EventType        { return EventSubscriptionDelete }
-func (e *SubscriptionDeleteEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.Subscription)
-}

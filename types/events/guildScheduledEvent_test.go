@@ -19,7 +19,7 @@ func (s *eventSuite) TestGuildScheduledEventCreate() {
 			Name:  "valid full payload",
 			Input: sub.MustMarshal(payload),
 			Validate: func(got GuildScheduledEventCreateEvent) {
-				s.compareGuildScheduledEvent(payload, got.ScheduledEvent)
+				s.compareGuildScheduledEvent(payload, got.GuildScheduledEvent)
 			},
 		},
 	})
@@ -60,7 +60,7 @@ func (s *eventSuite) TestGuildScheduledEventDelete() {
 			Name:  "valid full payload",
 			Input: sub.MustMarshal(payload),
 			Validate: func(got GuildScheduledEventDeleteEvent) {
-				s.compareGuildScheduledEvent(payload, got.ScheduledEvent)
+				s.compareGuildScheduledEvent(payload, got.GuildScheduledEvent)
 			},
 		},
 	})

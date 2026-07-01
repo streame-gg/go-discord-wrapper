@@ -16,7 +16,7 @@ func init() {
 
 // https://docs.discord.com/developers/events/gateway-events#ready
 type ReadyEvent struct {
-	V                discord.APIVersion         `json:"version"`
+	V                discord.APIVersion         `json:"v"`
 	User             discord.User               `json:"user"`
 	Application      ReadyApplication           `json:"application"`
 	SessionID        string                     `json:"session_id"`
@@ -38,7 +38,7 @@ type ReadyShard struct {
 	NumShards int
 }
 
-func (s ReadyShard) UnmarshalJSON(data []byte) error {
+func (s *ReadyShard) UnmarshalJSON(data []byte) error {
 	var pair [2]int
 	if err := json.Unmarshal(data, &pair); err != nil {
 		return err

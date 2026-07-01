@@ -22,7 +22,7 @@ type VoiceChannelStatusUpdateEvent struct {
 	Channel *discord.Channel `json:"channel"`
 }
 
-// https://docs.discord.com/developers/events/gateway-events#voice-channel-status-update
+// https://docs.discord.com/developers/events/gateway-events#voice-channel-start-time-update
 type VoiceChannelStartTimeUpdateEvent struct {
 	ChannelID      discord.Snowflake `json:"id"`
 	GuildID        discord.Snowflake `json:"guild_id"`

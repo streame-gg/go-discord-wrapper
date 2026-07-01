@@ -21,12 +21,12 @@ func init() {
 
 // https://docs.discord.com/developers/events/gateway-events#channel-create
 type ChannelCreateEvent struct {
-	Channel discord.Channel `json:"-"`
+	discord.Channel
 }
 
 // https://docs.discord.com/developers/events/gateway-events#channel-delete
 type ChannelDeleteEvent struct {
-	Channel discord.Channel
+	discord.Channel
 }
 
 // https://docs.discord.com/developers/events/gateway-events#channel-pins-update
@@ -48,9 +48,6 @@ func (e *ChannelCreateEvent) DesiredEventType() Event {
 func (e *ChannelCreateEvent) Event() EventType {
 	return EventChannelCreate
 }
-func (e *ChannelCreateEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.Channel)
-}
 
 func (e *ChannelUpdateEvent) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &e.NewChannel)
@@ -58,9 +55,6 @@ func (e *ChannelUpdateEvent) UnmarshalJSON(data []byte) error {
 func (e *ChannelUpdateEvent) DesiredEventType() Event { return &ChannelUpdateEvent{} }
 func (e *ChannelUpdateEvent) Event() EventType        { return EventChannelUpdate }
 
-func (e *ChannelDeleteEvent) UnmarshalJSON(data []byte) error {
-	return json.Unmarshal(data, &e.Channel)
-}
 func (e *ChannelDeleteEvent) DesiredEventType() Event {
 	return &ChannelDeleteEvent{}
 }

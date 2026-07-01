@@ -473,3 +473,56 @@ func (s *eventSuite) compareVoiceState(expected map[string]interface{}, actual d
 
 	s.compareMember(expected["member"].(map[string]interface{}), *actual.Member)
 }
+
+func (s *eventSuite) compareIntegration(expected map[string]interface{}, actual discord.Integration) {
+	s.Require().NotNil(actual)
+	s.EqualValues(expected["id"], actual.ID)
+	s.EqualValues(expected["name"], actual.Name)
+	s.EqualValues(expected["type"], actual.Type)
+	s.EqualValues(expected["enabled"], actual.Enabled)
+	s.EqualValues(expected["syncing"], actual.Syncing)
+	s.EqualValues(expected["role_id"], *actual.RoleID)
+	s.EqualValues(expected["enable_emoticons"], actual.EnableEmoticons)
+	s.EqualValues(expected["expire_behavior"], *actual.ExpireBehavior)
+	s.EqualValues(expected["expire_grace_period"], actual.ExpireGracePeriod)
+	s.EqualValues(expected["synced_at"], *actual.SyncedAt)
+	s.EqualValues(expected["subscriber_count"], actual.SubscriberCount)
+	s.EqualValues(expected["revoked"], actual.Revoked)
+	s.EqualValues(expected["scopes"], actual.Scopes)
+
+	s.compareUser(expected["user"].(map[string]interface{}), *actual.User)
+
+	account := expected["account"].(map[string]interface{})
+	s.Require().NotNil(account)
+	s.EqualValues(account["id"], actual.Account.ID)
+	s.EqualValues(account["name"], actual.Account.Name)
+
+	application := expected["application"].(map[string]interface{})
+	s.Require().NotNil(application)
+	s.EqualValues(application["id"], actual.Application.ID)
+	s.EqualValues(application["name"], actual.Application.Name)
+	s.EqualValues(application["description"], actual.Application.Description)
+	s.EqualValues(application["icon"], *actual.Application.Icon)
+	s.compareUser(application["bot"].(map[string]interface{}), *actual.Application.Bot)
+}
+
+func (s *eventSuite) compareThreadMember(expected map[string]interface{}, actual discord.ThreadMember) {
+	s.EqualValues(expected["id"], *actual.ID)
+	s.EqualValues(expected["user_id"], *actual.UserID)
+	s.EqualValues(expected["join_timestamp"], actual.JoinTimestamp)
+	s.EqualValues(expected["flags"], actual.Flags)
+	s.compareMember(expected["member"].(map[string]interface{}), *actual.Member)
+}
+
+func (s *eventSuite) compareSubscription(expected map[string]interface{}, actual discord.Subscription) {
+	s.EqualValues(expected["id"], actual.ID)
+	s.EqualValues(expected["user_id"], actual.UserID)
+	s.EqualValues(expected["sku_ids"], actual.SKUIDs)
+	s.EqualValues(expected["entitlement_ids"], actual.EntitlementIDs)
+	s.EqualValues(expected["renewal_sku_ids"], actual.RenewalSKUIDs)
+	s.EqualValues(expected["current_period_start"], actual.CurrentPeriodStart)
+	s.EqualValues(expected["current_period_end"], actual.CurrentPeriodEnd)
+	s.EqualValues(expected["status"], actual.Status)
+	s.EqualValues(expected["canceled_at"], *actual.CanceledAt)
+	s.EqualValues(expected["country"], actual.Country)
+}

@@ -32,7 +32,7 @@ type IntegrationAccount struct {
 type IntegrationApplication struct {
 	ID          Snowflake `json:"id"`
 	Name        string    `json:"name"`
-	IconHash    *string   `json:"icon,omitempty"`
+	Icon        *string   `json:"icon,omitempty"`
 	Description string    `json:"description"`
 	Bot         *User     `json:"bot,omitempty"`
 }

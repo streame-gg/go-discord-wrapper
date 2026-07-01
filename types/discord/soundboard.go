@@ -13,4 +13,6 @@ type SoundboardSound struct {
 	GuildID   *Snowflake `json:"guild_id,omitempty"`
 	Available bool       `json:"available"`
 	User      *User      `json:"user,omitempty"`
+
+	Guild *Guild `json:"-"`
 }

@@ -18,7 +18,7 @@ func init() {
 
 // https://docs.discord.com/developers/events/gateway-events#entitlement-create
 type EntitlementCreateEvent struct {
-	Entitlement discord.Entitlement
+	discord.Entitlement
 }
 
 // https://docs.discord.com/developers/events/gateway-events#entitlement-update
@@ -32,14 +32,11 @@ type EntitlementUpdateEvent struct {
 
 // https://docs.discord.com/developers/events/gateway-events#entitlement-delete
 type EntitlementDeleteEvent struct {
-	Entitlement discord.Entitlement
+	discord.Entitlement
 }
 
 func (e *EntitlementCreateEvent) DesiredEventType() Event { return &EntitlementCreateEvent{} }
 func (e *EntitlementCreateEvent) Event() EventType        { return EventEntitlementCreate }
-func (e *EntitlementCreateEvent) UnmarshalJSON(byte []byte) error {
-	return json.Unmarshal(byte, &e.Entitlement)
-}
 
 func (e *EntitlementUpdateEvent) DesiredEventType() Event { return &EntitlementUpdateEvent{} }
 func (e *EntitlementUpdateEvent) Event() EventType        { return EventEntitlementUpdate }
@@ -49,6 +46,3 @@ func (e *EntitlementUpdateEvent) UnmarshalJSON(byte []byte) error {
 
 func (e *EntitlementDeleteEvent) DesiredEventType() Event { return &EntitlementDeleteEvent{} }
 func (e *EntitlementDeleteEvent) Event() EventType        { return EventEntitlementDelete }
-func (e *EntitlementDeleteEvent) UnmarshalJSON(byte []byte) error {
-	return json.Unmarshal(byte, &e.Entitlement)
-}

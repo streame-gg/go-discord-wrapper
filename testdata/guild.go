@@ -401,3 +401,79 @@ func NewScheduledEvent() map[string]interface{} {
 		},
 	}
 }
+
+func NewIntegrationWithGuildID() map[string]interface{} {
+	integration := NewIntegration()
+	integration["guild_id"] = discord.RandomSnowflake()
+	return integration
+}
+
+func NewIntegration() map[string]interface{} {
+	return map[string]interface{}{
+		"id":   discord.RandomSnowflake(),
+		"name": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"type": testutil.RandomItem(
+			discord.IntegrationTypeTwitch,
+			discord.IntegrationTypeDiscord,
+			discord.IntegrationTypeTwitch,
+			discord.IntegrationTypeGuildSubscription,
+		),
+		"enabled":          testutil.RandomBool(),
+		"syncing":          testutil.RandomBool(),
+		"role_id":          discord.RandomSnowflake(),
+		"enable_emoticons": testutil.RandomBool(),
+		"expire_behavior": testutil.RandomItem(
+			discord.IntegrationExpireBehaviorRemoveRole,
+			discord.IntegrationExpireBehaviorKick,
+		),
+		"expire_grace_period": testutil.RandomIntInRange(1, 30),
+		"user":                NewUser(),
+		"application": map[string]interface{}{
+			"id":          discord.RandomSnowflake(),
+			"name":        testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+			"icon":        testutil.RandomString(32),
+			"description": testutil.RandomString(testutil.RandomIntInRange(1, 100)),
+			"bot":         NewUser(),
+		},
+		"synced_at":        testutil.RandomTime(),
+		"subscriber_count": testutil.RandomIntInRange(1, 100),
+		"revoked":          testutil.RandomBool(),
+		"account": map[string]interface{}{
+			"id":   testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+			"name": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		},
+		"scopes": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 32), func(arrayToFill *[]discord.Scope) {
+			*arrayToFill = append(*arrayToFill, testutil.RandomItem(
+				discord.ScopeActivitiesRead,
+				discord.ScopeActivitiesWrite,
+				discord.ScopeApplicationsBuildRead,
+				discord.ScopeApplicationsBuildUpload,
+				discord.ScopeApplicationCommands,
+				discord.ScopeApplicationCommandsUpdate,
+				discord.ScopeApplicationCommandsPermissionsUpdate,
+				discord.ScopeApplicationEntitlements,
+				discord.ScopeApplicationsStoreUpdate,
+				discord.ScopeBot,
+				discord.ScopeConnections,
+				discord.ScopeDMChannelsRead,
+				discord.ScopeEmail,
+				discord.ScopeGdmJoin,
+				discord.ScopeGuilds,
+				discord.ScopeGuildsJoin,
+				discord.ScopeGuildMembersRead,
+				discord.ScopeIdentify,
+				discord.ScopeIdentifyPremium,
+				discord.ScopeMessagesRead,
+				discord.ScopeRelationshipsRead,
+				discord.ScopeRoleConnectionsWrite,
+				discord.ScopeRPC,
+				discord.ScopeRPCActivitiesWrite,
+				discord.ScopeRPCNotificationsRead,
+				discord.ScopeRPCVoiceRead,
+				discord.ScopeRPCVoiceWrite,
+				discord.ScopeVoice,
+				discord.ScopeWebhookIncoming,
+			))
+		}),
+	}
+}
