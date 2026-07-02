@@ -6,6 +6,9 @@ import (
 )
 
 func RandomIntInRange(min, max int) int {
+	if min == max {
+		return min
+	}
 	return rand.IntN(max-min) + min
 }
 

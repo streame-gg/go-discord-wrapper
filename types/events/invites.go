@@ -26,7 +26,7 @@ type InviteCreateEvent struct {
 	Temporary         bool                          `json:"temporary"`
 	Uses              int                           `json:"uses,omitempty"`
 	ExpiresAt         *time.Time                    `json:"expires_at,omitempty"`
-	RoleIDs           *[]discord.Snowflake          `json:"role_ids,omitempty"`
+	RoleIDs           []discord.Snowflake           `json:"role_ids,omitempty"`
 }
 
 // https://docs.discord.com/developers/events/gateway-events#invite-delete
