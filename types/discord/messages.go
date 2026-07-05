@@ -229,20 +229,20 @@ type MessageMessageSnapshot struct {
 }
 
 // https://docs.discord.com/developers/resources/message#message-reference-types
-type MessageMessageReferenceType int
+type MessageReferenceType int
 
 const (
-	MessageMessageReferenceTypeDefault MessageMessageReferenceType = 0
-	MessageMessageReferenceTypeForward MessageMessageReferenceType = 1
+	MessageReferenceTypeDefault MessageReferenceType = 0
+	MessageReferenceTypeForward MessageReferenceType = 1
 )
 
 // https://docs.discord.com/developers/resources/message#message-reference-structure
 type MessageMessageReference struct {
-	Type            *MessageMessageReferenceType `json:"type,omitempty"`
-	MessageID       *Snowflake                   `json:"message_id,omitempty"`
-	ChannelID       *Snowflake                   `json:"channel_id,omitempty"`
-	GuildID         *Snowflake                   `json:"guild_id,omitempty"`
-	FailIfNotExists *bool                        `json:"fail_if_not_exists,omitempty"`
+	Type            *MessageReferenceType `json:"type,omitempty"`
+	MessageID       *Snowflake            `json:"message_id,omitempty"`
+	ChannelID       *Snowflake            `json:"channel_id,omitempty"`
+	GuildID         *Snowflake            `json:"guild_id,omitempty"`
+	FailIfNotExists *bool                 `json:"fail_if_not_exists,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/message#message-interaction-metadata-object-application-command-interaction-metadata-structure

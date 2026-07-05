@@ -51,12 +51,213 @@ func NewInteraction() map[string]interface{} {
 	}
 }
 
+func NewApplicationCommandInteractionMetadata() map[string]interface{} {
+	return map[string]interface{}{
+		"id": discord.RandomSnowflake(),
+		"type": testutil.RandomItem(
+			discord.InteractionTypePing,
+			discord.InteractionTypeApplicationCommand,
+			discord.InteractionTypeMessageComponent,
+			discord.InteractionTypeApplicationCommandAutocomplete,
+			discord.InteractionTypeModalSubmit,
+		),
+		"user": NewUser(),
+		"authorizing_integration_owners": map[discord.ApplicationIntegrationType]discord.Snowflake{
+			discord.ApplicationIntegrationTypeGuildInstall: discord.RandomSnowflake(),
+			discord.ApplicationIntegrationTypeUserInstall:  discord.RandomSnowflake(),
+		},
+		"original_response_message_id": discord.RandomSnowflake(),
+		"target_user":                  NewUser(),
+		"target_message_id":            discord.RandomSnowflake(),
+	}
+}
+
+func NewMessageComponentInteractionMetadata() map[string]interface{} {
+	return map[string]interface{}{
+		"id": discord.RandomSnowflake(),
+		"type": testutil.RandomItem(
+			discord.InteractionTypePing,
+			discord.InteractionTypeApplicationCommand,
+			discord.InteractionTypeMessageComponent,
+			discord.InteractionTypeApplicationCommandAutocomplete,
+			discord.InteractionTypeModalSubmit,
+		),
+		"user": NewUser(),
+		"authorizing_integration_owners": map[discord.ApplicationIntegrationType]discord.Snowflake{
+			discord.ApplicationIntegrationTypeGuildInstall: discord.RandomSnowflake(),
+			discord.ApplicationIntegrationTypeUserInstall:  discord.RandomSnowflake(),
+		},
+		"original_response_message_id": discord.RandomSnowflake(),
+		"interacted_message_id":        discord.RandomSnowflake(),
+	}
+}
+
+func NewModalSubmitInteractionMetadata() map[string]interface{} {
+	return map[string]interface{}{
+		"id": discord.RandomSnowflake(),
+		"type": testutil.RandomItem(
+			discord.InteractionTypePing,
+			discord.InteractionTypeApplicationCommand,
+			discord.InteractionTypeMessageComponent,
+			discord.InteractionTypeApplicationCommandAutocomplete,
+			discord.InteractionTypeModalSubmit,
+		),
+		"user": NewUser(),
+		"authorizing_integration_owners": map[discord.ApplicationIntegrationType]discord.Snowflake{
+			discord.ApplicationIntegrationTypeGuildInstall: discord.RandomSnowflake(),
+			discord.ApplicationIntegrationTypeUserInstall:  discord.RandomSnowflake(),
+		},
+		"original_response_message_id": discord.RandomSnowflake(),
+		"triggering_interaction_metadata": testutil.RandomItem(
+			NewApplicationCommandInteractionMetadata(),
+			NewMessageComponentInteractionMetadata(),
+		),
+	}
+}
+
 func NewModalSubmitData() map[string]interface{} {
 	return map[string]interface{}{
 		"custom_id": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
-		//TODO
-		"components": nil,
-		"resolved":   NewResolvedData(),
+		"components": testutil.RandomItem(
+			NewStringSelectMenuData(),
+			NewTextInputData(),
+			NewUserSelectMenuData(),
+			NewRoleSelectMenuData(),
+			NewMentionableSelectMenuData(),
+			NewChannelSelectMenuData(),
+			NewTextDisplayData(),
+			NewLabelData(),
+			NewFileUploadData(),
+			NewRadioGroupData(),
+			NewCheckboxGroupData(),
+			NewCheckboxData(),
+		),
+		"resolved": NewResolvedData(),
+	}
+}
+
+func NewStringSelectMenuData() map[string]interface{} {
+	return map[string]interface{}{
+		"type":           discord.ComponentTypeStringSelect,
+		"component_type": discord.ComponentTypeStringSelect,
+		"id":             testutil.RandomIntInRange(1, 100),
+		"custom_id":      testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"values":         testutil.RandomStringArray(testutil.RandomIntInRange(1, 25), testutil.RandomIntInRange(1, 32), testutil.RandomIntInRange(1, 32)),
+	}
+}
+
+func NewTextInputData() map[string]interface{} {
+	return map[string]interface{}{
+		"type":      discord.ComponentTypeTextInput,
+		"id":        testutil.RandomIntInRange(1, 100),
+		"custom_id": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"value":     testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+	}
+}
+
+func NewUserSelectMenuData() map[string]interface{} {
+	return map[string]interface{}{
+		"type":           discord.ComponentTypeUserSelect,
+		"component_type": discord.ComponentTypeUserSelect,
+		"id":             testutil.RandomIntInRange(1, 100),
+		"custom_id":      testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"resolved":       NewResolvedData(),
+		"values":         testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 25)),
+	}
+}
+
+func NewRoleSelectMenuData() map[string]interface{} {
+	return map[string]interface{}{
+		"type":           discord.ComponentTypeRoleSelect,
+		"component_type": discord.ComponentTypeRoleSelect,
+		"id":             testutil.RandomIntInRange(1, 100),
+		"custom_id":      testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"resolved":       NewResolvedData(),
+		"values":         testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 25)),
+	}
+}
+
+func NewMentionableSelectMenuData() map[string]interface{} {
+	return map[string]interface{}{
+		"type":           discord.ComponentTypeMentionableSelect,
+		"component_type": discord.ComponentTypeMentionableSelect,
+		"id":             testutil.RandomIntInRange(1, 100),
+		"custom_id":      testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"resolved":       NewResolvedData(),
+		"values":         testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 25)),
+	}
+}
+
+func NewChannelSelectMenuData() map[string]interface{} {
+	return map[string]interface{}{
+		"type":           discord.ComponentTypeChannelSelect,
+		"component_type": discord.ComponentTypeChannelSelect,
+		"id":             testutil.RandomIntInRange(1, 100),
+		"custom_id":      testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"resolved":       NewResolvedData(),
+		"values":         testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 25)),
+	}
+}
+
+func NewTextDisplayData() map[string]interface{} {
+	return map[string]interface{}{
+		"type": discord.ComponentTypeTextDisplay,
+		"id":   testutil.RandomIntInRange(1, 100),
+	}
+}
+
+func NewLabelData() map[string]interface{} {
+	return map[string]interface{}{
+		"type": discord.ComponentTypeLabel,
+		"id":   testutil.RandomIntInRange(1, 100),
+		"component": testutil.RandomItem(
+			NewStringSelectMenuData(),
+			NewTextInputData(),
+			NewUserSelectMenuData(),
+			NewRoleSelectMenuData(),
+			NewMentionableSelectMenuData(),
+			NewChannelSelectMenuData(),
+			NewFileUploadData(),
+			NewRadioGroupData(),
+			NewCheckboxGroupData(),
+			NewCheckboxData(),
+		),
+	}
+}
+
+func NewFileUploadData() map[string]interface{} {
+	return map[string]interface{}{
+		"type":      discord.ComponentTypeFileUpload,
+		"id":        testutil.RandomIntInRange(1, 100),
+		"custom_id": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"values":    testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 25)),
+	}
+}
+
+func NewRadioGroupData() map[string]interface{} {
+	return map[string]interface{}{
+		"type":      discord.ComponentTypeRadioGroup,
+		"id":        testutil.RandomIntInRange(1, 100),
+		"custom_id": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"value":     testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+	}
+}
+
+func NewCheckboxGroupData() map[string]interface{} {
+	return map[string]interface{}{
+		"type":      discord.ComponentTypeCheckboxGroup,
+		"id":        testutil.RandomIntInRange(1, 100),
+		"custom_id": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"values":    testutil.RandomStringArray(testutil.RandomIntInRange(1, 25), testutil.RandomIntInRange(1, 32), testutil.RandomIntInRange(1, 32)),
+	}
+}
+
+func NewCheckboxData() map[string]interface{} {
+	return map[string]interface{}{
+		"type":      discord.ComponentTypeCheckbox,
+		"id":        testutil.RandomIntInRange(1, 100),
+		"custom_id": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"value":     testutil.RandomString(testutil.RandomIntInRange(1, 25)),
 	}
 }
 
@@ -74,13 +275,11 @@ func NewResolvedData() map[string]interface{} {
 		"channels": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewChannel())
 		}),
-		//TODO
 		"messages": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, map[string]interface{}{})
+			*arrayToFill = append(*arrayToFill, NewMessage(true))
 		}),
-		//TODO
 		"attachments": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, map[string]interface{}{})
+			*arrayToFill = append(*arrayToFill, NewAttachment())
 		}),
 	}
 }
