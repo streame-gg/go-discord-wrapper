@@ -82,7 +82,7 @@ func NewMessage(allowMessageSnapshots bool) map[string]interface{} {
 			),
 			"party_id": testutil.RandomString(testutil.RandomIntInRange(1, 50)),
 		},
-		"application":    nil,
+		"application":    NewApplication(),
 		"application_id": discord.RandomSnowflake(),
 		"flags": testutil.RandomFlags(
 			discord.MessageFlagCrossposted,
@@ -129,28 +129,30 @@ func NewMessage(allowMessageSnapshots bool) map[string]interface{} {
 			"member": NewGuildMember(),
 		},
 		"thread": NewChannel(),
-		"components": testutil.RandomItem(
-			NewComponentActionRow(),
-			NewComponentButton(),
-			NewComponentStringSelect(),
-			NewComponentTextInput(),
-			NewComponentUserSelect(),
-			NewComponentRoleSelect(),
-			NewComponentMentionableSelect(),
-			NewComponentChannelSelect(),
-			NewComponentSection(),
-			NewComponentTextDisplay(),
-			NewComponentThumbnail(),
-			NewComponentMediaGallery(),
-			NewComponentFile(),
-			NewComponentSeparator(),
-			NewComponentContainer(),
-			NewComponentLabel(nil),
-			NewComponentFileUpload(),
-			NewComponentRadioGroup(),
-			NewComponentCheckboxGroup(),
-			NewComponentCheckbox(),
-		),
+		"components": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 25), func(arrayToFill *[]map[string]interface{}) {
+			*arrayToFill = append(*arrayToFill, testutil.RandomItem(
+				NewComponentActionRow(),
+				NewComponentButton(),
+				NewComponentStringSelect(),
+				NewComponentTextInput(),
+				NewComponentUserSelect(),
+				NewComponentRoleSelect(),
+				NewComponentMentionableSelect(),
+				NewComponentChannelSelect(),
+				NewComponentSection(),
+				NewComponentTextDisplay(),
+				NewComponentThumbnail(),
+				NewComponentMediaGallery(),
+				NewComponentFile(),
+				NewComponentSeparator(),
+				NewComponentContainer(),
+				NewComponentLabel(nil),
+				NewComponentFileUpload(),
+				NewComponentRadioGroup(),
+				NewComponentCheckboxGroup(),
+				NewComponentCheckbox(),
+			))
+		}),
 		"sticker_items": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewStickerItem())
 		}),
@@ -348,7 +350,7 @@ func NewAttachment() map[string]interface{} {
 			*arrayToFill = append(*arrayToFill, NewUser())
 		}),
 		"clip_created_at": testutil.RandomTime(),
-		"application":     nil,
+		"application":     NewApplication(),
 	}
 }
 

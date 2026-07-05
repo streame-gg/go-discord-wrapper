@@ -31,7 +31,7 @@ func NewInteraction() map[string]interface{} {
 		"user":            NewUser(),
 		"token":           testutil.RandomString(32),
 		"version":         "1",
-		"message":         nil,
+		"message":         NewMessage(true),
 		"app_permissions": testutil.RandomFlags(testutil.AllPermissions...),
 		"locale":          testutil.RandomString(2),
 		"guild_locale":    testutil.RandomString(2),
