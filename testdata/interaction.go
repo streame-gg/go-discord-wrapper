@@ -405,7 +405,7 @@ func NewInteractionDataApplicationCommand() map[string]interface{} {
 		),
 		"guild_id": discord.RandomSnowflake(),
 		"options": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 32), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(false))
+			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(true))
 		}),
 		"target_id": discord.RandomSnowflake(),
 		"resolved":  NewResolvedData(),
