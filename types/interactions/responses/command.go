@@ -8,13 +8,13 @@ import (
 
 // https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-application-command-data
 type InteractionDataApplicationCommand struct {
-	ID          discord.Snowflake                                       `json:"id"`
-	CommandName string                                                  `json:"name"`
-	Type        discord.ApplicationCommandType                          `json:"type"`
-	GuildID     *discord.Snowflake                                      `json:"guild_id,omitempty"`
-	TargetID    *discord.Snowflake                                      `json:"target_id,omitempty"`
-	Resolved    *discord.ResolvedData                                   `json:"resolved,omitempty"`
-	Options     *[]ApplicationCommandInteractionDataOption[interface{}] `json:"options,omitempty"`
+	ID       discord.Snowflake                                      `json:"id"`
+	Name     string                                                 `json:"name"`
+	Type     discord.ApplicationCommandType                         `json:"type"`
+	GuildID  *discord.Snowflake                                     `json:"guild_id,omitempty"`
+	TargetID *discord.Snowflake                                     `json:"target_id,omitempty"`
+	Resolved *discord.ResolvedData                                  `json:"resolved,omitempty"`
+	Options  []ApplicationCommandInteractionDataOption[interface{}] `json:"options,omitempty"`
 }
 
 func (d *InteractionDataApplicationCommand) GetType() discord.InteractionDataType {
@@ -35,7 +35,7 @@ func (d *InteractionDataApplicationCommand) UnmarshalJSON(data []byte) error {
 	}
 
 	d.ID = raw.ID
-	d.CommandName = raw.CommandName
+	d.Name = raw.Name
 	d.Type = raw.Type
 	d.GuildID = raw.GuildID
 	d.TargetID = raw.TargetID
@@ -50,7 +50,7 @@ func (d *InteractionDataApplicationCommand) UnmarshalJSON(data []byte) error {
 			}
 			options = append(options, option)
 		}
-		d.Options = &options
+		d.Options = options
 	}
 
 	return nil

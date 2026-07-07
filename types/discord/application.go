@@ -27,7 +27,7 @@ type ApplicationTeamMember struct {
 
 // https://docs.discord.com/developers/topics/teams#data-models-team-object
 type ApplicationTeam struct {
-	IconHash    *string                 `json:"icon"`
+	Icon        *string                 `json:"icon"`
 	ID          Snowflake               `json:"id"`
 	Members     []ApplicationTeamMember `json:"members"`
 	Name        string                  `json:"name"`

@@ -18,11 +18,11 @@ func (i *Interaction) GetSubCommand() string {
 		return ""
 	}
 
-	if cmdData.Options == nil || len(*cmdData.Options) == 0 {
+	if cmdData.Options == nil || len(cmdData.Options) == 0 {
 		return ""
 	}
 
-	for _, option := range *cmdData.Options {
+	for _, option := range cmdData.Options {
 		if option.Type == discord.ApplicationCommandOptionTypeSubCommand {
 			return option.Name
 		}
@@ -51,11 +51,11 @@ func (i *Interaction) GetSubCommandGroup() string {
 		return ""
 	}
 
-	if cmdData.Options == nil || len(*cmdData.Options) == 0 {
+	if cmdData.Options == nil || len(cmdData.Options) == 0 {
 		return ""
 	}
 
-	for _, option := range *cmdData.Options {
+	for _, option := range cmdData.Options {
 		if option.Type == discord.ApplicationCommandOptionTypeSubCommandGroup {
 			return option.Name
 		}
@@ -74,7 +74,7 @@ func (i *Interaction) GetFullCommand() (fullCommand string) {
 		return ""
 	}
 
-	fullCommand += cmdData.CommandName
+	fullCommand += cmdData.Name
 
 	if sub := i.GetSubCommandGroup(); sub != "" {
 		fullCommand += " " + sub
@@ -151,7 +151,7 @@ func (i *Interaction) GetOption(name string) (responses.ApplicationCommandIntera
 	if !ok || data.Options == nil {
 		return responses.ApplicationCommandInteractionDataOption[interface{}]{}, false
 	}
-	return findOption(*data.Options, name)
+	return findOption(data.Options, name)
 }
 
 // OptionValue returns the value of the command option named name as T, reporting

@@ -92,8 +92,8 @@ func (s *responsesSuite) TestCommandDataUnmarshalIntegerOption() {
 	const raw = `{"id":"1","name":"give","type":1,"options":[{"type":4,"name":"amount","value":42}]}`
 	var d InteractionDataApplicationCommand
 	s.Require().NoError(json.Unmarshal([]byte(raw), &d))
-	s.Equal("give", d.CommandName)
+	s.Equal("give", d.Name)
 	s.Require().NotNil(d.Options)
-	s.Require().Len(*d.Options, 1)
-	s.Equal("amount", (*d.Options)[0].Name)
+	s.Require().Len(d.Options, 1)
+	s.Equal("amount", (d.Options)[0].Name)
 }

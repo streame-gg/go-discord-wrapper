@@ -29,13 +29,13 @@ func (d *InteractionResponseDataAutocomplete) MarshalJSON() ([]byte, error) {
 
 // https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-application-command-data
 type InteractionDataAutocomplete struct {
-	ID          discord.Snowflake                                       `json:"id"`
-	CommandName string                                                  `json:"name"`
-	Type        discord.ApplicationCommandType                          `json:"type"`
-	GuildID     *discord.Snowflake                                      `json:"guild_id,omitempty"`
-	TargetID    *discord.Snowflake                                      `json:"target_id,omitempty"`
-	Resolved    *discord.ResolvedData                                   `json:"resolved,omitempty"`
-	Options     *[]ApplicationCommandInteractionDataOption[interface{}] `json:"options,omitempty"`
+	ID       discord.Snowflake                                      `json:"id"`
+	Name     string                                                 `json:"name"`
+	Type     discord.ApplicationCommandType                         `json:"type"`
+	GuildID  *discord.Snowflake                                     `json:"guild_id,omitempty"`
+	TargetID *discord.Snowflake                                     `json:"target_id,omitempty"`
+	Resolved *discord.ResolvedData                                  `json:"resolved,omitempty"`
+	Options  []ApplicationCommandInteractionDataOption[interface{}] `json:"options,omitempty"`
 }
 
 func (d *InteractionDataAutocomplete) GetType() discord.InteractionDataType {

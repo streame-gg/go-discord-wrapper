@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
+	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -525,4 +526,226 @@ func (s *eventSuite) compareSubscription(expected map[string]interface{}, actual
 	s.EqualValues(expected["status"], actual.Status)
 	s.EqualValues(expected["canceled_at"], *actual.CanceledAt)
 	s.EqualValues(expected["country"], actual.Country)
+}
+
+func (s *eventSuite) compareEntitlement(expected map[string]interface{}, actual discord.Entitlement) {
+	s.EqualValues(expected["id"], actual.ID)
+	s.EqualValues(expected["sku_id"], actual.SkuID)
+	s.EqualValues(expected["application_id"], actual.ApplicationID)
+	s.EqualValues(expected["user_id"], *actual.UserID)
+	s.EqualValues(expected["type"], actual.Type)
+	s.EqualValues(expected["deleted"], actual.Deleted)
+	s.EqualValues(expected["starts_at"], *actual.StartsAt)
+	s.EqualValues(expected["ends_at"], *actual.EndsAt)
+	s.EqualValues(expected["guild_id"], *actual.GuildID)
+	s.EqualValues(expected["consumed"], *actual.Consumed)
+}
+
+func (s *eventSuite) compareResolved(expected map[string]interface{}, actual discord.ResolvedData) {
+	users := expected["users"].(map[discord.Snowflake]interface{})
+	s.Len(actual.Users, len(users))
+
+	for i, user := range actual.Users {
+		s.compareUser(users[i].(map[string]interface{}), user)
+	}
+
+	members := expected["members"].(map[discord.Snowflake]interface{})
+	s.Len(actual.Members, len(members))
+
+	for i, member := range actual.Members {
+		s.compareMember(members[i].(map[string]interface{}), member)
+	}
+
+	messages := expected["messages"].(map[discord.Snowflake]interface{})
+	s.Len(actual.Messages, len(messages))
+
+	for i, message := range actual.Messages {
+		s.compareMessage(messages[i].(map[string]interface{}), message)
+	}
+
+	channels := expected["channels"].(map[discord.Snowflake]interface{})
+	s.Len(actual.Channels, len(channels))
+
+	for i, channel := range actual.Channels {
+		s.compareChannel(channels[i].(map[string]interface{}), channel)
+	}
+
+	roles := expected["roles"].(map[discord.Snowflake]interface{})
+	s.Len(actual.Roles, len(roles))
+
+	for i, role := range actual.Roles {
+		s.compareRole(roles[i].(map[string]interface{}), role)
+	}
+
+	attachments := expected["attachments"].(map[discord.Snowflake]interface{})
+	s.Len(actual.Attachments, len(attachments))
+
+	for i, attachment := range actual.Attachments {
+		s.compareAttachment(attachments[i].(map[string]interface{}), attachment)
+	}
+}
+
+func (s *eventSuite) compareAttachment(expected map[string]interface{}, actual discord.Attachment) {
+	s.EqualValues(expected["id"], actual.ID)
+	s.EqualValues(expected["filename"], actual.Filename)
+	s.EqualValues(expected["title"], actual.Title)
+	s.EqualValues(expected["description"], actual.Description)
+	s.EqualValues(expected["content_type"], actual.ContentType)
+	s.EqualValues(expected["size"], actual.Size)
+	s.EqualValues(expected["url"], actual.URL)
+	s.EqualValues(expected["proxy_url"], actual.ProxyURL)
+	s.EqualValues(expected["height"], *actual.Height)
+	s.EqualValues(expected["width"], *actual.Width)
+	s.EqualValues(expected["placeholder"], actual.Placeholder)
+	s.EqualValues(expected["placeholder_version"], actual.PlaceholderVersion)
+	s.EqualValues(expected["ephemeral"], actual.Ephemeral)
+	s.EqualValues(expected["duration_secs"], actual.DurationSecs)
+	s.EqualValues(expected["waveform"], actual.Waveform)
+	s.EqualValues(expected["flags"], actual.Flags)
+	s.EqualValues(expected["clip_created_at"], actual.ClipCreatedAt)
+
+	users := expected["users"].([]map[string]interface{})
+	s.Len(actual.ClipParticipants, len(users))
+
+	for i, user := range actual.ClipParticipants {
+		s.compareUser(users[i], user)
+	}
+
+	s.compareApplication(expected["application"].(map[string]interface{}), *actual.Application)
+}
+
+func (s *eventSuite) compareApplication(expected map[string]interface{}, actual discord.Application) {
+	s.EqualValues(expected["id"], actual.ID)
+	s.EqualValues(expected["name"], actual.Name)
+	s.EqualValues(expected["icon"], *actual.Icon)
+	s.EqualValues(expected["description"], actual.Description)
+	s.EqualValues(expected["rpc_origins"], actual.RpcOrigins)
+	s.EqualValues(expected["bot_public"], actual.BotPublic)
+	s.EqualValues(expected["bot_require_code_grant"], actual.BotRequireCodeGrant)
+	s.EqualValues(expected["terms_of_service_url"], actual.TermsOfServiceURL)
+	s.EqualValues(expected["privacy_policy_url"], actual.PrivacyPolicyURL)
+	s.EqualValues(expected["verify_key"], actual.VerifyKey)
+	s.EqualValues(expected["guild_id"], *actual.GuildID)
+	s.EqualValues(expected["primary_sku_id"], *actual.PrimarySKUID)
+	s.EqualValues(expected["slug"], actual.Slug)
+	s.EqualValues(expected["cover_image"], actual.CoverImage)
+	s.EqualValues(expected["flags"], *actual.Flags)
+	s.EqualValues(expected["flags_new"], *actual.FlagsNew)
+	s.EqualValues(expected["approximate_guild_count"], *actual.ApproximateGuildCount)
+	s.EqualValues(expected["approximate_user_install_count"], *actual.ApproximateUserInstallCount)
+	s.EqualValues(expected["approximate_user_authorization_count"], *actual.ApproximateUserAuthorizationCount)
+	s.EqualValues(expected["redirect_uris"], actual.RedirectURIs)
+	s.EqualValues(expected["interactions_endpoint_url"], *actual.InteractionsEndpointURL)
+	s.EqualValues(expected["role_connections_verification_url"], *actual.RoleConnectionsVerificationURL)
+	s.EqualValues(expected["event_webhooks_url"], *actual.EventWebhooksURL)
+	s.EqualValues(expected["event_webhooks_status"], *actual.EventWebhooksStatus)
+	s.EqualValues(expected["event_webhooks_types"], actual.EventWebhooksTypes)
+	s.EqualValues(expected["tags"], actual.Tags)
+	s.EqualValues(expected["install_params"], *actual.InstallParams)
+	s.EqualValues(expected["integration_types_config"], actual.IntegrationTypesConfig)
+	s.EqualValues(expected["custom_install_url"], actual.CustomInstallURL)
+
+	team := expected["team"].(map[string]interface{})
+	s.EqualValues(team["id"], actual.Team.ID)
+	s.EqualValues(team["icon"], *actual.Team.Icon)
+	s.EqualValues(team["name"], actual.Team.Name)
+	s.EqualValues(team["owner_user_id"], actual.Team.OwnerUserID)
+
+	teamMembers := team["members"].([]map[string]interface{})
+	s.Len(actual.Team.Members, len(teamMembers))
+
+	for i, teamMember := range actual.Team.Members {
+		s.EqualValues(teamMembers[i]["team_id"], teamMember.TeamID)
+		s.EqualValues(teamMembers[i]["membership_state"], teamMember.MembershipState)
+		s.EqualValues(teamMembers[i]["role"], teamMember.Role)
+
+		s.compareUser(teamMembers[i]["user"].(map[string]interface{}), teamMember.User)
+	}
+
+	s.compareUser(expected["bot"].(map[string]interface{}), *actual.Bot)
+	s.compareUser(expected["owner"].(map[string]interface{}), *actual.Bot)
+	s.compareGuild(expected["guild"].(map[string]interface{}), *actual.Guild)
+}
+
+func (s *eventSuite) compareMessage(expected map[string]interface{}, actual discord.Message) {}
+
+func (s *eventSuite) compareInteractionData(expected map[string]interface{}, raw discord.InteractionData) {
+	switch raw.GetType() {
+	case discord.InteractionDataTypeApplicationCommand:
+		actual := raw.(*responses.InteractionDataApplicationCommand)
+
+		s.EqualValues(expected["id"], actual.ID)
+		s.EqualValues(expected["name"], actual.Name)
+		s.EqualValues(expected["guild_id"], *actual.GuildID)
+		s.EqualValues(expected["target_id"], *actual.TargetID)
+		s.EqualValues(expected["type"], actual.Type)
+
+		s.compareResolved(expected["resolved"].(map[string]interface{}), *actual.Resolved)
+
+		options := expected["options"].([]map[string]interface{})
+		s.Len(actual.Options, len(options))
+
+		for i, option := range actual.Options {
+			s.compareApplicationCommandInteractionDataOption(options[i], option)
+		}
+	case discord.InteractionDataTypeMessageComponent:
+		actual := raw.(*responses.InteractionDataMessageComponent)
+
+		s.EqualValues(expected["custom_id"], actual.CustomID)
+		s.EqualValues(expected["component_type"], actual.ComponentType)
+		s.EqualValues(expected["values"], actual.Values)
+		s.compareResolved(expected["resolved"].(map[string]interface{}), *actual.Resolved)
+
+	case discord.InteractionDataTypeApplicationCommandAutocomplete:
+		actual := raw.(*responses.InteractionDataAutocomplete)
+
+		s.EqualValues(expected["id"], actual.ID)
+		s.EqualValues(expected["name"], actual.Name)
+		s.EqualValues(expected["type"], actual.Type)
+		s.EqualValues(expected["target_id"], *actual.TargetID)
+		s.EqualValues(expected["guild_id"], *actual.GuildID)
+
+		s.compareResolved(expected["resolved"].(map[string]interface{}), *actual.Resolved)
+
+		options := expected["options"].([]map[string]interface{})
+		s.Len(actual.Options, len(options))
+
+		for i, option := range actual.Options {
+			s.compareApplicationCommandInteractionDataOption(options[i], option)
+		}
+
+	case discord.InteractionDataTypeModalSubmit:
+		actual := raw.(*responses.InteractionDataModalSubmit)
+
+		s.EqualValues(expected["custom_id"], actual.CustomID)
+
+		components := expected["components"].([]map[string]interface{})
+		s.Len(actual.Components, len(components))
+
+		for i, component := range actual.Components {
+			s.EqualValues(components[i]["type"], component.Type)
+			s.EqualValues(components[i]["id"], *component.ID)
+			s.EqualValues(components[i]["label"], component.Label)
+			s.EqualValues(components[i]["description"], component.Description)
+			//TODO component
+		}
+
+		s.compareResolved(expected["resolved"].(map[string]interface{}), *actual.Resolved)
+	}
+}
+
+func (s *eventSuite) compareApplicationCommandInteractionDataOption(expected map[string]interface{}, actual responses.ApplicationCommandInteractionDataOption[interface{}]) {
+	s.EqualValues(expected["value"], actual.Value)
+	s.EqualValues(expected["focused"], *actual.Focused)
+	s.EqualValues(expected["name"], actual.Name)
+	s.EqualValues(expected["type"], actual.Type)
+
+	options := expected["options"].([]map[string]interface{})
+	s.Len(actual.Options, len(options))
+
+	if len(actual.Options) != 0 {
+		for i, option := range actual.Options {
+			s.compareApplicationCommandInteractionDataOption(options[i], option)
+		}
+	}
 }

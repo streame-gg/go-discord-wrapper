@@ -50,7 +50,7 @@ func (s *interactionsSuite) TestUnmarshalChatInputCommand() {
 
 	cmd, ok := i.Data.(*responses.InteractionDataApplicationCommand)
 	s.Require().True(ok, "data should decode to *InteractionDataApplicationCommand")
-	s.Equal("config", cmd.CommandName)
+	s.Equal("config", cmd.Name)
 
 	s.Equal("channel", i.GetSubCommandGroup())
 	s.Equal("set", i.GetSubCommand())
@@ -130,9 +130,9 @@ func (s *interactionsSuite) TestStringOptionValue() {
 	s.Require().NoError(json.Unmarshal([]byte(raw), &i))
 	cmd, ok := i.Data.(*responses.InteractionDataApplicationCommand)
 	s.Require().True(ok)
-	s.Equal("echo", cmd.CommandName)
+	s.Equal("echo", cmd.Name)
 	s.Require().NotNil(cmd.Options)
-	opts := *cmd.Options
+	opts := cmd.Options
 	s.Require().Len(opts, 1)
 	s.Require().NotNil(opts[0].Value)
 	s.Equal("hello", *opts[0].Value)

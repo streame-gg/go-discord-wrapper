@@ -115,6 +115,6 @@ func (s *responsesSuite) TestCommandUnmarshalNoOptions() {
 	const raw = `{"id":"1","name":"ping","type":1}`
 	var d InteractionDataApplicationCommand
 	s.Require().NoError(json.Unmarshal([]byte(raw), &d))
-	s.Equal("ping", d.CommandName)
+	s.Equal("ping", d.Name)
 	s.Nil(d.Options)
 }

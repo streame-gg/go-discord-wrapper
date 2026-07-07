@@ -263,24 +263,87 @@ func NewCheckboxData() map[string]interface{} {
 
 func NewResolvedData() map[string]interface{} {
 	return map[string]interface{}{
-		"users": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewUser())
-		}),
-		"members": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewGuildMember())
-		}),
-		"roles": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewRole())
-		}),
-		"channels": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewChannel())
-		}),
-		"messages": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewMessage(true))
-		}),
-		"attachments": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewAttachment())
-		}),
+		"users": map[discord.Snowflake]interface{}{
+			discord.RandomSnowflake(): NewUser(),
+			discord.RandomSnowflake(): NewUser(),
+			discord.RandomSnowflake(): NewUser(),
+			discord.RandomSnowflake(): NewUser(),
+			discord.RandomSnowflake(): NewUser(),
+			discord.RandomSnowflake(): NewUser(),
+			discord.RandomSnowflake(): NewUser(),
+			discord.RandomSnowflake(): NewUser(),
+			discord.RandomSnowflake(): NewUser(),
+		},
+		"members": map[discord.Snowflake]interface{}{
+			discord.RandomSnowflake(): NewGuildMember(),
+			discord.RandomSnowflake(): NewGuildMember(),
+			discord.RandomSnowflake(): NewGuildMember(),
+			discord.RandomSnowflake(): NewGuildMember(),
+			discord.RandomSnowflake(): NewGuildMember(),
+			discord.RandomSnowflake(): NewGuildMember(),
+			discord.RandomSnowflake(): NewGuildMember(),
+			discord.RandomSnowflake(): NewGuildMember(),
+			discord.RandomSnowflake(): NewGuildMember(),
+			discord.RandomSnowflake(): NewGuildMember(),
+		},
+		"roles": map[discord.Snowflake]interface{}{
+			discord.RandomSnowflake(): NewRole(),
+			discord.RandomSnowflake(): NewRole(),
+			discord.RandomSnowflake(): NewRole(),
+			discord.RandomSnowflake(): NewRole(),
+			discord.RandomSnowflake(): NewRole(),
+			discord.RandomSnowflake(): NewRole(),
+			discord.RandomSnowflake(): NewRole(),
+			discord.RandomSnowflake(): NewRole(),
+			discord.RandomSnowflake(): NewRole(),
+			discord.RandomSnowflake(): NewRole(),
+			discord.RandomSnowflake(): NewRole(),
+		},
+		"channels": map[discord.Snowflake]interface{}{
+			discord.RandomSnowflake(): NewChannel(),
+			discord.RandomSnowflake(): NewChannel(),
+			discord.RandomSnowflake(): NewChannel(),
+			discord.RandomSnowflake(): NewChannel(),
+			discord.RandomSnowflake(): NewChannel(),
+			discord.RandomSnowflake(): NewChannel(),
+			discord.RandomSnowflake(): NewChannel(),
+			discord.RandomSnowflake(): NewChannel(),
+			discord.RandomSnowflake(): NewChannel(),
+			discord.RandomSnowflake(): NewChannel(),
+			discord.RandomSnowflake(): NewChannel(),
+			discord.RandomSnowflake(): NewChannel(),
+		},
+		"messages": map[discord.Snowflake]interface{}{
+			discord.RandomSnowflake(): NewMessage(true),
+			discord.RandomSnowflake(): NewMessage(true),
+			discord.RandomSnowflake(): NewMessage(true),
+			discord.RandomSnowflake(): NewMessage(true),
+			discord.RandomSnowflake(): NewMessage(true),
+			discord.RandomSnowflake(): NewMessage(true),
+			discord.RandomSnowflake(): NewMessage(true),
+			discord.RandomSnowflake(): NewMessage(true),
+			discord.RandomSnowflake(): NewMessage(true),
+			discord.RandomSnowflake(): NewMessage(true),
+			discord.RandomSnowflake(): NewMessage(true),
+			discord.RandomSnowflake(): NewMessage(true),
+			discord.RandomSnowflake(): NewMessage(true),
+		},
+		"attachments": map[discord.Snowflake]interface{}{
+			discord.RandomSnowflake(): NewAttachment(),
+			discord.RandomSnowflake(): NewAttachment(),
+			discord.RandomSnowflake(): NewAttachment(),
+			discord.RandomSnowflake(): NewAttachment(),
+			discord.RandomSnowflake(): NewAttachment(),
+			discord.RandomSnowflake(): NewAttachment(),
+			discord.RandomSnowflake(): NewAttachment(),
+			discord.RandomSnowflake(): NewAttachment(),
+			discord.RandomSnowflake(): NewAttachment(),
+			discord.RandomSnowflake(): NewAttachment(),
+			discord.RandomSnowflake(): NewAttachment(),
+			discord.RandomSnowflake(): NewAttachment(),
+			discord.RandomSnowflake(): NewAttachment(),
+			discord.RandomSnowflake(): NewAttachment(),
+		},
 	}
 }
 
@@ -342,7 +405,7 @@ func NewInteractionDataApplicationCommand() map[string]interface{} {
 		),
 		"guild_id": discord.RandomSnowflake(),
 		"options": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 32), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(true))
+			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(false))
 		}),
 		"target_id": discord.RandomSnowflake(),
 		"resolved":  NewResolvedData(),
