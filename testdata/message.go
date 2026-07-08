@@ -5,7 +5,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-func NewMessage(allowMessageSnapshots bool) map[string]interface{} {
+func NewMessage(runThrough int) map[string]interface{} {
 	obj := map[string]interface{}{
 		"id":               discord.RandomSnowflake(),
 		"channel_id":       discord.RandomSnowflake(),
@@ -109,7 +109,7 @@ func NewMessage(allowMessageSnapshots bool) map[string]interface{} {
 			"guild_id":           discord.RandomSnowflake(),
 			"fail_if_not_exists": testutil.RandomBool(),
 		},
-		"referenced_message": NewMessage(true),
+		"referenced_message": NewMessage(1),
 		"interaction_metadata": testutil.RandomItem(
 			NewApplicationCommandInteractionMetadata(),
 			NewMessageComponentInteractionMetadata(),
@@ -186,7 +186,8 @@ func NewMessage(allowMessageSnapshots bool) map[string]interface{} {
 		},
 	}
 
-	if allowMessageSnapshots {
+	if runThrough < 3 {
+		runThrough++
 		obj["message_snapshots"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewMessageSnapshot())
 		})
@@ -249,7 +250,7 @@ func NewPollMediaItem(hasEmoji bool) map[string]interface{} {
 
 func NewMessageSnapshot() map[string]interface{} {
 	return map[string]interface{}{
-		"message": NewMessage(false),
+		"message": NewMessage(1),
 	}
 }
 
