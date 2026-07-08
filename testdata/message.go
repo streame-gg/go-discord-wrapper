@@ -109,7 +109,6 @@ func NewMessage(runThrough int) map[string]interface{} {
 			"guild_id":           discord.RandomSnowflake(),
 			"fail_if_not_exists": testutil.RandomBool(),
 		},
-		"referenced_message": NewMessage(1),
 		"interaction_metadata": testutil.RandomItem(
 			NewApplicationCommandInteractionMetadata(),
 			NewMessageComponentInteractionMetadata(),
@@ -191,6 +190,7 @@ func NewMessage(runThrough int) map[string]interface{} {
 		obj["message_snapshots"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewMessageSnapshot())
 		})
+		obj["referenced_message"] = NewMessage(runThrough)
 	}
 
 	return obj

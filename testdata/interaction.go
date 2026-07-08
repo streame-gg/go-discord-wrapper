@@ -5,6 +5,8 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+const maxOptionNestingDepth = 2
+
 // In reality, some of the structs in NewInteraction are only partial, but it is not really specified what fields of those
 // are omitted and which not, so we are using the full objects here
 func NewInteraction() map[string]interface{} {
@@ -265,83 +267,20 @@ func NewResolvedData() map[string]interface{} {
 	return map[string]interface{}{
 		"users": map[discord.Snowflake]interface{}{
 			discord.RandomSnowflake(): NewUser(),
-			discord.RandomSnowflake(): NewUser(),
-			discord.RandomSnowflake(): NewUser(),
-			discord.RandomSnowflake(): NewUser(),
-			discord.RandomSnowflake(): NewUser(),
-			discord.RandomSnowflake(): NewUser(),
-			discord.RandomSnowflake(): NewUser(),
-			discord.RandomSnowflake(): NewUser(),
-			discord.RandomSnowflake(): NewUser(),
 		},
 		"members": map[discord.Snowflake]interface{}{
-			discord.RandomSnowflake(): NewGuildMember(),
-			discord.RandomSnowflake(): NewGuildMember(),
-			discord.RandomSnowflake(): NewGuildMember(),
-			discord.RandomSnowflake(): NewGuildMember(),
-			discord.RandomSnowflake(): NewGuildMember(),
-			discord.RandomSnowflake(): NewGuildMember(),
-			discord.RandomSnowflake(): NewGuildMember(),
-			discord.RandomSnowflake(): NewGuildMember(),
-			discord.RandomSnowflake(): NewGuildMember(),
 			discord.RandomSnowflake(): NewGuildMember(),
 		},
 		"roles": map[discord.Snowflake]interface{}{
 			discord.RandomSnowflake(): NewRole(),
-			discord.RandomSnowflake(): NewRole(),
-			discord.RandomSnowflake(): NewRole(),
-			discord.RandomSnowflake(): NewRole(),
-			discord.RandomSnowflake(): NewRole(),
-			discord.RandomSnowflake(): NewRole(),
-			discord.RandomSnowflake(): NewRole(),
-			discord.RandomSnowflake(): NewRole(),
-			discord.RandomSnowflake(): NewRole(),
-			discord.RandomSnowflake(): NewRole(),
-			discord.RandomSnowflake(): NewRole(),
 		},
 		"channels": map[discord.Snowflake]interface{}{
 			discord.RandomSnowflake(): NewChannel(),
-			discord.RandomSnowflake(): NewChannel(),
-			discord.RandomSnowflake(): NewChannel(),
-			discord.RandomSnowflake(): NewChannel(),
-			discord.RandomSnowflake(): NewChannel(),
-			discord.RandomSnowflake(): NewChannel(),
-			discord.RandomSnowflake(): NewChannel(),
-			discord.RandomSnowflake(): NewChannel(),
-			discord.RandomSnowflake(): NewChannel(),
-			discord.RandomSnowflake(): NewChannel(),
-			discord.RandomSnowflake(): NewChannel(),
-			discord.RandomSnowflake(): NewChannel(),
 		},
 		"messages": map[discord.Snowflake]interface{}{
-			discord.RandomSnowflake(): NewMessage(1),
-			discord.RandomSnowflake(): NewMessage(1),
-			discord.RandomSnowflake(): NewMessage(1),
-			discord.RandomSnowflake(): NewMessage(1),
-			discord.RandomSnowflake(): NewMessage(1),
-			discord.RandomSnowflake(): NewMessage(1),
-			discord.RandomSnowflake(): NewMessage(1),
-			discord.RandomSnowflake(): NewMessage(1),
-			discord.RandomSnowflake(): NewMessage(1),
-			discord.RandomSnowflake(): NewMessage(1),
-			discord.RandomSnowflake(): NewMessage(1),
-			discord.RandomSnowflake(): NewMessage(1),
-			discord.RandomSnowflake(): NewMessage(1),
+			discord.RandomSnowflake(): NewMessage(5),
 		},
 		"attachments": map[discord.Snowflake]interface{}{
-			discord.RandomSnowflake(): NewAttachment(),
-			discord.RandomSnowflake(): NewAttachment(),
-			discord.RandomSnowflake(): NewAttachment(),
-			discord.RandomSnowflake(): NewAttachment(),
-			discord.RandomSnowflake(): NewAttachment(),
-			discord.RandomSnowflake(): NewAttachment(),
-			discord.RandomSnowflake(): NewAttachment(),
-			discord.RandomSnowflake(): NewAttachment(),
-			discord.RandomSnowflake(): NewAttachment(),
-			discord.RandomSnowflake(): NewAttachment(),
-			discord.RandomSnowflake(): NewAttachment(),
-			discord.RandomSnowflake(): NewAttachment(),
-			discord.RandomSnowflake(): NewAttachment(),
 			discord.RandomSnowflake(): NewAttachment(),
 		},
 	}
@@ -405,14 +344,14 @@ func NewInteractionDataApplicationCommand() map[string]interface{} {
 		),
 		"guild_id": discord.RandomSnowflake(),
 		"options": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 32), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(true))
+			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(1))
 		}),
 		"target_id": discord.RandomSnowflake(),
 		"resolved":  NewResolvedData(),
 	}
 }
 
-func NewApplicationCommandInteractionDataOptionStructure(shouldHaveOptions bool) map[string]interface{} {
+func NewApplicationCommandInteractionDataOptionStructure(depth int) map[string]interface{} {
 	obj := map[string]interface{}{
 		"name": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 		"type": testutil.RandomItem(
@@ -432,16 +371,16 @@ func NewApplicationCommandInteractionDataOptionStructure(shouldHaveOptions bool)
 		"focused": testutil.RandomBool(),
 	}
 
-	if shouldHaveOptions {
+	if depth > 0 {
 		obj["options"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 32), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(false))
+			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(depth-1))
 		})
 	}
 
 	return obj
 }
 
-func NewApplicationCommandOption(addChoices bool) map[string]interface{} {
+func NewApplicationCommandOption(depth int) map[string]interface{} {
 	obj := map[string]interface{}{
 		"type": testutil.RandomItem(
 			discord.ApplicationCommandOptionTypeSubCommand,
@@ -499,9 +438,9 @@ func NewApplicationCommandOption(addChoices bool) map[string]interface{} {
 		"autocomplete": testutil.RandomBool(),
 	}
 
-	if addChoices {
+	if depth > 0 {
 		obj["options"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 25), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewApplicationCommandOption(false))
+			*arrayToFill = append(*arrayToFill, NewApplicationCommandOption(depth-1))
 		})
 	}
 
