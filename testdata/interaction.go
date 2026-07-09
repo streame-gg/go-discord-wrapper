@@ -5,8 +5,6 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-const maxOptionNestingDepth = 2
-
 // In reality, some of the structs in NewInteraction are only partial, but it is not really specified what fields of those
 // are omitted and which not, so we are using the full objects here
 func NewInteraction() map[string]interface{} {

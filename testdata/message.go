@@ -188,7 +188,7 @@ func NewMessage(runThrough int) map[string]interface{} {
 	if runThrough < 3 {
 		runThrough++
 		obj["message_snapshots"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewMessageSnapshot())
+			*arrayToFill = append(*arrayToFill, NewMessageSnapshot(5))
 		})
 		obj["referenced_message"] = NewMessage(runThrough)
 	}
@@ -248,9 +248,9 @@ func NewPollMediaItem(hasEmoji bool) map[string]interface{} {
 	return obj
 }
 
-func NewMessageSnapshot() map[string]interface{} {
+func NewMessageSnapshot(runThrough int) map[string]interface{} {
 	return map[string]interface{}{
-		"message": NewMessage(1),
+		"message": NewMessage(runThrough),
 	}
 }
 
