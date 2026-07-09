@@ -9,6 +9,11 @@ func RandomIntInRange(min, max int) int {
 	if min == max {
 		return min
 	}
+	if min > max {
+		tmp := max
+		max = min
+		min = tmp
+	}
 	return rand.IntN(max-min) + min
 }
 

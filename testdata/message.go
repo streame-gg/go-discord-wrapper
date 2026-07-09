@@ -165,8 +165,7 @@ func NewMessage(runThrough int) map[string]interface{} {
 			"total_months_subscribed":      testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 			"is_renewal":                   testutil.RandomBool(),
 		},
-		"resolved": NewResolvedData(),
-		"poll":     NewPoll(),
+		"poll": NewPoll(),
 		"call": map[string]interface{}{
 			"participants":    testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 10)),
 			"ended_timestamp": testutil.RandomTime(),
@@ -191,6 +190,8 @@ func NewMessage(runThrough int) map[string]interface{} {
 			*arrayToFill = append(*arrayToFill, NewMessageSnapshot(5))
 		})
 		obj["referenced_message"] = NewMessage(runThrough)
+		obj["resolved"] = NewResolvedData()
+
 	}
 
 	return obj

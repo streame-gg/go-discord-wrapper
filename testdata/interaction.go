@@ -35,7 +35,7 @@ func NewInteraction() map[string]interface{} {
 		"app_permissions": testutil.RandomFlags(testutil.AllPermissions...),
 		"locale":          testutil.RandomString(2),
 		"guild_locale":    testutil.RandomString(2),
-		"entitlements": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 5), func(arrayToFill *[]map[string]interface{}) {
+		"entitlements": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 2), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewEntitlement())
 		}),
 		"authorizing_integration_owners": map[discord.ApplicationIntegrationType]discord.Snowflake{
@@ -310,7 +310,7 @@ func NewInteractionDataMessageComponent() map[string]interface{} {
 			discord.ComponentTypeCheckbox,
 		),
 		"resolved": NewResolvedData(),
-		"values": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 15), func(arrayToFill *[]map[string]interface{}) {
+		"values": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewSelectOption())
 		}),
 	}
@@ -341,7 +341,7 @@ func NewInteractionDataApplicationCommand() map[string]interface{} {
 			discord.ApplicationCommandTypePrimaryEndpoint,
 		),
 		"guild_id": discord.RandomSnowflake(),
-		"options": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 32), func(arrayToFill *[]map[string]interface{}) {
+		"options": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(1))
 		}),
 		"target_id": discord.RandomSnowflake(),
@@ -370,7 +370,7 @@ func NewApplicationCommandInteractionDataOptionStructure(depth int) map[string]i
 	}
 
 	if depth > 0 {
-		obj["options"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 32), func(arrayToFill *[]map[string]interface{}) {
+		obj["options"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(depth-1))
 		})
 	}
