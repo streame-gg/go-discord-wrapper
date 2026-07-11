@@ -194,6 +194,14 @@ func (m *GuildMember) FlagBits() FlagBits[GuildMemberFlags] {
 // https://docs.discord.com/developers/resources/application#application-object-application-flags
 type ApplicationFlags uint64
 
+func (f *ApplicationFlags) String() string {
+	if f == nil {
+		return ""
+	}
+
+	return strconv.FormatUint(uint64(*f), 10)
+}
+
 // UnmarshalJSON accepts either a JSON number (the legacy flags field) or a
 // decimal string (the flags_new field), so the same type backs both.
 func (f *ApplicationFlags) UnmarshalJSON(data []byte) error {

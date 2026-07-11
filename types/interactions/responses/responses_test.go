@@ -76,13 +76,13 @@ func (s *responsesSuite) TestInteractionResponseEnvelopeMarshal() {
 // TestGetTypeDiscriminators pins each interaction-data type's discriminator,
 // which the dispatcher uses to route an incoming interaction's Data.
 func (s *responsesSuite) TestGetTypeDiscriminators() {
-	s.Equal(discord.InteractionDataTypeApplicationCommand,
+	s.Equal(discord.InteractionTypeApplicationCommand,
 		(&InteractionDataApplicationCommand{}).GetType())
-	s.Equal(discord.InteractionDataTypeApplicationCommandAutocomplete,
+	s.Equal(discord.InteractionTypeApplicationCommandAutocomplete,
 		(&InteractionDataAutocomplete{}).GetType())
-	s.Equal(discord.InteractionDataTypeMessageComponent,
+	s.Equal(discord.InteractionTypeMessageComponent,
 		(&InteractionDataMessageComponent{}).GetType())
-	s.Equal(discord.InteractionDataTypeModalSubmit,
+	s.Equal(discord.InteractionTypeModalSubmit,
 		(&InteractionDataModalSubmit{}).GetType())
 }
 

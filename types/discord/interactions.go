@@ -11,14 +11,6 @@ const (
 	InteractionTypeModalSubmit                    InteractionType = 5
 )
 
-// https://docs.discord.com/developers/resources/application#application-object-application-integration-types
-type InteractionApplicationIntegrationType int
-
-const (
-	InteractionApplicationIntegrationTypeGuildInstall InteractionApplicationIntegrationType = 0
-	InteractionApplicationIntegrationTypeUserInstall  InteractionApplicationIntegrationType = 1
-)
-
 // https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-interaction-context-types
 type InteractionContextType int
 
@@ -45,19 +37,8 @@ const (
 )
 
 // https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-interaction-data
-type InteractionDataType int
-
-const (
-	InteractionDataTypePing                           InteractionDataType = 1
-	InteractionDataTypeApplicationCommand             InteractionDataType = 2
-	InteractionDataTypeMessageComponent               InteractionDataType = 3
-	InteractionDataTypeApplicationCommandAutocomplete InteractionDataType = 4
-	InteractionDataTypeModalSubmit                    InteractionDataType = 5
-)
-
-// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-interaction-data
 type InteractionData interface {
-	GetType() InteractionDataType
+	GetType() InteractionType
 }
 
 // https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-types

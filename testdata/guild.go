@@ -70,28 +70,28 @@ func NewAvailableGuildWithGuildCreateValues() map[string]interface{} {
 	withoutValues["joined_at"] = testutil.RandomTime()
 	withoutValues["large"] = testutil.RandomBool()
 	withoutValues["member_count"] = testutil.RandomIntInRange(2, 10000000)
-	withoutValues["voice_states"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
+	withoutValues["voice_states"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 		*arrayToFill = append(*arrayToFill, NewVoiceState())
 	})
-	withoutValues["members"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
+	withoutValues["members"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 		*arrayToFill = append(*arrayToFill, NewGuildMember())
 	})
-	withoutValues["channels"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
+	withoutValues["channels"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 		*arrayToFill = append(*arrayToFill, NewChannel())
 	})
-	withoutValues["threads"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
+	withoutValues["threads"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 		*arrayToFill = append(*arrayToFill, NewChannel())
 	})
-	withoutValues["presences"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
+	withoutValues["presences"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 		*arrayToFill = append(*arrayToFill, NewPresence())
 	})
-	withoutValues["stage_instances"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
+	withoutValues["stage_instances"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 		*arrayToFill = append(*arrayToFill, NewStageInstance())
 	})
-	withoutValues["guild_scheduled_events"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
+	withoutValues["guild_scheduled_events"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 		*arrayToFill = append(*arrayToFill, NewScheduledEvent())
 	})
-	withoutValues["soundboard_sounds"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
+	withoutValues["soundboard_sounds"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 		*arrayToFill = append(*arrayToFill, NewSoundboardSound())
 	})
 
@@ -132,10 +132,10 @@ func NewAvailableGuild() map[string]interface{} {
 			discord.GuildExplicitContentFilterLevelMembersWithoutRoles,
 			discord.GuildExplicitContentFilterLevelAllMembers,
 		),
-		"roles": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 20), func(a *[]map[string]interface{}) {
+		"roles": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(a *[]map[string]interface{}) {
 			*a = append(*a, NewRole())
 		}),
-		"emojis": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 20), func(a *[]map[string]interface{}) {
+		"emojis": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(a *[]map[string]interface{}) {
 			*a = append(*a, NewEmoji())
 		}),
 		"features": testutil.RandomArray[discord.GuildFeatures](
@@ -200,7 +200,7 @@ func NewAvailableGuild() map[string]interface{} {
 			discord.GuildNSFWLevelSafe,
 			discord.GuildNSFWLevelAgeRestricted,
 		),
-		"stickers": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(a *[]map[string]interface{}) {
+		"stickers": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(a *[]map[string]interface{}) {
 			*a = append(*a, NewSticker())
 		}),
 		"premium_progress_bar_enabled": testutil.RandomBool(),
@@ -391,10 +391,10 @@ func NewScheduledEvent() map[string]interface{} {
 					discord.GuildScheduledEventRecurrenceRuleMonthDecember,
 				))
 			}),
-			"by_month_day": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 31), func(a *[]int) {
+			"by_month_day": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 7), func(a *[]int) {
 				*a = append(*a, testutil.RandomIntInRange(1, 31))
 			}),
-			"by_year_day": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 365), func(a *[]int) {
+			"by_year_day": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 7), func(a *[]int) {
 				*a = append(*a, testutil.RandomIntInRange(1, 365))
 			}),
 			"count": testutil.RandomIntInRange(1, 5),
@@ -442,7 +442,7 @@ func NewIntegration() map[string]interface{} {
 			"id":   testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 			"name": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 		},
-		"scopes": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 32), func(arrayToFill *[]discord.Scope) {
+		"scopes": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]discord.Scope) {
 			*arrayToFill = append(*arrayToFill, testutil.RandomItem(
 				discord.ScopeActivitiesRead,
 				discord.ScopeActivitiesWrite,

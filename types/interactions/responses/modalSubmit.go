@@ -12,6 +12,6 @@ type InteractionDataModalSubmit struct {
 	Components []components.ComponentLabelComponent `json:"components,omitempty"`
 }
 
-func (d *InteractionDataModalSubmit) GetType() discord.InteractionDataType {
-	return discord.InteractionDataTypeModalSubmit
+func (d *InteractionDataModalSubmit) GetType() discord.InteractionType {
+	return discord.InteractionTypeModalSubmit
 }

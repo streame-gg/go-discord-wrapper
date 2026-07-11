@@ -128,8 +128,8 @@ func NewAuditLogEntry() map[string]interface{} {
 				discord.PermissionOverwriteTypeUser,
 			),
 			"integration_type": testutil.RandomItem(
-				discord.InteractionApplicationIntegrationTypeGuildInstall,
-				discord.InteractionApplicationIntegrationTypeUserInstall,
+				discord.ApplicationIntegrationTypeGuildInstall,
+				discord.ApplicationIntegrationTypeUserInstall,
 			),
 			"status": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 		},

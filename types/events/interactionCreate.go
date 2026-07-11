@@ -28,11 +28,11 @@ func (e *InteractionCreateEvent) IsCommand() bool {
 }
 
 func (e *InteractionCreateEvent) IsButton() bool {
-	if e.Type != discord.InteractionTypeMessageComponent {
+	if e.Type != discord.InteractionTypeMessageComponent || e.Data == nil {
 		return false
 	}
 
-	comp, ok := e.Data.(*responses.InteractionDataMessageComponent)
+	comp, ok := (*e.Data).(*responses.InteractionDataMessageComponent)
 	if !ok {
 		return false
 	}
@@ -40,11 +40,11 @@ func (e *InteractionCreateEvent) IsButton() bool {
 }
 
 func (e *InteractionCreateEvent) IsAnySelectMenu() bool {
-	if e.Type != discord.InteractionTypeMessageComponent {
+	if e.Type != discord.InteractionTypeMessageComponent || e.Data == nil {
 		return false
 	}
 
-	comp, ok := e.Data.(*responses.InteractionDataMessageComponent)
+	comp, ok := (*e.Data).(*responses.InteractionDataMessageComponent)
 	if !ok {
 		return false
 	}

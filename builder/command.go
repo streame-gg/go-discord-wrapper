@@ -46,7 +46,7 @@ func (b *CommandBuilder) SetDefaultMemberPermissions(permissions discord.Permiss
 	return b
 }
 
-func (b *CommandBuilder) SetIntegrationTypes(types []discord.InteractionApplicationIntegrationType) *CommandBuilder {
+func (b *CommandBuilder) SetIntegrationTypes(types []discord.ApplicationIntegrationType) *CommandBuilder {
 	b.cmd.IntegrationTypes = types
 	return b
 }

@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"math/rand"
+	"strconv"
 
 	"github.com/streame-gg/go-discord-wrapper/types/components"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
@@ -75,4 +76,19 @@ func RandomFlags[
 		}
 	}
 	return result
+}
+
+func RandomFlagsAsString[
+	V discord.Permission | discord.ChannelFlags | discord.UserFlags |
+		discord.GuildMemberFlags | discord.RoleFlags | discord.GuildSystemChannelFlags |
+		discord.ActivityFlags | discord.ApplicationFlags | discord.AttachmentFlag | discord.EmbedMediaFlags |
+		discord.EmbedFlags | discord.MessageFlag | components.UnfurledMediaItemFlags,
+](flags ...V) string {
+	var result V
+	for _, p := range flags {
+		if rand.Intn(2) == 1 {
+			result |= p
+		}
+	}
+	return strconv.Itoa(int(result))
 }

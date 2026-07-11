@@ -210,8 +210,8 @@ type Call struct {
 
 // https://docs.discord.com/developers/resources/message#channel-mention-object
 type MessageChannelMention struct {
-	ID      string      `json:"id"`
-	GuildID string      `json:"guild_id"`
+	ID      Snowflake   `json:"id"`
+	GuildID Snowflake   `json:"guild_id"`
 	Type    ChannelType `json:"type"`
 	Name    string      `json:"name"`
 }
@@ -247,23 +247,23 @@ type MessageMessageReference struct {
 
 // https://docs.discord.com/developers/resources/message#message-interaction-metadata-object-application-command-interaction-metadata-structure
 type MessageInteractionMetadataApplicationCommand struct {
-	ID                           Snowflake                                                            `json:"id"`
-	Type                         InteractionType                                                      `json:"type"`
-	User                         User                                                                 `json:"user"`
-	AuthorizingIntegrationOwners map[InteractionApplicationIntegrationType]ApplicationIntegrationType `json:"authorizing_integration_owners"`
-	OriginalResponseMessageID    *Snowflake                                                           `json:"original_response_message_id,omitempty"`
-	TargetUser                   *User                                                                `json:"target_user,omitempty"`
-	TargetMessageID              *Snowflake                                                           `json:"target_message_id,omitempty"`
+	ID                           Snowflake                                                 `json:"id"`
+	Type                         InteractionType                                           `json:"type"`
+	User                         User                                                      `json:"user"`
+	AuthorizingIntegrationOwners map[ApplicationIntegrationType]ApplicationIntegrationType `json:"authorizing_integration_owners"`
+	OriginalResponseMessageID    *Snowflake                                                `json:"original_response_message_id,omitempty"`
+	TargetUser                   *User                                                     `json:"target_user,omitempty"`
+	TargetMessageID              *Snowflake                                                `json:"target_message_id,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/message#message-interaction-metadata-object-message-component-interaction-metadata-structure
 type MessageInteractionMetadataMessageComponent struct {
-	ID                           Snowflake                                             `json:"id"`
-	Type                         InteractionType                                       `json:"type"`
-	User                         User                                                  `json:"user"`
-	AuthorizingIntegrationOwners map[InteractionApplicationIntegrationType]interface{} `json:"authorizing_integration_owners"`
-	OriginalResponseMessageID    *Snowflake                                            `json:"original_response_message_id,omitempty"`
-	InteractedMessageID          Snowflake                                             `json:"interacted_message_id"`
+	ID                           Snowflake                                  `json:"id"`
+	Type                         InteractionType                            `json:"type"`
+	User                         User                                       `json:"user"`
+	AuthorizingIntegrationOwners map[ApplicationIntegrationType]interface{} `json:"authorizing_integration_owners"`
+	OriginalResponseMessageID    *Snowflake                                 `json:"original_response_message_id,omitempty"`
+	InteractedMessageID          Snowflake                                  `json:"interacted_message_id"`
 }
 
 // https://docs.discord.com/developers/resources/message#message-interaction-metadata-object
@@ -327,12 +327,12 @@ func (d *MessageInteractionMetadata) UnmarshalJSON(data []byte) error {
 
 // https://docs.discord.com/developers/resources/message#message-interaction-metadata-object-modal-submit-interaction-metadata-structure
 type MessageInteractionMetadataModalSubmit struct {
-	ID                            Snowflake                                             `json:"id"`
-	Type                          InteractionType                                       `json:"type"`
-	User                          User                                                  `json:"user"`
-	AuthorizingIntegrationOwners  map[InteractionApplicationIntegrationType]interface{} `json:"authorizing_integration_owners"`
-	OriginalResponseMessageID     *Snowflake                                            `json:"original_response_message_id,omitempty"`
-	TriggeringInteractionMetadata MessageInteractionMetadataModalSubmitTriggering       `json:"triggering_interaction_metadata"`
+	ID                            Snowflake                                       `json:"id"`
+	Type                          InteractionType                                 `json:"type"`
+	User                          User                                            `json:"user"`
+	AuthorizingIntegrationOwners  map[ApplicationIntegrationType]interface{}      `json:"authorizing_integration_owners"`
+	OriginalResponseMessageID     *Snowflake                                      `json:"original_response_message_id,omitempty"`
+	TriggeringInteractionMetadata MessageInteractionMetadataModalSubmitTriggering `json:"triggering_interaction_metadata"`
 }
 
 // SharedClientTheme https://docs.discord.com/developers/resources/message#shared-client-theme-object

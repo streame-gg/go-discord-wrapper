@@ -8,21 +8,21 @@ import (
 // https://docs.discord.com/developers/interactions/application-commands#application-command-object
 type ApplicationCommand struct {
 	// ID uses omitempty due to command registrations.
-	ID                       Snowflake                               `json:"id,omitempty"`
-	Type                     ApplicationCommandType                  `json:"type,omitempty"`
-	ApplicationID            *Snowflake                              `json:"application_id"`
-	GuildID                  *Snowflake                              `json:"guild_id,omitempty"`
-	Name                     string                                  `json:"name"`
-	NameLocalizations        map[Locale]string                       `json:"name_localizations,omitempty"`
-	Description              string                                  `json:"description"`
-	DescriptionLocalizations map[Locale]string                       `json:"description_localizations,omitempty"`
-	DefaultMemberPermissions *Permission                             `json:"default_member_permissions"`
-	NSFW                     bool                                    `json:"nsfw,omitempty"`
-	IntegrationTypes         []InteractionApplicationIntegrationType `json:"integration_types,omitempty"`
-	Contexts                 []InteractionContextType                `json:"contexts,omitempty"`
-	Version                  Snowflake                               `json:"version"`
-	Handler                  CommandHandlerType                      `json:"handler_type,omitempty"`
-	Options                  []AnyApplicationCommandOption           `json:"options,omitempty"`
+	ID                       Snowflake                     `json:"id,omitempty"`
+	Type                     ApplicationCommandType        `json:"type,omitempty"`
+	ApplicationID            *Snowflake                    `json:"application_id"`
+	GuildID                  *Snowflake                    `json:"guild_id,omitempty"`
+	Name                     string                        `json:"name"`
+	NameLocalizations        map[Locale]string             `json:"name_localizations,omitempty"`
+	Description              string                        `json:"description"`
+	DescriptionLocalizations map[Locale]string             `json:"description_localizations,omitempty"`
+	DefaultMemberPermissions *Permission                   `json:"default_member_permissions"`
+	NSFW                     bool                          `json:"nsfw,omitempty"`
+	IntegrationTypes         []ApplicationIntegrationType  `json:"integration_types,omitempty"`
+	Contexts                 []InteractionContextType      `json:"contexts,omitempty"`
+	Version                  Snowflake                     `json:"version"`
+	Handler                  CommandHandlerType            `json:"handler_type,omitempty"`
+	Options                  []AnyApplicationCommandOption `json:"options,omitempty"`
 }
 
 func unmarshalApplicationCommandOption(data []byte) (AnyApplicationCommandOption, error) {

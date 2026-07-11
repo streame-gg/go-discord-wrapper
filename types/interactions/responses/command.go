@@ -17,8 +17,8 @@ type InteractionDataApplicationCommand struct {
 	Options  []ApplicationCommandInteractionDataOption[interface{}] `json:"options,omitempty"`
 }
 
-func (d *InteractionDataApplicationCommand) GetType() discord.InteractionDataType {
-	return discord.InteractionDataTypeApplicationCommand
+func (d *InteractionDataApplicationCommand) GetType() discord.InteractionType {
+	return discord.InteractionTypeApplicationCommand
 }
 
 func (d *InteractionDataApplicationCommand) UnmarshalJSON(data []byte) error {

@@ -38,6 +38,6 @@ type InteractionDataAutocomplete struct {
 	Options  []ApplicationCommandInteractionDataOption[interface{}] `json:"options,omitempty"`
 }
 
-func (d *InteractionDataAutocomplete) GetType() discord.InteractionDataType {
-	return discord.InteractionDataTypeApplicationCommandAutocomplete
+func (d *InteractionDataAutocomplete) GetType() discord.InteractionType {
+	return discord.InteractionTypeApplicationCommandAutocomplete
 }

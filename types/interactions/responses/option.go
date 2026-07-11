@@ -8,7 +8,7 @@ import (
 )
 
 // https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-application-command-interaction-data-option-structure
-type ApplicationCommandInteractionDataOption[T string | int | bool | interface{}] struct {
+type ApplicationCommandInteractionDataOption[T string | discord.Snowflake | int | bool | interface{}] struct {
 	Name    string                                                 `json:"name"`
 	Type    discord.ApplicationCommandOptionType                   `json:"type"`
 	Value   *T                                                     `json:"value,omitempty"`
@@ -90,9 +90,7 @@ func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) 
 		v := any(b).(T)
 		t.Value = &v
 	default:
-		// User/Channel/Role/Mentionable values are snowflake IDs sent as JSON
-		// strings; decode them as a string.
-		var s string
+		var s discord.Snowflake
 		if err := json.Unmarshal(raw.Value, &s); err != nil {
 			return fmt.Errorf("option %q: value %s: %w", t.Name, raw.Value, err)
 		}

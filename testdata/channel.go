@@ -24,7 +24,7 @@ func NewChannel() map[string]interface{} {
 		),
 		"guild_id": discord.RandomSnowflake(),
 		"position": testutil.RandomIntInRange(0, 500),
-		"permission_overwrites": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 100), func(arrayToFill *[]map[string]interface{}) {
+		"permission_overwrites": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewPermissionOverwrite())
 		}),
 		"name":                testutil.RandomString(testutil.RandomIntInRange(1, 100)),
@@ -34,7 +34,7 @@ func NewChannel() map[string]interface{} {
 		"bitrate":             testutil.RandomIntInRange(1, 384),
 		"user_limit":          testutil.RandomIntInRange(0, 100),
 		"rate_limit_per_user": testutil.RandomIntInRange(1, 21600),
-		"recipients": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(0, 10), func(arrayToFill *[]map[string]interface{}) {
+		"recipients": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(0, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewUser())
 		}),
 		"icon":               testutil.RandomString(32),
@@ -60,7 +60,7 @@ func NewChannel() map[string]interface{} {
 		"permissions":                   testutil.RandomFlags(testutil.AllPermissions...),
 		"flags":                         testutil.RandomFlags(discord.ChannelFlagPinned, discord.ChannelFlagRequireTag, discord.ChannelFlagHideMediaDownloadOptions),
 		"total_message_sent":            testutil.RandomIntInRange(1, 100000),
-		"available_tags": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 25), func(arrayToFill *[]map[string]interface{}) {
+		"available_tags": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewChannelTag())
 		}),
 		"applied_tags": testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 25)),

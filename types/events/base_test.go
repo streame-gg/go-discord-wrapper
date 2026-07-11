@@ -604,7 +604,7 @@ func (s *eventSuite) compareAttachment(expected map[string]interface{}, actual d
 	s.EqualValues(expected["flags"], actual.Flags)
 	s.EqualValues(expected["clip_created_at"], actual.ClipCreatedAt)
 
-	users := expected["users"].([]map[string]interface{})
+	users := expected["clip_participants"].([]map[string]interface{})
 	s.Len(actual.ClipParticipants, len(users))
 
 	for i, user := range actual.ClipParticipants {
@@ -630,7 +630,7 @@ func (s *eventSuite) compareApplication(expected map[string]interface{}, actual 
 	s.EqualValues(expected["slug"], actual.Slug)
 	s.EqualValues(expected["cover_image"], actual.CoverImage)
 	s.EqualValues(expected["flags"], *actual.Flags)
-	s.EqualValues(expected["flags_new"], *actual.FlagsNew)
+	s.EqualValues(expected["flags_new"], actual.FlagsNew.String())
 	s.EqualValues(expected["approximate_guild_count"], *actual.ApproximateGuildCount)
 	s.EqualValues(expected["approximate_user_install_count"], *actual.ApproximateUserInstallCount)
 	s.EqualValues(expected["approximate_user_authorization_count"], *actual.ApproximateUserAuthorizationCount)
@@ -641,9 +641,17 @@ func (s *eventSuite) compareApplication(expected map[string]interface{}, actual 
 	s.EqualValues(expected["event_webhooks_status"], *actual.EventWebhooksStatus)
 	s.EqualValues(expected["event_webhooks_types"], actual.EventWebhooksTypes)
 	s.EqualValues(expected["tags"], actual.Tags)
-	s.EqualValues(expected["install_params"], *actual.InstallParams)
-	s.EqualValues(expected["integration_types_config"], actual.IntegrationTypesConfig)
 	s.EqualValues(expected["custom_install_url"], actual.CustomInstallURL)
+
+	installParams := expected["install_params"].(map[string]interface{})
+	s.EqualValues(installParams["permissions"], actual.InstallParams.Permissions)
+	s.EqualValues(installParams["scopes"], actual.InstallParams.Scopes)
+
+	integrationTypesConfig := expected["integration_types_config"].(map[discord.ApplicationIntegrationType]map[string]interface{})
+	s.EqualValues(integrationTypesConfig["0"]["oauth2_install_params"].(map[string]interface{})["permissions"], actual.IntegrationTypesConfig[discord.ApplicationIntegrationTypeGuildInstall].OAuth2InstallParams.Permissions)
+	s.EqualValues(integrationTypesConfig["0"]["oauth2_install_params"].(map[string]interface{})["scopes"], actual.IntegrationTypesConfig[discord.ApplicationIntegrationTypeGuildInstall].OAuth2InstallParams.Scopes)
+	s.EqualValues(integrationTypesConfig["1"]["oauth2_install_params"].(map[string]interface{})["permissions"], actual.IntegrationTypesConfig[discord.ApplicationIntegrationTypeUserInstall].OAuth2InstallParams.Permissions)
+	s.EqualValues(integrationTypesConfig["1"]["oauth2_install_params"].(map[string]interface{})["scopes"], actual.IntegrationTypesConfig[discord.ApplicationIntegrationTypeUserInstall].OAuth2InstallParams.Scopes)
 
 	team := expected["team"].(map[string]interface{})
 	s.EqualValues(team["id"], actual.Team.ID)
@@ -663,15 +671,16 @@ func (s *eventSuite) compareApplication(expected map[string]interface{}, actual 
 	}
 
 	s.compareUser(expected["bot"].(map[string]interface{}), *actual.Bot)
-	s.compareUser(expected["owner"].(map[string]interface{}), *actual.Bot)
+	s.compareUser(expected["owner"].(map[string]interface{}), *actual.Owner)
 	s.compareGuild(expected["guild"].(map[string]interface{}), *actual.Guild)
 }
 
+// TODO
 func (s *eventSuite) compareMessage(expected map[string]interface{}, actual discord.Message) {}
 
 func (s *eventSuite) compareInteractionData(expected map[string]interface{}, raw discord.InteractionData) {
 	switch raw.GetType() {
-	case discord.InteractionDataTypeApplicationCommand:
+	case discord.InteractionTypeApplicationCommand:
 		actual := raw.(*responses.InteractionDataApplicationCommand)
 
 		s.EqualValues(expected["id"], actual.ID)
@@ -688,15 +697,30 @@ func (s *eventSuite) compareInteractionData(expected map[string]interface{}, raw
 		for i, option := range actual.Options {
 			s.compareApplicationCommandInteractionDataOption(options[i], option)
 		}
-	case discord.InteractionDataTypeMessageComponent:
+	case discord.InteractionTypeMessageComponent:
 		actual := raw.(*responses.InteractionDataMessageComponent)
 
 		s.EqualValues(expected["custom_id"], actual.CustomID)
 		s.EqualValues(expected["component_type"], actual.ComponentType)
-		s.EqualValues(expected["values"], actual.Values)
+
+		values := expected["values"].([]map[string]interface{})
+		s.Len(actual.Values, len(values))
+
+		for i, value := range actual.Values {
+			s.Equal(values[i]["value"], value.Value)
+			s.Equal(values[i]["label"], value.Label)
+			s.Equal(values[i]["description"], value.Description)
+			s.Equal(values[i]["default"], value.Default)
+
+			emoji := values[i]["emoji"].(map[string]interface{})
+			s.EqualValues(emoji["id"], value.Emoji.ID)
+			s.EqualValues(emoji["name"], value.Emoji.Name)
+			s.EqualValues(emoji["animated"], *value.Emoji.Animated)
+		}
+
 		s.compareResolved(expected["resolved"].(map[string]interface{}), *actual.Resolved)
 
-	case discord.InteractionDataTypeApplicationCommandAutocomplete:
+	case discord.InteractionTypeApplicationCommandAutocomplete:
 		actual := raw.(*responses.InteractionDataAutocomplete)
 
 		s.EqualValues(expected["id"], actual.ID)
@@ -714,7 +738,7 @@ func (s *eventSuite) compareInteractionData(expected map[string]interface{}, raw
 			s.compareApplicationCommandInteractionDataOption(options[i], option)
 		}
 
-	case discord.InteractionDataTypeModalSubmit:
+	case discord.InteractionTypeModalSubmit:
 		actual := raw.(*responses.InteractionDataModalSubmit)
 
 		s.EqualValues(expected["custom_id"], actual.CustomID)
@@ -735,17 +759,20 @@ func (s *eventSuite) compareInteractionData(expected map[string]interface{}, raw
 }
 
 func (s *eventSuite) compareApplicationCommandInteractionDataOption(expected map[string]interface{}, actual responses.ApplicationCommandInteractionDataOption[interface{}]) {
-	s.EqualValues(expected["value"], actual.Value)
-	s.EqualValues(expected["focused"], *actual.Focused)
 	s.EqualValues(expected["name"], actual.Name)
 	s.EqualValues(expected["type"], actual.Type)
 
-	options := expected["options"].([]map[string]interface{})
-	s.Len(actual.Options, len(options))
+	if actual.Type == discord.ApplicationCommandOptionTypeSubCommand || actual.Type == discord.ApplicationCommandOptionTypeSubCommandGroup {
+		options := expected["options"].([]map[string]interface{})
+		s.Len(actual.Options, len(options))
 
-	if len(actual.Options) != 0 {
-		for i, option := range actual.Options {
-			s.compareApplicationCommandInteractionDataOption(options[i], option)
+		if len(actual.Options) != 0 {
+			for i, option := range actual.Options {
+				s.compareApplicationCommandInteractionDataOption(options[i], option)
+			}
 		}
+	} else {
+		s.EqualValues(expected["value"], *actual.Value)
+		s.EqualValues(expected["focused"], *actual.Focused)
 	}
 }

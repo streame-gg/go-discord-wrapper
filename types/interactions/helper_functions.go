@@ -13,7 +13,7 @@ func (i *Interaction) GetSubCommand() string {
 		return ""
 	}
 
-	cmdData, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	cmdData, ok := (*i.Data).(*responses.InteractionDataApplicationCommand)
 	if !ok {
 		return ""
 	}
@@ -46,7 +46,8 @@ func (i *Interaction) GetSubCommandGroup() string {
 		return ""
 	}
 
-	cmdData, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	cmdData, ok := (*i.Data).(*responses.InteractionDataApplicationCommand)
+
 	if !ok {
 		return ""
 	}
@@ -69,7 +70,7 @@ func (i *Interaction) GetFullCommand() (fullCommand string) {
 		return ""
 	}
 
-	cmdData, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	cmdData, ok := (*i.Data).(*responses.InteractionDataApplicationCommand)
 	if !ok {
 		return ""
 	}
@@ -120,11 +121,11 @@ func (i *Interaction) GetCustomID() string {
 		return ""
 	}
 
-	if comp, ok := i.Data.(*responses.InteractionDataMessageComponent); ok {
+	if comp, ok := (*i.Data).(*responses.InteractionDataMessageComponent); ok {
 		return comp.CustomID
 	}
 
-	if modal, ok := i.Data.(*responses.InteractionDataModalSubmit); ok {
+	if modal, ok := (*i.Data).(*responses.InteractionDataModalSubmit); ok {
 		return modal.CustomID
 	}
 
@@ -147,7 +148,7 @@ func As[T discord.InteractionData](data discord.InteractionData) (T, bool) {
 // subcommand / subcommand-group so options nested under a subcommand are found
 // too. The bool reports whether the option was present.
 func (i *Interaction) GetOption(name string) (responses.ApplicationCommandInteractionDataOption[interface{}], bool) {
-	data, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	data, ok := (*i.Data).(*responses.InteractionDataApplicationCommand)
 	if !ok || data.Options == nil {
 		return responses.ApplicationCommandInteractionDataOption[interface{}]{}, false
 	}
@@ -239,23 +240,28 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(aux.Data, &typeProbe); err != nil {
 		return err
 	}
+	if i.Data == nil {
+		i.Data = new(discord.InteractionData)
+	}
 
 	// Autocomplete and regular commands both carry type=ChatInput in the data
 	// payload, so check the interaction type first to distinguish them.
 	switch i.Type {
+	case discord.InteractionTypePing:
+		return nil
 	case discord.InteractionTypeApplicationCommandAutocomplete:
 		var auto responses.InteractionDataAutocomplete
 		if err := json.Unmarshal(aux.Data, &auto); err != nil {
 			return err
 		}
-		i.Data = &auto
+		*i.Data = &auto
 		return nil
 	case discord.InteractionTypeModalSubmit:
 		var modal responses.InteractionDataModalSubmit
 		if err := json.Unmarshal(aux.Data, &modal); err != nil {
 			return err
 		}
-		i.Data = &modal
+		*i.Data = &modal
 		return nil
 	}
 
@@ -266,7 +272,6 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 		discord.ComponentTypeRoleSelect,
 		discord.ComponentTypeMentionableSelect,
 		discord.ComponentTypeChannelSelect,
-		// Components V2 interactive types
 		discord.ComponentTypeTextInput,
 		discord.ComponentTypeCheckbox,
 		discord.ComponentTypeCheckboxGroup,
@@ -276,7 +281,7 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(aux.Data, &comp); err != nil {
 			return err
 		}
-		i.Data = &comp
+		*i.Data = &comp
 		return nil
 	}
 
@@ -286,7 +291,7 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(aux.Data, &cmd); err != nil {
 			return err
 		}
-		i.Data = &cmd
+		*i.Data = &cmd
 		return nil
 	}
 

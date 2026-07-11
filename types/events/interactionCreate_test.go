@@ -3,6 +3,7 @@ package events
 import (
 	"github.com/streame-gg/go-discord-wrapper/internal/testutil"
 	"github.com/streame-gg/go-discord-wrapper/testdata"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 func (s *eventSuite) TestInteractionCreate() {
@@ -39,7 +40,9 @@ func (s *eventSuite) TestInteractionCreate() {
 					s.compareEntitlement(ent, got.Entitlements[i])
 				}
 
-				s.compareInteractionData(payload["data"].(map[string]interface{}), got.Data)
+				if got.Type != discord.InteractionTypePing {
+					s.compareInteractionData(payload["data"].(map[string]interface{}), *got.Data)
+				}
 				s.compareMessage(payload["message"].(map[string]interface{}), *got.Message)
 				s.compareGuild(payload["guild"].(map[string]interface{}), *got.Guild)
 				s.compareChannel(payload["channel"].(map[string]interface{}), *got.Channel)

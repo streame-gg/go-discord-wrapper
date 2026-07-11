@@ -12,23 +12,23 @@ func NewMessage(runThrough int) map[string]interface{} {
 		"author":           NewUser(),
 		"content":          testutil.RandomString(testutil.RandomIntInRange(1, 4000)),
 		"timestamp":        testutil.RandomTime(),
-		"edited_timestamp": discord.RandomSnowflake(),
+		"edited_timestamp": testutil.RandomTime(),
 		"tts":              testutil.RandomBool(),
 		"mention_everyone": testutil.RandomBool(),
-		"mentions": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 50), func(arrayToFill *[]map[string]interface{}) {
+		"mentions": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewUser())
 		}),
 		"mention_roles": testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 50)),
-		"mention_channels": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 50), func(arrayToFill *[]map[string]interface{}) {
+		"mention_channels": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewChannelMention())
 		}),
-		"attachments": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
+		"attachments": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewAttachment())
 		}),
-		"embeds": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
+		"embeds": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewEmbed())
 		}),
-		"reactions": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 25), func(arrayToFill *[]map[string]interface{}) {
+		"reactions": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewReaction())
 		}),
 		"nonce":      testutil.RandomString(testutil.RandomIntInRange(1, 32)),
@@ -128,7 +128,7 @@ func NewMessage(runThrough int) map[string]interface{} {
 			"member": NewGuildMember(),
 		},
 		"thread": NewChannel(),
-		"components": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 25), func(arrayToFill *[]map[string]interface{}) {
+		"components": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, testutil.RandomItem(
 				NewComponentActionRow(),
 				NewComponentButton(),
@@ -152,17 +152,17 @@ func NewMessage(runThrough int) map[string]interface{} {
 				NewComponentCheckbox(),
 			))
 		}),
-		"sticker_items": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
+		"sticker_items": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewStickerItem())
 		}),
-		"stickers": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
+		"stickers": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewSticker())
 		}),
 		"position": testutil.RandomIntInRange(1, 1000),
 		"role_subscription_data": map[string]interface{}{
 			"role_subscription_listing_id": discord.RandomSnowflake(),
 			"tier_name":                    testutil.RandomString(testutil.RandomIntInRange(1, 32)),
-			"total_months_subscribed":      testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+			"total_months_subscribed":      testutil.RandomIntInRange(1, 12),
 			"is_renewal":                   testutil.RandomBool(),
 		},
 		"poll": NewPoll(),
@@ -186,8 +186,8 @@ func NewMessage(runThrough int) map[string]interface{} {
 
 	if runThrough < 3 {
 		runThrough++
-		obj["message_snapshots"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewMessageSnapshot(5))
+		obj["message_snapshots"] = testutil.RandomArrayWithFilledItems(1, func(arrayToFill *[]map[string]interface{}) {
+			*arrayToFill = append(*arrayToFill, NewMessageSnapshot())
 		})
 		obj["referenced_message"] = NewMessage(runThrough)
 		obj["resolved"] = NewResolvedData()
@@ -213,7 +213,7 @@ func NewStickerItem() map[string]interface{} {
 func NewPoll() map[string]interface{} {
 	return map[string]interface{}{
 		"question": NewPollMediaItem(false),
-		"answers": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
+		"answers": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, map[string]interface{}{
 				"answer_id":  testutil.RandomIntInRange(1, 10),
 				"poll_media": NewPollMediaItem(testutil.RandomBool()),
@@ -226,7 +226,7 @@ func NewPoll() map[string]interface{} {
 		),
 		"results": map[string]interface{}{
 			"is_finalized": testutil.RandomBool(),
-			"answer_counts": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
+			"answer_counts": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 				*arrayToFill = append(*arrayToFill, map[string]interface{}{
 					"id":       testutil.RandomIntInRange(1, 10),
 					"count":    testutil.RandomIntInRange(1, 1000),
@@ -249,9 +249,9 @@ func NewPollMediaItem(hasEmoji bool) map[string]interface{} {
 	return obj
 }
 
-func NewMessageSnapshot(runThrough int) map[string]interface{} {
+func NewMessageSnapshot() map[string]interface{} {
 	return map[string]interface{}{
-		"message": NewMessage(runThrough),
+		"message": NewMessage(5),
 	}
 }
 
@@ -295,7 +295,7 @@ func NewEmbed() map[string]interface{} {
 			"url":            testutil.RandomString(testutil.RandomIntInRange(1, 256)),
 			"proxy_icon_url": testutil.RandomString(testutil.RandomIntInRange(1, 256)),
 		},
-		"fields": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 25), func(arrayToFill *[]map[string]interface{}) {
+		"fields": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewEmbedField())
 		}),
 		"flags": testutil.RandomFlags(discord.EmbedFlagIsContentInventoryEntry),
@@ -327,7 +327,7 @@ func NewEmbedImage() map[string]interface{} {
 func NewAttachment() map[string]interface{} {
 	return map[string]interface{}{
 		"id":                  discord.RandomSnowflake(),
-		"name":                testutil.RandomString(testutil.RandomIntInRange(1, 50)),
+		"filename":            testutil.RandomString(testutil.RandomIntInRange(1, 50)),
 		"title":               testutil.RandomString(testutil.RandomIntInRange(1, 50)),
 		"description":         testutil.RandomString(testutil.RandomIntInRange(1, 1024)),
 		"content_type":        testutil.RandomString(testutil.RandomIntInRange(1, 5)),
@@ -348,7 +348,7 @@ func NewAttachment() map[string]interface{} {
 			discord.AttachmentFlagIsSpoiler,
 			discord.AttachmentFlagIsAnimated,
 		),
-		"clip_participants": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 50), func(arrayToFill *[]map[string]interface{}) {
+		"clip_participants": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewUser())
 		}),
 		"clip_created_at": testutil.RandomTime(),

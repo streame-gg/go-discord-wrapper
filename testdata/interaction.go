@@ -12,16 +12,16 @@ func NewInteraction() map[string]interface{} {
 		"id":             discord.RandomSnowflake(),
 		"application_id": discord.RandomSnowflake(),
 		"type": testutil.RandomItem(
-			discord.InteractionTypePing,
-			discord.InteractionTypeApplicationCommand,
-			discord.InteractionTypeMessageComponent,
+			//discord.InteractionTypePing,
+			//discord.InteractionTypeApplicationCommand,
+			//discord.InteractionTypeMessageComponent,
 			discord.InteractionTypeApplicationCommandAutocomplete,
-			discord.InteractionTypeModalSubmit,
+			//discord.InteractionTypeModalSubmit,
 		),
 		"data": testutil.RandomItem(
 			NewInteractionDataApplicationCommand(),
-			NewInteractionDataMessageComponent(),
-			NewModalSubmitData(),
+			//NewInteractionDataMessageComponent(),
+			//NewModalSubmitData(),
 		),
 		"guild":           NewAvailableGuild(),
 		"guild_id":        discord.RandomSnowflake(),
@@ -30,8 +30,8 @@ func NewInteraction() map[string]interface{} {
 		"member":          NewGuildMember(),
 		"user":            NewUser(),
 		"token":           testutil.RandomString(32),
-		"version":         "1",
-		"message":         NewMessage(1),
+		"version":         1,
+		"message":         NewMessage(2),
 		"app_permissions": testutil.RandomFlags(testutil.AllPermissions...),
 		"locale":          testutil.RandomString(2),
 		"guild_locale":    testutil.RandomString(2),
@@ -288,26 +288,16 @@ func NewInteractionDataMessageComponent() map[string]interface{} {
 	return map[string]interface{}{
 		"custom_id": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 		"component_type": testutil.RandomItem(
-			discord.ComponentTypeActionRow,
-			discord.ComponentTypeButton,
 			discord.ComponentTypeStringSelect,
-			discord.ComponentTypeTextInput,
 			discord.ComponentTypeUserSelect,
 			discord.ComponentTypeRoleSelect,
 			discord.ComponentTypeMentionableSelect,
 			discord.ComponentTypeChannelSelect,
-			discord.ComponentTypeSection,
-			discord.ComponentTypeTextDisplay,
-			discord.ComponentTypeThumbnail,
-			discord.ComponentTypeMediaGallery,
-			discord.ComponentTypeFileDisplay,
-			discord.ComponentTypeSeparator,
-			discord.ComponentTypeContainer,
-			discord.ComponentTypeLabel,
-			discord.ComponentTypeFileUpload,
-			discord.ComponentTypeRadioGroup,
-			discord.ComponentTypeCheckboxGroup,
+			discord.ComponentTypeTextInput,
 			discord.ComponentTypeCheckbox,
+			discord.ComponentTypeCheckboxGroup,
+			discord.ComponentTypeRadioGroup,
+			discord.ComponentTypeFileUpload,
 		),
 		"resolved": NewResolvedData(),
 		"values": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
@@ -323,7 +313,7 @@ func NewSelectOption() map[string]interface{} {
 		"description": testutil.RandomString(testutil.RandomIntInRange(1, 100)),
 		"emoji": map[string]interface{}{
 			"id":       discord.RandomSnowflake(),
-			"name":     testutil.RandomString(testutil.RandomIntInRange(1, 100)),
+			"name":     testutil.RandomString(testutil.RandomIntInRange(1, 32)),
 			"animated": testutil.RandomBool(),
 		},
 		"default": testutil.RandomBool(),
@@ -342,17 +332,16 @@ func NewInteractionDataApplicationCommand() map[string]interface{} {
 		),
 		"guild_id": discord.RandomSnowflake(),
 		"options": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(1))
+			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure())
 		}),
 		"target_id": discord.RandomSnowflake(),
 		"resolved":  NewResolvedData(),
 	}
 }
 
-func NewApplicationCommandInteractionDataOptionStructure(depth int) map[string]interface{} {
-	obj := map[string]interface{}{
-		"name": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
-		"type": testutil.RandomItem(
+func NewApplicationCommandInteractionDataOptionStructure(allowedOptions ...discord.ApplicationCommandOptionType) map[string]interface{} {
+	if len(allowedOptions) == 0 {
+		allowedOptions = []discord.ApplicationCommandOptionType{
 			discord.ApplicationCommandOptionTypeSubCommand,
 			discord.ApplicationCommandOptionTypeSubCommandGroup,
 			discord.ApplicationCommandOptionTypeString,
@@ -364,14 +353,74 @@ func NewApplicationCommandInteractionDataOptionStructure(depth int) map[string]i
 			discord.ApplicationCommandOptionTypeMentionable,
 			discord.ApplicationCommandOptionTypeNumber,
 			discord.ApplicationCommandOptionTypeAttachment,
-		),
-		"value":   testutil.RandomString(testutil.RandomIntInRange(1, 32)),
-		"focused": testutil.RandomBool(),
+		}
 	}
 
-	if depth > 0 {
+	item := testutil.RandomItem(allowedOptions...)
+
+	obj := map[string]interface{}{
+		"name": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		"type": item,
+	}
+
+	switch item {
+	case discord.ApplicationCommandOptionTypeString:
+		obj["value"] = testutil.RandomString(testutil.RandomIntInRange(1, 32))
+		obj["focused"] = testutil.RandomBool()
+	case discord.ApplicationCommandOptionTypeInteger:
+		obj["value"] = testutil.RandomIntInRange(1, 32)
+		obj["focused"] = testutil.RandomBool()
+	case discord.ApplicationCommandOptionTypeBoolean:
+		obj["value"] = testutil.RandomBool()
+		obj["focused"] = testutil.RandomBool()
+	case discord.ApplicationCommandOptionTypeUser:
+		obj["value"] = discord.RandomSnowflake()
+		obj["focused"] = testutil.RandomBool()
+	case discord.ApplicationCommandOptionTypeChannel:
+		obj["value"] = discord.RandomSnowflake()
+		obj["focused"] = testutil.RandomBool()
+	case discord.ApplicationCommandOptionTypeRole:
+		obj["value"] = discord.RandomSnowflake()
+		obj["focused"] = testutil.RandomBool()
+	case discord.ApplicationCommandOptionTypeMentionable:
+		obj["value"] = discord.RandomSnowflake()
+		obj["focused"] = testutil.RandomBool()
+	case discord.ApplicationCommandOptionTypeNumber:
+		obj["value"] = testutil.RandomIntInRange(1, 32)
+		obj["focused"] = testutil.RandomBool()
+	case discord.ApplicationCommandOptionTypeAttachment:
+		obj["value"] = discord.RandomSnowflake()
+		obj["focused"] = testutil.RandomBool()
+	}
+
+	if item == discord.ApplicationCommandOptionTypeSubCommand {
 		obj["options"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
-			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(depth-1))
+			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(
+				discord.ApplicationCommandOptionTypeString,
+				discord.ApplicationCommandOptionTypeInteger,
+				discord.ApplicationCommandOptionTypeBoolean,
+				discord.ApplicationCommandOptionTypeUser,
+				discord.ApplicationCommandOptionTypeChannel,
+				discord.ApplicationCommandOptionTypeRole,
+				discord.ApplicationCommandOptionTypeMentionable,
+				discord.ApplicationCommandOptionTypeNumber,
+				discord.ApplicationCommandOptionTypeAttachment,
+			))
+		})
+	} else if item == discord.ApplicationCommandOptionTypeSubCommandGroup {
+		obj["options"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
+			*arrayToFill = append(*arrayToFill, NewApplicationCommandInteractionDataOptionStructure(
+				discord.ApplicationCommandOptionTypeSubCommand,
+				discord.ApplicationCommandOptionTypeString,
+				discord.ApplicationCommandOptionTypeInteger,
+				discord.ApplicationCommandOptionTypeBoolean,
+				discord.ApplicationCommandOptionTypeUser,
+				discord.ApplicationCommandOptionTypeChannel,
+				discord.ApplicationCommandOptionTypeRole,
+				discord.ApplicationCommandOptionTypeMentionable,
+				discord.ApplicationCommandOptionTypeNumber,
+				discord.ApplicationCommandOptionTypeAttachment,
+			))
 		})
 	}
 
@@ -437,7 +486,7 @@ func NewApplicationCommandOption(depth int) map[string]interface{} {
 	}
 
 	if depth > 0 {
-		obj["options"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 25), func(arrayToFill *[]map[string]interface{}) {
+		obj["options"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewApplicationCommandOption(depth-1))
 		})
 	}

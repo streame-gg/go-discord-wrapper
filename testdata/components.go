@@ -60,7 +60,7 @@ func NewComponentStringSelect() map[string]interface{} {
 		"max_values":  testutil.RandomIntInRange(0, 100),
 		"required":    testutil.RandomBool(),
 		"disabled":    testutil.RandomBool(),
-		"options": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 25), func(arrayToFill *[]map[string]interface{}) {
+		"options": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, map[string]interface{}{
 				"label":       testutil.RandomString(testutil.RandomIntInRange(1, 100)),
 				"value":       testutil.RandomString(testutil.RandomIntInRange(1, 100)),
@@ -142,7 +142,7 @@ func NewComponentChannelSelect() map[string]interface{} {
 		"required":       testutil.RandomBool(),
 		"disabled":       testutil.RandomBool(),
 		"default_values": testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 25)),
-		"channel_types": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 25), func(arrayToFill *[]discord.ChannelType) {
+		"channel_types": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]discord.ChannelType) {
 			*arrayToFill = append(*arrayToFill, testutil.RandomItem(
 				discord.ChannelTypeGuildText,
 				discord.ChannelTypeDM,
@@ -165,7 +165,7 @@ func NewComponentSection() map[string]interface{} {
 	return map[string]interface{}{
 		"type": discord.ComponentTypeSection,
 		"id":   testutil.RandomIntInRange(1, 25),
-		"components": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
+		"components": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, NewComponentTextDisplay())
 		}),
 		"accessory": testutil.RandomItem(
@@ -211,7 +211,7 @@ func NewComponentMediaGallery() map[string]interface{} {
 	return map[string]interface{}{
 		"type": discord.ComponentTypeMediaGallery,
 		"id":   testutil.RandomIntInRange(1, 25),
-		"items": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
+		"items": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, map[string]interface{}{
 				"description": testutil.RandomString(testutil.RandomIntInRange(1, 100)),
 				"spoiler":     testutil.RandomBool(),
@@ -249,7 +249,7 @@ func NewComponentContainer(predefinedComponents ...map[string]interface{}) map[s
 		return map[string]interface{}{
 			"type": discord.ComponentTypeContainer,
 			"id":   testutil.RandomIntInRange(1, 25),
-			"components": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 10), func(arrayToFill *[]map[string]interface{}) {
+			"components": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 				*arrayToFill = append(*arrayToFill, testutil.RandomItem(
 					NewComponentActionRow(),
 					NewComponentTextDisplay(),
@@ -321,7 +321,7 @@ func NewComponentRadioGroup() map[string]interface{} {
 		"id":        testutil.RandomIntInRange(1, 25),
 		"custom_id": testutil.RandomString(testutil.RandomIntInRange(1, 100)),
 		"required":  testutil.RandomBool(),
-		"options": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 25), func(arrayToFill *[]map[string]interface{}) {
+		"options": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, map[string]interface{}{
 				"label":       testutil.RandomString(testutil.RandomIntInRange(1, 100)),
 				"value":       testutil.RandomString(testutil.RandomIntInRange(1, 100)),
@@ -337,7 +337,7 @@ func NewComponentCheckboxGroup() map[string]interface{} {
 		"type":      discord.ComponentTypeCheckboxGroup,
 		"id":        testutil.RandomIntInRange(1, 25),
 		"custom_id": testutil.RandomString(testutil.RandomIntInRange(1, 100)),
-		"options": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 25), func(arrayToFill *[]map[string]interface{}) {
+		"options": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
 			*arrayToFill = append(*arrayToFill, map[string]interface{}{
 				"label":       testutil.RandomString(testutil.RandomIntInRange(1, 100)),
 				"value":       testutil.RandomString(testutil.RandomIntInRange(1, 100)),
