@@ -48,7 +48,7 @@ func (s *interactionsSuite) TestUnmarshalChatInputCommand() {
 	}`
 	i := s.unmarshal(raw)
 
-	cmd, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	cmd, ok := (*i.Data).(*responses.InteractionDataApplicationCommand)
 	s.Require().True(ok, "data should decode to *InteractionDataApplicationCommand")
 	s.Equal("config", cmd.Name)
 
@@ -75,7 +75,7 @@ func (s *interactionsSuite) TestUnmarshalMessageComponent() {
 	const raw = `{"type":3,"data":{"custom_id":"btn_confirm","component_type":2}}`
 	i := s.unmarshal(raw)
 
-	_, ok := i.Data.(*responses.InteractionDataMessageComponent)
+	_, ok := (*i.Data).(*responses.InteractionDataMessageComponent)
 	s.Require().True(ok, "data should decode to *InteractionDataMessageComponent")
 	s.Equal("btn_confirm", i.GetCustomID())
 	s.Empty(i.GetSubCommand(), "components have no subcommands")
@@ -86,7 +86,7 @@ func (s *interactionsSuite) TestUnmarshalModalSubmit() {
 	const raw = `{"type":5,"data":{"custom_id":"feedback_modal","components":[]}}`
 	i := s.unmarshal(raw)
 
-	_, ok := i.Data.(*responses.InteractionDataModalSubmit)
+	_, ok := (*i.Data).(*responses.InteractionDataModalSubmit)
 	s.Require().True(ok, "data should decode to *InteractionDataModalSubmit")
 	s.Equal("feedback_modal", i.GetCustomID())
 }
@@ -98,7 +98,7 @@ func (s *interactionsSuite) TestUnmarshalAutocomplete() {
 	}`
 	i := s.unmarshal(raw)
 
-	_, ok := i.Data.(*responses.InteractionDataAutocomplete)
+	_, ok := (*i.Data).(*responses.InteractionDataAutocomplete)
 	s.Require().True(ok, "autocomplete dispatch keys off the interaction type, not the data type")
 }
 
@@ -128,7 +128,7 @@ func (s *interactionsSuite) TestStringOptionValue() {
 	}`
 	var i interactions.Interaction
 	s.Require().NoError(json.Unmarshal([]byte(raw), &i))
-	cmd, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	cmd, ok := (*i.Data).(*responses.InteractionDataApplicationCommand)
 	s.Require().True(ok)
 	s.Equal("echo", cmd.Name)
 	s.Require().NotNil(cmd.Options)
@@ -210,10 +210,10 @@ func (s *interactionsSuite) TestGetOptionDescendsSubcommands() {
 func (s *interactionsSuite) TestAs() {
 	i := s.unmarshal(`{"type":3,"data":{"custom_id":"btn","component_type":2}}`)
 
-	comp, ok := interactions.As[*responses.InteractionDataMessageComponent](i.Data)
+	comp, ok := interactions.As[*responses.InteractionDataMessageComponent](*i.Data)
 	s.Require().True(ok)
 	s.Equal("btn", comp.CustomID)
 
-	_, ok = interactions.As[*responses.InteractionDataApplicationCommand](i.Data)
+	_, ok = interactions.As[*responses.InteractionDataApplicationCommand](*i.Data)
 	s.False(ok, "component data must not assert to command data")
 }

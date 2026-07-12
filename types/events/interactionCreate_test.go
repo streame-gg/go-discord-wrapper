@@ -6,6 +6,20 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+func newInteractionEnvelope(itype discord.InteractionType, data interface{}) map[string]interface{} {
+	payload := map[string]interface{}{
+		"id":             discord.RandomSnowflake(),
+		"application_id": discord.RandomSnowflake(),
+		"type":           itype,
+		"token":          testutil.RandomString(32),
+		"version":        1,
+	}
+	if data != nil {
+		payload["data"] = data
+	}
+	return payload
+}
+
 func (s *eventSuite) TestInteractionCreate() {
 	s.T().Log("Testing Interaction Create Unmarshal Logic")
 
@@ -15,7 +29,7 @@ func (s *eventSuite) TestInteractionCreate() {
 
 	payload := testdata.NewInteraction()
 
-	sub.RunCases([]testutil.UnmarshalTestCase[InteractionCreateEvent]{
+	cases := []testutil.UnmarshalTestCase[InteractionCreateEvent]{
 		{
 			Name:  "valid full payload",
 			Input: sub.MustMarshal(payload),
@@ -50,5 +64,119 @@ func (s *eventSuite) TestInteractionCreate() {
 				s.compareUser(payload["user"].(map[string]interface{}), *got.User)
 			},
 		},
-	})
+		{
+			Name:  "ping without data field: Data stays nil",
+			Input: sub.MustMarshal(newInteractionEnvelope(discord.InteractionTypePing, nil)),
+			Validate: func(got InteractionCreateEvent) {
+				s.Equal(discord.InteractionTypePing, got.Type)
+				s.Nil(got.Data)
+			},
+		},
+		{
+			Name:  "ping with data field: Data allocated but left empty",
+			Input: sub.MustMarshal(newInteractionEnvelope(discord.InteractionTypePing, map[string]interface{}{})),
+			Validate: func(got InteractionCreateEvent) {
+				s.Require().NotNil(got.Data)
+				s.Nil(*got.Data)
+			},
+		},
+		func() testutil.UnmarshalTestCase[InteractionCreateEvent] {
+			data := testdata.NewInteractionDataApplicationCommand()
+			return testutil.UnmarshalTestCase[InteractionCreateEvent]{
+				Name:  "autocomplete: Data decodes to InteractionDataAutocomplete",
+				Input: sub.MustMarshal(newInteractionEnvelope(discord.InteractionTypeApplicationCommandAutocomplete, data)),
+				Validate: func(got InteractionCreateEvent) {
+					s.Require().NotNil(got.Data)
+					s.compareInteractionData(data, *got.Data)
+				},
+			}
+		}(),
+		func() testutil.UnmarshalTestCase[InteractionCreateEvent] {
+			data := testdata.NewModalSubmitData()
+			return testutil.UnmarshalTestCase[InteractionCreateEvent]{
+				Name:  "modal submit: Data decodes to InteractionDataModalSubmit",
+				Input: sub.MustMarshal(newInteractionEnvelope(discord.InteractionTypeModalSubmit, data)),
+				Validate: func(got InteractionCreateEvent) {
+					s.Require().NotNil(got.Data)
+					s.compareInteractionData(data, *got.Data)
+				},
+			}
+		}(),
+		func() testutil.UnmarshalTestCase[InteractionCreateEvent] {
+			data := testdata.NewInteractionDataMessageComponent()
+			return testutil.UnmarshalTestCase[InteractionCreateEvent]{
+				Name:  "message component: Data decodes to InteractionDataMessageComponent",
+				Input: sub.MustMarshal(newInteractionEnvelope(discord.InteractionTypeMessageComponent, data)),
+				Validate: func(got InteractionCreateEvent) {
+					s.Require().NotNil(got.Data)
+					s.compareInteractionData(data, *got.Data)
+				},
+			}
+		}(),
+		func() testutil.UnmarshalTestCase[InteractionCreateEvent] {
+			data := testdata.NewInteractionDataApplicationCommand()
+			data["type"] = discord.ApplicationCommandTypeChatInput
+			return testutil.UnmarshalTestCase[InteractionCreateEvent]{
+				Name:  "application command: Data decodes to InteractionDataApplicationCommand",
+				Input: sub.MustMarshal(newInteractionEnvelope(discord.InteractionTypeApplicationCommand, data)),
+				Validate: func(got InteractionCreateEvent) {
+					s.Require().NotNil(got.Data)
+					s.compareInteractionData(data, *got.Data)
+				},
+			}
+		}(),
+		{
+			Name: "malformed data field: probe unmarshal error",
+			Input: sub.MustMarshal(newInteractionEnvelope(
+				discord.InteractionTypeApplicationCommand,
+				[]interface{}{},
+			)),
+			WantErr: true,
+		},
+	}
+
+	modalSubmitChildCases := []struct {
+		name  string
+		child map[string]interface{}
+	}{
+		{"string select", testdata.NewStringSelectMenuData()},
+		{"user select", testdata.NewUserSelectMenuData()},
+		{"role select", testdata.NewRoleSelectMenuData()},
+		{"mentionable select", testdata.NewMentionableSelectMenuData()},
+		{"channel select", testdata.NewChannelSelectMenuData()},
+		{"text input", testdata.NewTextInputData()},
+		{"file upload", testdata.NewFileUploadData()},
+		{"radio group", testdata.NewRadioGroupData()},
+		{"checkbox group", testdata.NewCheckboxGroupData()},
+		{"checkbox", testdata.NewCheckboxData()},
+		{"text display", testdata.NewTextDisplayData()},
+		{"nested label", testdata.NewLabelData()},
+	}
+
+	for _, tc := range modalSubmitChildCases {
+		data := testdata.NewModalSubmitDataWithComponents(testdata.NewLabelDataWithComponent(tc.child))
+		cases = append(cases, testutil.UnmarshalTestCase[InteractionCreateEvent]{
+			Name:  "modal submit component dispatch: " + tc.name,
+			Input: sub.MustMarshal(newInteractionEnvelope(discord.InteractionTypeModalSubmit, data)),
+			Validate: func(got InteractionCreateEvent) {
+				s.Require().NotNil(got.Data)
+				s.compareInteractionData(data, *got.Data)
+			},
+		})
+	}
+
+	cases = append(cases,
+		testutil.UnmarshalTestCase[InteractionCreateEvent]{
+			Name: "modal submit component dispatch: unrecognized child type errors",
+			Input: sub.MustMarshal(newInteractionEnvelope(
+				discord.InteractionTypeModalSubmit,
+				testdata.NewModalSubmitDataWithComponents(testdata.NewLabelDataWithComponent(
+					map[string]interface{}{"type": 9999, "id": 1},
+				)),
+			)),
+			WantErr: true,
+		},
+	)
+
+	sub.RunCases(cases)
 }

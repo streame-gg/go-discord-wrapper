@@ -8,21 +8,18 @@ import (
 // In reality, some of the structs in NewInteraction are only partial, but it is not really specified what fields of those
 // are omitted and which not, so we are using the full objects here
 func NewInteraction() map[string]interface{} {
-	return map[string]interface{}{
-		"id":             discord.RandomSnowflake(),
-		"application_id": discord.RandomSnowflake(),
-		"type": testutil.RandomItem(
-			//discord.InteractionTypePing,
-			//discord.InteractionTypeApplicationCommand,
-			//discord.InteractionTypeMessageComponent,
-			discord.InteractionTypeApplicationCommandAutocomplete,
-			//discord.InteractionTypeModalSubmit,
-		),
-		"data": testutil.RandomItem(
-			NewInteractionDataApplicationCommand(),
-			//NewInteractionDataMessageComponent(),
-			//NewModalSubmitData(),
-		),
+	itype := testutil.RandomItem(
+		discord.InteractionTypePing,
+		discord.InteractionTypeApplicationCommand,
+		discord.InteractionTypeMessageComponent,
+		discord.InteractionTypeApplicationCommandAutocomplete,
+		discord.InteractionTypeModalSubmit,
+	)
+
+	obj := map[string]interface{}{
+		"id":              discord.RandomSnowflake(),
+		"application_id":  discord.RandomSnowflake(),
+		"type":            itype,
 		"guild":           NewAvailableGuild(),
 		"guild_id":        discord.RandomSnowflake(),
 		"channel":         NewChannel(),
@@ -49,6 +46,20 @@ func NewInteraction() map[string]interface{} {
 		),
 		"attachment_size_limit": testutil.RandomIntInRange(1, 1000000),
 	}
+
+	switch itype {
+	case discord.InteractionTypePing:
+	case discord.InteractionTypeApplicationCommand:
+		obj["data"] = NewInteractionDataApplicationCommand()
+	case discord.InteractionTypeMessageComponent:
+		obj["data"] = NewInteractionDataMessageComponent()
+	case discord.InteractionTypeApplicationCommandAutocomplete:
+		obj["data"] = NewInteractionDataApplicationCommand()
+	case discord.InteractionTypeModalSubmit:
+		obj["data"] = NewModalSubmitData()
+	}
+
+	return obj
 }
 
 func NewApplicationCommandInteractionMetadata() map[string]interface{} {
@@ -116,24 +127,7 @@ func NewModalSubmitInteractionMetadata() map[string]interface{} {
 }
 
 func NewModalSubmitData() map[string]interface{} {
-	return map[string]interface{}{
-		"custom_id": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
-		"components": testutil.RandomItem(
-			NewStringSelectMenuData(),
-			NewTextInputData(),
-			NewUserSelectMenuData(),
-			NewRoleSelectMenuData(),
-			NewMentionableSelectMenuData(),
-			NewChannelSelectMenuData(),
-			NewTextDisplayData(),
-			NewLabelData(),
-			NewFileUploadData(),
-			NewRadioGroupData(),
-			NewCheckboxGroupData(),
-			NewCheckboxData(),
-		),
-		"resolved": NewResolvedData(),
-	}
+	return NewModalSubmitDataWithComponents(NewLabelData())
 }
 
 func NewStringSelectMenuData() map[string]interface{} {
@@ -208,8 +202,10 @@ func NewTextDisplayData() map[string]interface{} {
 
 func NewLabelData() map[string]interface{} {
 	return map[string]interface{}{
-		"type": discord.ComponentTypeLabel,
-		"id":   testutil.RandomIntInRange(1, 100),
+		"type":        discord.ComponentTypeLabel,
+		"id":          testutil.RandomIntInRange(1, 100),
+		"label":       testutil.RandomString(testutil.RandomIntInRange(1, 45)),
+		"description": testutil.RandomString(testutil.RandomIntInRange(1, 100)),
 		"component": testutil.RandomItem(
 			NewStringSelectMenuData(),
 			NewTextInputData(),
@@ -257,7 +253,7 @@ func NewCheckboxData() map[string]interface{} {
 		"type":      discord.ComponentTypeCheckbox,
 		"id":        testutil.RandomIntInRange(1, 100),
 		"custom_id": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
-		"value":     testutil.RandomString(testutil.RandomIntInRange(1, 25)),
+		"value":     testutil.RandomBool(),
 	}
 }
 
@@ -492,4 +488,27 @@ func NewApplicationCommandOption(depth int) map[string]interface{} {
 	}
 
 	return obj
+}
+
+func NewModalSubmitDataWithComponents(labelComponents ...map[string]interface{}) map[string]interface{} {
+	return map[string]interface{}{
+		"custom_id": testutil.RandomString(testutil.RandomIntInRange(1, 32)),
+		// Real modal submissions always wrap their fields in Label components
+		// (see https://docs.discord.com/developers/components/reference#label),
+		// so "components" must be an array of Label-shaped entries, not a
+		// bare, unwrapped component - that shape does not match
+		// components.ComponentLabelComponent and fails to unmarshal.
+		"components": labelComponents,
+		"resolved":   NewResolvedData(),
+	}
+}
+
+func NewLabelDataWithComponent(component map[string]interface{}) map[string]interface{} {
+	return map[string]interface{}{
+		"type":        discord.ComponentTypeLabel,
+		"id":          testutil.RandomIntInRange(1, 100),
+		"label":       testutil.RandomString(testutil.RandomIntInRange(1, 45)),
+		"description": testutil.RandomString(testutil.RandomIntInRange(1, 100)),
+		"component":   component,
+	}
 }

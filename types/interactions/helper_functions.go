@@ -249,6 +249,14 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 	switch i.Type {
 	case discord.InteractionTypePing:
 		return nil
+	case discord.InteractionTypeApplicationCommand:
+		var auto responses.InteractionDataApplicationCommand
+		if err := json.Unmarshal(aux.Data, &auto); err != nil {
+			return err
+		}
+		*i.Data = &auto
+		return nil
+
 	case discord.InteractionTypeApplicationCommandAutocomplete:
 		var auto responses.InteractionDataAutocomplete
 		if err := json.Unmarshal(aux.Data, &auto); err != nil {
@@ -292,6 +300,8 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		*i.Data = &cmd
+		return nil
+	case discord.ApplicationCommandTypePrimaryEndpoint:
 		return nil
 	}
 

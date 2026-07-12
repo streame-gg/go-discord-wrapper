@@ -3,6 +3,7 @@ package events
 import (
 	"testing"
 
+	"github.com/streame-gg/go-discord-wrapper/types/components"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 	"github.com/stretchr/testify/suite"
@@ -678,6 +679,13 @@ func (s *eventSuite) compareApplication(expected map[string]interface{}, actual 
 // TODO
 func (s *eventSuite) compareMessage(expected map[string]interface{}, actual discord.Message) {}
 
+func (s *eventSuite) expectMap(expected map[string]interface{}, key string) map[string]interface{} {
+	s.T().Helper()
+	v, ok := expected[key].(map[string]interface{})
+	s.Require().True(ok, `expected[%q] must be a map[string]interface{}, got %T: %v`, key, expected[key], expected[key])
+	return v
+}
+
 func (s *eventSuite) compareInteractionData(expected map[string]interface{}, raw discord.InteractionData) {
 	switch raw.GetType() {
 	case discord.InteractionTypeApplicationCommand:
@@ -689,7 +697,7 @@ func (s *eventSuite) compareInteractionData(expected map[string]interface{}, raw
 		s.EqualValues(expected["target_id"], *actual.TargetID)
 		s.EqualValues(expected["type"], actual.Type)
 
-		s.compareResolved(expected["resolved"].(map[string]interface{}), *actual.Resolved)
+		s.compareResolved(s.expectMap(expected, "resolved"), *actual.Resolved)
 
 		options := expected["options"].([]map[string]interface{})
 		s.Len(actual.Options, len(options))
@@ -743,15 +751,19 @@ func (s *eventSuite) compareInteractionData(expected map[string]interface{}, raw
 
 		s.EqualValues(expected["custom_id"], actual.CustomID)
 
-		components := expected["components"].([]map[string]interface{})
-		s.Len(actual.Components, len(components))
+		cmp, ok := expected["components"].([]map[string]interface{})
+		s.Require().True(ok, `expected["cmp"] must be a []map[string]interface{} (e.g. from testdata.NewModalSubmitData()/NewModalSubmitDataWithComponents()), got %T: %v`, expected["cmp"], expected["cmp"])
+		s.Len(actual.Components, len(cmp))
 
 		for i, component := range actual.Components {
-			s.EqualValues(components[i]["type"], component.Type)
-			s.EqualValues(components[i]["id"], *component.ID)
-			s.EqualValues(components[i]["label"], component.Label)
-			s.EqualValues(components[i]["description"], component.Description)
-			//TODO component
+			s.EqualValues(cmp[i]["type"], component.Type)
+			s.EqualValues(cmp[i]["id"], *component.ID)
+			s.EqualValues(cmp[i]["label"], component.Label)
+			s.EqualValues(cmp[i]["description"], component.Description)
+
+			child, ok := cmp[i]["component"].(map[string]interface{})
+			s.Require().True(ok, `expected cmp[%d]["component"] must be a map[string]interface{}, got %T: %v`, i, cmp[i]["component"], cmp[i]["component"])
+			s.compareComponentLabelChild(child, component.Component)
 		}
 
 		s.compareResolved(expected["resolved"].(map[string]interface{}), *actual.Resolved)
@@ -774,5 +786,90 @@ func (s *eventSuite) compareApplicationCommandInteractionDataOption(expected map
 	} else {
 		s.EqualValues(expected["value"], *actual.Value)
 		s.EqualValues(expected["focused"], *actual.Focused)
+	}
+}
+
+func (s *eventSuite) compareComponentLabelChild(expected map[string]interface{}, actual components.AnyComponentInteractionResponse) {
+	switch v := actual.(type) {
+	case *components.StringSelectComponentInteractionResponse:
+		s.EqualValues(expected["type"], v.Type)
+		s.EqualValues(expected["component_type"], v.ComponentType)
+		s.EqualValues(expected["id"], *v.ID)
+		s.EqualValues(expected["custom_id"], v.CustomID)
+		s.EqualValues(expected["values"], v.Values)
+
+	case *components.UserSelectComponentInteractionResponse:
+		s.EqualValues(expected["type"], v.Type)
+		s.EqualValues(expected["component_type"], v.ComponentType)
+		s.EqualValues(expected["id"], *v.ID)
+		s.EqualValues(expected["custom_id"], v.CustomID)
+		s.EqualValues(expected["values"], v.Values)
+		s.compareResolved(s.expectMap(expected, "resolved"), v.Resolved)
+
+	case *components.RoleComponentInteractionResponse:
+		s.EqualValues(expected["type"], v.Type)
+		s.EqualValues(expected["component_type"], v.ComponentType)
+		s.EqualValues(expected["id"], *v.ID)
+		s.EqualValues(expected["custom_id"], v.CustomID)
+		s.EqualValues(expected["values"], v.Values)
+		s.compareResolved(s.expectMap(expected, "resolved"), *v.Resolved)
+
+	case *components.MentionableComponentInteractionResponse:
+		s.EqualValues(expected["type"], v.Type)
+		s.EqualValues(expected["component_type"], v.ComponentType)
+		s.EqualValues(expected["id"], v.ID)
+		s.EqualValues(expected["custom_id"], v.CustomID)
+		s.EqualValues(expected["values"], v.Values)
+		s.compareResolved(s.expectMap(expected, "resolved"), v.Resolved)
+
+	case *components.ChannelComponentInteractionResponse:
+		s.EqualValues(expected["type"], v.Type)
+		s.EqualValues(expected["component_type"], v.ComponentType)
+		s.EqualValues(expected["id"], *v.ID)
+		s.EqualValues(expected["custom_id"], v.CustomID)
+		s.EqualValues(expected["values"], v.Values)
+		s.compareResolved(s.expectMap(expected, "resolved"), *v.Resolved)
+
+	case *components.TextInputComponentInteractionResponse:
+		s.EqualValues(expected["type"], v.Type)
+		s.EqualValues(expected["id"], *v.ID)
+		s.EqualValues(expected["custom_id"], v.CustomID)
+		s.EqualValues(expected["value"], v.Value)
+
+	case *components.FileUploadComponentInteractionResponse:
+		s.EqualValues(expected["type"], v.Type)
+		s.EqualValues(expected["id"], *v.ID)
+		s.EqualValues(expected["custom_id"], v.CustomID)
+		s.EqualValues(expected["values"], v.Values)
+
+	case *components.RadioGroupComponentInteractionResponse:
+		s.EqualValues(expected["type"], v.Type)
+		s.EqualValues(expected["id"], *v.ID)
+		s.EqualValues(expected["custom_id"], v.CustomID)
+		s.EqualValues(expected["value"], *v.Value)
+
+	case *components.CheckboxGroupComponentInteractionResponse:
+		s.EqualValues(expected["type"], v.Type)
+		s.EqualValues(expected["id"], *v.ID)
+		s.EqualValues(expected["custom_id"], v.CustomID)
+		s.EqualValues(expected["values"], v.Values)
+
+	case *components.CheckboxComponentInteractionResponse:
+		s.EqualValues(expected["type"], v.Type)
+		s.EqualValues(expected["id"], *v.ID)
+		s.EqualValues(expected["custom_id"], v.CustomID)
+		s.EqualValues(expected["value"], v.Value)
+
+	case *components.TextDisplayComponentInteractionResponse:
+		s.EqualValues(expected["type"], v.Type)
+		s.EqualValues(expected["id"], *v.ID)
+
+	case *components.LabelComponentInteractionResponse:
+		s.EqualValues(expected["type"], v.Type)
+		s.EqualValues(expected["id"], *v.ID)
+		s.compareComponentLabelChild(expected["component"].(map[string]interface{}), v.Component)
+
+	default:
+		s.Failf("unhandled component response type in compareComponentLabelChild", "%T", actual)
 	}
 }
