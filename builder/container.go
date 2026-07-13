@@ -45,13 +45,13 @@ func (b *ContainerBuilder) Build() *components.Container {
 
 // ── Text display ──────────────────────────────────────────────────────────────
 
-// TextDisplayBuilder builds a TextDisplayComponent (Components v2).
+// TextDisplayBuilder builds a TextDisplay (Components v2).
 //
 //	td := builder.NewTextDisplay().SetContent("## Hello world").Build()
 //
 // https://docs.discord.com/developers/components/reference#text-display
 type TextDisplayBuilder struct {
-	td components.TextDisplayComponent
+	td components.TextDisplay
 }
 
 func NewTextDisplay() *TextDisplayBuilder { return &TextDisplayBuilder{} }
@@ -61,19 +61,19 @@ func (b *TextDisplayBuilder) SetContent(content string) *TextDisplayBuilder {
 	return b
 }
 
-func (b *TextDisplayBuilder) Build() *components.TextDisplayComponent {
+func (b *TextDisplayBuilder) Build() *components.TextDisplay {
 	return &b.td
 }
 
 // ── Separator ─────────────────────────────────────────────────────────────────
 
-// SeparatorBuilder builds a SeparatorComponent (Components v2).
+// SeparatorBuilder builds a Separator (Components v2).
 //
 //	sep := builder.NewSeparator().SetDivider(true).SetSpacing(components.SeparatorComponentSpacingLarge).Build()
 //
 // https://docs.discord.com/developers/components/reference#separator
 type SeparatorBuilder struct {
-	s components.SeparatorComponent
+	s components.Separator
 }
 
 func NewSeparator() *SeparatorBuilder { return &SeparatorBuilder{} }
@@ -84,10 +84,10 @@ func (b *SeparatorBuilder) SetDivider(divider bool) *SeparatorBuilder {
 }
 
 func (b *SeparatorBuilder) SetSpacing(spacing components.SeparatorComponentSpacing) *SeparatorBuilder {
-	b.s.SeparatorComponentSpacing = spacing
+	b.s.Spacing = spacing
 	return b
 }
 
-func (b *SeparatorBuilder) Build() *components.SeparatorComponent {
+func (b *SeparatorBuilder) Build() *components.Separator {
 	return &b.s
 }

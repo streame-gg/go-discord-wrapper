@@ -15,15 +15,15 @@ const (
 )
 
 // https://docs.discord.com/developers/components/reference#separator
-type SeparatorComponent struct {
-	Type                      discord.ComponentType     `json:"type"`
-	ID                        *int                      `json:"id,omitempty"`
-	Divider                   bool                      `json:"divider"`
-	SeparatorComponentSpacing SeparatorComponentSpacing `json:"spacing,omitempty"`
+type Separator struct {
+	Type    discord.ComponentType     `json:"type"`
+	ID      *int                      `json:"id,omitempty"`
+	Divider bool                      `json:"divider"`
+	Spacing SeparatorComponentSpacing `json:"spacing,omitempty"`
 }
 
-func (s *SeparatorComponent) UnmarshalJSON(data []byte) error {
-	type Alias SeparatorComponent
+func (s *Separator) UnmarshalJSON(data []byte) error {
+	type Alias Separator
 	var raw struct {
 		*Alias
 	}
@@ -35,12 +35,12 @@ func (s *SeparatorComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*s = SeparatorComponent(*raw.Alias)
+	*s = Separator(*raw.Alias)
 	return nil
 }
 
-func (s *SeparatorComponent) MarshalJSON() ([]byte, error) {
-	type Alias SeparatorComponent
+func (s *Separator) MarshalJSON() ([]byte, error) {
+	type Alias Separator
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -50,8 +50,8 @@ func (s *SeparatorComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (s *SeparatorComponent) GetType() discord.ComponentType {
+func (s *Separator) GetType() discord.ComponentType {
 	return discord.ComponentTypeSeparator
 }
 
-func (s *SeparatorComponent) IsAnyContainerComponent() {}
+func (s *Separator) IsAnyContainerComponent() {}

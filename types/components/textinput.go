@@ -15,7 +15,7 @@ const (
 )
 
 // https://docs.discord.com/developers/components/reference#text-input
-type TextInputComponent struct {
+type TextInput struct {
 	Type        discord.ComponentType `json:"type"`
 	ID          *int                  `json:"id,omitempty"`
 	CustomID    string                `json:"custom_id"`
@@ -27,8 +27,8 @@ type TextInputComponent struct {
 	Placeholder string                `json:"placeholder,omitempty"`
 }
 
-func (t *TextInputComponent) MarshalJSON() ([]byte, error) {
-	type Alias TextInputComponent
+func (t *TextInput) MarshalJSON() ([]byte, error) {
+	type Alias TextInput
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -38,8 +38,8 @@ func (t *TextInputComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (t *TextInputComponent) UnmarshalJSON(data []byte) error {
-	type Alias TextInputComponent
+func (t *TextInput) UnmarshalJSON(data []byte) error {
+	type Alias TextInput
 	var raw struct {
 		*Alias
 	}
@@ -51,19 +51,19 @@ func (t *TextInputComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*t = TextInputComponent(*raw.Alias)
+	*t = TextInput(*raw.Alias)
 	return nil
 }
 
-func (t *TextInputComponent) GetType() discord.ComponentType {
+func (t *TextInput) GetType() discord.ComponentType {
 	return discord.ComponentTypeTextInput
 }
 
-func (t *TextInputComponent) IsAnyContainerComponent() {
+func (t *TextInput) IsAnyContainerComponent() {
 
 }
 
-func (t *TextInputComponent) IsAnyLabelComponent() {
+func (t *TextInput) IsAnyLabelComponent() {
 
 }
 

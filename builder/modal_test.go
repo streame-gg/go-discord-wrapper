@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func labelComp(label string) *components.LabelComponent {
-	return &components.LabelComponent{
+func labelComp(label string) *components.Label {
+	return &components.Label{
 		Type:  discord.ComponentTypeActionRow,
 		Label: label,
 	}

@@ -7,7 +7,7 @@ import (
 )
 
 // https://docs.discord.com/developers/components/reference#radio-group
-type RadioGroupComponent struct {
+type RadioGroup struct {
 	Type     discord.ComponentType       `json:"type"`
 	ID       *int                        `json:"id,omitempty"`
 	CustomID string                      `json:"custom_id"`
@@ -23,8 +23,8 @@ type RadioGroupComponentOption struct {
 	Default     bool   `json:"default"`
 }
 
-func (r *RadioGroupComponent) MarshalJSON() ([]byte, error) {
-	type Alias RadioGroupComponent
+func (r *RadioGroup) MarshalJSON() ([]byte, error) {
+	type Alias RadioGroup
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -34,8 +34,8 @@ func (r *RadioGroupComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (r *RadioGroupComponent) UnmarshalJSON(data []byte) error {
-	type Alias RadioGroupComponent
+func (r *RadioGroup) UnmarshalJSON(data []byte) error {
+	type Alias RadioGroup
 	var raw struct {
 		*Alias
 	}
@@ -47,15 +47,15 @@ func (r *RadioGroupComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*r = RadioGroupComponent(*raw.Alias)
+	*r = RadioGroup(*raw.Alias)
 	return nil
 }
 
-func (r *RadioGroupComponent) GetType() discord.ComponentType {
+func (r *RadioGroup) GetType() discord.ComponentType {
 	return discord.ComponentTypeRadioGroup
 }
 
-func (r *RadioGroupComponent) IsAnyLabelComponent() {
+func (r *RadioGroup) IsAnyLabelComponent() {
 
 }
 

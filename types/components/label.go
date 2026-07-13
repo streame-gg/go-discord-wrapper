@@ -8,7 +8,7 @@ import (
 )
 
 // https://docs.discord.com/developers/components/reference#label
-type LabelComponent struct {
+type Label struct {
 	Type        discord.ComponentType `json:"type"`
 	ID          *int                  `json:"id,omitempty"`
 	Label       string                `json:"label"`
@@ -16,8 +16,8 @@ type LabelComponent struct {
 	Component   AnyChildComponent     `json:"component,omitempty"`
 }
 
-func (l *LabelComponent) UnmarshalJSON(data []byte) error {
-	type Alias LabelComponent
+func (l *Label) UnmarshalJSON(data []byte) error {
+	type Alias Label
 	var raw struct {
 		*Alias
 		Component json.RawMessage `json:"component,omitempty"`
@@ -30,7 +30,7 @@ func (l *LabelComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*l = LabelComponent(*raw.Alias)
+	*l = Label(*raw.Alias)
 
 	if raw.Component != nil {
 		var probe struct {
@@ -43,47 +43,66 @@ func (l *LabelComponent) UnmarshalJSON(data []byte) error {
 
 		switch probe.Type {
 		case discord.ComponentTypeTextInput:
-			var t *TextInputComponent
+			var t *TextInput
 			if err := json.Unmarshal(raw.Component, &t); err != nil {
 				return err
 			}
 			l.Component = t
 		case discord.ComponentTypeFileUpload:
-			var f *FileUploadComponent
+			var f *FileUpload
 			if err := json.Unmarshal(raw.Component, &f); err != nil {
 				return err
 			}
 			l.Component = f
 		case discord.ComponentTypeStringSelect:
-			var s *StringSelectMenuComponent
+			var s *StringSelectMenu
 			if err := json.Unmarshal(raw.Component, &s); err != nil {
 				return err
 			}
 			l.Component = s
 		case discord.ComponentTypeUserSelect:
-			var u *UserSelectMenuComponent
+			var u *UserSelectMenu
 			if err := json.Unmarshal(raw.Component, &u); err != nil {
 				return err
 			}
 			l.Component = u
 		case discord.ComponentTypeRoleSelect:
-			var r *RoleSelectMenuComponent
+			var r *RoleSelectMenu
 			if err := json.Unmarshal(raw.Component, &r); err != nil {
 				return err
 			}
 			l.Component = r
 		case discord.ComponentTypeMentionableSelect:
-			var m *MentionableSelectMenuComponent
+			var m *MentionableSelectMenu
 			if err := json.Unmarshal(raw.Component, &m); err != nil {
 				return err
 			}
 			l.Component = m
 		case discord.ComponentTypeChannelSelect:
-			var c *ChannelSelectMenuComponent
+			var c *ChannelSelectMenu
 			if err := json.Unmarshal(raw.Component, &c); err != nil {
 				return err
 			}
 			l.Component = c
+		case discord.ComponentTypeRadioGroup:
+			var c *RadioGroup
+			if err := json.Unmarshal(raw.Component, &c); err != nil {
+				return err
+			}
+			l.Component = c
+		case discord.ComponentTypeCheckboxGroup:
+			var c *CheckboxGroup
+			if err := json.Unmarshal(raw.Component, &c); err != nil {
+				return err
+			}
+			l.Component = c
+		case discord.ComponentTypeCheckbox:
+			var c *Checkbox
+			if err := json.Unmarshal(raw.Component, &c); err != nil {
+				return err
+			}
+			l.Component = c
+
 		default:
 			return fmt.Errorf("unknown component type: %d", probe.Type)
 		}
@@ -92,8 +111,8 @@ func (l *LabelComponent) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (l *LabelComponent) MarshalJSON() ([]byte, error) {
-	type Alias LabelComponent
+func (l *Label) MarshalJSON() ([]byte, error) {
+	type Alias Label
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -103,7 +122,7 @@ func (l *LabelComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (l *LabelComponent) GetType() discord.ComponentType {
+func (l *Label) GetType() discord.ComponentType {
 	return discord.ComponentTypeLabel
 }
 

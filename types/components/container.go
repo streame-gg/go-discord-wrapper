@@ -44,7 +44,7 @@ func (c *Container) UnmarshalJSON(data []byte) error {
 
 		switch probe.Type {
 		case discord.ComponentTypeMediaGallery:
-			var m *MediaGalleryComponent
+			var m *MediaGallery
 			if err := json.Unmarshal(comp, &m); err != nil {
 				return err
 			}
@@ -52,8 +52,8 @@ func (c *Container) UnmarshalJSON(data []byte) error {
 				continue
 			}
 			c.Components = append(c.Components, m)
-		case discord.ComponentTypeFileDisplay:
-			var f *FileComponent
+		case discord.ComponentTypeFile:
+			var f *File
 			if err := json.Unmarshal(comp, &f); err != nil {
 				return err
 			}
@@ -62,7 +62,7 @@ func (c *Container) UnmarshalJSON(data []byte) error {
 			}
 			c.Components = append(c.Components, f)
 		case discord.ComponentTypeSeparator:
-			var s *SeparatorComponent
+			var s *Separator
 			if err := json.Unmarshal(comp, &s); err != nil {
 				return err
 			}
@@ -71,7 +71,7 @@ func (c *Container) UnmarshalJSON(data []byte) error {
 			}
 			c.Components = append(c.Components, s)
 		case discord.ComponentTypeTextInput:
-			var t *TextInputComponent
+			var t *TextInput
 			if err := json.Unmarshal(comp, &t); err != nil {
 				return err
 			}
@@ -89,7 +89,7 @@ func (c *Container) UnmarshalJSON(data []byte) error {
 			}
 			c.Components = append(c.Components, a)
 		case discord.ComponentTypeTextDisplay:
-			var t *TextDisplayComponent
+			var t *TextDisplay
 			if err := json.Unmarshal(comp, &t); err != nil {
 				return err
 			}

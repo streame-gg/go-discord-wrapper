@@ -4,7 +4,7 @@ import "github.com/streame-gg/go-discord-wrapper/types/components"
 
 // ── File display ──────────────────────────────────────────────────────────────
 
-// FileDisplayBuilder builds a FileComponent (Components v2 file preview) using a fluent API.
+// FileDisplayBuilder builds a File (Components v2 file preview) using a fluent API.
 //
 //	f := builder.NewFileDisplay("https://cdn.example.com/report.pdf").
 //	    SetSpoiler(true).
@@ -12,11 +12,11 @@ import "github.com/streame-gg/go-discord-wrapper/types/components"
 //
 // https://docs.discord.com/developers/components/reference#file
 type FileDisplayBuilder struct {
-	f components.FileComponent
+	f components.File
 }
 
 func NewFileDisplay(url string) *FileDisplayBuilder {
-	return &FileDisplayBuilder{f: components.FileComponent{File: &components.UnfurledMediaItem{URL: url}}}
+	return &FileDisplayBuilder{f: components.File{File: &components.UnfurledMediaItem{URL: url}}}
 }
 
 func (b *FileDisplayBuilder) SetName(name string) *FileDisplayBuilder {
@@ -29,13 +29,13 @@ func (b *FileDisplayBuilder) SetSpoiler(spoiler bool) *FileDisplayBuilder {
 	return b
 }
 
-func (b *FileDisplayBuilder) Build() *components.FileComponent {
+func (b *FileDisplayBuilder) Build() *components.File {
 	return &b.f
 }
 
 // ── File upload ───────────────────────────────────────────────────────────────
 
-// FileUploadBuilder builds a FileUploadComponent using a fluent API.
+// FileUploadBuilder builds a FileUpload using a fluent API.
 //
 //	fu := builder.NewFileUpload("attachment").
 //	    SetRequired(true).
@@ -44,11 +44,11 @@ func (b *FileDisplayBuilder) Build() *components.FileComponent {
 //
 // https://docs.discord.com/developers/components/reference#file-upload
 type FileUploadBuilder struct {
-	fu components.FileUploadComponent
+	fu components.FileUpload
 }
 
 func NewFileUpload(customID string) *FileUploadBuilder {
-	return &FileUploadBuilder{fu: components.FileUploadComponent{CustomID: customID}}
+	return &FileUploadBuilder{fu: components.FileUpload{CustomID: customID}}
 }
 
 func (b *FileUploadBuilder) SetCustomID(id string) *FileUploadBuilder {
@@ -71,6 +71,6 @@ func (b *FileUploadBuilder) SetMaxValues(max int) *FileUploadBuilder {
 	return b
 }
 
-func (b *FileUploadBuilder) Build() *components.FileUploadComponent {
+func (b *FileUploadBuilder) Build() *components.FileUpload {
 	return &b.fu
 }

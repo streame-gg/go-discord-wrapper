@@ -11,14 +11,16 @@ func NewComponentActionRow(predefinedComponents ...map[string]interface{}) map[s
 		return map[string]interface{}{
 			"type": discord.ComponentTypeActionRow,
 			"id":   testutil.RandomIntInRange(1, 25),
-			"components": testutil.RandomItem(
-				NewComponentButton(),
-				NewComponentStringSelect(),
-				NewComponentUserSelect(),
-				NewComponentRoleSelect(),
-				NewComponentMentionableSelect(),
-				NewComponentChannelSelect(),
-			),
+			"components": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 25), func(arrayToFill *[]map[string]interface{}) {
+				*arrayToFill = append(*arrayToFill, testutil.RandomItem(
+					NewComponentButton(),
+					NewComponentStringSelect(),
+					NewComponentUserSelect(),
+					NewComponentRoleSelect(),
+					NewComponentMentionableSelect(),
+					NewComponentChannelSelect(),
+				))
+			}),
 		}
 	}
 
@@ -91,57 +93,69 @@ func NewComponentTextInput() map[string]interface{} {
 
 func NewComponentUserSelect() map[string]interface{} {
 	return map[string]interface{}{
-		"type":           discord.ComponentTypeUserSelect,
-		"id":             testutil.RandomIntInRange(1, 25),
-		"custom_id":      testutil.RandomString(testutil.RandomIntInRange(1, 100)),
-		"placeholder":    testutil.RandomString(testutil.RandomIntInRange(1, 100)),
-		"min_values":     testutil.RandomIntInRange(0, 100),
-		"max_values":     testutil.RandomIntInRange(0, 100),
-		"required":       testutil.RandomBool(),
-		"disabled":       testutil.RandomBool(),
-		"default_values": testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 25)),
+		"type":        discord.ComponentTypeUserSelect,
+		"id":          testutil.RandomIntInRange(1, 25),
+		"custom_id":   testutil.RandomString(testutil.RandomIntInRange(1, 100)),
+		"placeholder": testutil.RandomString(testutil.RandomIntInRange(1, 100)),
+		"min_values":  testutil.RandomIntInRange(0, 100),
+		"max_values":  testutil.RandomIntInRange(0, 100),
+		"required":    testutil.RandomBool(),
+		"disabled":    testutil.RandomBool(),
+		"default_values": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
+			*arrayToFill = append(*arrayToFill, NewDefaultSelectValue(components.SelectDefaultValueTypeUser))
+		}),
 	}
 }
 
 func NewComponentRoleSelect() map[string]interface{} {
 	return map[string]interface{}{
-		"type":           discord.ComponentTypeRoleSelect,
-		"id":             testutil.RandomIntInRange(1, 25),
-		"custom_id":      testutil.RandomString(testutil.RandomIntInRange(1, 100)),
-		"placeholder":    testutil.RandomString(testutil.RandomIntInRange(1, 100)),
-		"min_values":     testutil.RandomIntInRange(0, 100),
-		"max_values":     testutil.RandomIntInRange(0, 100),
-		"required":       testutil.RandomBool(),
-		"disabled":       testutil.RandomBool(),
-		"default_values": testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 25)),
+		"type":        discord.ComponentTypeRoleSelect,
+		"id":          testutil.RandomIntInRange(1, 25),
+		"custom_id":   testutil.RandomString(testutil.RandomIntInRange(1, 100)),
+		"placeholder": testutil.RandomString(testutil.RandomIntInRange(1, 100)),
+		"min_values":  testutil.RandomIntInRange(0, 100),
+		"max_values":  testutil.RandomIntInRange(0, 100),
+		"required":    testutil.RandomBool(),
+		"disabled":    testutil.RandomBool(),
+		"default_values": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
+			*arrayToFill = append(*arrayToFill, NewDefaultSelectValue(components.SelectDefaultValueTypeRole))
+		}),
 	}
 }
 
 func NewComponentMentionableSelect() map[string]interface{} {
 	return map[string]interface{}{
-		"type":           discord.ComponentTypeMentionableSelect,
-		"id":             testutil.RandomIntInRange(1, 25),
-		"custom_id":      testutil.RandomString(testutil.RandomIntInRange(1, 100)),
-		"placeholder":    testutil.RandomString(testutil.RandomIntInRange(1, 100)),
-		"min_values":     testutil.RandomIntInRange(0, 100),
-		"max_values":     testutil.RandomIntInRange(0, 100),
-		"required":       testutil.RandomBool(),
-		"disabled":       testutil.RandomBool(),
-		"default_values": testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 25)),
+		"type":        discord.ComponentTypeMentionableSelect,
+		"id":          testutil.RandomIntInRange(1, 25),
+		"custom_id":   testutil.RandomString(testutil.RandomIntInRange(1, 100)),
+		"placeholder": testutil.RandomString(testutil.RandomIntInRange(1, 100)),
+		"min_values":  testutil.RandomIntInRange(0, 100),
+		"max_values":  testutil.RandomIntInRange(0, 100),
+		"required":    testutil.RandomBool(),
+		"disabled":    testutil.RandomBool(),
+		"default_values": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
+			*arrayToFill = append(*arrayToFill, NewDefaultSelectValue(testutil.RandomItem(
+				components.SelectDefaultValueTypeUser,
+				components.SelectDefaultValueTypeRole,
+				components.SelectDefaultValueTypeChannel,
+			)))
+		}),
 	}
 }
 
 func NewComponentChannelSelect() map[string]interface{} {
 	return map[string]interface{}{
-		"type":           discord.ComponentTypeChannelSelect,
-		"id":             testutil.RandomIntInRange(1, 25),
-		"custom_id":      testutil.RandomString(testutil.RandomIntInRange(1, 100)),
-		"placeholder":    testutil.RandomString(testutil.RandomIntInRange(1, 100)),
-		"min_values":     testutil.RandomIntInRange(0, 100),
-		"max_values":     testutil.RandomIntInRange(0, 100),
-		"required":       testutil.RandomBool(),
-		"disabled":       testutil.RandomBool(),
-		"default_values": testutil.RandomSnowflakeArray(testutil.RandomIntInRange(1, 25)),
+		"type":        discord.ComponentTypeChannelSelect,
+		"id":          testutil.RandomIntInRange(1, 25),
+		"custom_id":   testutil.RandomString(testutil.RandomIntInRange(1, 100)),
+		"placeholder": testutil.RandomString(testutil.RandomIntInRange(1, 100)),
+		"min_values":  testutil.RandomIntInRange(0, 100),
+		"max_values":  testutil.RandomIntInRange(0, 100),
+		"required":    testutil.RandomBool(),
+		"disabled":    testutil.RandomBool(),
+		"default_values": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]map[string]interface{}) {
+			*arrayToFill = append(*arrayToFill, NewDefaultSelectValue(components.SelectDefaultValueTypeChannel))
+		}),
 		"channel_types": testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 3), func(arrayToFill *[]discord.ChannelType) {
 			*arrayToFill = append(*arrayToFill, testutil.RandomItem(
 				discord.ChannelTypeGuildText,
@@ -223,7 +237,7 @@ func NewComponentMediaGallery() map[string]interface{} {
 
 func NewComponentFile() map[string]interface{} {
 	return map[string]interface{}{
-		"type":    discord.ComponentTypeFileDisplay,
+		"type":    discord.ComponentTypeFile,
 		"id":      testutil.RandomIntInRange(1, 25),
 		"file":    NewUnfurledMediaItem(),
 		"spoiler": testutil.RandomBool(),
@@ -357,5 +371,12 @@ func NewComponentCheckbox() map[string]interface{} {
 		"id":        testutil.RandomIntInRange(1, 25),
 		"custom_id": testutil.RandomString(testutil.RandomIntInRange(1, 100)),
 		"default":   testutil.RandomBool(),
+	}
+}
+
+func NewDefaultSelectValue(selectType components.SelectDefaultValueType) map[string]interface{} {
+	return map[string]interface{}{
+		"id":   discord.RandomSnowflake(),
+		"type": selectType,
 	}
 }

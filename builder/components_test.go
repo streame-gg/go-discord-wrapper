@@ -228,7 +228,7 @@ func (su *builderComponentsSuite) TestSectionBuilder_AllSetters() {
 		Build()
 
 	assert.Len(t, s.Components, 2)
-	assert.Equal(t, thumb, *s.Accessory)
+	assert.Equal(t, thumb, s.Accessory)
 }
 
 func (su *builderComponentsSuite) TestThumbnailBuilder_AllSetters() {
@@ -275,7 +275,7 @@ func (su *builderComponentsSuite) TestSeparatorBuilder_AllSetters() {
 		Build()
 
 	assert.True(t, sep.Divider)
-	assert.Equal(t, components.SeparatorComponentSpacingLarge, sep.SeparatorComponentSpacing)
+	assert.Equal(t, components.SeparatorComponentSpacingLarge, sep.Spacing)
 }
 
 // ── File display + upload ─────────────────────────────────────────────────────

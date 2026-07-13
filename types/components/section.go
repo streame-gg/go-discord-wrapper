@@ -12,18 +12,17 @@ type Section struct {
 	Type       discord.ComponentType `json:"type"`
 	ID         *int                  `json:"id,omitempty"`
 	Components []AnySectionComponent `json:"components"`
-	Accessory  *AnySectionAccessory  `json:"accessory,omitempty"`
+	Accessory  AnySectionAccessory   `json:"accessory,omitempty"`
 }
 
-func (s *Section) IsAnyContainerComponent() {
-
-}
+func (s *Section) IsAnyContainerComponent() {}
 
 func (s *Section) UnmarshalJSON(data []byte) error {
 	type Alias Section
 
 	var raw struct {
 		Alias
+		Accessory  json.RawMessage   `json:"accessory"`
 		Components []json.RawMessage `json:"components"`
 	}
 
@@ -32,6 +31,31 @@ func (s *Section) UnmarshalJSON(data []byte) error {
 	}
 
 	*s = Section(raw.Alias)
+
+	var probe struct {
+		Type discord.ComponentType `json:"type"`
+	}
+
+	if err := json.Unmarshal(raw.Accessory, &probe); err != nil {
+		return err
+	}
+
+	switch probe.Type {
+	case discord.ComponentTypeButton:
+		var t *Button
+		if err := json.Unmarshal(raw.Accessory, &t); err != nil {
+			return err
+		}
+		s.Accessory = t
+	case discord.ComponentTypeThumbnail:
+		var t *Thumbnail
+		if err := json.Unmarshal(raw.Accessory, &t); err != nil {
+			return err
+		}
+		s.Accessory = t
+	default:
+		return fmt.Errorf("unknown section component type: %d", probe.Type)
+	}
 
 	for _, c := range raw.Components {
 		var probe struct {
@@ -44,7 +68,7 @@ func (s *Section) UnmarshalJSON(data []byte) error {
 
 		switch probe.Type {
 		case discord.ComponentTypeTextDisplay:
-			var t *TextDisplayComponent
+			var t *TextDisplay
 			if err := json.Unmarshal(c, &t); err != nil {
 				return err
 			}

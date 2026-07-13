@@ -7,7 +7,7 @@ import (
 )
 
 // https://docs.discord.com/developers/components/reference#mentionable-select
-type MentionableSelectMenuComponent struct {
+type MentionableSelectMenu struct {
 	Type          discord.ComponentType `json:"type"`
 	ID            *int                  `json:"id,omitempty"`
 	CustomID      string                `json:"custom_id"`
@@ -19,12 +19,12 @@ type MentionableSelectMenuComponent struct {
 	DefaultValues []SelectDefaultValue  `json:"default_values,omitempty"`
 }
 
-func (m *MentionableSelectMenuComponent) IsAnyContainerAccessory() bool {
+func (m *MentionableSelectMenu) IsAnyContainerAccessory() bool {
 	return true
 }
 
-func (m *MentionableSelectMenuComponent) UnmarshalJSON(data []byte) error {
-	type Alias MentionableSelectMenuComponent
+func (m *MentionableSelectMenu) UnmarshalJSON(data []byte) error {
+	type Alias MentionableSelectMenu
 	var raw struct {
 		*Alias
 	}
@@ -36,16 +36,16 @@ func (m *MentionableSelectMenuComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*m = MentionableSelectMenuComponent(*raw.Alias)
+	*m = MentionableSelectMenu(*raw.Alias)
 	return nil
 }
 
-func (m *MentionableSelectMenuComponent) IsAnyLabelComponent() {
+func (m *MentionableSelectMenu) IsAnyLabelComponent() {
 
 }
 
-func (m *MentionableSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	type Alias MentionableSelectMenuComponent
+func (m *MentionableSelectMenu) MarshalJSON() ([]byte, error) {
+	type Alias MentionableSelectMenu
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -55,7 +55,7 @@ func (m *MentionableSelectMenuComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (m *MentionableSelectMenuComponent) GetType() discord.ComponentType {
+func (m *MentionableSelectMenu) GetType() discord.ComponentType {
 	return discord.ComponentTypeMentionableSelect
 }
 

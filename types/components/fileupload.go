@@ -7,7 +7,7 @@ import (
 )
 
 // https://docs.discord.com/developers/components/reference#file-upload
-type FileUploadComponent struct {
+type FileUpload struct {
 	Type      discord.ComponentType `json:"type"`
 	ID        *int                  `json:"id,omitempty"`
 	CustomID  string                `json:"custom_id"`
@@ -16,8 +16,8 @@ type FileUploadComponent struct {
 	MaxValues *int                  `json:"max_values,omitempty"`
 }
 
-func (f *FileUploadComponent) MarshalJSON() ([]byte, error) {
-	type Alias FileUploadComponent
+func (f *FileUpload) MarshalJSON() ([]byte, error) {
+	type Alias FileUpload
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -27,8 +27,8 @@ func (f *FileUploadComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (f *FileUploadComponent) UnmarshalJSON(data []byte) error {
-	type Alias FileUploadComponent
+func (f *FileUpload) UnmarshalJSON(data []byte) error {
+	type Alias FileUpload
 	var raw struct {
 		*Alias
 	}
@@ -40,15 +40,15 @@ func (f *FileUploadComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*f = FileUploadComponent(*raw.Alias)
+	*f = FileUpload(*raw.Alias)
 	return nil
 }
 
-func (f *FileUploadComponent) GetType() discord.ComponentType {
+func (f *FileUpload) GetType() discord.ComponentType {
 	return discord.ComponentTypeFileUpload
 }
 
-func (f *FileUploadComponent) IsAnyLabelComponent() {
+func (f *FileUpload) IsAnyLabelComponent() {
 
 }
 

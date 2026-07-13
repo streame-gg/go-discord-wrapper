@@ -39,7 +39,7 @@ func (b *SelectOptionBuilder) Build() components.StringSelectMenuComponentOption
 
 // ── String select ─────────────────────────────────────────────────────────────
 
-// StringSelectMenuBuilder builds a StringSelectMenuComponent using a fluent API.
+// StringSelectMenuBuilder builds a StringSelectMenu using a fluent API.
 //
 //	menu := builder.NewStringSelectMenu().
 //	    SetCustomID("color_pick").
@@ -52,12 +52,12 @@ func (b *SelectOptionBuilder) Build() components.StringSelectMenuComponentOption
 //
 // https://docs.discord.com/developers/components/reference#string-select
 type StringSelectMenuBuilder struct {
-	menu components.StringSelectMenuComponent
+	menu components.StringSelectMenu
 }
 
 func NewStringSelectMenu() *StringSelectMenuBuilder {
 	var opts []components.StringSelectMenuComponentOption
-	return &StringSelectMenuBuilder{menu: components.StringSelectMenuComponent{Options: opts}}
+	return &StringSelectMenuBuilder{menu: components.StringSelectMenu{Options: opts}}
 }
 
 func (b *StringSelectMenuBuilder) SetCustomID(id string) *StringSelectMenuBuilder {
@@ -90,16 +90,16 @@ func (b *StringSelectMenuBuilder) AddOptions(opts ...components.StringSelectMenu
 	return b
 }
 
-func (b *StringSelectMenuBuilder) Build() *components.StringSelectMenuComponent {
+func (b *StringSelectMenuBuilder) Build() *components.StringSelectMenu {
 	return &b.menu
 }
 
 // ── User select ───────────────────────────────────────────────────────────────
 
-// UserSelectMenuBuilder builds a UserSelectMenuComponent using a fluent API.
+// UserSelectMenuBuilder builds a UserSelectMenu using a fluent API.
 // https://docs.discord.com/developers/components/reference#user-select
 type UserSelectMenuBuilder struct {
-	menu components.UserSelectMenuComponent
+	menu components.UserSelectMenu
 }
 
 func NewUserSelectMenu() *UserSelectMenuBuilder { return &UserSelectMenuBuilder{} }
@@ -138,16 +138,16 @@ func (b *UserSelectMenuBuilder) AddDefaultValues(values ...components.SelectDefa
 	return b
 }
 
-func (b *UserSelectMenuBuilder) Build() *components.UserSelectMenuComponent {
+func (b *UserSelectMenuBuilder) Build() *components.UserSelectMenu {
 	return &b.menu
 }
 
 // ── Role select ───────────────────────────────────────────────────────────────
 
-// RoleSelectMenuBuilder builds a RoleSelectMenuComponent using a fluent API.
+// RoleSelectMenuBuilder builds a RoleSelectMenu using a fluent API.
 // https://docs.discord.com/developers/components/reference#role-select
 type RoleSelectMenuBuilder struct {
-	menu components.RoleSelectMenuComponent
+	menu components.RoleSelectMenu
 }
 
 func NewRoleSelectMenu() *RoleSelectMenuBuilder { return &RoleSelectMenuBuilder{} }
@@ -186,16 +186,16 @@ func (b *RoleSelectMenuBuilder) AddDefaultValues(values ...components.SelectDefa
 	return b
 }
 
-func (b *RoleSelectMenuBuilder) Build() *components.RoleSelectMenuComponent {
+func (b *RoleSelectMenuBuilder) Build() *components.RoleSelectMenu {
 	return &b.menu
 }
 
 // ── Channel select ────────────────────────────────────────────────────────────
 
-// ChannelSelectMenuBuilder builds a ChannelSelectMenuComponent using a fluent API.
+// ChannelSelectMenuBuilder builds a ChannelSelectMenu using a fluent API.
 // https://docs.discord.com/developers/components/reference#channel-select
 type ChannelSelectMenuBuilder struct {
-	menu components.ChannelSelectMenuComponent
+	menu components.ChannelSelectMenu
 }
 
 func NewChannelSelectMenu() *ChannelSelectMenuBuilder { return &ChannelSelectMenuBuilder{} }
@@ -234,16 +234,16 @@ func (b *ChannelSelectMenuBuilder) AddDefaultValues(values ...components.SelectD
 	return b
 }
 
-func (b *ChannelSelectMenuBuilder) Build() *components.ChannelSelectMenuComponent {
+func (b *ChannelSelectMenuBuilder) Build() *components.ChannelSelectMenu {
 	return &b.menu
 }
 
 // ── Mentionable select ────────────────────────────────────────────────────────
 
-// MentionableSelectMenuBuilder builds a MentionableSelectMenuComponent using a fluent API.
+// MentionableSelectMenuBuilder builds a MentionableSelectMenu using a fluent API.
 // https://docs.discord.com/developers/components/reference#mentionable-select
 type MentionableSelectMenuBuilder struct {
-	menu components.MentionableSelectMenuComponent
+	menu components.MentionableSelectMenu
 }
 
 func NewMentionableSelectMenu() *MentionableSelectMenuBuilder {
@@ -284,6 +284,6 @@ func (b *MentionableSelectMenuBuilder) AddDefaultValues(values ...components.Sel
 	return b
 }
 
-func (b *MentionableSelectMenuBuilder) Build() *components.MentionableSelectMenuComponent {
+func (b *MentionableSelectMenuBuilder) Build() *components.MentionableSelectMenu {
 	return &b.menu
 }

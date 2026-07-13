@@ -20,7 +20,7 @@ const (
 	ComponentTypeTextDisplay       ComponentType = 10
 	ComponentTypeThumbnail         ComponentType = 11
 	ComponentTypeMediaGallery      ComponentType = 12
-	ComponentTypeFileDisplay       ComponentType = 13
+	ComponentTypeFile              ComponentType = 13
 	ComponentTypeSeparator         ComponentType = 14
 	ComponentTypeContainer         ComponentType = 17
 	ComponentTypeLabel             ComponentType = 18

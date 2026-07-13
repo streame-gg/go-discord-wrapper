@@ -140,12 +140,12 @@ func (su *decodeSuite) TestActionRowUnknownTypeError() {
 	}
 }
 
-// TestLabelUnknownTypeError verifies LabelComponent returns a readable decimal
+// TestLabelUnknownTypeError verifies Label returns a readable decimal
 // error on unknown nested component type (Issue 4b).
 func (su *decodeSuite) TestLabelUnknownTypeError() {
 	t := su.T()
 	raw := `{"type": 18, "label": "l", "component": {"type": 999}}`
-	var l LabelComponent
+	var l Label
 	err := json.Unmarshal([]byte(raw), &l)
 	if err == nil {
 		t.Fatal("want error for unknown type, got nil")
@@ -155,11 +155,11 @@ func (su *decodeSuite) TestLabelUnknownTypeError() {
 	}
 }
 
-// J0-#24: LabelComponent marshal should produce "label" field;
-// LabelComponent unmarshal from {"label":"foo"} must set Label correctly.
+// J0-#24: Label marshal should produce "label" field;
+// Label unmarshal from {"label":"foo"} must set Label correctly.
 func (su *decodeSuite) TestLabelComponentRoundtrip() {
 	t := su.T()
-	orig := LabelComponent{Label: "my label", Description: "desc"}
+	orig := Label{Label: "my label", Description: "desc"}
 	b, err := json.Marshal(&orig)
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
@@ -169,7 +169,7 @@ func (su *decodeSuite) TestLabelComponentRoundtrip() {
 		t.Errorf("marshalled JSON missing label field: %s", bs)
 	}
 
-	var got LabelComponent
+	var got Label
 	if err := json.Unmarshal([]byte(`{"type":18,"label":"foo","description":"bar"}`), &got); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}

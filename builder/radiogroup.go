@@ -31,7 +31,7 @@ func (b *RadioGroupOptionBuilder) Build() components.RadioGroupComponentOption {
 	return b.opt
 }
 
-// RadioGroupBuilder builds a RadioGroupComponent using a fluent API.
+// RadioGroupBuilder builds a RadioGroup using a fluent API.
 //
 //	rg := builder.NewRadioGroup("size_pick").
 //	    AddOptions(
@@ -43,12 +43,12 @@ func (b *RadioGroupOptionBuilder) Build() components.RadioGroupComponentOption {
 //
 // https://docs.discord.com/developers/components/reference#radio-group
 type RadioGroupBuilder struct {
-	rg components.RadioGroupComponent
+	rg components.RadioGroup
 }
 
 func NewRadioGroup(customID string) *RadioGroupBuilder {
 	var opts []components.RadioGroupComponentOption
-	return &RadioGroupBuilder{rg: components.RadioGroupComponent{CustomID: customID, Options: opts}}
+	return &RadioGroupBuilder{rg: components.RadioGroup{CustomID: customID, Options: opts}}
 }
 
 func (b *RadioGroupBuilder) SetCustomID(id string) *RadioGroupBuilder {
@@ -66,7 +66,7 @@ func (b *RadioGroupBuilder) SetRequired(required bool) *RadioGroupBuilder {
 	return b
 }
 
-func (b *RadioGroupBuilder) Build() *components.RadioGroupComponent {
+func (b *RadioGroupBuilder) Build() *components.RadioGroup {
 	return &b.rg
 }
 
@@ -99,7 +99,7 @@ func (b *CheckboxGroupOptionBuilder) Build() components.CheckboxGroupComponentOp
 	return b.opt
 }
 
-// CheckboxGroupBuilder builds a CheckboxGroupComponent using a fluent API.
+// CheckboxGroupBuilder builds a CheckboxGroup using a fluent API.
 //
 //	cg := builder.NewCheckboxGroup("prefs").
 //	    AddOptions(
@@ -112,12 +112,12 @@ func (b *CheckboxGroupOptionBuilder) Build() components.CheckboxGroupComponentOp
 //
 // https://docs.discord.com/developers/components/reference#checkbox-group
 type CheckboxGroupBuilder struct {
-	cg components.CheckboxGroupComponent
+	cg components.CheckboxGroup
 }
 
 func NewCheckboxGroup(customID string) *CheckboxGroupBuilder {
 	var opts []components.CheckboxGroupComponentOption
-	return &CheckboxGroupBuilder{cg: components.CheckboxGroupComponent{CustomID: customID, Options: opts}}
+	return &CheckboxGroupBuilder{cg: components.CheckboxGroup{CustomID: customID, Options: opts}}
 }
 
 func (b *CheckboxGroupBuilder) SetCustomID(id string) *CheckboxGroupBuilder {
@@ -145,23 +145,23 @@ func (b *CheckboxGroupBuilder) SetRequired(required bool) *CheckboxGroupBuilder 
 	return b
 }
 
-func (b *CheckboxGroupBuilder) Build() *components.CheckboxGroupComponent {
+func (b *CheckboxGroupBuilder) Build() *components.CheckboxGroup {
 	return &b.cg
 }
 
 // ── Checkbox ──────────────────────────────────────────────────────────────────
 
-// CheckboxBuilder builds a CheckboxComponent using a fluent API.
+// CheckboxBuilder builds a Checkbox using a fluent API.
 //
 //	cb := builder.NewCheckbox("agree").SetDefault(false).Build()
 //
 // https://docs.discord.com/developers/components/reference#checkbox
 type CheckboxBuilder struct {
-	cb components.CheckboxComponent
+	cb components.Checkbox
 }
 
 func NewCheckbox(customID string) *CheckboxBuilder {
-	return &CheckboxBuilder{cb: components.CheckboxComponent{CustomID: customID}}
+	return &CheckboxBuilder{cb: components.Checkbox{CustomID: customID}}
 }
 
 func (b *CheckboxBuilder) SetCustomID(id string) *CheckboxBuilder {
@@ -174,6 +174,6 @@ func (b *CheckboxBuilder) SetDefault(def bool) *CheckboxBuilder {
 	return b
 }
 
-func (b *CheckboxBuilder) Build() *components.CheckboxComponent {
+func (b *CheckboxBuilder) Build() *components.Checkbox {
 	return &b.cb
 }

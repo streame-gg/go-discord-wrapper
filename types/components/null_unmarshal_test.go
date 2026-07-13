@@ -16,22 +16,22 @@ func (su *nullUnmarshalSuite) TestNullUnmarshalNoPanic() {
 		name string
 		fn   func() error
 	}{
-		{"ButtonComponent", func() error { var v ButtonComponent; return json.Unmarshal(null, &v) }},
-		{"ChannelSelectMenuComponent", func() error {
-			var v ChannelSelectMenuComponent
+		{"Button", func() error { var v Button; return json.Unmarshal(null, &v) }},
+		{"ChannelSelectMenu", func() error {
+			var v ChannelSelectMenu
 			return json.Unmarshal(null, &v)
 		}},
 		{"ChannelComponentInteractionResponse", func() error {
 			var v ChannelComponentInteractionResponse
 			return json.Unmarshal(null, &v)
 		}},
-		{"CheckboxComponent", func() error { var v CheckboxComponent; return json.Unmarshal(null, &v) }},
+		{"Checkbox", func() error { var v Checkbox; return json.Unmarshal(null, &v) }},
 		{"CheckboxComponentInteractionResponse", func() error {
 			var v CheckboxComponentInteractionResponse
 			return json.Unmarshal(null, &v)
 		}},
-		{"CheckboxGroupComponent", func() error {
-			var v CheckboxGroupComponent
+		{"CheckboxGroup", func() error {
+			var v CheckboxGroup
 			return json.Unmarshal(null, &v)
 		}},
 		{"CheckboxGroupComponentInteractionResponse", func() error {
@@ -39,82 +39,82 @@ func (su *nullUnmarshalSuite) TestNullUnmarshalNoPanic() {
 			return json.Unmarshal(null, &v)
 		}},
 		{"Container", func() error { var v Container; return json.Unmarshal(null, &v) }},
-		{"FileComponent", func() error { var v FileComponent; return json.Unmarshal(null, &v) }},
-		{"FileUploadComponent", func() error {
-			var v FileUploadComponent
+		{"File", func() error { var v File; return json.Unmarshal(null, &v) }},
+		{"FileUpload", func() error {
+			var v FileUpload
 			return json.Unmarshal(null, &v)
 		}},
 		{"FileUploadComponentInteractionResponse", func() error {
 			var v FileUploadComponentInteractionResponse
 			return json.Unmarshal(null, &v)
 		}},
-		{"LabelComponent", func() error { var v LabelComponent; return json.Unmarshal(null, &v) }},
+		{"Label", func() error { var v Label; return json.Unmarshal(null, &v) }},
 		{"LabelComponentInteractionResponse", func() error {
 			var v LabelComponentInteractionResponse
 			return json.Unmarshal(null, &v)
 		}},
-		{"MediaGalleryComponent", func() error {
-			var v MediaGalleryComponent
+		{"MediaGallery", func() error {
+			var v MediaGallery
 			return json.Unmarshal(null, &v)
 		}},
-		{"MentionableSelectMenuComponent", func() error {
-			var v MentionableSelectMenuComponent
+		{"MentionableSelectMenu", func() error {
+			var v MentionableSelectMenu
 			return json.Unmarshal(null, &v)
 		}},
 		{"MentionableComponentInteractionResponse", func() error {
 			var v MentionableComponentInteractionResponse
 			return json.Unmarshal(null, &v)
 		}},
-		{"RadioGroupComponent", func() error {
-			var v RadioGroupComponent
+		{"RadioGroup", func() error {
+			var v RadioGroup
 			return json.Unmarshal(null, &v)
 		}},
 		{"RadioGroupComponentInteractionResponse", func() error {
 			var v RadioGroupComponentInteractionResponse
 			return json.Unmarshal(null, &v)
 		}},
-		{"RoleSelectMenuComponent", func() error {
-			var v RoleSelectMenuComponent
+		{"RoleSelectMenu", func() error {
+			var v RoleSelectMenu
 			return json.Unmarshal(null, &v)
 		}},
 		{"RoleComponentInteractionResponse", func() error {
 			var v RoleComponentInteractionResponse
 			return json.Unmarshal(null, &v)
 		}},
-		{"SeparatorComponent", func() error {
-			var v SeparatorComponent
+		{"Separator", func() error {
+			var v Separator
 			return json.Unmarshal(null, &v)
 		}},
-		{"StringSelectMenuComponent", func() error {
-			var v StringSelectMenuComponent
+		{"StringSelectMenu", func() error {
+			var v StringSelectMenu
 			return json.Unmarshal(null, &v)
 		}},
 		{"StringSelectComponentInteractionResponse", func() error {
 			var v StringSelectComponentInteractionResponse
 			return json.Unmarshal(null, &v)
 		}},
-		{"TextDisplayComponent", func() error {
-			var v TextDisplayComponent
+		{"TextDisplay", func() error {
+			var v TextDisplay
 			return json.Unmarshal(null, &v)
 		}},
 		{"TextDisplayComponentInteractionResponse", func() error {
 			var v TextDisplayComponentInteractionResponse
 			return json.Unmarshal(null, &v)
 		}},
-		{"TextInputComponent", func() error {
-			var v TextInputComponent
+		{"TextInput", func() error {
+			var v TextInput
 			return json.Unmarshal(null, &v)
 		}},
 		{"TextInputComponentInteractionResponse", func() error {
 			var v TextInputComponentInteractionResponse
 			return json.Unmarshal(null, &v)
 		}},
-		{"ThumbnailComponent", func() error {
-			var v ThumbnailComponent
+		{"Thumbnail", func() error {
+			var v Thumbnail
 			return json.Unmarshal(null, &v)
 		}},
-		{"UserSelectMenuComponent", func() error {
-			var v UserSelectMenuComponent
+		{"UserSelectMenu", func() error {
+			var v UserSelectMenu
 			return json.Unmarshal(null, &v)
 		}},
 		{"UserSelectComponentInteractionResponse", func() error {

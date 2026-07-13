@@ -28,7 +28,7 @@ func (b *SectionBuilder) AddComponents(c ...components.AnySectionComponent) *Sec
 }
 
 func (b *SectionBuilder) SetAccessory(a components.AnySectionAccessory) *SectionBuilder {
-	b.s.Accessory = &a
+	b.s.Accessory = a
 	return b
 }
 
@@ -38,13 +38,13 @@ func (b *SectionBuilder) Build() *components.Section {
 
 // ── Thumbnail ─────────────────────────────────────────────────────────────────
 
-// ThumbnailBuilder builds a ThumbnailComponent (Components v2 section accessory).
+// ThumbnailBuilder builds a Thumbnail (Components v2 section accessory).
 //
 //	thumb := builder.NewThumbnail().SetURL("https://example.com/img.png").Build()
 //
 // https://docs.discord.com/developers/components/reference#thumbnail
 type ThumbnailBuilder struct {
-	t components.ThumbnailComponent
+	t components.Thumbnail
 }
 
 func NewThumbnail() *ThumbnailBuilder { return &ThumbnailBuilder{} }
@@ -55,7 +55,7 @@ func (b *ThumbnailBuilder) SetURL(url string) *ThumbnailBuilder {
 }
 
 func (b *ThumbnailBuilder) SetDescription(desc string) *ThumbnailBuilder {
-	b.t.Description = desc
+	b.t.Description = &desc
 	return b
 }
 
@@ -64,6 +64,6 @@ func (b *ThumbnailBuilder) SetSpoiler(spoiler bool) *ThumbnailBuilder {
 	return b
 }
 
-func (b *ThumbnailBuilder) Build() *components.ThumbnailComponent {
+func (b *ThumbnailBuilder) Build() *components.Thumbnail {
 	return &b.t
 }

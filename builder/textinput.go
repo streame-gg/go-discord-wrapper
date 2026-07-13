@@ -4,7 +4,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/components"
 )
 
-// TextInputBuilder builds a TextInputComponent using a fluent API.
+// TextInputBuilder builds a TextInput using a fluent API.
 //
 //	input := builder.NewTextInput().
 //	    SetCustomID("name").
@@ -15,7 +15,7 @@ import (
 //
 // https://docs.discord.com/developers/components/reference#text-input
 type TextInputBuilder struct {
-	input components.TextInputComponent
+	input components.TextInput
 }
 
 func NewTextInput() *TextInputBuilder { return &TextInputBuilder{} }
@@ -56,13 +56,13 @@ func (b *TextInputBuilder) SetPlaceholder(placeholder string) *TextInputBuilder 
 	return b
 }
 
-func (b *TextInputBuilder) Build() *components.TextInputComponent {
+func (b *TextInputBuilder) Build() *components.TextInput {
 	return &b.input
 }
 
 // ── Label (Components v2 form wrapper) ───────────────────────────────────────
 
-// LabelBuilder builds a LabelComponent (Components v2) that wraps an input
+// LabelBuilder builds a Label (Components v2) that wraps an input
 // with a label and optional description.
 //
 //	label := builder.NewLabel().
@@ -73,7 +73,7 @@ func (b *TextInputBuilder) Build() *components.TextInputComponent {
 //
 // https://docs.discord.com/developers/components/reference#label
 type LabelBuilder struct {
-	lbl components.LabelComponent
+	lbl components.Label
 }
 
 func NewLabel() *LabelBuilder { return &LabelBuilder{} }
@@ -93,6 +93,6 @@ func (b *LabelBuilder) SetComponent(c components.AnyChildComponent) *LabelBuilde
 	return b
 }
 
-func (b *LabelBuilder) Build() *components.LabelComponent {
+func (b *LabelBuilder) Build() *components.Label {
 	return &b.lbl
 }

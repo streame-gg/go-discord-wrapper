@@ -2,7 +2,7 @@ package builder
 
 import "github.com/streame-gg/go-discord-wrapper/types/components"
 
-// MediaGalleryBuilder builds a MediaGalleryComponent (Components v2) using a fluent API.
+// MediaGalleryBuilder builds a MediaGallery (Components v2) using a fluent API.
 //
 //	gallery := builder.NewMediaGallery().
 //	    AddItems(
@@ -13,12 +13,12 @@ import "github.com/streame-gg/go-discord-wrapper/types/components"
 //
 // https://docs.discord.com/developers/components/reference#media-gallery
 type MediaGalleryBuilder struct {
-	mg components.MediaGalleryComponent
+	mg components.MediaGallery
 }
 
 func NewMediaGallery() *MediaGalleryBuilder {
 	items := []components.MediaGalleryItem{}
-	return &MediaGalleryBuilder{mg: components.MediaGalleryComponent{Items: items}}
+	return &MediaGalleryBuilder{mg: components.MediaGallery{Items: items}}
 }
 
 func (b *MediaGalleryBuilder) AddItems(items ...components.MediaGalleryItem) *MediaGalleryBuilder {
@@ -26,7 +26,7 @@ func (b *MediaGalleryBuilder) AddItems(items ...components.MediaGalleryItem) *Me
 	return b
 }
 
-func (b *MediaGalleryBuilder) Build() *components.MediaGalleryComponent {
+func (b *MediaGalleryBuilder) Build() *components.MediaGallery {
 	return &b.mg
 }
 

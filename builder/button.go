@@ -5,7 +5,7 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-// ButtonBuilder builds a ButtonComponent using a fluent API.
+// ButtonBuilder builds a Button using a fluent API.
 //
 //	btn := builder.NewButton().
 //	    SetStyle(components.ButtonStylePrimary).
@@ -15,12 +15,12 @@ import (
 //
 // https://docs.discord.com/developers/components/reference#button
 type ButtonBuilder struct {
-	btn components.ButtonComponent
+	btn components.Button
 }
 
 func NewButton() *ButtonBuilder {
 	return &ButtonBuilder{
-		btn: components.ButtonComponent{
+		btn: components.Button{
 			Type: discord.ComponentTypeButton,
 		},
 	}
@@ -63,6 +63,6 @@ func (b *ButtonBuilder) SetDisabled(disabled bool) *ButtonBuilder {
 	return b
 }
 
-func (b *ButtonBuilder) Build() *components.ButtonComponent {
+func (b *ButtonBuilder) Build() *components.Button {
 	return &b.btn
 }

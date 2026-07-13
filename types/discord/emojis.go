@@ -14,14 +14,14 @@ type Emoji struct {
 
 	GuildID Snowflake `json:"-"`
 
-	ID            Snowflake   `json:"id"`
-	Name          string      `json:"name"`
-	Roles         []Snowflake `json:"roles,omitempty"`
-	User          *User       `json:"user,omitempty"`
-	RequireColons *bool       `json:"require_colons,omitempty"`
-	Managed       *bool       `json:"managed,omitempty"`
-	Animated      *bool       `json:"animated,omitempty"`
-	Available     *bool       `json:"available,omitempty"`
+	ID            Snowflake    `json:"id"`
+	Name          string       `json:"name"`
+	Roles         *[]Snowflake `json:"roles,omitempty"`
+	User          *User        `json:"user,omitempty"`
+	RequireColons *bool        `json:"require_colons,omitempty"`
+	Managed       *bool        `json:"managed,omitempty"`
+	Animated      *bool        `json:"animated,omitempty"`
+	Available     *bool        `json:"available,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/message#reaction-count-details-object
@@ -37,5 +37,5 @@ type Reaction struct {
 	Me           bool                 `json:"me"`
 	MeBurst      bool                 `json:"me_burst"`
 	Emoji        Emoji                `json:"emoji"`
-	BurstColors  []interface{}        `json:"burst_colors"`
+	BurstColors  []string             `json:"burst_colors"`
 }

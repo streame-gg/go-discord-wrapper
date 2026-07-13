@@ -1,6 +1,7 @@
 package events
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -214,7 +215,7 @@ func (s *eventSuite) compareSticker(expected map[string]interface{}, actual disc
 func (s *eventSuite) compareEmoji(expected map[string]interface{}, actual discord.Emoji) {
 	s.EqualValues(expected["id"], actual.ID)
 	s.EqualValues(expected["name"], actual.Name)
-	s.EqualValues(expected["roles"], actual.Roles)
+	s.EqualValues(expected["roles"], *actual.Roles)
 	s.EqualValues(expected["require_colons"], *actual.RequireColons)
 	s.EqualValues(expected["animated"], *actual.Animated)
 	s.EqualValues(expected["available"], *actual.Available)
@@ -677,13 +678,12 @@ func (s *eventSuite) compareApplication(expected map[string]interface{}, actual 
 	s.compareGuild(expected["guild"].(map[string]interface{}), *actual.Guild)
 }
 
-// TODO
 func (s *eventSuite) compareMessage(expected map[string]interface{}, actual discord.Message) {
 	s.EqualValues(expected["id"], actual.ID)
 	s.EqualValues(expected["channel_id"], actual.ChannelID)
 	s.EqualValues(expected["content"], actual.Content)
 	s.EqualValues(expected["timestamp"], actual.Timestamp)
-	s.EqualValues(expected["edited_timestamp"], actual.EditedTimestamp)
+	s.EqualValues(expected["edited_timestamp"], *actual.EditedTimestamp)
 	s.EqualValues(expected["tts"], actual.TTS)
 	s.EqualValues(expected["mention_everyone"], actual.MentionEveryone)
 	s.EqualValues(expected["mention_roles"], actual.MentionRoles)
@@ -693,9 +693,14 @@ func (s *eventSuite) compareMessage(expected map[string]interface{}, actual disc
 	s.EqualValues(expected["type"], actual.Type)
 	s.EqualValues(expected["application_id"], *actual.ApplicationID)
 	s.EqualValues(expected["flags"], actual.Flags)
-	s.EqualValues(expected["position"], actual.Position)
+	s.EqualValues(expected["position"], *actual.Position)
 
-	interaction := expected["interaction"].(map[string]interface{})
+	interaction, ok := expected["interaction"].(map[string]interface{})
+	if !ok {
+		s.Failf("Conversion Error", "expected interaction to be map[string]interface{}, got %T with data %+v", expected["interaction"], expected["interaction"])
+		return
+	}
+
 	s.EqualValues(interaction["id"], actual.Interaction.ID)
 	s.EqualValues(interaction["type"], actual.Interaction.Type)
 	s.EqualValues(interaction["name"], actual.Interaction.Name)
@@ -703,7 +708,7 @@ func (s *eventSuite) compareMessage(expected map[string]interface{}, actual disc
 	s.compareMember(interaction["member"].(map[string]interface{}), *actual.Interaction.Member)
 
 	messageReference := expected["message_reference"].(map[string]interface{})
-	s.EqualValues(messageReference["type"], *actual.MessageReference.MessageID)
+	s.EqualValues(messageReference["type"], *actual.MessageReference.Type)
 	s.EqualValues(messageReference["message_id"], *actual.MessageReference.MessageID)
 	s.EqualValues(messageReference["channel_id"], *actual.MessageReference.ChannelID)
 	s.EqualValues(messageReference["guild_id"], *actual.MessageReference.GuildID)
@@ -723,7 +728,6 @@ func (s *eventSuite) compareMessage(expected map[string]interface{}, actual disc
 
 	question := poll["question"].(map[string]interface{})
 	s.EqualValues(question["text"], actual.Poll.Question.Text)
-	s.compareEmoji(question["emoji"].(map[string]interface{}), *actual.Poll.Question.Emoji)
 
 	results := poll["results"].(map[string]interface{})
 	s.EqualValues(results["is_finalized"], actual.Poll.Results.IsFinalized)
@@ -737,18 +741,22 @@ func (s *eventSuite) compareMessage(expected map[string]interface{}, actual disc
 		s.EqualValues(pollResultAnswers[i]["me_voted"], answer.MeVoted)
 	}
 
-	pollAnswers := results["answers"].([]map[string]interface{})
+	pollAnswers := poll["answers"].([]map[string]interface{})
 	s.Len(actual.Poll.Answers, len(pollAnswers))
 
 	for i, answer := range actual.Poll.Answers {
-		s.EqualValues(pollAnswers[i]["answer_id"], answer.AnswerID)
+		s.EqualValues(pollAnswers[i]["answer_id"], *answer.AnswerID)
 
-		media := poll["question"].(map[string]interface{})
+		media := pollAnswers[i]["poll_media"].(map[string]interface{})
 		s.EqualValues(media["text"], answer.PollMedia.Text)
-		s.compareEmoji(media["emoji"].(map[string]interface{}), *answer.PollMedia.Emoji)
+
+		val, ok := media["emoji"]
+		if ok {
+			s.compareEmoji(val.(map[string]interface{}), *answer.PollMedia.Emoji)
+		}
 	}
 
-	s.EqualValues(poll["expiry"], actual.Poll.Expiry)
+	s.EqualValues(poll["expiry"], *actual.Poll.Expiry)
 	s.EqualValues(poll["allow_multiselect"], actual.Poll.AllowMultiselect)
 	s.EqualValues(poll["layout_type"], actual.Poll.LayoutType)
 
@@ -762,11 +770,16 @@ func (s *eventSuite) compareMessage(expected map[string]interface{}, actual disc
 	s.EqualValues(sharedClientTheme["base_mix"], actual.SharedClientTheme.BaseMix)
 	s.EqualValues(sharedClientTheme["base_theme"], actual.SharedClientTheme.BaseTheme)
 
-	messageSnapshots := expected["message_snapshots"].([]map[string]interface{})
-	s.Len(actual.Mentions, len(messageSnapshots))
+	messageSnapshots, ok := expected["message_snapshots"].([]map[string]interface{})
+	if !ok && expected["message_snapshots"] != nil {
+		s.Failf("Conversion Error", "expected message_snapshots to be []map[string]interface{}, got %T with data %+v", expected["message_snapshots"], expected["message_snapshots"])
+		return
+	}
+
+	s.Len(actual.MessageSnapshots, len(messageSnapshots))
 
 	for i, snapshot := range actual.MessageSnapshots {
-		s.compareMessage(messageSnapshots[i], snapshot.Message)
+		s.compareMessage(messageSnapshots[i]["message"].(map[string]interface{}), snapshot.Message)
 	}
 
 	mentions := expected["mentions"].([]map[string]interface{})
@@ -804,14 +817,14 @@ func (s *eventSuite) compareMessage(expected map[string]interface{}, actual disc
 	s.Len(actual.Reactions, len(reactions))
 
 	for i, reaction := range actual.Reactions {
-		s.compareReaction(embeds[i], reaction)
+		s.compareReaction(reactions[i], reaction)
 	}
 
 	messageComponents := expected["components"].([]map[string]interface{})
 	s.Len(actual.Components, len(messageComponents))
 
 	for i, component := range actual.Components {
-		s.compareComponent(embeds[i], component)
+		s.compareComponent(messageComponents[i], component)
 	}
 
 	stickerItems := expected["sticker_items"].([]map[string]interface{})
@@ -832,9 +845,18 @@ func (s *eventSuite) compareMessage(expected map[string]interface{}, actual disc
 
 	s.compareUser(expected["author"].(map[string]interface{}), actual.Author)
 	s.compareApplication(expected["application"].(map[string]interface{}), *actual.Application)
-	s.compareMessage(expected["referenced_message"].(map[string]interface{}), *actual.ReferencedMessage)
+
+	referencedMessage, ok := expected["referenced_message"].(map[string]interface{})
+	if ok {
+		s.compareMessage(referencedMessage, *actual.ReferencedMessage)
+	}
 	s.compareChannel(expected["thread"].(map[string]interface{}), *actual.Thread)
-	s.compareResolved(expected["resolved"].(map[string]interface{}), *actual.Resolved)
+
+	resolved, ok := expected["resolved"].(map[string]interface{})
+	if ok {
+		s.compareResolved(resolved, *actual.Resolved)
+	}
+
 	s.compareMessageInteractionMetadata(expected["interaction_metadata"].(map[string]interface{}), actual.InteractionMetadata)
 }
 
@@ -1079,4 +1101,376 @@ func (s *eventSuite) compareReaction(expected map[string]interface{}, actual dis
 	s.EqualValues(countDetails["burst"], actual.CountDetails.Burst)
 
 	s.compareEmoji(expected["emoji"].(map[string]interface{}), actual.Emoji)
+}
+
+func (s *eventSuite) compareEmbed(expected map[string]interface{}, actual discord.Embed) {
+	s.EqualValues(expected["title"], actual.Title)
+	s.EqualValues(expected["type"], actual.Type)
+	s.EqualValues(expected["description"], actual.Description)
+	s.EqualValues(expected["url"], actual.URL)
+	s.EqualValues(expected["timestamp"], *actual.Timestamp)
+	s.EqualValues(expected["color"], *actual.Color)
+	s.EqualValues(expected["flags"], actual.Flags)
+
+	footer := expected["footer"].(map[string]interface{})
+	s.EqualValues(footer["text"], actual.Footer.Text)
+	s.EqualValues(footer["icon_url"], actual.Footer.IconURL)
+	s.EqualValues(footer["proxy_icon_url"], actual.Footer.ProxyIconURL)
+
+	author := expected["author"].(map[string]interface{})
+	s.EqualValues(author["name"], actual.Author.Name)
+	s.EqualValues(author["icon_url"], actual.Author.IconURL)
+	s.EqualValues(author["proxy_icon_url"], actual.Author.ProxyIconURL)
+	s.EqualValues(author["url"], actual.Author.URL)
+
+	image := expected["image"].(map[string]interface{})
+	s.EqualValues(image["url"], actual.Image.URL)
+	s.EqualValues(image["proxy_url"], actual.Image.ProxyURL)
+	s.EqualValues(image["height"], *actual.Image.Height)
+	s.EqualValues(image["width"], *actual.Image.Width)
+	s.EqualValues(image["content_type"], actual.Image.ContentType)
+	s.EqualValues(image["placeholder"], actual.Image.Placeholder)
+	s.EqualValues(image["placeholder_version"], *actual.Image.PlaceholderVersion)
+	s.EqualValues(image["description"], actual.Image.Description)
+	s.EqualValues(image["flags"], actual.Image.Flags)
+
+	thumbnail := expected["thumbnail"].(map[string]interface{})
+	s.EqualValues(thumbnail["url"], actual.Thumbnail.URL)
+	s.EqualValues(thumbnail["proxy_url"], actual.Thumbnail.ProxyURL)
+	s.EqualValues(thumbnail["height"], *actual.Thumbnail.Height)
+	s.EqualValues(thumbnail["width"], *actual.Thumbnail.Width)
+	s.EqualValues(thumbnail["content_type"], actual.Thumbnail.ContentType)
+	s.EqualValues(thumbnail["placeholder"], actual.Thumbnail.Placeholder)
+	s.EqualValues(thumbnail["placeholder_version"], *actual.Thumbnail.PlaceholderVersion)
+	s.EqualValues(thumbnail["description"], actual.Thumbnail.Description)
+	s.EqualValues(thumbnail["flags"], actual.Thumbnail.Flags)
+
+	video := expected["video"].(map[string]interface{})
+	s.EqualValues(video["url"], actual.Video.URL)
+	s.EqualValues(video["proxy_url"], actual.Video.ProxyURL)
+	s.EqualValues(video["height"], *actual.Video.Height)
+	s.EqualValues(video["width"], *actual.Video.Width)
+	s.EqualValues(video["content_type"], actual.Video.ContentType)
+	s.EqualValues(video["placeholder"], actual.Video.Placeholder)
+	s.EqualValues(video["placeholder_version"], *actual.Video.PlaceholderVersion)
+	s.EqualValues(video["description"], actual.Video.Description)
+	s.EqualValues(video["flags"], actual.Video.Flags)
+
+	provider := expected["provider"].(map[string]interface{})
+	s.EqualValues(provider["name"], actual.Provider.Name)
+	s.EqualValues(provider["url"], actual.Provider.URL)
+
+	fields := expected["fields"].([]map[string]interface{})
+	s.Len(actual.Fields, len(fields))
+
+	for i, field := range actual.Fields {
+		s.EqualValues(fields[i]["name"], field.Name)
+		s.EqualValues(fields[i]["value"], field.Value)
+		s.EqualValues(fields[i]["inline"], field.Inline)
+	}
+}
+
+func mustUnmarshalInto[V any](t *testing.T, data []byte) V {
+	t.Helper()
+
+	var marshalInto V
+	if err := json.Unmarshal(data, &marshalInto); err != nil {
+		t.Errorf("got error %+v with data %+v", err, data)
+	}
+
+	return marshalInto
+}
+
+func (s *eventSuite) compareComponent(expected map[string]interface{}, actual discord.AnyComponent) {
+	s.T().Helper()
+
+	var componentType discord.ComponentType
+	var rawData json.RawMessage
+
+	switch v := actual.(type) {
+	case *discord.RawComponent:
+		componentType = v.GetType()
+		rawData = v.Data
+	default:
+		if actual == nil {
+			s.Fail("Conversion Error", "expected a component, got nil")
+			return
+		}
+		componentType = actual.GetType()
+		data, err := actual.MarshalJSON()
+		if err != nil {
+			s.Failf("Marshal Error", "failed to marshal concrete component %T back to JSON: %v", actual, err)
+			return
+		}
+		rawData = data
+	}
+
+	s.EqualValues(expected["type"], componentType)
+
+	switch actual.GetType() {
+	case discord.ComponentTypeActionRow:
+		component := mustUnmarshalInto[components.ActionRow](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+
+		underLyingComponents, ok := expected["components"].([]map[string]interface{})
+		if !ok {
+			s.Failf("Conversion Error", "expected components to be []map[string]interface{}, got %T with data %+v", expected["components"], expected["components"])
+			return
+		}
+
+		s.Len(component.Components, len(underLyingComponents))
+
+		for i, underLyingComponent := range component.Components {
+			s.compareComponent(underLyingComponents[i], underLyingComponent)
+		}
+	case discord.ComponentTypeButton:
+		component := mustUnmarshalInto[components.Button](s.T(), rawData)
+
+		s.EqualValues(expected["id"], component.ID)
+		s.EqualValues(expected["style"], component.Style)
+		s.EqualValues(expected["label"], component.Label)
+		s.EqualValues(expected["custom_id"], component.CustomID)
+		s.EqualValues(expected["sku_id"], component.SkuID)
+		s.EqualValues(expected["url"], component.URL)
+		s.EqualValues(expected["disabled"], component.Disabled)
+
+		s.compareEmoji(expected["emoji"].(map[string]interface{}), *component.Emoji)
+	case discord.ComponentTypeStringSelect:
+		component := mustUnmarshalInto[components.StringSelectMenu](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["custom_id"], component.CustomID)
+		s.EqualValues(expected["placeholder"], component.Placeholder)
+		s.EqualValues(expected["min_values"], *component.MinValues)
+		s.EqualValues(expected["max_values"], *component.MaxValues)
+		s.EqualValues(expected["required"], component.Required)
+		s.EqualValues(expected["disabled"], component.Disabled)
+
+		options := expected["options"].([]map[string]interface{})
+		s.Len(component.Options, len(options))
+
+		for i, option := range component.Options {
+			s.EqualValues(options[i]["value"], option.Value)
+			s.EqualValues(options[i]["label"], option.Label)
+			s.EqualValues(options[i]["default"], option.Default)
+			s.EqualValues(options[i]["description"], option.Description)
+			s.compareEmoji(options[i]["emoji"].(map[string]interface{}), *option.Emoji)
+		}
+
+	case discord.ComponentTypeTextInput:
+		component := mustUnmarshalInto[components.TextInput](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["custom_id"], component.CustomID)
+		s.EqualValues(expected["style"], component.Style)
+		s.EqualValues(expected["min_length"], *component.MinLength)
+		s.EqualValues(expected["max_length"], *component.MaxLength)
+		s.EqualValues(expected["required"], component.Required)
+		s.EqualValues(expected["value"], component.Value)
+		s.EqualValues(expected["placeholder"], component.Placeholder)
+
+	case discord.ComponentTypeUserSelect:
+		component := mustUnmarshalInto[components.UserSelectMenu](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["custom_id"], component.CustomID)
+		s.EqualValues(expected["placeholder"], component.Placeholder)
+		s.EqualValues(expected["min_values"], *component.MinValues)
+		s.EqualValues(expected["max_values"], *component.MaxValues)
+		s.EqualValues(expected["required"], component.Required)
+		s.EqualValues(expected["disabled"], component.Disabled)
+
+		s.compareDefaultValues(expected["default_values"].([]map[string]interface{}), component.DefaultValues)
+	case discord.ComponentTypeRoleSelect:
+		component := mustUnmarshalInto[components.RoleSelectMenu](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["custom_id"], component.CustomID)
+		s.EqualValues(expected["placeholder"], component.Placeholder)
+		s.EqualValues(expected["min_values"], *component.MinValues)
+		s.EqualValues(expected["max_values"], *component.MaxValues)
+		s.EqualValues(expected["required"], component.Required)
+		s.EqualValues(expected["disabled"], component.Disabled)
+
+		s.compareDefaultValues(expected["default_values"].([]map[string]interface{}), component.DefaultValues)
+	case discord.ComponentTypeMentionableSelect:
+		component := mustUnmarshalInto[components.MentionableSelectMenu](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["custom_id"], component.CustomID)
+		s.EqualValues(expected["placeholder"], component.Placeholder)
+		s.EqualValues(expected["min_values"], *component.MinValues)
+		s.EqualValues(expected["max_values"], *component.MaxValues)
+		s.EqualValues(expected["required"], component.Required)
+		s.EqualValues(expected["disabled"], component.Disabled)
+
+		s.compareDefaultValues(expected["default_values"].([]map[string]interface{}), component.DefaultValues)
+	case discord.ComponentTypeChannelSelect:
+		component := mustUnmarshalInto[components.ChannelSelectMenu](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["custom_id"], component.CustomID)
+		s.EqualValues(expected["placeholder"], component.Placeholder)
+		s.EqualValues(expected["channel_types"], component.ChannelTypes)
+		s.EqualValues(expected["min_values"], *component.MinValues)
+		s.EqualValues(expected["max_values"], *component.MaxValues)
+		s.EqualValues(expected["required"], component.Required)
+		s.EqualValues(expected["disabled"], component.Disabled)
+
+		s.compareDefaultValues(expected["default_values"].([]map[string]interface{}), component.DefaultValues)
+	case discord.ComponentTypeSection:
+		component := mustUnmarshalInto[components.Section](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+
+		underLyingComponents := expected["components"].([]map[string]interface{})
+		s.Len(component.Components, len(underLyingComponents))
+
+		for i, underLyingComponent := range component.Components {
+			s.compareComponent(underLyingComponents[i], underLyingComponent)
+		}
+
+		s.compareComponent(expected["accessory"].(map[string]interface{}), component.Accessory)
+	case discord.ComponentTypeTextDisplay:
+		component := mustUnmarshalInto[components.TextDisplay](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["content"], component.Content)
+	case discord.ComponentTypeThumbnail:
+		component := mustUnmarshalInto[components.Thumbnail](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["description"], *component.Description)
+		s.EqualValues(expected["spoiler"], component.Spoiler)
+		s.compareUnfurledMediaItem(expected["media"].(map[string]interface{}), component.Media)
+	case discord.ComponentTypeMediaGallery:
+		component := mustUnmarshalInto[components.MediaGallery](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+
+		items := expected["items"].([]map[string]interface{})
+		s.Len(component.Items, len(items))
+
+		for i, item := range component.Items {
+			s.EqualValues(items[i]["description"], *item.Description)
+			s.EqualValues(items[i]["spoiler"], item.Spoiler)
+			s.compareUnfurledMediaItem(items[i]["media"].(map[string]interface{}), item.Media)
+		}
+	case discord.ComponentTypeFile:
+		component := mustUnmarshalInto[components.File](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["spoiler"], component.Spoiler)
+		s.EqualValues(expected["name"], component.Name)
+		s.EqualValues(expected["size"], *component.Size)
+		s.compareUnfurledMediaItem(expected["file"].(map[string]interface{}), *component.File)
+	case discord.ComponentTypeSeparator:
+		component := mustUnmarshalInto[components.Separator](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["divider"], component.Divider)
+		s.EqualValues(expected["spacing"], component.Spacing)
+	case discord.ComponentTypeContainer:
+		component := mustUnmarshalInto[components.Container](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["accent_color"], *component.AccentColor)
+		s.EqualValues(expected["spoiler"], component.Spoiler)
+
+		underLyingComponents := expected["components"].([]map[string]interface{})
+		s.Len(component.Components, len(underLyingComponents))
+
+		for i, underLyingComponent := range component.Components {
+			s.compareComponent(underLyingComponents[i], underLyingComponent)
+		}
+	case discord.ComponentTypeLabel:
+		component := mustUnmarshalInto[components.Label](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["label"], component.Label)
+		s.EqualValues(expected["description"], component.Description)
+		s.Require().NotNil(component.Component)
+
+		underlyingComponent, ok := expected["component"].(map[string]interface{})
+		if !ok {
+			s.Failf("Conversion Error", "expected component to be map[string]interface{}, got %T with data %+v", expected["component"], expected["component"])
+			return
+		}
+
+		s.compareComponent(underlyingComponent, component.Component)
+	case discord.ComponentTypeFileUpload:
+		component := mustUnmarshalInto[components.FileUpload](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["custom_id"], component.CustomID)
+		s.EqualValues(expected["min_values"], *component.MinValues)
+		s.EqualValues(expected["max_values"], *component.MaxValues)
+		s.EqualValues(expected["required"], component.Required)
+	case discord.ComponentTypeRadioGroup:
+		component := mustUnmarshalInto[components.RadioGroup](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["custom_id"], component.CustomID)
+		s.EqualValues(expected["required"], component.Required)
+
+		options := expected["options"].([]map[string]interface{})
+		s.Len(component.Options, len(options))
+
+		for i, option := range component.Options {
+			s.EqualValues(options[i]["label"], option.Label)
+			s.EqualValues(options[i]["value"], option.Value)
+			s.EqualValues(options[i]["description"], option.Description)
+			s.EqualValues(options[i]["default"], option.Default)
+		}
+	case discord.ComponentTypeCheckboxGroup:
+		component := mustUnmarshalInto[components.CheckboxGroup](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["min_values"], *component.MinValues)
+		s.EqualValues(expected["max_values"], *component.MaxValues)
+		s.EqualValues(expected["custom_id"], component.CustomID)
+		s.EqualValues(expected["required"], component.Required)
+
+		options, ok := expected["options"].([]map[string]interface{})
+		if !ok {
+			s.Failf("Conversion Error", "expected options to be map[string]interface{}, got %T with data %+v", expected["options"], expected["options"])
+			return
+		}
+		s.Len(component.Options, len(options))
+
+		for i, option := range component.Options {
+			s.EqualValues(options[i]["label"], option.Label)
+			s.EqualValues(options[i]["value"], option.Value)
+			s.EqualValues(options[i]["description"], option.Description)
+			s.EqualValues(options[i]["default"], option.Default)
+		}
+	case discord.ComponentTypeCheckbox:
+		component := mustUnmarshalInto[components.Checkbox](s.T(), rawData)
+
+		s.EqualValues(expected["id"], *component.ID)
+		s.EqualValues(expected["custom_id"], component.CustomID)
+		s.EqualValues(expected["default"], component.Default)
+	}
+}
+
+func (s *eventSuite) compareUnfurledMediaItem(expected map[string]interface{}, actual components.UnfurledMediaItem) {
+	s.EqualValues(expected["url"], actual.URL)
+	s.EqualValues(expected["proxy_url"], actual.ProxyURL)
+	s.EqualValues(expected["height"], *actual.Height)
+	s.EqualValues(expected["width"], *actual.Width)
+	s.EqualValues(expected["content_type"], actual.ContentType)
+	s.EqualValues(expected["placeholder"], actual.Placeholder)
+	s.EqualValues(expected["placeholder_version"], actual.PlaceholderVersion)
+	s.EqualValues(expected["flags"], actual.Flags)
+	s.EqualValues(expected["attachment_id"], *actual.AttachmentID)
+}
+
+func (s *eventSuite) compareDefaultValues(expected []map[string]interface{}, actual []components.SelectDefaultValue) {
+	s.Len(actual, len(expected))
+
+	for i, option := range actual {
+		s.EqualValues(expected[i]["type"], option.Type)
+		s.EqualValues(expected[i]["id"], option.ID)
+	}
 }

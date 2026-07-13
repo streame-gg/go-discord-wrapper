@@ -2,18 +2,19 @@ package components
 
 import (
 	"encoding/json"
+
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
 // https://docs.discord.com/developers/components/reference#text-display
-type TextDisplayComponent struct {
+type TextDisplay struct {
 	Type    discord.ComponentType `json:"type"`
 	ID      *int                  `json:"id,omitempty"`
 	Content string                `json:"content"`
 }
 
-func (t *TextDisplayComponent) UnmarshalJSON(data []byte) error {
-	type Alias TextDisplayComponent
+func (t *TextDisplay) UnmarshalJSON(data []byte) error {
+	type Alias TextDisplay
 	var raw struct {
 		*Alias
 	}
@@ -25,18 +26,18 @@ func (t *TextDisplayComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*t = TextDisplayComponent(*raw.Alias)
+	*t = TextDisplay(*raw.Alias)
 	return nil
 }
 
-func (t *TextDisplayComponent) IsAnyContainerComponent() {}
+func (t *TextDisplay) IsAnyContainerComponent() {}
 
-func (t *TextDisplayComponent) GetType() discord.ComponentType {
+func (t *TextDisplay) GetType() discord.ComponentType {
 	return discord.ComponentTypeTextDisplay
 }
 
-func (t *TextDisplayComponent) MarshalJSON() ([]byte, error) {
-	type Alias TextDisplayComponent
+func (t *TextDisplay) MarshalJSON() ([]byte, error) {
+	type Alias TextDisplay
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -46,7 +47,7 @@ func (t *TextDisplayComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (t *TextDisplayComponent) IsAnySectionComponent() {}
+func (t *TextDisplay) IsAnySectionComponent() {}
 
 // https://docs.discord.com/developers/components/reference#text-display
 type TextDisplayComponentInteractionResponse struct {

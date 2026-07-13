@@ -7,14 +7,14 @@ import (
 )
 
 // https://docs.discord.com/developers/components/reference#media-gallery
-type MediaGalleryComponent struct {
+type MediaGallery struct {
 	Type  discord.ComponentType `json:"type"`
 	ID    *int                  `json:"id,omitempty"`
 	Items []MediaGalleryItem    `json:"items"`
 }
 
-func (m *MediaGalleryComponent) UnmarshalJSON(data []byte) error {
-	type Alias MediaGalleryComponent
+func (m *MediaGallery) UnmarshalJSON(data []byte) error {
+	type Alias MediaGallery
 	var raw struct {
 		*Alias
 	}
@@ -26,12 +26,12 @@ func (m *MediaGalleryComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*m = MediaGalleryComponent(*raw.Alias)
+	*m = MediaGallery(*raw.Alias)
 	return nil
 }
 
-func (m *MediaGalleryComponent) MarshalJSON() ([]byte, error) {
-	type Alias MediaGalleryComponent
+func (m *MediaGallery) MarshalJSON() ([]byte, error) {
+	type Alias MediaGallery
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -41,11 +41,11 @@ func (m *MediaGalleryComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (m *MediaGalleryComponent) GetType() discord.ComponentType {
+func (m *MediaGallery) GetType() discord.ComponentType {
 	return discord.ComponentTypeMediaGallery
 }
 
-func (m *MediaGalleryComponent) IsAnyContainerComponent() {
+func (m *MediaGallery) IsAnyContainerComponent() {
 
 }
 

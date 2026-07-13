@@ -7,12 +7,16 @@ import (
 // https://docs.discord.com/developers/components/reference#what-is-a-component
 type AnyContainerComponent interface {
 	MarshalJSON() ([]byte, error)
+	UnmarshalJSON([]byte) error
 	GetType() discord.ComponentType
 	IsAnyContainerComponent()
 }
 
 // https://docs.discord.com/developers/components/reference#what-is-a-component
 type AnyChildComponent interface {
+	MarshalJSON() ([]byte, error)
+	UnmarshalJSON([]byte) error
+	GetType() discord.ComponentType
 	IsAnyLabelComponent()
 }
 
@@ -25,12 +29,18 @@ type AnyComponentInteractionResponse interface {
 
 // https://docs.discord.com/developers/components/reference#section
 type AnySectionComponent interface {
+	MarshalJSON() ([]byte, error)
+	UnmarshalJSON([]byte) error
 	IsAnySectionComponent()
+	GetType() discord.ComponentType
 }
 
 // https://docs.discord.com/developers/components/reference#section
 type AnySectionAccessory interface {
+	MarshalJSON() ([]byte, error)
+	UnmarshalJSON([]byte) error
 	IsAnySectionAccessory()
+	GetType() discord.ComponentType
 }
 
 // https://docs.discord.com/developers/components/reference#user-select-select-default-value-structure
@@ -72,7 +82,7 @@ type UnfurledMediaItem struct {
 	Height             *int                   `json:"height,omitempty"`
 	Width              *int                   `json:"width,omitempty"`
 	ContentType        string                 `json:"content_type,omitempty"`
-	AttachmentID       discord.Snowflake      `json:"attachment_id,omitempty"`
+	AttachmentID       *discord.Snowflake     `json:"attachment_id,omitempty"`
 	PlaceholderVersion int                    `json:"placeholder_version,omitempty"`
 	Placeholder        string                 `json:"placeholder,omitempty"`
 	Flags              UnfurledMediaItemFlags `json:"flags,omitempty"`

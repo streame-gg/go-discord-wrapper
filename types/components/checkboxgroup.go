@@ -7,7 +7,7 @@ import (
 )
 
 // https://docs.discord.com/developers/components/reference#checkbox-group
-type CheckboxGroupComponent struct {
+type CheckboxGroup struct {
 	Type      discord.ComponentType          `json:"type"`
 	ID        *int                           `json:"id,omitempty"`
 	CustomID  string                         `json:"custom_id"`
@@ -25,8 +25,8 @@ type CheckboxGroupComponentOption struct {
 	Default     bool   `json:"default"`
 }
 
-func (c *CheckboxGroupComponent) MarshalJSON() ([]byte, error) {
-	type Alias CheckboxGroupComponent
+func (c *CheckboxGroup) MarshalJSON() ([]byte, error) {
+	type Alias CheckboxGroup
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -36,8 +36,8 @@ func (c *CheckboxGroupComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (c *CheckboxGroupComponent) UnmarshalJSON(data []byte) error {
-	type Alias CheckboxGroupComponent
+func (c *CheckboxGroup) UnmarshalJSON(data []byte) error {
+	type Alias CheckboxGroup
 	var raw struct {
 		*Alias
 	}
@@ -49,15 +49,15 @@ func (c *CheckboxGroupComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*c = CheckboxGroupComponent(*raw.Alias)
+	*c = CheckboxGroup(*raw.Alias)
 	return nil
 }
 
-func (c *CheckboxGroupComponent) GetType() discord.ComponentType {
+func (c *CheckboxGroup) GetType() discord.ComponentType {
 	return discord.ComponentTypeCheckboxGroup
 }
 
-func (c *CheckboxGroupComponent) IsAnyLabelComponent() {
+func (c *CheckboxGroup) IsAnyLabelComponent() {
 
 }
 

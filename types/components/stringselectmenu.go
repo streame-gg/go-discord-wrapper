@@ -7,7 +7,7 @@ import (
 )
 
 // https://docs.discord.com/developers/components/reference#string-select
-type StringSelectMenuComponent struct {
+type StringSelectMenu struct {
 	Type        discord.ComponentType             `json:"type"`
 	ID          *int                              `json:"id,omitempty"`
 	CustomID    string                            `json:"custom_id"`
@@ -19,12 +19,12 @@ type StringSelectMenuComponent struct {
 	Disabled    bool                              `json:"disabled"`
 }
 
-func (s *StringSelectMenuComponent) IsAnyContainerAccessory() bool {
+func (s *StringSelectMenu) IsAnyContainerAccessory() bool {
 	return true
 }
 
-func (s *StringSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	type Alias StringSelectMenuComponent
+func (s *StringSelectMenu) MarshalJSON() ([]byte, error) {
+	type Alias StringSelectMenu
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -34,12 +34,12 @@ func (s *StringSelectMenuComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (s *StringSelectMenuComponent) GetType() discord.ComponentType {
+func (s *StringSelectMenu) GetType() discord.ComponentType {
 	return discord.ComponentTypeStringSelect
 }
 
-func (s *StringSelectMenuComponent) UnmarshalJSON(data []byte) error {
-	type Alias StringSelectMenuComponent
+func (s *StringSelectMenu) UnmarshalJSON(data []byte) error {
+	type Alias StringSelectMenu
 	var raw struct {
 		*Alias
 	}
@@ -51,7 +51,7 @@ func (s *StringSelectMenuComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*s = StringSelectMenuComponent(*raw.Alias)
+	*s = StringSelectMenu(*raw.Alias)
 	return nil
 }
 
@@ -64,7 +64,7 @@ type StringSelectMenuComponentOption struct {
 	Default     bool           `json:"default"`
 }
 
-func (s *StringSelectMenuComponent) IsAnyLabelComponent() {
+func (s *StringSelectMenu) IsAnyLabelComponent() {
 
 }
 

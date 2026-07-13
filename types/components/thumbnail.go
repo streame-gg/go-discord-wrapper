@@ -7,16 +7,16 @@ import (
 )
 
 // https://docs.discord.com/developers/components/reference#thumbnail
-type ThumbnailComponent struct {
+type Thumbnail struct {
 	Type        discord.ComponentType `json:"type"`
 	ID          *int                  `json:"id,omitempty"`
-	Description string                `json:"description,omitempty"`
+	Description *string               `json:"description"`
 	Spoiler     bool                  `json:"spoiler"`
 	Media       UnfurledMediaItem     `json:"media"`
 }
 
-func (t *ThumbnailComponent) UnmarshalJSON(data []byte) error {
-	type Alias ThumbnailComponent
+func (t *Thumbnail) UnmarshalJSON(data []byte) error {
+	type Alias Thumbnail
 	var raw struct {
 		*Alias
 	}
@@ -28,12 +28,12 @@ func (t *ThumbnailComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*t = ThumbnailComponent(*raw.Alias)
+	*t = Thumbnail(*raw.Alias)
 	return nil
 }
 
-func (t *ThumbnailComponent) MarshalJSON() ([]byte, error) {
-	type Alias ThumbnailComponent
+func (t *Thumbnail) MarshalJSON() ([]byte, error) {
+	type Alias Thumbnail
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -43,8 +43,8 @@ func (t *ThumbnailComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (t *ThumbnailComponent) GetType() discord.ComponentType {
+func (t *Thumbnail) GetType() discord.ComponentType {
 	return discord.ComponentTypeThumbnail
 }
 
-func (t *ThumbnailComponent) IsAnySectionAccessory() {}
+func (t *Thumbnail) IsAnySectionAccessory() {}

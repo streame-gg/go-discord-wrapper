@@ -7,7 +7,7 @@ import (
 )
 
 // https://docs.discord.com/developers/components/reference#channel-select
-type ChannelSelectMenuComponent struct {
+type ChannelSelectMenu struct {
 	Type          discord.ComponentType `json:"type"`
 	ID            *int                  `json:"id,omitempty"`
 	CustomID      string                `json:"custom_id"`
@@ -20,12 +20,12 @@ type ChannelSelectMenuComponent struct {
 	ChannelTypes  []discord.ChannelType `json:"channel_types,omitempty"`
 }
 
-func (c *ChannelSelectMenuComponent) IsAnyContainerAccessory() bool {
+func (c *ChannelSelectMenu) IsAnyContainerAccessory() bool {
 	return true
 }
 
-func (c *ChannelSelectMenuComponent) UnmarshalJSON(data []byte) error {
-	type Alias ChannelSelectMenuComponent
+func (c *ChannelSelectMenu) UnmarshalJSON(data []byte) error {
+	type Alias ChannelSelectMenu
 	var raw struct {
 		*Alias
 	}
@@ -37,12 +37,12 @@ func (c *ChannelSelectMenuComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*c = ChannelSelectMenuComponent(*raw.Alias)
+	*c = ChannelSelectMenu(*raw.Alias)
 	return nil
 }
 
-func (c *ChannelSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	type Alias ChannelSelectMenuComponent
+func (c *ChannelSelectMenu) MarshalJSON() ([]byte, error) {
+	type Alias ChannelSelectMenu
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -52,11 +52,11 @@ func (c *ChannelSelectMenuComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (c *ChannelSelectMenuComponent) GetType() discord.ComponentType {
+func (c *ChannelSelectMenu) GetType() discord.ComponentType {
 	return discord.ComponentTypeChannelSelect
 }
 
-func (c *ChannelSelectMenuComponent) IsAnyLabelComponent() {
+func (c *ChannelSelectMenu) IsAnyLabelComponent() {
 
 }
 

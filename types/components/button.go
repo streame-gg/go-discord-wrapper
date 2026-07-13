@@ -19,7 +19,7 @@ const (
 )
 
 // https://docs.discord.com/developers/components/reference#button
-type ButtonComponent struct {
+type Button struct {
 	Type     discord.ComponentType `json:"type"`
 	ID       int                   `json:"id,omitempty"`
 	Style    ButtonStyle           `json:"style"`
@@ -31,8 +31,8 @@ type ButtonComponent struct {
 	Disabled bool                  `json:"disabled"`
 }
 
-func (b *ButtonComponent) UnmarshalJSON(data []byte) error {
-	type Alias ButtonComponent
+func (b *Button) UnmarshalJSON(data []byte) error {
+	type Alias Button
 	var raw struct {
 		*Alias
 	}
@@ -44,12 +44,12 @@ func (b *ButtonComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*b = ButtonComponent(*raw.Alias)
+	*b = Button(*raw.Alias)
 	return nil
 }
 
-func (b *ButtonComponent) MarshalJSON() ([]byte, error) {
-	type Alias ButtonComponent
+func (b *Button) MarshalJSON() ([]byte, error) {
+	type Alias Button
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -59,11 +59,11 @@ func (b *ButtonComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (b *ButtonComponent) GetType() discord.ComponentType {
+func (b *Button) GetType() discord.ComponentType {
 	return discord.ComponentTypeButton
 }
 
-func (b *ButtonComponent) IsAnySectionAccessory() {}
+func (b *Button) IsAnySectionAccessory() {}
 
-func (b *ButtonComponent) IsAnyContainerAccessory() {
+func (b *Button) IsAnyContainerAccessory() {
 }

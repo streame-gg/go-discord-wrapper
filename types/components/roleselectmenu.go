@@ -7,7 +7,7 @@ import (
 )
 
 // https://docs.discord.com/developers/components/reference#role-select
-type RoleSelectMenuComponent struct {
+type RoleSelectMenu struct {
 	Type          discord.ComponentType `json:"type"`
 	ID            *int                  `json:"id,omitempty"`
 	CustomID      string                `json:"custom_id"`
@@ -19,12 +19,12 @@ type RoleSelectMenuComponent struct {
 	DefaultValues []SelectDefaultValue  `json:"default_values,omitempty"`
 }
 
-func (r *RoleSelectMenuComponent) IsAnyContainerAccessory() bool {
+func (r *RoleSelectMenu) IsAnyContainerAccessory() bool {
 	return true
 }
 
-func (r *RoleSelectMenuComponent) MarshalJSON() ([]byte, error) {
-	type Alias RoleSelectMenuComponent
+func (r *RoleSelectMenu) MarshalJSON() ([]byte, error) {
+	type Alias RoleSelectMenu
 	return json.Marshal(struct {
 		Alias
 		Type discord.ComponentType `json:"type"`
@@ -34,8 +34,8 @@ func (r *RoleSelectMenuComponent) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (r *RoleSelectMenuComponent) UnmarshalJSON(data []byte) error {
-	type Alias RoleSelectMenuComponent
+func (r *RoleSelectMenu) UnmarshalJSON(data []byte) error {
+	type Alias RoleSelectMenu
 	var raw struct {
 		*Alias
 	}
@@ -47,15 +47,15 @@ func (r *RoleSelectMenuComponent) UnmarshalJSON(data []byte) error {
 	if raw.Alias == nil {
 		return nil
 	}
-	*r = RoleSelectMenuComponent(*raw.Alias)
+	*r = RoleSelectMenu(*raw.Alias)
 	return nil
 }
 
-func (r *RoleSelectMenuComponent) GetType() discord.ComponentType {
+func (r *RoleSelectMenu) GetType() discord.ComponentType {
 	return discord.ComponentTypeRoleSelect
 }
 
-func (r *RoleSelectMenuComponent) IsAnyLabelComponent() {
+func (r *RoleSelectMenu) IsAnyLabelComponent() {
 
 }
 

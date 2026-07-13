@@ -58,43 +58,43 @@ func (a *ActionRow) UnmarshalJSON(data []byte) error {
 
 		switch probe.Type {
 		case discord.ComponentTypeButton:
-			var b *ButtonComponent
+			var b *Button
 			if err := json.Unmarshal(c, &b); err != nil {
 				return err
 			}
 			a.Components = append(a.Components, b)
 		case discord.ComponentTypeStringSelect:
-			var s *StringSelectMenuComponent
+			var s *StringSelectMenu
 			if err := json.Unmarshal(c, &s); err != nil {
 				return err
 			}
 			a.Components = append(a.Components, s)
 		case discord.ComponentTypeUserSelect:
-			var u *UserSelectMenuComponent
+			var u *UserSelectMenu
 			if err := json.Unmarshal(c, &u); err != nil {
 				return err
 			}
 			a.Components = append(a.Components, u)
 		case discord.ComponentTypeRoleSelect:
-			var r *RoleSelectMenuComponent
+			var r *RoleSelectMenu
 			if err := json.Unmarshal(c, &r); err != nil {
 				return err
 			}
 			a.Components = append(a.Components, r)
 		case discord.ComponentTypeMentionableSelect:
-			var m *MentionableSelectMenuComponent
+			var m *MentionableSelectMenu
 			if err := json.Unmarshal(c, &m); err != nil {
 				return err
 			}
 			a.Components = append(a.Components, m)
 		case discord.ComponentTypeChannelSelect:
-			var ch *ChannelSelectMenuComponent
+			var ch *ChannelSelectMenu
 			if err := json.Unmarshal(c, &ch); err != nil {
 				return err
 			}
 			a.Components = append(a.Components, ch)
 		case discord.ComponentTypeTextInput:
-			var t *TextInputComponent
+			var t *TextInput
 			if err := json.Unmarshal(c, &t); err != nil {
 				return err
 			}
