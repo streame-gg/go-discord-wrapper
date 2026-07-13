@@ -5,6 +5,31 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+func NewMessageCreateOrUpdatePayload() map[string]interface{} {
+	obj := NewMessage(1)
+	obj["channel_type"] = testutil.RandomItem(
+		discord.ChannelTypeGuildText,
+		discord.ChannelTypeDM,
+		discord.ChannelTypeGuildVoice,
+		discord.ChannelTypeGuildCategory,
+		discord.ChannelTypeGuildAnnouncement,
+		discord.ChannelTypeAnnouncementThread,
+		discord.ChannelTypePublicThread,
+		discord.ChannelTypePrivateThread,
+		discord.ChannelTypeGuildStageVoice,
+		discord.ChannelTypeGuildDirectory,
+		discord.ChannelTypeGuildForum,
+		discord.ChannelTypeGuildMedia,
+	)
+	obj["guild_id"] = discord.RandomSnowflake()
+	obj["member"] = NewGuildMember()
+	obj["mentions"] = testutil.RandomArrayWithFilledItems(testutil.RandomIntInRange(1, 5), func(arrayToFill *[]map[string]interface{}) {
+		*arrayToFill = append(*arrayToFill, NewUser())
+	})
+
+	return obj
+}
+
 func NewMessage(runThrough int) map[string]interface{} {
 	obj := map[string]interface{}{
 		"id":               discord.RandomSnowflake(),

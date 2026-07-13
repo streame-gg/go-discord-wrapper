@@ -1,6 +1,9 @@
 package events
 
 import (
+	"errors"
+	"expvar"
+	"fmt"
 	"testing"
 
 	"github.com/streame-gg/go-discord-wrapper/types/components"
@@ -677,7 +680,200 @@ func (s *eventSuite) compareApplication(expected map[string]interface{}, actual 
 }
 
 // TODO
-func (s *eventSuite) compareMessage(expected map[string]interface{}, actual discord.Message) {}
+func (s *eventSuite) compareMessage(expected map[string]interface{}, actual discord.Message) {
+	s.EqualValues(expected["id"], actual.ID)
+	s.EqualValues(expected["channel_id"], actual.ChannelID)
+	s.EqualValues(expected["content"], actual.Content)
+	s.EqualValues(expected["timestamp"], actual.Timestamp)
+	s.EqualValues(expected["edited_timestamp"], actual.EditedTimestamp)
+	s.EqualValues(expected["tts"], actual.TTS)
+	s.EqualValues(expected["mention_everyone"], actual.MentionEveryone)
+	s.EqualValues(expected["mention_roles"], actual.MentionRoles)
+	s.EqualValues(expected["nonce"], actual.Nonce)
+	s.EqualValues(expected["pinned"], actual.Pinned)
+	s.EqualValues(expected["webhook_id"], *actual.WebhookID)
+	s.EqualValues(expected["type"], actual.Type)
+	s.EqualValues(expected["application_id"], *actual.ApplicationID)
+	s.EqualValues(expected["flags"], actual.Flags)
+	s.EqualValues(expected["position"], actual.Position)
+
+	interaction := expected["interaction"].(map[string]interface{})
+	s.EqualValues(interaction["id"], actual.Interaction.ID)
+	s.EqualValues(interaction["type"], actual.Interaction.Type)
+	s.EqualValues(interaction["name"], actual.Interaction.Name)
+	s.compareUser(interaction["user"].(map[string]interface{}), actual.Interaction.User)
+	s.compareMember(interaction["member"].(map[string]interface{}), *actual.Interaction.Member)
+
+	messageReference := expected["message_reference"].(map[string]interface{})
+	s.EqualValues(messageReference["type"], *actual.MessageReference.MessageID)
+	s.EqualValues(messageReference["message_id"], *actual.MessageReference.MessageID)
+	s.EqualValues(messageReference["channel_id"], *actual.MessageReference.ChannelID)
+	s.EqualValues(messageReference["guild_id"], *actual.MessageReference.GuildID)
+	s.EqualValues(messageReference["fail_if_not_exists"], *actual.MessageReference.FailIfNotExists)
+
+	activity := expected["activity"].(map[string]interface{})
+	s.EqualValues(activity["type"], actual.Activity.Type)
+	s.EqualValues(activity["party_id"], actual.Activity.PartyID)
+
+	roleSubscriptionData := expected["role_subscription_data"].(map[string]interface{})
+	s.EqualValues(roleSubscriptionData["role_subscription_listing_id"], actual.RoleSubscriptionData.RoleSubscriptionListingID)
+	s.EqualValues(roleSubscriptionData["tier_name"], actual.RoleSubscriptionData.TierName)
+	s.EqualValues(roleSubscriptionData["total_months_subscribed"], actual.RoleSubscriptionData.TotalMonthsSubscribed)
+	s.EqualValues(roleSubscriptionData["is_renewal"], actual.RoleSubscriptionData.IsRenewal)
+
+	poll := expected["poll"].(map[string]interface{})
+
+	question := poll["question"].(map[string]interface{})
+	s.EqualValues(question["text"], actual.Poll.Question.Text)
+	s.compareEmoji(question["emoji"].(map[string]interface{}), *actual.Poll.Question.Emoji)
+
+	results := poll["results"].(map[string]interface{})
+	s.EqualValues(results["is_finalized"], actual.Poll.Results.IsFinalized)
+
+	pollResultAnswers := results["answer_counts"].([]map[string]interface{})
+	s.Len(actual.Poll.Results.AnswerCounts, len(pollResultAnswers))
+
+	for i, answer := range actual.Poll.Results.AnswerCounts {
+		s.EqualValues(pollResultAnswers[i]["id"], answer.ID)
+		s.EqualValues(pollResultAnswers[i]["count"], answer.Count)
+		s.EqualValues(pollResultAnswers[i]["me_voted"], answer.MeVoted)
+	}
+
+	pollAnswers := results["answers"].([]map[string]interface{})
+	s.Len(actual.Poll.Answers, len(pollAnswers))
+
+	for i, answer := range actual.Poll.Answers {
+		s.EqualValues(pollAnswers[i]["answer_id"], answer.AnswerID)
+
+		media := poll["question"].(map[string]interface{})
+		s.EqualValues(media["text"], answer.PollMedia.Text)
+		s.compareEmoji(media["emoji"].(map[string]interface{}), *answer.PollMedia.Emoji)
+	}
+
+	s.EqualValues(poll["expiry"], actual.Poll.Expiry)
+	s.EqualValues(poll["allow_multiselect"], actual.Poll.AllowMultiselect)
+	s.EqualValues(poll["layout_type"], actual.Poll.LayoutType)
+
+	call := expected["call"].(map[string]interface{})
+	s.EqualValues(call["ended_timestamp"], *actual.Call.EndedTimestamp)
+	s.EqualValues(call["participants"], actual.Call.Participants)
+
+	sharedClientTheme := expected["shared_client_theme"].(map[string]interface{})
+	s.EqualValues(sharedClientTheme["colors"], actual.SharedClientTheme.Colors)
+	s.EqualValues(sharedClientTheme["gradient_angle"], actual.SharedClientTheme.GradientAngle)
+	s.EqualValues(sharedClientTheme["base_mix"], actual.SharedClientTheme.BaseMix)
+	s.EqualValues(sharedClientTheme["base_theme"], actual.SharedClientTheme.BaseTheme)
+
+	messageSnapshots := expected["message_snapshots"].([]map[string]interface{})
+	s.Len(actual.Mentions, len(messageSnapshots))
+
+	for i, snapshot := range actual.MessageSnapshots {
+		s.compareMessage(messageSnapshots[i], snapshot.Message)
+	}
+
+	mentions := expected["mentions"].([]map[string]interface{})
+	s.Len(actual.Mentions, len(mentions))
+
+	for i, mention := range actual.Mentions {
+		s.compareUser(mentions[i], mention)
+	}
+
+	channelMentions := expected["mention_channels"].([]map[string]interface{})
+	s.Len(actual.MentionChannels, len(channelMentions))
+
+	for i, mention := range actual.MentionChannels {
+		s.EqualValues(channelMentions[i]["id"], mention.ID)
+		s.EqualValues(channelMentions[i]["type"], mention.Type)
+		s.EqualValues(channelMentions[i]["guild_id"], mention.GuildID)
+		s.EqualValues(channelMentions[i]["name"], mention.Name)
+	}
+
+	attachments := expected["attachments"].([]map[string]interface{})
+	s.Len(actual.Attachments, len(attachments))
+
+	for i, attachment := range actual.Attachments {
+		s.compareAttachment(attachments[i], attachment)
+	}
+
+	embeds := expected["embeds"].([]map[string]interface{})
+	s.Len(actual.Embeds, len(embeds))
+
+	for i, embed := range actual.Embeds {
+		s.compareEmbed(embeds[i], embed)
+	}
+
+	reactions := expected["reactions"].([]map[string]interface{})
+	s.Len(actual.Reactions, len(reactions))
+
+	for i, reaction := range actual.Reactions {
+		s.compareReaction(embeds[i], reaction)
+	}
+
+	messageComponents := expected["components"].([]map[string]interface{})
+	s.Len(actual.Components, len(messageComponents))
+
+	for i, component := range actual.Components {
+		s.compareComponent(embeds[i], component)
+	}
+
+	stickerItems := expected["sticker_items"].([]map[string]interface{})
+	s.Len(actual.StickerItems, len(stickerItems))
+
+	for i, sticker := range actual.StickerItems {
+		s.EqualValues(stickerItems[i]["name"], sticker.Name)
+		s.EqualValues(stickerItems[i]["id"], sticker.ID)
+		s.EqualValues(stickerItems[i]["format_type"], sticker.FormatType)
+	}
+
+	stickers := expected["stickers"].([]map[string]interface{})
+	s.Len(actual.Stickers, len(stickers))
+
+	for i, sticker := range actual.Stickers {
+		s.compareSticker(stickers[i], sticker)
+	}
+
+	s.compareUser(expected["author"].(map[string]interface{}), actual.Author)
+	s.compareApplication(expected["application"].(map[string]interface{}), *actual.Application)
+	s.compareMessage(expected["referenced_message"].(map[string]interface{}), *actual.ReferencedMessage)
+	s.compareChannel(expected["thread"].(map[string]interface{}), *actual.Thread)
+	s.compareResolved(expected["resolved"].(map[string]interface{}), *actual.Resolved)
+	s.compareMessageInteractionMetadata(expected["interaction_metadata"].(map[string]interface{}), actual.InteractionMetadata)
+}
+
+func (s *eventSuite) compareMessageInteractionMetadata(expected map[string]interface{}, actual discord.AnyMessageInteractionMetadata) {
+	switch actual.(type) {
+	case discord.MessageInteractionMetadataApplicationCommand:
+		actualMetadata := actual.(discord.MessageInteractionMetadataApplicationCommand)
+		s.EqualValues(expected["id"], actualMetadata.ID)
+		s.EqualValues(expected["type"], actualMetadata.Type)
+		s.EqualValues(expected["authorizing_integration_owners"], actualMetadata.AuthorizingIntegrationOwners)
+		s.EqualValues(expected["original_response_message_id"], actualMetadata.OriginalResponseMessageID)
+		s.EqualValues(expected["target_message_id"], actualMetadata.TargetMessageID)
+
+		s.compareUser(expected["target_user"].(map[string]interface{}), *actualMetadata.TargetUser)
+		s.compareUser(expected["user"].(map[string]interface{}), actualMetadata.User)
+	case discord.MessageInteractionMetadataMessageComponent:
+		actualMetadata := actual.(discord.MessageInteractionMetadataMessageComponent)
+		s.EqualValues(expected["id"], actualMetadata.ID)
+		s.EqualValues(expected["type"], actualMetadata.Type)
+		s.EqualValues(expected["authorizing_integration_owners"], actualMetadata.AuthorizingIntegrationOwners)
+		s.EqualValues(expected["original_response_message_id"], actualMetadata.OriginalResponseMessageID)
+		s.EqualValues(expected["interacted_message_id"], actualMetadata.InteractedMessageID)
+
+		s.compareUser(expected["user"].(map[string]interface{}), actualMetadata.User)
+	case discord.MessageInteractionMetadataModalSubmit:
+		actualMetadata := actual.(discord.MessageInteractionMetadataModalSubmit)
+		s.EqualValues(expected["id"], actualMetadata.ID)
+		s.EqualValues(expected["type"], actualMetadata.Type)
+		s.EqualValues(expected["authorizing_integration_owners"], actualMetadata.AuthorizingIntegrationOwners)
+		s.EqualValues(expected["original_response_message_id"], actualMetadata.OriginalResponseMessageID)
+
+		s.compareMessageInteractionMetadata(expected["triggering_interaction_metadata"].(map[string]interface{}), actualMetadata.TriggeringInteractionMetadata)
+		s.compareUser(expected["user"].(map[string]interface{}), actualMetadata.User)
+	default:
+		s.Error(fmt.Errorf("unknown interaction metadata type of Type %T", actual))
+	}
+}
 
 func (s *eventSuite) expectMap(expected map[string]interface{}, key string) map[string]interface{} {
 	s.T().Helper()
@@ -872,4 +1068,17 @@ func (s *eventSuite) compareComponentLabelChild(expected map[string]interface{},
 	default:
 		s.Failf("unhandled component response type in compareComponentLabelChild", "%T", actual)
 	}
+}
+
+func (s *eventSuite) compareReaction(expected map[string]interface{}, actual discord.Reaction) {
+	s.EqualValues(expected["count"], actual.Count)
+	s.EqualValues(expected["me"], actual.Me)
+	s.EqualValues(expected["me_burst"], actual.MeBurst)
+	s.EqualValues(expected["burst_colors"], actual.BurstColors)
+
+	countDetails := expected["count_details"].(map[string]interface{})
+	s.EqualValues(countDetails["normal"], actual.CountDetails.Normal)
+	s.EqualValues(countDetails["burst"], actual.CountDetails.Burst)
+
+	s.compareEmoji(expected["emoji"].(map[string]interface{}), actual.Emoji)
 }

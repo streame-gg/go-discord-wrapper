@@ -72,6 +72,7 @@ type Message struct {
 	Flags               MessageFlag                 `json:"flags,omitempty"`
 	ID                  Snowflake                   `json:"id"`
 	InteractionMetadata *MessageInteractionMetadata `json:"interaction_metadata,omitempty"`
+	Interaction         *MessageInteraction         `json:"interaction,omitempty"`
 	MentionEveryone     bool                        `json:"mention_everyone"`
 	MentionChannels     []MessageChannelMention     `json:"mention_channels,omitempty"`
 	MentionRoles        []Snowflake                 `json:"mention_roles"`
@@ -88,12 +89,21 @@ type Message struct {
 	ReferencedMessage    *Message              `json:"referenced_message,omitempty"`
 	RoleSubscriptionData *RoleSubscriptionData `json:"role_subscription_data,omitempty"`
 	StickerItems         []MessageStickerItem  `json:"sticker_items,omitempty"`
+	Stickers             []Sticker             `json:"stickers,omitempty"`
 	Thread               *Channel              `json:"thread,omitempty"`
 	Timestamp            time.Time             `json:"timestamp"`
 	TTS                  bool                  `json:"tts"`
 	Type                 MessageType           `json:"type"`
 	WebhookID            *Snowflake            `json:"webhook_id,omitempty"`
 	SharedClientTheme    *SharedClientTheme    `json:"shared_client_theme,omitempty"`
+}
+
+type MessageInteraction struct {
+	ID     Snowflake       `json:"id"`
+	Type   InteractionType `json:"type"`
+	Name   string          `json:"name"`
+	User   User            `json:"user"`
+	Member *GuildMember    `json:"member,omitempty"`
 }
 
 // https://docs.discord.com/developers/resources/message#role-subscription-data-object

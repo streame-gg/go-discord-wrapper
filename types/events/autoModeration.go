@@ -49,6 +49,7 @@ type AutoModerationActionExecutionEvent struct {
 	MatchedKeyword       *string                           `json:"matched_keyword"`
 	MatchedContent       *string                           `json:"matched_content"`
 
+	//TODO entfernen und in einem future patch wieder adden :D
 	Guild              *discord.Guild              `json:"-"`
 	AutomoderationRule *discord.AutoModerationRule `json:"-"`
 }

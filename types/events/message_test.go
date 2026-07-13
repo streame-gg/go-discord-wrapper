@@ -2,8 +2,70 @@ package events
 
 import (
 	"github.com/streame-gg/go-discord-wrapper/internal/testutil"
+	"github.com/streame-gg/go-discord-wrapper/testdata"
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
+
+func (s *eventSuite) TestMessageCreate() {
+	s.T().Log("Testing Message Create Unmarshal Logic")
+
+	sub := testutil.InitSub[MessageCreateEvent](s)
+
+	sub.RunCommonEdgeCases()
+
+	payload := testdata.NewMessageCreateOrUpdatePayload()
+
+	sub.RunCases([]testutil.UnmarshalTestCase[MessageCreateEvent]{
+		{
+			Name:  "valid full payload",
+			Input: sub.MustMarshal(payload),
+			Validate: func(got MessageCreateEvent) {
+				s.EqualValues(payload["channel_type"], *got.ChannelType)
+				s.EqualValues(payload["guild_id"], *got.GuildID)
+
+				mentions := payload["mentions"].([]map[string]interface{})
+				s.Len(got.Mentions, len(mentions))
+
+				for i, mention := range got.Mentions {
+					s.compareUser(mentions[i], mention)
+				}
+
+				s.compareMessage(payload, got.Message)
+				s.compareMember(payload["member"].(map[string]interface{}), *got.Member)
+			},
+		},
+	})
+}
+func (s *eventSuite) TestMessageUpdate() {
+	s.T().Log("Testing Message Update Unmarshal Logic")
+
+	sub := testutil.InitSub[MessageUpdateEvent](s)
+
+	sub.RunCommonEdgeCases()
+
+	payload := testdata.NewMessageCreateOrUpdatePayload()
+
+	sub.RunCases([]testutil.UnmarshalTestCase[MessageUpdateEvent]{
+		{
+			Name:  "valid full payload",
+			Input: sub.MustMarshal(payload),
+			Validate: func(got MessageUpdateEvent) {
+				s.EqualValues(payload["channel_type"], *got.ChannelType)
+				s.EqualValues(payload["guild_id"], *got.GuildID)
+
+				mentions := payload["mentions"].([]map[string]interface{})
+				s.Len(got.Mentions, len(mentions))
+
+				for i, mention := range got.Mentions {
+					s.compareUser(mentions[i], mention)
+				}
+
+				s.compareMessage(payload, got.NewMessage)
+				s.compareMember(payload["member"].(map[string]interface{}), *got.Member)
+			},
+		},
+	})
+}
 
 func (s *eventSuite) TestMessageDelete() {
 	s.T().Log("Testing Message Delete Unmarshal Logic")
