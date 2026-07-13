@@ -6,7 +6,9 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-// AutocompleteChoice is a single option shown in an autocomplete dropdown.
+var _ AnyInteractionResponseData = &InteractionResponseDataAutocomplete{}
+var _ discord.InteractionData = &InteractionDataAutocomplete{}
+
 // https://docs.discord.com/developers/interactions/application-commands#application-command-object-application-command-option-choice-structure
 type AutocompleteChoice struct {
 	Name              string                    `json:"name"`
@@ -14,8 +16,7 @@ type AutocompleteChoice struct {
 	Value             interface{}               `json:"value"` // string, int, or float64
 }
 
-// InteractionResponseDataAutocomplete is the response data for an autocomplete callback.
-// https://docs.discord.com/developers/interactions/receiving-and-responding#autocomplete
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-response-object-interaction-callback-data-structure
 type InteractionResponseDataAutocomplete struct {
 	Choices []AutocompleteChoice `json:"choices"`
 }
@@ -27,7 +28,7 @@ func (d *InteractionResponseDataAutocomplete) MarshalJSON() ([]byte, error) {
 	return json.Marshal((*Alias)(d))
 }
 
-// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-application-command-data
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-application-command-data-structure
 type InteractionDataAutocomplete struct {
 	ID       discord.Snowflake                                      `json:"id"`
 	Name     string                                                 `json:"name"`

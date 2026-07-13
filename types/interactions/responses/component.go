@@ -5,6 +5,8 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+var _ discord.InteractionData = &InteractionDataMessageComponent{}
+
 // https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-message-component-data-structure
 type InteractionDataMessageComponent struct {
 	CustomID      string                                       `json:"custom_id"`

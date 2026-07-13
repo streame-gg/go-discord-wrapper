@@ -8,7 +8,7 @@ import (
 )
 
 // https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-application-command-interaction-data-option-structure
-type ApplicationCommandInteractionDataOption[T string | discord.Snowflake | int | bool | interface{}] struct {
+type ApplicationCommandInteractionDataOption[T string | discord.Snowflake | int | bool | float64 | interface{}] struct {
 	Name    string                                                 `json:"name"`
 	Type    discord.ApplicationCommandOptionType                   `json:"type"`
 	Value   *T                                                     `json:"value,omitempty"`
@@ -18,10 +18,6 @@ type ApplicationCommandInteractionDataOption[T string | discord.Snowflake | int 
 
 func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) error {
 	type Alias ApplicationCommandInteractionDataOption[T]
-	// Capture the raw value bytes so each option type can be decoded with the
-	// right Go type. Discord sends string and boolean options as JSON strings
-	// and booleans, which cannot decode into json.Number — so the value is held
-	// as RawMessage here and interpreted by t.Type below.
 	raw := &struct {
 		*Alias
 		Value json.RawMessage `json:"value,omitempty"`
@@ -31,6 +27,9 @@ func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) 
 
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
+	}
+	if raw == nil {
+		return nil
 	}
 
 	t.Name = raw.Name
@@ -42,8 +41,6 @@ func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) 
 		return nil
 	}
 
-	// asNumber decodes the raw value as a json.Number so integer options keep
-	// full precision (values > 2^53 would be lossy via float64).
 	asNumber := func() (json.Number, error) {
 		var n json.Number
 		if err := json.Unmarshal(raw.Value, &n); err != nil {
@@ -89,16 +86,16 @@ func (t *ApplicationCommandInteractionDataOption[T]) UnmarshalJSON(data []byte) 
 		}
 		v := any(b).(T)
 		t.Value = &v
-	default:
+	case discord.ApplicationCommandOptionTypeUser, discord.ApplicationCommandOptionTypeAttachment, discord.ApplicationCommandOptionTypeChannel, discord.ApplicationCommandOptionTypeRole, discord.ApplicationCommandOptionTypeMentionable:
 		var s discord.Snowflake
 		if err := json.Unmarshal(raw.Value, &s); err != nil {
 			return fmt.Errorf("option %q: value %s: %w", t.Name, raw.Value, err)
 		}
-		v, ok := any(s).(T)
-		if !ok {
-			return fmt.Errorf("unexpected value type for option type %v", t.Type)
-		}
+		v := any(s).(T)
 		t.Value = &v
+	case discord.ApplicationCommandOptionTypeSubCommand, discord.ApplicationCommandOptionTypeSubCommandGroup:
+	default:
+		return fmt.Errorf("option %q: unknown option type", t.Name)
 	}
 
 	return nil

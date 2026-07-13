@@ -6,7 +6,9 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
-// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-application-command-data
+var _ discord.InteractionData = &InteractionDataApplicationCommand{}
+
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-object-application-command-data-structure
 type InteractionDataApplicationCommand struct {
 	ID       discord.Snowflake                                      `json:"id"`
 	Name     string                                                 `json:"name"`
@@ -32,6 +34,9 @@ func (d *InteractionDataApplicationCommand) UnmarshalJSON(data []byte) error {
 
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
+	}
+	if raw == nil {
+		return nil
 	}
 
 	d.ID = raw.ID

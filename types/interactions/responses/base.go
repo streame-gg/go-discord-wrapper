@@ -6,6 +6,8 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/discord"
 )
 
+var _ AnyInteractionResponseData = &InteractionResponseDataDefault{}
+
 // https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-response-object
 type AnyInteractionResponseData interface {
 	IsInteractionResponseData() bool
@@ -41,29 +43,29 @@ type InteractionResponse struct {
 	Data AnyInteractionResponseData      `json:"data,omitempty"`
 }
 
-// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-object-interaction-callback-structure
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-interaction-callback-object
 type InteractionCallback struct {
 	ID                       discord.Snowflake       `json:"id"`
 	Type                     discord.InteractionType `json:"type"`
-	ActivityInstanceID       *discord.Snowflake      `json:"activity_instance_id,omitempty"`
+	ActivityInstanceID       string                  `json:"activity_instance_id,omitempty"`
 	ResponseMessageID        *discord.Snowflake      `json:"response_message_id,omitempty"`
 	ResponseMessageLoading   *bool                   `json:"response_message_loading,omitempty"`
 	ResponseMessageEphemeral *bool                   `json:"response_message_ephemeral,omitempty"`
 }
 
-// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-object-interaction-callback-activity-instance-resource
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-interaction-callback-activity-instance-resource
 type InteractionCallbackActivityInstance struct {
 	ID string `json:"id"`
 }
 
-// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-object-interaction-callback-resource-object
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-interaction-callback-resource-object
 type InteractionCallbackResource struct {
 	Type             discord.InteractionCallbackType      `json:"type"`
 	ActivityInstance *InteractionCallbackActivityInstance `json:"activity_instance,omitempty"`
 	Message          *discord.Message                     `json:"message,omitempty"`
 }
 
-// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-object-interaction-callback-response-object
+// https://docs.discord.com/developers/interactions/receiving-and-responding#interaction-callback-interaction-callback-response-object
 type InteractionCallbackResponse struct {
 	Interaction InteractionCallback          `json:"interaction"`
 	Resource    *InteractionCallbackResource `json:"resource,omitempty"`
