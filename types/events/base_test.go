@@ -1,8 +1,6 @@
 package events
 
 import (
-	"errors"
-	"expvar"
 	"fmt"
 	"testing"
 
