@@ -1,3 +1,5 @@
+//TODO: Remove this as this does not make any kind of fucking sense to test what the fuck did claude think when generating this file
+
 package interactions_test
 
 import (

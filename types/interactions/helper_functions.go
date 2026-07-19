@@ -8,12 +8,25 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
 
+func (i *Interaction) GetCommandName() string {
+	if i.Data == nil {
+		return ""
+	}
+
+	cmdData, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	if !ok {
+		return ""
+	}
+
+	return cmdData.Name
+}
+
 func (i *Interaction) GetSubCommand() string {
 	if i.Data == nil {
 		return ""
 	}
 
-	cmdData, ok := (*i.Data).(*responses.InteractionDataApplicationCommand)
+	cmdData, ok := i.Data.(*responses.InteractionDataApplicationCommand)
 	if !ok {
 		return ""
 	}
@@ -46,7 +59,7 @@ func (i *Interaction) GetSubCommandGroup() string {
 		return ""
 	}
 
-	cmdData, ok := (*i.Data).(*responses.InteractionDataApplicationCommand)
+	cmdData, ok := (i.Data).(*responses.InteractionDataApplicationCommand)
 
 	if !ok {
 		return ""
@@ -70,7 +83,7 @@ func (i *Interaction) GetFullCommand() (fullCommand string) {
 		return ""
 	}
 
-	cmdData, ok := (*i.Data).(*responses.InteractionDataApplicationCommand)
+	cmdData, ok := i.Data.(*responses.InteractionDataApplicationCommand)
 	if !ok {
 		return ""
 	}
@@ -121,11 +134,11 @@ func (i *Interaction) GetCustomID() string {
 		return ""
 	}
 
-	if comp, ok := (*i.Data).(*responses.InteractionDataMessageComponent); ok {
+	if comp, ok := i.Data.(*responses.InteractionDataMessageComponent); ok {
 		return comp.CustomID
 	}
 
-	if modal, ok := (*i.Data).(*responses.InteractionDataModalSubmit); ok {
+	if modal, ok := i.Data.(*responses.InteractionDataModalSubmit); ok {
 		return modal.CustomID
 	}
 
@@ -148,7 +161,7 @@ func As[T discord.InteractionData](data discord.InteractionData) (T, bool) {
 // subcommand / subcommand-group so options nested under a subcommand are found
 // too. The bool reports whether the option was present.
 func (i *Interaction) GetOption(name string) (responses.ApplicationCommandInteractionDataOption[interface{}], bool) {
-	data, ok := (*i.Data).(*responses.InteractionDataApplicationCommand)
+	data, ok := i.Data.(*responses.InteractionDataApplicationCommand)
 	if !ok || data.Options == nil {
 		return responses.ApplicationCommandInteractionDataOption[interface{}]{}, false
 	}
@@ -178,8 +191,8 @@ func (i *Interaction) GetStringOption(name string) string {
 	return v
 }
 
-// GetIntOption returns the integer option named name, or 0 if absent.
-func (i *Interaction) GetIntOption(name string) int {
+// GetIntegerOption returns the integer option named name, or 0 if absent.
+func (i *Interaction) GetIntegerOption(name string) int {
 	v, _ := OptionValue[int](i, name)
 	return v
 }
@@ -190,7 +203,149 @@ func (i *Interaction) GetFloatOption(name string) float64 {
 	return v
 }
 
-// GetBoolOption returns the boolean option named name, or false if absent.
+//TODO: Mentionable
+
+type MentionableOptionType string
+
+const (
+	MentionableOptionUser MentionableOptionType = "user"
+	MentionableOptionRole MentionableOptionType = "role"
+)
+
+type MentionableOptionResult struct {
+	User *discord.User
+	Role *discord.Role
+	Type MentionableOptionType
+}
+
+// GetMentionableOption returns the mentionable option named name
+func (i *Interaction) GetMentionableOption(name string) *MentionableOptionResult {
+	v, ok := OptionValue[discord.Snowflake](i, name)
+
+	if !ok {
+		return nil
+	}
+
+	convertedData, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	if !ok || convertedData == nil || convertedData.Resolved == nil {
+		return nil
+	}
+
+	if convertedData.Resolved.Users != nil {
+		user, ok := convertedData.Resolved.Users[v]
+		if ok {
+			return &MentionableOptionResult{
+				User: &user,
+				Type: MentionableOptionUser,
+			}
+		}
+	}
+
+	if convertedData.Resolved.Roles != nil {
+		user, ok := convertedData.Resolved.Roles[v]
+		if ok {
+			return &MentionableOptionResult{
+				Role: &user,
+				Type: MentionableOptionRole,
+			}
+		}
+	}
+
+	return nil
+}
+
+// GetUserOption returns the user option named name
+func (i *Interaction) GetUserOption(name string) *discord.User {
+	v, ok := OptionValue[discord.Snowflake](i, name)
+
+	if !ok {
+		return nil
+	}
+
+	convertedData, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	if !ok || convertedData == nil || convertedData.Resolved == nil || convertedData.Resolved.Users == nil {
+		return nil
+	}
+
+	user, ok := convertedData.Resolved.Users[v]
+	if !ok {
+		return nil
+	}
+
+	return &user
+}
+
+// GetChannelOption returns the channel option named name
+// Note that the channel is partial and not a complete object
+func (i *Interaction) GetChannelOption(name string) *discord.Channel {
+	v, ok := OptionValue[discord.Snowflake](i, name)
+
+	if !ok {
+		return nil
+	}
+
+	convertedData, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	if !ok || convertedData == nil || convertedData.Resolved == nil || convertedData.Resolved.Channels == nil {
+		return nil
+	}
+
+	channel, ok := convertedData.Resolved.Channels[v]
+	if !ok {
+		return nil
+	}
+
+	return &channel
+}
+
+// GetRoleOption returns the role option named name
+func (i *Interaction) GetRoleOption(name string) *discord.Role {
+	v, ok := OptionValue[discord.Snowflake](i, name)
+
+	if !ok {
+		return nil
+	}
+
+	convertedData, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	if !ok || convertedData == nil || convertedData.Resolved == nil || convertedData.Resolved.Roles == nil {
+		return nil
+	}
+
+	role, ok := convertedData.Resolved.Roles[v]
+	if !ok {
+		return nil
+	}
+
+	return &role
+}
+
+// GetAttachmentOption returns the attachment option named name
+func (i *Interaction) GetAttachmentOption(name string) *discord.Attachment {
+	v, ok := OptionValue[discord.Snowflake](i, name)
+
+	if !ok {
+		return nil
+	}
+
+	convertedData, ok := i.Data.(*responses.InteractionDataApplicationCommand)
+	if !ok || convertedData == nil || convertedData.Resolved == nil || convertedData.Resolved.Attachments == nil {
+		return nil
+	}
+
+	attachment, ok := convertedData.Resolved.Attachments[v]
+	if !ok {
+		return nil
+	}
+
+	return &attachment
+}
+
+// GetNumberOption returns the number option named name
+func (i *Interaction) GetNumberOption(name string) float64 {
+	v, _ := OptionValue[float64](i, name)
+	return v
+}
+
+// GetBoolOption returns the boolean option named name
 func (i *Interaction) GetBoolOption(name string) bool {
 	v, _ := OptionValue[bool](i, name)
 	return v
@@ -240,12 +395,7 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(aux.Data, &typeProbe); err != nil {
 		return err
 	}
-	if i.Data == nil {
-		i.Data = new(discord.InteractionData)
-	}
 
-	// Autocomplete and regular commands both carry type=ChatInput in the data
-	// payload, so check the interaction type first to distinguish them.
 	switch i.Type {
 	case discord.InteractionTypePing:
 		return nil
@@ -254,7 +404,7 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(aux.Data, &auto); err != nil {
 			return err
 		}
-		*i.Data = &auto
+		i.Data = &auto
 		return nil
 
 	case discord.InteractionTypeApplicationCommandAutocomplete:
@@ -262,14 +412,14 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(aux.Data, &auto); err != nil {
 			return err
 		}
-		*i.Data = &auto
+		i.Data = &auto
 		return nil
 	case discord.InteractionTypeModalSubmit:
 		var modal responses.InteractionDataModalSubmit
 		if err := json.Unmarshal(aux.Data, &modal); err != nil {
 			return err
 		}
-		*i.Data = &modal
+		i.Data = &modal
 		return nil
 	}
 
@@ -289,7 +439,7 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(aux.Data, &comp); err != nil {
 			return err
 		}
-		*i.Data = &comp
+		i.Data = &comp
 		return nil
 	}
 
@@ -299,7 +449,7 @@ func (i *Interaction) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(aux.Data, &cmd); err != nil {
 			return err
 		}
-		*i.Data = &cmd
+		i.Data = &cmd
 		return nil
 	case discord.ApplicationCommandTypePrimaryEndpoint:
 		return nil

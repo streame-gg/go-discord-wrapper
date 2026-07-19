@@ -158,8 +158,8 @@ type EditMessageParams struct {
 	AllowedMentions discord.Option[discord.AllowedMentions] `json:"allowed_mentions,omitempty"`
 	// Components replaces the message's component list.
 	// Set to an empty (non-nil) slice to remove all components.
-	Components  []discord.AnyComponent               `json:"-"`
-	Attachments discord.Option[[]discord.Attachment] `json:"attachments,omitempty"`
+	Components  discord.Option[[]discord.AnyComponent] `json:"components,omitempty"`
+	Attachments discord.Option[[]discord.Attachment]   `json:"attachments,omitempty"`
 	// Files are binary attachments added via multipart/form-data.
 	// When set, the request is encoded as multipart rather than JSON.
 	Files []discord.MessageFile `json:"-"`
@@ -168,11 +168,9 @@ type EditMessageParams struct {
 func (p EditMessageParams) MarshalJSON() ([]byte, error) {
 	type Alias EditMessageParams
 	return json.Marshal(&struct {
-		Components []discord.AnyComponent `json:"components,omitempty"`
 		Alias
 	}{
-		Components: p.Components,
-		Alias:      (Alias)(p),
+		Alias: (Alias)(p),
 	})
 }
 

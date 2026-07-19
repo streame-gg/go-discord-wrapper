@@ -36,7 +36,7 @@ type LocalCoordinator struct {
 	mu       sync.RWMutex
 	handlers map[int]func(options.ShardMessage)
 	closed   bool
-	wg       sync.WaitGroup // tracks in-flight handler goroutines (Bug 27)
+	wg       sync.WaitGroup
 }
 
 // NewLocalCoordinator creates a coordinator for totalShards in-process shards.
@@ -100,7 +100,7 @@ func (c *LocalCoordinator) Broadcast(msg options.ShardMessage) error {
 	for _, h := range c.handlers {
 		hs = append(hs, h)
 	}
-	c.wg.Add(len(hs)) // increment while holding RLock so Close cannot race wg.Wait
+	c.wg.Add(len(hs))
 	c.mu.RUnlock()
 
 	for _, h := range hs {

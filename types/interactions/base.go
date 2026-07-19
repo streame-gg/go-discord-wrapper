@@ -16,7 +16,7 @@ type Interaction struct {
 	ID                           discord.Snowflake                                        `json:"id"`
 	ApplicationID                discord.Snowflake                                        `json:"application_id"`
 	Type                         discord.InteractionType                                  `json:"type"`
-	Data                         *discord.InteractionData                                 `json:"data,omitempty"`
+	Data                         discord.InteractionData                                  `json:"data,omitempty"`
 	GuildID                      *discord.Snowflake                                       `json:"guild_id,omitempty"`
 	ChannelID                    *discord.Snowflake                                       `json:"channel_id,omitempty"`
 	Guild                        *discord.Guild                                           `json:"guild,omitempty"`

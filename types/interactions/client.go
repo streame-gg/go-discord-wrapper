@@ -133,7 +133,7 @@ func (i *Interaction) DeleteReply() error {
 	return c.DeleteReply(ctx, i)
 }
 
-// FollowUp sends a follow-up message (usable up to 15 minutes after the initial response).
+// FollowUp sends a follow-up message.
 func (i *Interaction) FollowUp(opts FollowUpOptions) (*discord.Message, error) {
 	c, ctx, err := i.ensureHydrated()
 	if err != nil {

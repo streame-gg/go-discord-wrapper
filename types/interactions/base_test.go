@@ -10,10 +10,6 @@ import (
 	"github.com/streame-gg/go-discord-wrapper/types/interactions/responses"
 )
 
-// interactionsSuite covers Interaction.UnmarshalJSON's polymorphic dispatch
-// (which concrete Data type it picks per interaction/component type) and the
-// command-routing helpers built on top of it (GetSubCommand, GetSubCommandGroup,
-// GetFullCommand, GetCustomID).
 type interactionsSuite struct {
 	suite.Suite
 }
@@ -28,8 +24,6 @@ func (s *interactionsSuite) unmarshal(raw string) *interactions.Interaction {
 	return &i
 }
 
-// TestUnmarshalChatInputCommand decodes a nested subcommand-group → subcommand
-// payload and verifies both the chosen Data type and the routing helpers.
 func (s *interactionsSuite) TestUnmarshalChatInputCommand() {
 	const raw = `{
 		"type": 2,
@@ -48,7 +42,7 @@ func (s *interactionsSuite) TestUnmarshalChatInputCommand() {
 	}`
 	i := s.unmarshal(raw)
 
-	cmd, ok := (*i.Data).(*responses.InteractionDataApplicationCommand)
+	cmd, ok := (i.Data).(*responses.InteractionDataApplicationCommand)
 	s.Require().True(ok, "data should decode to *InteractionDataApplicationCommand")
 	s.Equal("config", cmd.Name)
 
@@ -58,8 +52,6 @@ func (s *interactionsSuite) TestUnmarshalChatInputCommand() {
 	s.Empty(i.GetCustomID(), "a command interaction has no custom ID")
 }
 
-// TestUnmarshalTopLevelSubCommand covers a command with a direct subcommand
-// (no group), so GetSubCommandGroup is empty but GetSubCommand resolves.
 func (s *interactionsSuite) TestUnmarshalTopLevelSubCommand() {
 	const raw = `{
 		"type": 2,
@@ -75,7 +67,7 @@ func (s *interactionsSuite) TestUnmarshalMessageComponent() {
 	const raw = `{"type":3,"data":{"custom_id":"btn_confirm","component_type":2}}`
 	i := s.unmarshal(raw)
 
-	_, ok := (*i.Data).(*responses.InteractionDataMessageComponent)
+	_, ok := (i.Data).(*responses.InteractionDataMessageComponent)
 	s.Require().True(ok, "data should decode to *InteractionDataMessageComponent")
 	s.Equal("btn_confirm", i.GetCustomID())
 	s.Empty(i.GetSubCommand(), "components have no subcommands")
@@ -86,7 +78,7 @@ func (s *interactionsSuite) TestUnmarshalModalSubmit() {
 	const raw = `{"type":5,"data":{"custom_id":"feedback_modal","components":[]}}`
 	i := s.unmarshal(raw)
 
-	_, ok := (*i.Data).(*responses.InteractionDataModalSubmit)
+	_, ok := (i.Data).(*responses.InteractionDataModalSubmit)
 	s.Require().True(ok, "data should decode to *InteractionDataModalSubmit")
 	s.Equal("feedback_modal", i.GetCustomID())
 }
@@ -98,7 +90,7 @@ func (s *interactionsSuite) TestUnmarshalAutocomplete() {
 	}`
 	i := s.unmarshal(raw)
 
-	_, ok := (*i.Data).(*responses.InteractionDataAutocomplete)
+	_, ok := (i.Data).(*responses.InteractionDataAutocomplete)
 	s.Require().True(ok, "autocomplete dispatch keys off the interaction type, not the data type")
 }
 
@@ -111,16 +103,11 @@ func (s *interactionsSuite) TestUnmarshalUnknownDataTypeErrors() {
 }
 
 func (s *interactionsSuite) TestUnmarshalNoData() {
-	// PING interactions carry no data payload; UnmarshalJSON must accept that.
 	const raw = `{"type":1}`
 	i := s.unmarshal(raw)
 	s.Nil(i.Data)
 }
 
-// TestStringOptionValue decodes a String option whose value is a JSON string
-// (the common case, e.g. {"type":3,"value":"hello"}). The option decoder reads
-// the raw value as json.RawMessage and interprets it by option type, so string
-// and boolean options decode correctly.
 func (s *interactionsSuite) TestStringOptionValue() {
 	const raw = `{
 		"type": 2,
@@ -128,7 +115,7 @@ func (s *interactionsSuite) TestStringOptionValue() {
 	}`
 	var i interactions.Interaction
 	s.Require().NoError(json.Unmarshal([]byte(raw), &i))
-	cmd, ok := (*i.Data).(*responses.InteractionDataApplicationCommand)
+	cmd, ok := (i.Data).(*responses.InteractionDataApplicationCommand)
 	s.Require().True(ok)
 	s.Equal("echo", cmd.Name)
 	s.Require().NotNil(cmd.Options)
@@ -138,8 +125,6 @@ func (s *interactionsSuite) TestStringOptionValue() {
 	s.Equal("hello", *opts[0].Value)
 }
 
-// TestHelpersOnEmptyInteraction verifies the helpers are nil-safe when Data is
-// absent (e.g. a PING interaction or a zero value).
 func (s *interactionsSuite) TestHelpersOnEmptyInteraction() {
 	var i interactions.Interaction
 	s.Empty(i.GetSubCommand())
@@ -147,17 +132,14 @@ func (s *interactionsSuite) TestHelpersOnEmptyInteraction() {
 	s.Empty(i.GetFullCommand())
 	s.Empty(i.GetCustomID())
 
-	// The typed option getters return zero values, never panic, on empty data.
 	s.Empty(i.GetStringOption("x"))
-	s.Zero(i.GetIntOption("x"))
+	s.Zero(i.GetIntegerOption("x"))
 	s.Zero(i.GetFloatOption("x"))
 	s.False(i.GetBoolOption("x"))
 	_, ok := i.GetOption("x")
 	s.False(ok)
 }
 
-// TestTypedOptionGetters covers each typed getter against its matching option
-// kind, the OptionValue ok flag, and a kind mismatch.
 func (s *interactionsSuite) TestTypedOptionGetters() {
 	const raw = `{
 		"type": 2,
@@ -171,23 +153,19 @@ func (s *interactionsSuite) TestTypedOptionGetters() {
 	i := s.unmarshal(raw)
 
 	s.Equal("hi", i.GetStringOption("text"))
-	s.Equal(7, i.GetIntOption("count"))
+	s.Equal(7, i.GetIntegerOption("count"))
 	s.Equal(1.5, i.GetFloatOption("ratio"))
 	s.True(i.GetBoolOption("flag"))
 
-	// Absent option → zero value, ok=false.
 	v, ok := interactions.OptionValue[string](i, "missing")
 	s.False(ok)
 	s.Empty(v)
 
-	// Present but wrong requested type → zero value, ok=false.
 	n, ok := interactions.OptionValue[int](i, "text")
 	s.False(ok)
 	s.Zero(n)
 }
 
-// TestGetOptionDescendsSubcommands verifies GetOption finds options nested under
-// a subcommand-group → subcommand chain.
 func (s *interactionsSuite) TestGetOptionDescendsSubcommands() {
 	const raw = `{
 		"type": 2,
@@ -200,20 +178,19 @@ func (s *interactionsSuite) TestGetOptionDescendsSubcommands() {
 		]}
 	}`
 	i := s.unmarshal(raw)
-	s.Equal(5, i.GetIntOption("amount"))
+	s.Equal(5, i.GetIntegerOption("amount"))
 	opt, ok := i.GetOption("amount")
 	s.Require().True(ok)
 	s.Equal("amount", opt.Name)
 }
 
-// TestAs asserts the data union to a concrete type, both hit and miss.
 func (s *interactionsSuite) TestAs() {
 	i := s.unmarshal(`{"type":3,"data":{"custom_id":"btn","component_type":2}}`)
 
-	comp, ok := interactions.As[*responses.InteractionDataMessageComponent](*i.Data)
+	comp, ok := interactions.As[*responses.InteractionDataMessageComponent](i.Data)
 	s.Require().True(ok)
 	s.Equal("btn", comp.CustomID)
 
-	_, ok = interactions.As[*responses.InteractionDataApplicationCommand](*i.Data)
+	_, ok = interactions.As[*responses.InteractionDataApplicationCommand](i.Data)
 	s.False(ok, "component data must not assert to command data")
 }

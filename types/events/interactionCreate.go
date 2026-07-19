@@ -32,7 +32,7 @@ func (e *InteractionCreateEvent) IsButton() bool {
 		return false
 	}
 
-	comp, ok := (*e.Data).(*responses.InteractionDataMessageComponent)
+	comp, ok := (e.Data).(*responses.InteractionDataMessageComponent)
 	if !ok {
 		return false
 	}
@@ -44,7 +44,7 @@ func (e *InteractionCreateEvent) IsAnySelectMenu() bool {
 		return false
 	}
 
-	comp, ok := (*e.Data).(*responses.InteractionDataMessageComponent)
+	comp, ok := (e.Data).(*responses.InteractionDataMessageComponent)
 	if !ok {
 		return false
 	}
