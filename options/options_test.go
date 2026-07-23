@@ -1,15 +1,21 @@
 package options
 
 import (
-	"github.com/stretchr/testify/suite"
+	"log/slog"
+	"net/http"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/streame-gg/go-discord-wrapper/cache"
+	"github.com/streame-gg/go-discord-wrapper/types/discord"
+	"github.com/stretchr/testify/suite"
 )
 
-func (su *optionsSuite) TestValidate() {
-	t := su.T()
+type optionsSuite struct{ suite.Suite }
+
+func TestOptionsSuite(t *testing.T) { suite.Run(t, new(optionsSuite)) }
+
+func (s *optionsSuite) TestValidate() {
 	tests := []struct {
 		name    string
 		config  Config
@@ -119,52 +125,190 @@ func (su *optionsSuite) TestValidate() {
 			},
 			wantErr: false,
 		},
+		{
+			name: "negative number is rejected",
+			config: Config{
+				MaxReconnectRetries: -2,
+			},
+			wantErr: true,
+		},
+		{
+			name: "-1 is infinite retries",
+			config: Config{
+				MaxReconnectRetries: -1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "0 applies default",
+			config: Config{
+				MaxReconnectRetries: 0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "accept positive number",
+			config: Config{
+				MaxReconnectRetries: 10,
+			},
+			wantErr: false,
+		},
+		{
+			name: "reject negative number",
+			config: Config{
+				MaxReconnectRetries: -1,
+			},
+			wantErr: true,
+		},
+		{
+			name: "apply default on 0",
+			config: Config{
+				MaxReconnectRetries: 0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "accept positive number",
+			config: Config{
+				MaxReconnectRetries: 64,
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			err := tc.config.Validate()
+		s.Run(tc.name, func() {
 			if tc.wantErr {
-				assert.Error(t, err, "expected an error but got nil")
+				s.Error(tc.config.Validate())
 			} else {
-				assert.NoError(t, err, "expected no error but got: %v", err)
+				s.NoError(tc.config.Validate())
 			}
 		})
 	}
 }
 
-// TestBug31MaxReconnectRetriesBelowMinus1IsRejected verifies that
-// MaxReconnectRetries < -1 fails Validate (Bug 31).
-// -1 means infinite retries; any value below -1 is meaningless and should be
-// rejected so users get a clear error instead of silent infinite retries.
-func (su *optionsSuite) TestBug31MaxReconnectRetriesBelowMinus1IsRejected() {
-	t := su.T()
-	err := Config{MaxReconnectRetries: -2}.Validate()
-	assert.Error(t, err, "MaxReconnectRetries=-2 must fail Validate (Bug 31)")
-
-	err = Config{MaxReconnectRetries: -1}.Validate()
-	assert.NoError(t, err, "MaxReconnectRetries=-1 (infinite) must be valid")
-
-	err = Config{MaxReconnectRetries: 0}.Validate()
-	assert.NoError(t, err, "MaxReconnectRetries=0 (default 3) must be valid")
-
-	err = Config{MaxReconnectRetries: 10}.Validate()
-	assert.NoError(t, err, "MaxReconnectRetries=10 must be valid")
+// build is a small helper that applies opts onto a zero Config.
+func build(opts ...Option) Config {
+	return Build(Config{}, opts)
 }
 
-// Bug 11: MaxConcurrentEvents must be rejected when negative.
-func (su *optionsSuite) TestBug11_NegativeMaxConcurrentEventsRejected() {
-	t := su.T()
-	err := Config{MaxConcurrentEvents: -1}.Validate()
-	assert.Error(t, err, "MaxConcurrentEvents=-1 must fail Validate (Bug 11)")
-
-	err = Config{MaxConcurrentEvents: 0}.Validate()
-	assert.NoError(t, err, "MaxConcurrentEvents=0 (use default) must be valid")
-
-	err = Config{MaxConcurrentEvents: 64}.Validate()
-	assert.NoError(t, err, "MaxConcurrentEvents=64 must be valid")
+func (s *optionsSuite) TestWithSharding() {
+	c := build(WithSharding(4, 2))
+	s.NotNil(c.Sharding)
+	s.Equal(4, c.Sharding.TotalShards)
+	s.Equal(2, c.Sharding.ShardID)
 }
 
-type optionsSuite struct{ suite.Suite }
+func (s *optionsSuite) TestWithAPIVersion() {
+	c := build(WithAPIVersion(discord.APIVersion(9)))
+	s.Equal(discord.APIVersion(9), c.APIVersion)
+}
 
-func TestOptionsSuite(t *testing.T) { suite.Run(t, new(optionsSuite)) }
+func (s *optionsSuite) TestWithLogger() {
+	l := slog.Default()
+	c := build(WithLogger(l))
+	s.Equal(l, c.Logger)
+}
+
+func (s *optionsSuite) TestWithHTTPClient() {
+	hc := &http.Client{Timeout: time.Second}
+	c := build(WithHTTPClient(hc))
+	s.Equal(hc, c.HTTPClient)
+}
+
+func (s *optionsSuite) TestWithRetry() {
+	r := RetryOptions{MaxRetries: 5, RetryOnRateLimit: true}
+	c := build(WithRetry(r))
+	s.Equal(r, c.Retry)
+}
+
+func (s *optionsSuite) TestWithMinRequestInterval() {
+	c := build(WithMinRequestInterval(250 * time.Millisecond))
+	s.Equal(250*time.Millisecond, c.MinRequestInterval)
+}
+
+func (s *optionsSuite) TestWithBaseURL() {
+	c := build(WithBaseURL("https://proxy.example.com"))
+	s.Equal("https://proxy.example.com", c.BaseURL)
+}
+
+func (s *optionsSuite) TestWithMaxResponseBodySize() {
+	c := build(WithMaxResponseBodySize(-1))
+	s.Equal(-1, c.MaxResponseBodySize)
+}
+
+func (s *optionsSuite) TestWithRateLimiting() {
+	c := build(WithRateLimiting(RateLimiterOptions{SafetyMargin: 2}))
+	s.NotNil(c.RateLimiter)
+	s.Equal(2, c.RateLimiter.SafetyMargin)
+}
+
+func (s *optionsSuite) TestWithMaxReconnectRetries() {
+	c := build(WithMaxReconnectRetries(-1))
+	s.Equal(-1, c.MaxReconnectRetries)
+}
+
+func (s *optionsSuite) TestWithMaxConcurrentEvents() {
+	c := build(WithMaxConcurrentEvents(128))
+	s.Equal(128, c.MaxConcurrentEvents)
+}
+
+func (s *optionsSuite) TestWithLogLevel() {
+	c := build(WithLogLevel(slog.LevelDebug))
+	s.NotNil(c.LogLevel)
+	s.Equal(slog.LevelDebug, *c.LogLevel)
+}
+
+func (s *optionsSuite) TestWithCache() {
+	mc := cache.NewMemoryCache(cache.Options{})
+	c := build(WithCache(mc))
+	s.Equal(mc, c.Cache)
+}
+
+type stubCoordinator struct{}
+
+func (stubCoordinator) Register(int, func(ShardMessage)) error { return nil }
+func (stubCoordinator) Send(ShardMessage) error                { return nil }
+func (stubCoordinator) Broadcast(ShardMessage) error           { return nil }
+func (stubCoordinator) TotalShards() int                       { return 1 }
+func (stubCoordinator) Close() error                           { return nil }
+
+func (s *optionsSuite) TestWithCoordinator() {
+	co := stubCoordinator{}
+	c := build(WithCoordinator(co))
+	s.Equal(co, c.Coordinator)
+}
+
+func (s *optionsSuite) TestWithDisableCacheAutoPopulation() {
+	c := build(WithCacheStores(cache.CategoryGuilds), WithDisableCacheAutoPopulation())
+	s.True(c.DisableCacheAutoPopulation)
+	s.Equal(0, c.CacheStores)
+}
+
+func (s *optionsSuite) TestWithCacheStores_ReenablesAutoPopulation() {
+	c := build(WithDisableCacheAutoPopulation(), WithCacheStores(cache.CategoryGuilds|cache.CategoryChannels))
+	s.False(c.DisableCacheAutoPopulation)
+	s.Equal(cache.CategoryGuilds|cache.CategoryChannels, c.CacheStores)
+}
+
+func (s *optionsSuite) TestWithDisableCacheStore_FromDefault() {
+	c := build(WithDisableCacheStore(cache.CategoryMessages))
+	s.False(c.CacheStores&cache.CategoryMessages != 0)
+	s.True(c.CacheStores&cache.CategoryGuilds != 0)
+}
+
+func (s *optionsSuite) TestWithDisableCacheStore_FromExistingStores() {
+	c := build(
+		WithCacheStores(cache.CategoryGuilds|cache.CategoryChannels),
+		WithDisableCacheStore(cache.CategoryChannels),
+	)
+	s.Equal(cache.CategoryGuilds, c.CacheStores)
+}
+
+func (s *optionsSuite) TestBuild_AppliesInOrder() {
+	c := Build(Config{}, []Option{
+		WithBaseURL("first"),
+		WithBaseURL("second"),
+	})
+	s.Equal("second", c.BaseURL)
+}

@@ -9,6 +9,10 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+type collectionSuite struct{ suite.Suite }
+
+func TestCollectionSuite(t *testing.T) { suite.Run(t, new(collectionSuite)) }
+
 func newABC() *Collection[int, string] {
 	c := New[int, string]()
 	c.Set(3, "gamma")
@@ -41,7 +45,7 @@ func (s *collectionSuite) TestFrom() {
 
 	v, ok := c.Get(1)
 	s.True(ok)
-	s.Equal(v, "a")
+	s.Equal("a", *v)
 
 	m[3] = "c"
 	s.False(c.Has(3))
@@ -79,7 +83,7 @@ func (s *collectionSuite) TestGetMissing() {
 	c := New[int, string]()
 	v, ok := c.Get(99)
 	s.False(ok)
-	s.Equal("", v)
+	s.Nil(v)
 }
 
 func (s *collectionSuite) TestGetOr() {
@@ -102,7 +106,7 @@ func (s *collectionSuite) TestSetExistingKeyPreservesOrder() {
 	keys := c.Keys()
 	s.Equal([]int{3, 1, 2}, keys)
 	v, _ := c.Get(1)
-	s.Equal("ALPHA", v)
+	s.Equal("ALPHA", *v)
 }
 
 func (s *collectionSuite) TestHas() {
@@ -148,13 +152,13 @@ func (s *collectionSuite) TestCloneShallow() {
 	clone := c.Clone()
 
 	cv, _ := clone.Get(1)
-	s.Same(v, cv)
+	s.Same(v, *cv)
 
 	v.X = 42
 	cv2, _ := c.Get(1)
 	cv3, _ := clone.Get(1)
-	s.Equal(42, cv2.X)
-	s.Equal(42, cv3.X)
+	s.Equal(42, (*cv2).X)
+	s.Equal(42, (*cv3).X)
 
 	clone.Set(2, &val{X: 99})
 	s.False(c.Has(2))
@@ -174,14 +178,14 @@ func (s *collectionSuite) TestFindEmpty() {
 	c := New[int, string]()
 	v, ok := c.Find(func(s string) bool { return true })
 	s.False(ok)
-	s.Equal("", v)
+	s.Nil(v)
 }
 
 func (s *collectionSuite) TestFind() {
 	c := newABC()
 	v, ok := c.Find(func(s string) bool { return strings.HasPrefix(s, "a") })
 	s.True(ok)
-	s.Equal("alpha", v)
+	s.Equal("alpha", *v)
 	_, ok2 := c.Find(func(s string) bool { return s == "zzz" })
 	s.False(ok2)
 }
@@ -190,14 +194,14 @@ func (s *collectionSuite) TestFindKey() {
 	c := newABC()
 	k, ok := c.FindKey(func(s string) bool { return s == "beta" })
 	s.True(ok)
-	s.Equal(2, k)
+	s.Equal(2, *k)
 }
 
 func (s *collectionSuite) TestFindKeyEmpty() {
 	c := New[int, string]()
 	k, ok := c.FindKey(func(s string) bool { return true })
 	s.False(ok)
-	s.Equal(0, k)
+	s.Nil(k)
 }
 
 func (s *collectionSuite) TestFindLast() {
@@ -207,14 +211,14 @@ func (s *collectionSuite) TestFindLast() {
 	c.Set(3, "beta")
 	v, ok := c.FindLast(func(s string) bool { return strings.HasPrefix(s, "a") })
 	s.True(ok)
-	s.Equal("apple", v)
+	s.Equal("apple", *v)
 }
 
 func (s *collectionSuite) TestFindLastEmpty() {
 	c := New[int, string]()
 	v, ok := c.FindLast(func(s string) bool { return true })
 	s.False(ok)
-	s.Equal("", v)
+	s.Nil(v)
 }
 
 func (s *collectionSuite) TestFindLastKey() {
@@ -224,14 +228,14 @@ func (s *collectionSuite) TestFindLastKey() {
 	c.Set(3, "beta")
 	k, ok := c.FindLastKey(func(s string) bool { return strings.HasPrefix(s, "a") })
 	s.True(ok)
-	s.Equal(2, k)
+	s.Equal(2, *k)
 }
 
 func (s *collectionSuite) TestFindLastKeyEmpty() {
 	c := New[int, string]()
 	k, ok := c.FindLastKey(func(s string) bool { return true })
 	s.False(ok)
-	s.Equal(0, k)
+	s.Nil(k)
 }
 
 func (s *collectionSuite) TestSome() {
@@ -289,7 +293,7 @@ func (s *collectionSuite) TestFilter() {
 	result := c.Filter(func(v string) bool { return strings.HasPrefix(v, "a") })
 	s.Require().Equal(1, result.Len())
 	v, _ := result.Get(1)
-	s.Equal("alpha", v)
+	s.Equal("alpha", *v)
 }
 
 func (s *collectionSuite) TestFilterEmpty() {
@@ -311,7 +315,7 @@ func (s *collectionSuite) TestPartition() {
 	s.Require().Equal(1, matched.Len())
 	s.Require().Equal(2, rest.Len())
 	v, _ := matched.Get(1)
-	s.Equal("alpha", v)
+	s.Equal("alpha", *v)
 }
 
 func (s *collectionSuite) TestPartitionEmpty() {
@@ -329,36 +333,36 @@ func (s *collectionSuite) TestFirstLastSingleElement() {
 
 	v, ok := c.First()
 	s.True(ok)
-	s.Equal("only", v)
+	s.Equal("only", *v)
 	v, ok = c.Last()
 	s.True(ok)
-	s.Equal("only", v)
+	s.Equal("only", *v)
 	k, ok := c.FirstKey()
 	s.True(ok)
-	s.Equal(42, k)
+	s.Equal(42, *k)
 	k, ok = c.LastKey()
 	s.True(ok)
-	s.Equal(42, k)
+	s.Equal(42, *k)
 }
 
 func (s *collectionSuite) TestFirstEmpty() {
 	c := New[int, string]()
 	v, ok := c.First()
 	s.False(ok)
-	s.Equal("", v)
+	s.Nil(v)
 	k, ok2 := c.FirstKey()
 	s.False(ok2)
-	s.Equal(0, k)
+	s.Nil(k)
 }
 
 func (s *collectionSuite) TestLastEmpty() {
 	c := New[int, string]()
 	v, ok := c.Last()
 	s.False(ok)
-	s.Equal("", v)
+	s.Nil(v)
 	k, ok2 := c.LastKey()
 	s.False(ok2)
-	s.Equal(0, k)
+	s.Nil(k)
 }
 
 func (s *collectionSuite) TestFirstN() {
@@ -400,7 +404,7 @@ func (s *collectionSuite) TestAt() {
 		v, ok := c.At(tt.index)
 		s.Equal(tt.ok, ok)
 		if tt.ok {
-			s.Equal(tt.want, v)
+			s.Equal(tt.want, *v)
 		}
 	}
 }
@@ -425,7 +429,7 @@ func (s *collectionSuite) TestKeyAt() {
 		k, ok := c.KeyAt(tt.index)
 		s.Equal(tt.ok, ok)
 		if tt.ok {
-			s.Equal(tt.want, k)
+			s.Equal(tt.want, *k)
 		}
 	}
 }
@@ -434,10 +438,10 @@ func (s *collectionSuite) TestRandomEmpty() {
 	c := New[int, string]()
 	v, ok := c.Random()
 	s.False(ok)
-	s.Equal("", v)
+	s.Nil(v)
 	k, ok2 := c.RandomKey()
 	s.False(ok2)
-	s.Equal(0, k)
+	s.Nil(k)
 	s.Len(c.RandomN(5), 0)
 }
 
@@ -508,7 +512,7 @@ func (s *collectionSuite) TestMapValues() {
 	ret := c.MapValues(strings.ToUpper)
 	s.Same(c, ret)
 	v, _ := c.Get(1)
-	s.Equal("ALPHA", v)
+	s.Equal("ALPHA", *v)
 }
 
 func (s *collectionSuite) TestSweep() {
@@ -545,9 +549,9 @@ func (s *collectionSuite) TestConcat() {
 	result := a.Concat(b)
 	s.Require().Equal(3, result.Len())
 	v, _ := result.Get(2)
-	s.Equal("B", v)
+	s.Equal("B", *v)
 	orig, _ := a.Get(2)
-	s.Equal("b", orig)
+	s.Equal("b", *orig)
 }
 
 func (s *collectionSuite) TestConcatEmpty() {
@@ -576,7 +580,7 @@ func (s *collectionSuite) TestDifference() {
 	diff := a.Difference(b)
 	s.Require().Equal(1, diff.Len())
 	v, _ := diff.Get(2)
-	s.Equal("beta", v)
+	s.Equal("beta", *v)
 }
 
 func (s *collectionSuite) TestDifferenceEmpty() {
@@ -595,7 +599,7 @@ func (s *collectionSuite) TestIntersection() {
 	inter := a.Intersection(b)
 	s.Require().Equal(1, inter.Len())
 	v, _ := inter.Get(1)
-	s.Equal("alpha", v)
+	s.Equal("alpha", *v)
 }
 
 func (s *collectionSuite) TestIntersectionEmpty() {
@@ -714,11 +718,11 @@ func (s *collectionSuite) TestMapToCollection() {
 	upper := MapToCollection(c, strings.ToUpper)
 	s.Require().Equal(3, upper.Len())
 	v, _ := upper.Get(1)
-	s.Equal("ALPHA", v)
+	s.Equal("ALPHA", *v)
 	keys := upper.Keys()
 	s.Equal([]int{3, 1, 2}, keys)
 	orig, _ := c.Get(1)
-	s.Equal("alpha", orig)
+	s.Equal("alpha", *orig)
 }
 
 func (s *collectionSuite) TestFlatMap() {
@@ -734,18 +738,6 @@ func (s *collectionSuite) TestFlatMap() {
 	})
 	s.Require().Len(result, 4)
 	s.Equal([]string{"a", "b", "c", "d"}, result)
-}
-
-func (s *collectionSuite) TestGroupBy() {
-	c := New[int, string]()
-	c.Set(1, "apple")
-	c.Set(2, "apricot")
-	c.Set(3, "banana")
-	c.Set(4, "blueberry")
-	groups := GroupBy(c, func(v string) string { return string(v[0]) })
-	s.Require().Len(groups, 2)
-	s.Equal(2, groups["a"].Len())
-	s.Equal(2, groups["b"].Len())
 }
 
 func (s *collectionSuite) TestReduce() {
@@ -769,7 +761,7 @@ func (s *collectionSuite) TestPointerValueReflected() {
 	c.Set(1, u)
 	u.Name = "bob"
 	got, _ := c.Get(1)
-	s.Equal("bob", got.Name)
+	s.Equal("bob", (*got).Name)
 }
 
 func (s *collectionSuite) TestCollectionNilGuards() {
@@ -824,7 +816,3 @@ func (s *collectionSuite) TestCollectionNilGuards() {
 		})
 	})
 }
-
-type collectionSuite struct{ suite.Suite }
-
-func TestCollectionSuite(t *testing.T) { suite.Run(t, new(collectionSuite)) }

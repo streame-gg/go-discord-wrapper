@@ -1,55 +1,162 @@
-package sharding_test
+package sharding
 
 import (
-	"github.com/stretchr/testify/suite"
+	"encoding/json"
+	"fmt"
 	"testing"
+	"testing/synctest"
+	"time"
+
+	"github.com/stretchr/testify/suite"
 
 	"github.com/streame-gg/go-discord-wrapper/options"
-	"github.com/streame-gg/go-discord-wrapper/sharding"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-// Bug 10: Register after Close must return an error, not panic with a nil-map write.
-func (su *shardingLocalSuite) TestBug10_RegisterAfterCloseMustNotPanic() {
-	t := su.T()
-	c := sharding.NewLocalCoordinator(2)
-	require.NoError(t, c.Close())
+type shardingSuite struct{ suite.Suite }
 
-	var err error
-	assert.NotPanics(t, func() {
-		err = c.Register(0, func(options.ShardMessage) {})
-	})
-	assert.Error(t, err, "Register after Close must return an error (Bug 10)")
+func TestShardingSuite(t *testing.T) { suite.Run(t, new(shardingSuite)) }
+
+func (s *shardingSuite) TestCreateAndTotalShards() {
+	c := NewLocalCoordinator(2)
+	s.Equal(2, c.TotalShards())
+
+	c = NewLocalCoordinator(-1)
+	s.Equal(0, c.TotalShards())
 }
 
-// Bug 10: Send after Close must return an error, not panic.
-func (su *shardingLocalSuite) TestBug10_SendAfterCloseMustNotPanic() {
-	t := su.T()
-	c := sharding.NewLocalCoordinator(2)
-	require.NoError(t, c.Register(0, func(options.ShardMessage) {}))
-	require.NoError(t, c.Close())
+func (s *shardingSuite) TestRegister() {
+	c := NewLocalCoordinator(2)
+	s.EqualError(c.Register(3, func(options.ShardMessage) {}), "sharding: shard ID 3 out of range [0, 2]")
+	s.EqualError(c.Register(-1, func(options.ShardMessage) {}), "sharding: shard ID -1 out of range [0, 2]")
 
-	var err error
-	assert.NotPanics(t, func() {
-		err = c.Send(options.ShardMessage{To: 0, Type: "test"})
-	})
-	assert.Error(t, err, "Send after Close must return an error (Bug 10)")
+	s.Require().NoError(c.Close())
+	s.EqualError(c.Register(2, func(options.ShardMessage) {}), "sharding: coordinator is closed")
+
+	handler := func(options.ShardMessage) {
+		fmt.Print("lol!")
+	}
+
+	s.Require().NoError(c.Register(2, handler))
+
+	s.Equal(handler, c.handlers[1])
 }
 
-// Bug 10: Broadcast after Close must return an error, not panic.
-func (su *shardingLocalSuite) TestBug10_BroadcastAfterCloseMustNotPanic() {
-	t := su.T()
-	c := sharding.NewLocalCoordinator(2)
-	require.NoError(t, c.Close())
+func (s *shardingSuite) TestSend() {
+	c := NewLocalCoordinator(2)
+	s.Require().NoError(c.Close())
+	s.EqualError(c.Send(options.ShardMessage{}), "sharding: coordinator is closed")
 
-	var err error
-	assert.NotPanics(t, func() {
-		err = c.Broadcast(options.ShardMessage{Type: "test"})
-	})
-	assert.Error(t, err, "Broadcast after Close must return an error (Bug 10)")
+	c = NewLocalCoordinator(2)
+	s.EqualError(c.Send(options.ShardMessage{To: 3}), "sharding: shard 3 is not registered")
+
+	received := make(chan options.ShardMessage, 1)
+
+	c = NewLocalCoordinator(2)
+	s.Require().NoError(c.Register(0, func(msg options.ShardMessage) {
+		received <- msg
+	}))
+
+	want := options.ShardMessage{To: 0, Payload: json.RawMessage("hello")}
+
+	s.NoError(c.Send(want))
+
+	select {
+	case got := <-received:
+		s.Equal(want, got)
+	case <-time.After(time.Second):
+		s.Fail("handler was not called in time")
+	}
 }
 
-type shardingLocalSuite struct{ suite.Suite }
+func (s *shardingSuite) TestBroadcast() {
+	c := NewLocalCoordinator(2)
+	s.NoError(c.Broadcast(options.ShardMessage{})) // no handlers registered shouldn't return an error
 
-func TestShardingLocalSuite(t *testing.T) { suite.Run(t, new(shardingLocalSuite)) }
+	c = NewLocalCoordinator(2)
+
+	s.Require().NoError(c.Close())
+	s.EqualError(c.Broadcast(options.ShardMessage{}), "sharding: coordinator is closed")
+
+	receivedShardOne := make(chan options.ShardMessage, 1)
+	receivedShardTwo := make(chan options.ShardMessage, 1)
+
+	c = NewLocalCoordinator(2)
+	s.Require().NoError(c.Register(0, func(msg options.ShardMessage) {
+		receivedShardOne <- msg
+	}))
+	s.Require().NoError(c.Register(1, func(msg options.ShardMessage) {
+		receivedShardTwo <- msg
+	}))
+
+	want := options.ShardMessage{To: options.BroadcastAll, Payload: json.RawMessage("broadcast all")}
+
+	s.NoError(c.Broadcast(want), "Sent broadcast to 2 shards")
+
+	gotMessages := 0
+
+	for {
+		select {
+		case got := <-receivedShardOne:
+			s.T().Log("Received message for Shard 1")
+			gotMessages++
+			s.Equal(want, got)
+
+			if gotMessages == 2 {
+				return
+			}
+		case got := <-receivedShardTwo:
+			s.T().Log("Received message for Shard 2")
+			gotMessages++
+			s.Equal(want, got)
+
+			if gotMessages == 2 {
+				return
+			}
+		case <-time.After(time.Second):
+			s.Fail("handler was not called in time")
+		}
+	}
+}
+
+func (s *shardingSuite) TestClose() {
+	c := NewLocalCoordinator(2)
+	s.Require().NoError(c.Close())
+
+	synctest.Test(s.T(), func(t *testing.T) {
+		c := NewLocalCoordinator(1)
+
+		proceed := make(chan struct{})
+		finished := false
+
+		s.Require().NoError(c.Register(0, func(options.ShardMessage) {
+			<-proceed
+			finished = true
+		}))
+		s.Require().NoError(c.Send(options.ShardMessage{To: 0}))
+
+		closeDone := make(chan struct{})
+		go func() {
+			c.Close()
+			close(closeDone)
+		}()
+
+		synctest.Wait()
+
+		select {
+		case <-closeDone:
+			s.Fail("Close() kehrte zurück, bevor der Handler fertig war")
+		default:
+		}
+		s.False(finished)
+
+		close(proceed)
+		synctest.Wait()
+
+		select {
+		case <-closeDone:
+		default:
+			s.Fail("Close() kehrte nicht zurück, obwohl der Handler fertig ist")
+		}
+		s.True(finished)
+	})
+}

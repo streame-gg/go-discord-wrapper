@@ -139,13 +139,6 @@ func (c Config) Validate() error {
 	return nil
 }
 
-// Ptr returns a pointer to v. Useful for passing literal values to fields that
-// require a pointer (e.g. Required, MinValues, MaxValues on command options).
-//
-//	options.Ptr(true)   // *bool
-//	options.Ptr(42)     // *int
-func Ptr[T any](v T) *T { return &v }
-
 // WithSharding configures bot sharding.
 //
 //	options.WithSharding(1, 0)  // 1 total shard, shard ID 0

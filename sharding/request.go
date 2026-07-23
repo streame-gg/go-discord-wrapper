@@ -99,7 +99,7 @@ func RequestAll[T any](
 			}
 			var v T
 			if err := json.Unmarshal(msg.Payload, &v); err != nil {
-				continue
+				return nil, err
 			}
 			seen[msg.From] = true
 			results = append(results, v)

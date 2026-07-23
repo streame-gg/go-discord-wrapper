@@ -2027,6 +2027,7 @@ func (d *Client) Shutdown() error {
 		close(d.shutdownCh) // unblocks any eventCh senders still in listenWebsocket
 
 		d.wsMu.RLock()
+
 		ws := d.wsConn
 		d.wsMu.RUnlock()
 		if ws != nil {

@@ -87,7 +87,7 @@ func newWSConn(bot *Client, host string, isReconnect bool, lastEventNum *int, se
 		}
 	}()
 
-	_ = c.SetReadDeadline(time.Now().Add(30 * time.Second)) // don't block forever waiting for the initial HELLO
+	_ = c.SetReadDeadline(time.Now().Add(10 * time.Second)) // don't block forever waiting for the initial HELLO
 	c.SetReadLimit(4 * 1024 * 1024)                         // 4 MiB — protects against rogue/compromised endpoint flooding RAM
 
 	c.SetPongHandler(func(string) error {
@@ -557,7 +557,11 @@ func (d *wsConn) close() error {
 	}
 	var err error
 	d.closeOnce.Do(func() {
-		err = d.Connection.Close()
+		msg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
+		deadline := time.Now().Add(5 * time.Second)
+		if errorWrite := d.Connection.WriteControl(websocket.CloseMessage, msg, deadline); errorWrite != nil {
+			err = errorWrite
+		}
 		close(d.Closed)
 	})
 	return err

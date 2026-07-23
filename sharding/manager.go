@@ -129,7 +129,10 @@ func NewShardManagerWithRest(
 // If any shard in a bucket fails, Start shuts down all already-started shards
 // before returning the error so no shards are left orphaned.
 func (m *ShardManager) Start() error {
-	maxConcurrency := m.fetchMaxConcurrency()
+	maxConcurrency, err := m.fetchMaxConcurrency()
+	if err != nil {
+		return err
+	}
 
 	for bucketStart := 0; bucketStart < m.total; bucketStart += maxConcurrency {
 		bucketEnd := bucketStart + maxConcurrency
@@ -157,9 +160,7 @@ func (m *ShardManager) Start() error {
 		}
 		if len(bucketErrs) > 0 {
 			for _, c := range m.clients {
-				if c != nil {
-					_ = c.Shutdown()
-				}
+				_ = c.Shutdown()
 			}
 			_ = m.coordinator.Close()
 			return fmt.Errorf("sharding: bucket starting at shard %d failed: %w",
@@ -196,23 +197,18 @@ func (m *ShardManager) startOneShard(id int) error {
 }
 
 // fetchMaxConcurrency asks Discord what IDENTIFY bucket size to use.
-// Falls back to 1 (safe — slower start but never violates spec) if rest is nil
-// or the request fails.
-func (m *ShardManager) fetchMaxConcurrency() int {
+// Falls back to 1 (safe — slower start but never violates spec) if rest is nil.
+func (m *ShardManager) fetchMaxConcurrency() (int, error) {
 	if m.rest == nil {
-		return 1
+		return 1, nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	resp, err := m.rest.GetBotGateway(ctx)
 	if err != nil {
-		return 1
+		return 0, err
 	}
-	mc := resp.SessionStartLimit.MaxConcurrency
-	if mc < 1 {
-		mc = 1
-	}
-	return mc
+	return resp.SessionStartLimit.MaxConcurrency, nil
 }
 
 // Shard returns the Client for the given shard ID.
@@ -230,9 +226,16 @@ func (m *ShardManager) Shard(shardID int) *connection.Client {
 // Entries are nil for shards that have not yet been started.
 func (m *ShardManager) Shards() []*connection.Client {
 	m.clientMu.Lock()
+
+	if len(m.clients) == 0 {
+		m.clientMu.Unlock()
+		return nil
+	}
+
 	out := make([]*connection.Client, m.total)
 	copy(out, m.clients)
 	m.clientMu.Unlock()
+
 	return out
 }
 
@@ -241,14 +244,16 @@ func (m *ShardManager) Shards() []*connection.Client {
 func (m *ShardManager) Shutdown() error {
 	m.clientMu.Lock()
 	defer m.clientMu.Unlock()
+
 	var errs []error
-	for _, c := range m.clients {
-		if c != nil {
+	if len(m.clients) != 0 {
+		for _, c := range m.clients {
 			if err := c.Shutdown(); err != nil {
 				errs = append(errs, err)
 			}
 		}
 	}
+
 	if err := m.coordinator.Close(); err != nil {
 		errs = append(errs, err)
 	}

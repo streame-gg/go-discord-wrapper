@@ -40,7 +40,12 @@ type LocalCoordinator struct {
 }
 
 // NewLocalCoordinator creates a coordinator for totalShards in-process shards.
+// If totalShards is less than 0 its automatically set to 0.
 func NewLocalCoordinator(totalShards int) *LocalCoordinator {
+	if totalShards < 0 {
+		totalShards = 0
+	}
+
 	return &LocalCoordinator{
 		total:    totalShards,
 		handlers: make(map[int]func(options.ShardMessage), totalShards),
@@ -92,6 +97,11 @@ func (c *LocalCoordinator) Broadcast(msg options.ShardMessage) error {
 	msg.To = options.BroadcastAll
 
 	c.mu.RLock()
+	if len(c.handlers) == 0 {
+		c.mu.RUnlock()
+		return nil
+	}
+
 	if c.closed {
 		c.mu.RUnlock()
 		return fmt.Errorf("sharding: coordinator is closed")
@@ -104,7 +114,6 @@ func (c *LocalCoordinator) Broadcast(msg options.ShardMessage) error {
 	c.mu.RUnlock()
 
 	for _, h := range hs {
-		h := h
 		go func() {
 			defer c.wg.Done()
 			h(msg)
