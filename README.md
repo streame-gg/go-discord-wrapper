@@ -1,5 +1,8 @@
 # go-discord-wrapper
 
+# IMPORTANT
+The project is currently in a state where I manually have to rewrite many parts of it. This is taking a very long time and therefore, a first stable release will take some time to finish. 
+
 [![CI](https://github.com/streame-gg/go-discord-wrapper/actions/workflows/go.yml/badge.svg)](https://github.com/streame-gg/go-discord-wrapper/actions/workflows/go.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/streame-gg/go-discord-wrapper/master/.github/badges/coverage.json)](https://github.com/streame-gg/go-discord-wrapper/blob/master/COVERAGE.md)
 [![Version](https://img.shields.io/github/v/tag/streame-gg/go-discord-wrapper?sort=semver&label=version)](https://github.com/streame-gg/go-discord-wrapper/tags)
